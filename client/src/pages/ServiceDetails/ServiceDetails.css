@@ -1,0 +1,50 @@
+.provider-header {
+    background: var(--white);
+    padding: 2rem 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .provider-info-detailed {
+    padding: 2rem 0;
+  }
+  
+  .provider-meta {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+    color: var(--gray-dark);
+  }
+  
+  .provider-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin: 2rem 0;
+  }
+  
+  .about-section {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+  }
+  
+  .contact-card {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: 8px;
+    position: sticky;
+    top: 2rem;
+  }
+  
+  .contact-button {
+    width: 100%;
+    padding: 1rem;
+    background: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    margin-top: 1rem;
+    cursor: pointer;
+  }
+  

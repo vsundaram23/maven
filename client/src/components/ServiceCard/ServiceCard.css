@@ -1,0 +1,59 @@
+.service-card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 1.5rem;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+  }
+  
+  .service-card:hover {
+    transform: translateY(-4px);
+  }
+  
+  .trust-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: var(--accent-color);
+    color: var(--white);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  
+  .provider-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  
+  .provider-info h3 {
+    margin-bottom: 0.5rem;
+    color: var(--secondary-color);
+  }
+  
+  .rating {
+    color: #F1C40F;
+    margin-bottom: 0.5rem;
+  }
+  
+  .category {
+    color: var(--gray-dark);
+    margin-bottom: 0.5rem;
+  }
+  
+  .description {
+    margin-bottom: 1rem;
+    color: var(--gray-dark);
+  }
+  
+  .network-info {
+    padding-top: 1rem;
+    border-top: 1px solid var(--gray-light);
+    color: var(--accent-color);
+    font-weight: 500;
+  }
+  
