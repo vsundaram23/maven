@@ -1,5 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+require('dotenv').config();
+
+// Import routes
 const authRoutes = require('./routes/auth');
 const providerRoutes = require('./routes/providers');
 const connectionsRoutes = require('./routes/connections');
@@ -31,7 +34,7 @@ app.use('/api/outdoorProviders', outdoorProviderRoutes);
 app.use('/api/movingProviders', movingProviderRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
@@ -39,6 +42,49 @@ app.listen(PORT, () => {
 app.get('/', (req, res) => {
     res.send('Welcome to the Trust Platform API');
 });
+
+
+// const express = require('express');
+// const cors = require('cors');
+// const authRoutes = require('./routes/auth');
+// const providerRoutes = require('./routes/providers');
+// const connectionsRoutes = require('./routes/connections');
+// const reviewsRouter = require('./routes/reviews');
+// const applianceProviderRoutes = require('./routes/applianceProviders');
+// const cleaningProviderRoutes = require('./routes/cleaningProviders');
+// const utilitiesProviderRoutes = require('./routes/utilitiesProviders');
+// const repairProviderRoutes = require('./routes/repairProviders');
+// const outdoorProviderRoutes = require('./routes/outdoorProviders');
+// const movingProviderRoutes = require('./routes/movingProviders');
+// const recommendationRoutes = require('./routes/recommendations');
+
+// const app = express();
+
+// // Enable CORS for frontend requests
+// app.use(cors());
+// app.use(express.json());
+
+// // Mount the routes
+// app.use('/api/auth', authRoutes);
+// app.use('/api/providers', providerRoutes);
+// app.use('/api/connections', connectionsRoutes);
+// app.use('/api/reviews', reviewsRouter);
+// app.use('/api/applianceProviders', applianceProviderRoutes);
+// app.use('/api/cleaningProviders', cleaningProviderRoutes);
+// app.use('/api/utilitiesProviders', utilitiesProviderRoutes);
+// app.use('/api/repairProviders', repairProviderRoutes);
+// app.use('/api/outdoorProviders', outdoorProviderRoutes);
+// app.use('/api/movingProviders', movingProviderRoutes);
+// app.use('/api/recommendations', recommendationRoutes);
+
+// const PORT = 3000;
+// app.listen(PORT, () => {
+//     console.log(`Server running on port ${PORT}`);
+// });
+
+// app.get('/', (req, res) => {
+//     res.send('Welcome to the Trust Platform API');
+// });
 
 
 // // server.js

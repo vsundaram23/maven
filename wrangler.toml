@@ -1,0 +1,7 @@
+name = "trust-api"
+main = "api/server.js"
+compatibility_date = "2024-01-18"
+node_compat = true
+
+[vars]
+DATABASE_URL = 'postgresql://trust-main_owner:RAgcuPhtT70U@ep-billowing-sea-a5eouly5.us-east-2.aws.neon.tech/trust-main?sslmode=require'

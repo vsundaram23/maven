@@ -7,26 +7,30 @@
     "test": "tests"
   },
   "scripts": {
-    "start": "node api/server.js",
-    "dev": "nodemon api/server.js",
+    "start": "NODE_ENV=development node api/server.js",
+    "dev": "NODE_ENV=development nodemon api/server.js",
+    "build": "NODE_ENV=production react-scripts build",
+    "deploy": "wrangler deploy",
     "test": "jest",
-    "test:watch": "jest --watch",
-    "build": "react-scripts build",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "test:watch": "jest --watch"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@cloudflare/workers-types": "^4.20240329.0",
+    "wrangler": "^3.42.0",
     "@babel/preset-react": "^7.26.3",
+    "@neondatabase/serverless": "^0.10.4",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "pg": "^8.13.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.4.0",
-    "react-scripts": "^5.0.1"
+    "react-scripts": "^5.0.1",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "gh-pages": "^6.3.0",
