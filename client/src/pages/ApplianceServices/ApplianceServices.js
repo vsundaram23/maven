@@ -3,8 +3,12 @@ import { FaPhone, FaEnvelope, FaStar } from 'react-icons/fa';
 import './ApplianceServices.css';
 
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? '/api'
+  ? 'https://maven.pages.dev/api'
   : 'http://localhost:3000/api';
+  
+// const API_URL = process.env.NODE_ENV === 'production' 
+//   ? '/api'
+//   : 'http://localhost:3000/api';
 // const API_URL = 'http://localhost:3000';
 // const API_URL = 'http://localhost:3000/api';
 
