@@ -18,9 +18,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@cloudflare/workers-types": "^4.20240329.0",
-    "wrangler": "^3.42.0",
     "@babel/preset-react": "^7.26.3",
+    "@cloudflare/workers-types": "^4.20240329.0",
     "@neondatabase/serverless": "^0.10.4",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -30,6 +29,7 @@
     "react-dom": "^18.2.0",
     "react-icons": "^5.4.0",
     "react-scripts": "^5.0.1",
+    "wrangler": "^3.42.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {

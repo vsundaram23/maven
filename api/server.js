@@ -17,17 +17,28 @@ const recommendationRoutes = require('./routes/recommendations');
 
 const app = express();
 
-// CORS configuration for both development and production
-const FRONTEND_URL = process.env.NODE_ENV === 'production'
-  ? 'https://maven-frontend.onrender.com'
-  : 'http://localhost:3001';
-
-app.use(cors({
-    origin: [FRONTEND_URL],
+// CORS configuration
+const corsOptions = {
+    origin: function (origin, callback) {
+        const allowedOrigins = ['http://localhost:3001', 'https://maven-frontend.onrender.com'];
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+    allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']
+};
+
+// Enable CORS with options
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
@@ -71,8 +82,89 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    console.log(`Health check available at ${process.env.NODE_ENV === 'production' ? FRONTEND_URL : 'http://localhost'}:${PORT}/api/health`);
+    console.log(`Health check available at http://localhost:${PORT}/api/health`);
 });
+
+
+
+// const express = require('express');
+// const cors = require('cors');
+// require('dotenv').config();
+
+// // Import routes
+// const authRoutes = require('./routes/auth');
+// const providerRoutes = require('./routes/providers');
+// const connectionsRoutes = require('./routes/connections');
+// const reviewsRouter = require('./routes/reviews');
+// const applianceProviderRoutes = require('./routes/applianceProviders');
+// const cleaningProviderRoutes = require('./routes/cleaningProviders');
+// const utilitiesProviderRoutes = require('./routes/utilitiesProviders');
+// const repairProviderRoutes = require('./routes/repairProviders');
+// const outdoorProviderRoutes = require('./routes/outdoorProviders');
+// const movingProviderRoutes = require('./routes/movingProviders');
+// const recommendationRoutes = require('./routes/recommendations');
+
+// const app = express();
+
+// // CORS configuration for both development and production
+// const corsOptions = {
+//     origin: ['http://localhost:3001', 'https://maven-frontend.onrender.com'],
+//     credentials: true,
+//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//     allowedHeaders: ['Content-Type', 'Authorization']
+// };
+
+// // Enable pre-flight requests for all routes
+// app.options('*', cors(corsOptions));
+
+// // Apply CORS to all routes
+// app.use(cors(corsOptions));
+
+// app.use(express.json());
+
+// // Health check endpoint
+// app.get('/api/health', (req, res) => {
+//     res.status(200).json({ status: 'OK', message: 'Server is running' });
+// });
+
+// // Welcome endpoint
+// app.get('/', (req, res) => {
+//     res.send('Welcome to the Trust Platform API');
+// });
+
+// // Mount the routes
+// app.use('/api/auth', authRoutes);
+// app.use('/api/providers', providerRoutes);
+// app.use('/api/connections', connectionsRoutes);
+// app.use('/api/reviews', reviewsRouter);
+// app.use('/api/applianceProviders', applianceProviderRoutes);
+// app.use('/api/cleaningProviders', cleaningProviderRoutes);
+// app.use('/api/utilitiesProviders', utilitiesProviderRoutes);
+// app.use('/api/repairProviders', repairProviderRoutes);
+// app.use('/api/outdoorProviders', outdoorProviderRoutes);
+// app.use('/api/movingProviders', movingProviderRoutes);
+// app.use('/api/recommendations', recommendationRoutes);
+
+// // Error handling middleware
+// app.use((err, req, res, next) => {
+//     console.error(err.stack);
+//     res.status(500).json({ 
+//         error: 'Something went wrong!',
+//         message: err.message 
+//     });
+// });
+
+// // Handle 404 errors
+// app.use((req, res) => {
+//     res.status(404).json({ error: 'Route not found' });
+// });
+
+// const PORT = process.env.PORT || 3000;
+// app.listen(PORT, () => {
+//     console.log(`Server running on port ${PORT}`);
+//     console.log(`Health check available at http://localhost:${PORT}/api/health`);
+// });
+
 
 
 // const express = require('express');

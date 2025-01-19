@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Header.css';
+import BACKEND_URL from '../../config';
 
 const Header = () => {
-  const BACKEND_URL = 'https://maven-backend-x94s.onrender.com';
+  // const BACKEND_URL = process.env.NODE_ENV === 'development' 
+  // ? 'http://localhost:3000' 
+  // : 'https://maven-backend-x94s.onrender.com';
+
+  // const BACKEND_URL = process.env.NODE_ENV === 'production'
+  //   ? 'https://maven-backend-x94s.onrender.com'
+  //   : 'http://localhost:3000';
+
+  // console.log('Current Environment:', process.env.NODE_ENV);
+  // console.log('Backend URL:', BACKEND_URL);
+
   const navigate = useNavigate();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAddRecommendationModal, setShowAddRecommendationModal] = useState(false);
@@ -64,7 +75,7 @@ const Header = () => {
       const response = await fetch(`${BACKEND_URL}/api/auth/check-email`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+            'Content-Type': 'application/json',
         },
         credentials: 'include',
         body: JSON.stringify({ email })
