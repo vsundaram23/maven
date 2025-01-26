@@ -1,12 +1,10 @@
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://maven.pages.dev/api'
-  : 'http://localhost:3000/api';
-
-// const API_URL = 'http://localhost:3000/api';
+? '/api'
+: 'http://localhost:3000/api';
 
 export const fetchProviders = async () => {
   try {
-    const response = await fetch(`${API_URL}/providers`, {
+    const response = await fetch(`/api/providers`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -30,7 +28,7 @@ export const fetchProviders = async () => {
 
 export const fetchApplianceProviders = async () => {
   try {
-    const response = await fetch(`${API_URL}/applianceProviders`, {
+    const response = await fetch(`/api/applianceProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',

@@ -2,14 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { FaPhone, FaEnvelope, FaStar } from 'react-icons/fa';
 import './ApplianceServices.css';
 
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://maven.pages.dev/api'
-  : 'http://localhost:3000/api';
-  
-// const API_URL = process.env.NODE_ENV === 'production' 
-//   ? '/api'
-//   : 'http://localhost:3000/api';
-// const API_URL = 'http://localhost:3000';
+const API_URL = process.env.NODE_ENV === 'production'
+  ? '/api'
+: 'http://localhost:3000/api';
+
+
 // const API_URL = 'http://localhost:3000/api';
 
 const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
