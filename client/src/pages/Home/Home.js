@@ -9,7 +9,7 @@ const Home = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/providers')
+    fetch('/api/providers')
       .then(res => res.json())
       .then(data => {
         setProviders(data.providers);

@@ -89,7 +89,7 @@ const FinancialServices = () => {
         // Get current user's likes
         const userEmail = localStorage.getItem('userEmail');
         if (userEmail) {
-          const likesResponse = await fetch('http://localhost:3000/api/reviews/user-likes', {
+          const likesResponse = await fetch('/api/reviews/user-likes', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -121,7 +121,7 @@ const FinancialServices = () => {
       return;
     }
     try {
-      const response = await fetch('http://localhost:3000/api/reviews', {
+      const response = await fetch('/api/reviews', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -154,7 +154,7 @@ const FinancialServices = () => {
     const isCurrentlyLiked = likedProviders.has(providerId);
   
     try {
-      const response = await fetch('http://localhost:3000/api/reviews', {
+      const response = await fetch('/api/reviews', {
         method: isCurrentlyLiked ? 'DELETE' : 'POST',
         headers: {
           'Content-Type': 'application/json'

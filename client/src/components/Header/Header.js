@@ -72,7 +72,7 @@ const Header = () => {
     setEmailError('');
     
     try {
-      const response = await fetch(`${BACKEND_URL}/api/auth/check-email`, {
+      const response = await fetch(`$/api/auth/check-email`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -86,7 +86,7 @@ const Header = () => {
       if (!response.ok) throw new Error(data.message || 'Network error');
       
       if (data.exists) {
-        const sessionResponse = await fetch(`${BACKEND_URL}/api/auth/create-session`, {
+        const sessionResponse = await fetch(`$/api/auth/create-session`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ const Header = () => {
   const handleRecommendationSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${BACKEND_URL}/api/recommendations`, {
+      const response = await fetch(`$/api/recommendations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

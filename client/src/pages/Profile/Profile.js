@@ -21,7 +21,7 @@ const Profile = () => {
 
     try {
       // Fetch user data
-      const userResponse = await fetch(`http://localhost:3000/api/auth/check-email`, {
+      const userResponse = await fetch(`/api/auth/check-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -37,7 +37,7 @@ const Profile = () => {
       }
 
       // Fetch connections
-      const connectionsResponse = await fetch('http://localhost:3000/api/connections/check-connections', {
+      const connectionsResponse = await fetch('/api/connections/check-connections', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -51,7 +51,7 @@ const Profile = () => {
       }
 
       // Fetch recommendations
-      const recommendationsResponse = await fetch('http://localhost:3000/api/providers/user-recommendations', {
+      const recommendationsResponse = await fetch('/api/providers/user-recommendations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

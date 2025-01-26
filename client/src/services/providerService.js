@@ -52,7 +52,7 @@ export const fetchApplianceProviders = async () => {
 
 export const fetchCleaningProviders = async () => {
   try {
-    const response = await fetch(`${API_URL}/cleaningProviders`, {
+    const response = await fetch(`/api/cleaningProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -76,7 +76,7 @@ export const fetchCleaningProviders = async () => {
 
 export const fetchUtilitiesProviders = async () => {
   try {
-    const response = await fetch(`${API_URL}/utilitiesProviders`, {
+    const response = await fetch(`$/api/utilitiesProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -100,7 +100,7 @@ export const fetchUtilitiesProviders = async () => {
 
 export const fetchRepairProviders = async () => {
   try {
-    const response = await fetch(`${API_URL}/repairProviders`, {
+    const response = await fetch(`$/api/repairProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -124,7 +124,7 @@ export const fetchRepairProviders = async () => {
 
 export const fetchOutdoorProviders = async () => {
   try {
-    const response = await fetch(`${API_URL}/outdoorProviders`, {
+    const response = await fetch(`/api/outdoorProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -148,7 +148,7 @@ export const fetchOutdoorProviders = async () => {
 
 export const fetchMovingProviders = async () => {
   try {
-    const response = await fetch(`${API_URL}/movingProviders`, {
+    const response = await fetch(`/api/movingProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',

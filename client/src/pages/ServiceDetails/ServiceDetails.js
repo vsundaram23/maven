@@ -9,7 +9,7 @@ const ServiceDetails = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:3000/api/providers/${id}`)
+    fetch(`/api/providers/${id}`)
       .then(res => res.json())
       .then(data => {
         setProvider(data.provider);
