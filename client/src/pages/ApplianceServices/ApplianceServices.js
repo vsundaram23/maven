@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { FaPhone, FaEnvelope, FaStar } from 'react-icons/fa';
 import './ApplianceServices.css';
 
-const API_URL = process.env.NODE_ENV === 'production'
-  ? '/api'
-: 'http://localhost:3000/api';
+// const API_URL = process.env.NODE_ENV === 'production'
+//   ? '/api'
+// : 'http://localhost:3000/api';
 
 
 // const API_URL = 'http://localhost:3000/api';
@@ -83,7 +83,7 @@ const ApplianceServices = () => {
     const getProviders = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_URL}/applianceProviders`);
+        const response = await fetch(`$/api/applianceProviders`);
         if (!response.ok) {
           throw new Error('Failed to fetch providers');
         }
@@ -105,7 +105,7 @@ const ApplianceServices = () => {
     if (!selectedProvider) return;
     
     try {
-      const response = await fetch(`${API_URL}/reviews`, {
+      const response = await fetch(`/api/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
