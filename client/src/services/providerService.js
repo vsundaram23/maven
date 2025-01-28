@@ -2,6 +2,8 @@ const API_URL = process.env.NODE_ENV === 'production'
 ? '/api'
 : 'http://localhost:3000/api';
 
+// new comment
+
 export const fetchProviders = async () => {
   try {
     const response = await fetch(`/api/providers`, {

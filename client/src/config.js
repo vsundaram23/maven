@@ -11,4 +11,5 @@ const BACKEND_URL = 'https://maven-backend-x94s.onrender.com'
 console.log('Environment in config:', process.env.NODE_ENV);
 console.log('BACKEND_URL in config:', BACKEND_URL);
 
+console.log('Version in config: 1.1');
 export default BACKEND_URL;
