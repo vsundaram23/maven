@@ -76,7 +76,7 @@ export const fetchCleaningProviders = async () => {
 
 export const fetchUtilitiesProviders = async () => {
   try {
-    const response = await fetch(`$/api/utilitiesProviders`, {
+    const response = await fetch(`/api/utilitiesProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -100,7 +100,7 @@ export const fetchUtilitiesProviders = async () => {
 
 export const fetchRepairProviders = async () => {
   try {
-    const response = await fetch(`$/api/repairProviders`, {
+    const response = await fetch(`/api/repairProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',

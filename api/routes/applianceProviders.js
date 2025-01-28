@@ -1,12 +1,16 @@
+// const express = require('express');
+// const router = express.Router();
+// const { Pool } = require('@neondatabase/serverless');
+// require('dotenv').config();
+
+// const pool = new Pool({
+//   connectionString: process.env.DATABASE_URL,
+//   ssl: true
+// });
+
 const express = require('express');
 const router = express.Router();
-const { Pool } = require('@neondatabase/serverless');
-require('dotenv').config();
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: true
-});
+const pool = require('../config/db.config');
 
 // Get all appliance providers
 router.get('/', async (req, res) => {

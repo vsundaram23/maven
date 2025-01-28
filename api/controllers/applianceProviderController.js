@@ -1,10 +1,11 @@
-const { Pool } = require('@neondatabase/serverless');
-require('dotenv').config();
+const pool = require('../config/db.config');
+// const { Pool } = require('@neondatabase/serverless');
+// require('dotenv').config();
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: true
-});
+// const pool = new Pool({
+//   connectionString: process.env.DATABASE_URL,
+//   ssl: true
+// });
 
 const getAllApplianceProviders = async (req, res) => {
     try {

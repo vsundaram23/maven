@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaPhone, FaEnvelope, FaStar } from 'react-icons/fa';
+import { fetchApplianceProviders } from '../../services/providerService';
 import './ApplianceServices.css';
 
 // const API_URL = process.env.NODE_ENV === 'production'
@@ -83,12 +84,18 @@ const ApplianceServices = () => {
     const getProviders = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`$/api/applianceProviders`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch providers');
-        }
-        const data = await response.json();
-        setProviders(data);
+        const data = await fetchApplianceProviders();
+        const applianceProviders = data.filter(
+          provider => provider.service_type === 'Appliance Services'
+        );
+        setProviders(applianceProviders);
+        // setLoading(true);
+        // const response = await fetch(`$/api/applianceProviders`);
+        // if (!response.ok) {
+        //   throw new Error('Failed to fetch providers');
+        // }
+        // const data = await response.json();
+        // setProviders(data);
       } catch (err) {
         setError('Failed to fetch providers');
         console.error('Error:', err);
