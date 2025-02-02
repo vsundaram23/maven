@@ -3,6 +3,8 @@ import { FaPhone, FaEnvelope, FaStar } from 'react-icons/fa';
 import { fetchRepairProviders } from '../../services/providerService';
 import './RepairServices.css';
 
+const API_URL = 'http://34.214.248.192:8080';
+
 const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
@@ -98,7 +100,7 @@ const RepairServices = () => {
     if (!selectedProvider) return;
     
     try {
-      const response = await fetch('/api/reviews', {
+      const response = await fetch(`${API_URL}/api/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

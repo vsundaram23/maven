@@ -3,6 +3,8 @@ import { FaPhone, FaEnvelope, FaStar } from 'react-icons/fa';
 import { fetchApplianceProviders } from '../../services/providerService';
 import './ApplianceServices.css';
 
+const API_URL = 'http://34.214.248.192:8080';
+
 // const API_URL = process.env.NODE_ENV === 'production'
 //   ? '/api'
 // : 'http://localhost:3000/api';
@@ -112,7 +114,7 @@ const ApplianceServices = () => {
     if (!selectedProvider) return;
     
     try {
-      const response = await fetch(`/api/reviews`, {
+      const response = await fetch(`${API_URL}/api/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

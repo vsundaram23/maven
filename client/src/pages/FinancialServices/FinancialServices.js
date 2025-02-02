@@ -5,6 +5,8 @@ import { fetchProviders } from '../../services/providerService';
 import CommentModal from '../../components/CommentModal/CommentModal';
 import './FinancialServices.css';
 
+const API_URL = 'http://34.214.248.192:8080';
+
 const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
@@ -89,7 +91,7 @@ const FinancialServices = () => {
         // Get current user's likes
         const userEmail = localStorage.getItem('userEmail');
         if (userEmail) {
-          const likesResponse = await fetch('/api/reviews/user-likes', {
+          const likesResponse = await fetch(`${API_URL}/api/reviews/user-likes`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -121,7 +123,7 @@ const FinancialServices = () => {
       return;
     }
     try {
-      const response = await fetch('/api/reviews', {
+      const response = await fetch(`${API_URL}/api/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -154,7 +156,7 @@ const FinancialServices = () => {
     const isCurrentlyLiked = likedProviders.has(providerId);
   
     try {
-      const response = await fetch('/api/reviews', {
+      const response = await fetch(`${API_URL}/api/reviews`, {
         method: isCurrentlyLiked ? 'DELETE' : 'POST',
         headers: {
           'Content-Type': 'application/json'

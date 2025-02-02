@@ -3,13 +3,15 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Home.css';
 
+const API_URL = 'http://34.214.248.192:8080';
+
 const Home = () => {
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/api/providers')
+    fetch(`${API_URL}/api/providers`)
       .then(res => res.json())
       .then(data => {
         setProviders(data.providers);

@@ -3,13 +3,15 @@ import { useParams } from 'react-router-dom';
 import ReviewSection from '../../components/ReviewSection/ReviewSection';
 import './ServiceDetails.css';
 
+const API_URL = 'http://34.214.248.192:8080';
+
 const ServiceDetails = () => {
   const { id } = useParams();
   const [provider, setProvider] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/providers/${id}`)
+    fetch(`${API_URL}/api/providers/${id}`)
       .then(res => res.json())
       .then(data => {
         setProvider(data.provider);

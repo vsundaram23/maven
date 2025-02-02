@@ -1,12 +1,14 @@
-const API_URL = process.env.NODE_ENV === 'production' 
-? '/api'
-: 'http://localhost:3000/api';
+// const API_URL = process.env.NODE_ENV === 'production' 
+// ? '/api'
+// : 'http://localhost:3000/api';
+
+const API_URL = 'http://34.214.248.192:8080';
 
 // new comment
 
 export const fetchProviders = async () => {
   try {
-    const response = await fetch(`/api/providers`, {
+    const response = await fetch(`${API_URL}/api/providers`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -30,7 +32,7 @@ export const fetchProviders = async () => {
 
 export const fetchApplianceProviders = async () => {
   try {
-    const response = await fetch(`/api/applianceProviders`, {
+    const response = await fetch(`${API_URL}/api/applianceProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -54,7 +56,7 @@ export const fetchApplianceProviders = async () => {
 
 export const fetchCleaningProviders = async () => {
   try {
-    const response = await fetch(`/api/cleaningProviders`, {
+    const response = await fetch(`${API_URL}/api/cleaningProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -78,7 +80,7 @@ export const fetchCleaningProviders = async () => {
 
 export const fetchUtilitiesProviders = async () => {
   try {
-    const response = await fetch(`/api/utilitiesProviders`, {
+    const response = await fetch(`${API_URL}/api/utilitiesProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -102,7 +104,7 @@ export const fetchUtilitiesProviders = async () => {
 
 export const fetchRepairProviders = async () => {
   try {
-    const response = await fetch(`/api/repairProviders`, {
+    const response = await fetch(`${API_URL}/api/repairProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -126,7 +128,7 @@ export const fetchRepairProviders = async () => {
 
 export const fetchOutdoorProviders = async () => {
   try {
-    const response = await fetch(`/api/outdoorProviders`, {
+    const response = await fetch(`${API_URL}/api/outdoorProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -150,7 +152,7 @@ export const fetchOutdoorProviders = async () => {
 
 export const fetchMovingProviders = async () => {
   try {
-    const response = await fetch(`/api/movingProviders`, {
+    const response = await fetch(`${API_URL}/api/movingProviders`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',

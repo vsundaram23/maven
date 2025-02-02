@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Header.css';
 
+const API_URL = 'http://34.214.248.192:8080';
+
 const Header = () => {
   const navigate = useNavigate();
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -60,7 +62,7 @@ const Header = () => {
     setEmailError('');
     
     try {
-      const response = await fetch('http://localhost:3000/api/auth/check-email', {
+      const response = await fetch(`${API_URL}/api/auth/check-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -73,7 +75,7 @@ const Header = () => {
       if (!response.ok) throw new Error(data.message || 'Network error');
       
       if (data.exists) {
-        const sessionResponse = await fetch('http://localhost:3000/api/auth/create-session', {
+        const sessionResponse = await fetch(`${API_URL}/api/auth/create-session`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -100,7 +102,7 @@ const Header = () => {
   const handleRecommendationSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:3000/api/recommendations', {
+      const response = await fetch(`${API_URL}/api/recommendations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

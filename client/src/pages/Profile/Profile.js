@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Profile.css';
 
+const API_URL = 'http://34.214.248.192:8080';
+
 const Profile = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
@@ -21,7 +23,7 @@ const Profile = () => {
 
     try {
       // Fetch user data
-      const userResponse = await fetch(`/api/auth/check-email`, {
+      const userResponse = await fetch(`${API_URL}/api/auth/check-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -37,7 +39,7 @@ const Profile = () => {
       }
 
       // Fetch connections
-      const connectionsResponse = await fetch('/api/connections/check-connections', {
+      const connectionsResponse = await fetch(`${API_URL}/api/connections/check-connections`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -51,7 +53,7 @@ const Profile = () => {
       }
 
       // Fetch recommendations
-      const recommendationsResponse = await fetch('/api/providers/user-recommendations', {
+      const recommendationsResponse = await fetch(`${API_URL}/api/providers/user-recommendations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
