@@ -5,7 +5,7 @@ import { fetchProviders } from '../../services/providerService';
 import CommentModal from '../../components/CommentModal/CommentModal';
 import './FinancialServices.css';
 
-const API_URL = 'http://34.214.248.192:8080';
+const API_URL = 'https://api.seanag-recommendations.org:8080';
 
 const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   const [rating, setRating] = useState(0);

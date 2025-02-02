@@ -3,7 +3,7 @@ import { FaPhone, FaEnvelope, FaStar } from 'react-icons/fa';
 import { fetchCleaningProviders } from '../../services/providerService';
 import './CleaningServices.css';
 
-const API_URL = 'http://34.214.248.192:8080';
+const API_URL = 'https://api.seanag-recommendations.org:8080';
 
 const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   const [rating, setRating] = useState(0);

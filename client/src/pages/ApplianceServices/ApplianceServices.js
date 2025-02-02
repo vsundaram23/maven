@@ -3,7 +3,7 @@ import { FaPhone, FaEnvelope, FaStar } from 'react-icons/fa';
 import { fetchApplianceProviders } from '../../services/providerService';
 import './ApplianceServices.css';
 
-const API_URL = 'http://34.214.248.192:8080';
+const API_URL = 'https://api.seanag-recommendations.org:8080';
 
 // const API_URL = process.env.NODE_ENV === 'production'
 //   ? '/api'

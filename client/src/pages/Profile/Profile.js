@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Profile.css';
 
-const API_URL = 'http://34.214.248.192:8080';
+const API_URL = 'https://api.seanag-recommendations.org:8080';
 
 const Profile = () => {
   const navigate = useNavigate();
