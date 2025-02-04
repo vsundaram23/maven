@@ -207,3 +207,11 @@ body {
 .logout-button:hover {
   background-color: #c82333;
 }
+
+.community-section {
+  margin-top: 1rem;
+}
+
+.info-grid .info-item .info-value {
+  text-transform: capitalize;
+}
