@@ -15,7 +15,7 @@ const Header = () => {
   const [showServicesDropdown, setShowServicesDropdown] = useState(false);
   const [closeTimeout, setCloseTimeout] = useState(null);
   const isLoggedIn = localStorage.getItem('userEmail');
-  const [availableCommunities, setAvailableCommunities] = useState([]);
+  // const [availableCommunities, setAvailableCommunities] = useState([]);
   const [signUpForm, setSignUpForm] = useState({
     name: '',
     email: '',
@@ -65,11 +65,11 @@ const Header = () => {
     };
   }, [closeTimeout]);
 
-  useEffect(() => {
-    if (showSignUpModal) {
-      fetchAvailableCommunities();
-    }
-  }, [showSignUpModal]);
+  // useEffect(() => {
+  //   if (showSignUpModal) {
+  //     fetchAvailableCommunities();
+  //   }
+  // }, [showSignUpModal]);
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
@@ -138,24 +138,24 @@ const Header = () => {
     }
   };
 
-  const fetchAvailableCommunities = async () => {
-    try {
-        const response = await fetch(`${API_URL}/api/auth/available-communities`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({})
-        });
+//   const fetchAvailableCommunities = async () => {
+//     try {
+//         const response = await fetch(`${API_URL}/api/auth/available-communities`, {
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/json'
+//             },
+//             body: JSON.stringify({})
+//         });
         
-        if (response.ok) {
-            const data = await response.json();
-            setAvailableCommunities(data);
-        }
-    } catch (error) {
-        console.error('Error fetching communities:', error);
-    }
-};
+//         if (response.ok) {
+//             const data = await response.json();
+//             setAvailableCommunities(data);
+//         }
+//     } catch (error) {
+//         console.error('Error fetching communities:', error);
+//     }
+// };
 
   const handleRecommendationSubmit = async (e) => {
     e.preventDefault();
@@ -291,7 +291,7 @@ const Header = () => {
                 })}
                 required
               />
-              <select
+              {/* <select
                 value={signUpForm.community}
                 onChange={(e) => setSignUpForm({
                   ...signUpForm,
@@ -305,7 +305,7 @@ const Header = () => {
                     {community.name}
                   </option>
                 ))}
-              </select>
+              </select> */}
               <button type="submit">Sign Up</button>
             </form>
           </div>

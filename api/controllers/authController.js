@@ -3,7 +3,7 @@ const pool = require('../config/db.config');
 const checkEmail = async (email) => {
   try {
     const result = await pool.query(
-      'SELECT name, email, community FROM users WHERE email = $1',
+      'SELECT name, email FROM users WHERE email = $1',
       [email]
     );
     const user = result.rows[0];
@@ -11,8 +11,7 @@ const checkEmail = async (email) => {
       exists: result.rows.length > 0,
       user: result.rows.length > 0 ? {
         name: user.name,
-        email: user.email,
-        community: user.community
+        email: user.email
       } : null
     };
   } catch (error) {
@@ -22,10 +21,10 @@ const checkEmail = async (email) => {
 
 const createUser = async (userData) => {
   try {
-    const { name, email, community } = userData;
+    const { name, email } = userData;
     const result = await pool.query(
-      'INSERT INTO users (name, email, profile_image, community) VALUES ($1, $2, $3, $4) RETURNING id, name, email, community',
-      [name, email, null, community]
+      'INSERT INTO users (name, email, profile_image) VALUES ($1, $2, $3) RETURNING id, name, email, profile_image',
+      [name, email, null] // Setting profile_image as null initially
     );
     
     return {
@@ -40,68 +39,10 @@ const createUser = async (userData) => {
   }
 };
 
-const getAvailableCommunities = async () => {
-  try {
-    const result = await pool.query(
-      'SELECT id, name, description FROM available_communities ORDER BY name ASC'
-    );
-    return result.rows;
-  } catch (error) {
-    throw new Error('Database error fetching communities');
-  }
-};
-
 module.exports = { 
   checkEmail,
-  createUser,
-  getAvailableCommunities 
+  createUser 
 };
-
-// const pool = require('../config/db.config');
-
-// const checkEmail = async (email) => {
-//   try {
-//     const result = await pool.query(
-//       'SELECT name, email FROM users WHERE email = $1',
-//       [email]
-//     );
-//     const user = result.rows[0];
-//     return {
-//       exists: result.rows.length > 0,
-//       user: result.rows.length > 0 ? {
-//         name: user.name,
-//         email: user.email
-//       } : null
-//     };
-//   } catch (error) {
-//     throw new Error('Database error checking email');
-//   }
-// };
-
-// const createUser = async (userData) => {
-//   try {
-//     const { name, email } = userData;
-//     const result = await pool.query(
-//       'INSERT INTO users (name, email, profile_image) VALUES ($1, $2, $3) RETURNING id, name, email, profile_image',
-//       [name, email, null] // Setting profile_image as null initially
-//     );
-    
-//     return {
-//       user: result.rows[0],
-//       success: true
-//     };
-//   } catch (error) {
-//     if (error.code === '23505') {
-//       throw new Error('Email already exists');
-//     }
-//     throw new Error('Database error creating user');
-//   }
-// };
-
-// module.exports = { 
-//   checkEmail,
-//   createUser 
-// };
 
 
 

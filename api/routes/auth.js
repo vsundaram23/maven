@@ -10,9 +10,12 @@ router.post('/check-email', async (req, res) => {
   
   try {
     const result = await pool.query(
-      'SELECT name, email, community FROM users WHERE email = $1',
+      'SELECT name, email FROM users WHERE email = $1',
       [email]
     );
+    // console.log('Full query result:', result);
+    // console.log('Query rows:', result.rows);
+    // console.log('First row:', result.rows[0]);
 
     const exists = result.rows.length > 0;
     const user = result.rows[0];
@@ -23,9 +26,8 @@ router.post('/check-email', async (req, res) => {
         exists,
         message: 'Email found',
         token,
-        name: user.name,
-        email: user.email,
-        community: user.community
+        name: result.rows[0].name,
+        email: result.rows[0].email
       });
     } else {
       res.json({ 
@@ -39,7 +41,7 @@ router.post('/check-email', async (req, res) => {
 });
 
 router.post('/signup', async (req, res) => {
-  const { name, email, community } = req.body;
+  const { name, email } = req.body;
   
   try {
     const emailCheck = await pool.query(
@@ -55,8 +57,8 @@ router.post('/signup', async (req, res) => {
     }
     
     const result = await pool.query(
-      'INSERT INTO users (name, email, profile_image, community) VALUES ($1, $2, $3, $4) RETURNING id, name, email, community, created_at',
-      [name, email, null, community]
+      'INSERT INTO users (name, email, profile_image) VALUES ($1, $2, $3) RETURNING id, name, email, profile_image, created_at',
+      [name, email, null]
     );
     
     const token = crypto.randomBytes(64).toString('hex');
@@ -72,22 +74,6 @@ router.post('/signup', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Server error during signup' 
-    });
-  }
-});
-
-router.post('/available-communities', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT id, name, description FROM available_communities ORDER BY name ASC'
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Database error details:', error);  // Add this line
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error fetching communities',
-      error: error.message  // Add this line for debugging
     });
   }
 });
