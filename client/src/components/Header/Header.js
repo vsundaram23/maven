@@ -189,7 +189,7 @@ const Header = () => {
   return (
     <header className="header">
       <div className="header-content">
-        <Link to="/" className="logo">Seanag Recommends</Link>
+        <Link to="/" className="logo">Tried & Trusted</Link>
         <nav className="nav-links">
           <div 
             className="nav-link dropdown" 
