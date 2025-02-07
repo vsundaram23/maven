@@ -1,5 +1,5 @@
 // src/pages/Profile/Profile.js
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Profile.css';
 
@@ -122,16 +122,16 @@ const Profile = () => {
             </div>
             <div className="info-item">
               <label>EMAIL</label>
-              <div className="info-value">{email}</div>
+              <div className="info-value">{email?.toLowerCase()}</div>
             </div>
           </div>
         </div>
 
         <div className="profile-section">
-          <h2>Community</h2>
+          <h2>Trust Circles</h2>
           <div className="info-grid">
             <div className="info-item">
-              <label>COMMUNITY</label>
+              <label>Your Communities</label>
               <div className="info-value">{community}</div>
             </div>
           </div>
