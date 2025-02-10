@@ -27,6 +27,8 @@
 }
 
 .mobile-menu-button {
+  position: fixed;
+  right: 1rem;
   display: none;
   flex-direction: column;
   justify-content: space-between;
@@ -36,7 +38,7 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  z-index: 101;
+  z-index: 1001;
 }
 
 .mobile-menu-button span {

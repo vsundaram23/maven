@@ -77,17 +77,34 @@ const Header = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Don't trigger if clicking the button
+      if (event.target.closest('.mobile-menu-button')) return;
+      
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
         setIsMobileMenuOpen(false);
       }
     };
-
+  
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       if (closeTimeout) clearTimeout(closeTimeout);
     };
   }, [closeTimeout]);
+
+  // useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+  //       setIsMobileMenuOpen(false);
+  //     }
+  //   };
+
+  //   document.addEventListener('mousedown', handleClickOutside);
+  //   return () => {
+  //     document.removeEventListener('mousedown', handleClickOutside);
+  //     if (closeTimeout) clearTimeout(closeTimeout);
+  //   };
+  // }, [closeTimeout]);
 
   const handleMouseEnter = () => {
     if (closeTimeout) clearTimeout(closeTimeout);
@@ -197,6 +214,20 @@ const Header = () => {
     }
   };
 
+  const handleMobileMenuToggle = (e) => {
+    console.log('Toggle clicked, current state:', isMobileMenuOpen);
+    e.preventDefault();
+    e.stopPropagation();
+    // setIsMobileMenuOpen(!isMobileMenuOpen);
+    // setShowServicesDropdown(false);
+    if (isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    } else {
+      setIsMobileMenuOpen(true);
+    }
+    setShowServicesDropdown(false);
+  };
+
   return (
     <header className="header">
       <div className="header-content">
@@ -204,7 +235,8 @@ const Header = () => {
         
         <button 
           className="mobile-menu-button"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          onClick={handleMobileMenuToggle}
+          style={{ position: 'relative', zIndex: 2000 }}
         >
           <span></span>
           <span></span>
