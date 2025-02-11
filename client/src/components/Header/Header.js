@@ -398,7 +398,7 @@ const Header = () => {
                 required
               />
               <textarea
-                placeholder="Description"
+                placeholder="What did you think?"
                 value={recommendationForm.description}
                 onChange={(e) => setRecommendationForm({
                   ...recommendationForm,

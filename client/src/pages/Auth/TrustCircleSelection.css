@@ -1,0 +1,69 @@
+.trust-circle-selection {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+    color: white;
+  }
+  
+  .trust-circle-selection h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    margin-bottom: 2rem;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+  
+  .circle-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    width: 100%;
+    max-width: 1000px;
+    padding: 2rem;
+  }
+  
+  .circle-option {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 2rem;
+    border-radius: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .circle-option:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .circle-option h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .circle-option p {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+  }
+  
+  @media (max-width: 768px) {
+    .trust-circle-selection {
+      padding: 1rem;
+    }
+    
+    .circle-options {
+      padding: 1rem;
+      gap: 1rem;
+    }
+    
+    .circle-option {
+      padding: 1.5rem;
+    }
+  }
+  
