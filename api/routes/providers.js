@@ -75,6 +75,62 @@ router.get('/', async (req, res) => {
   console.log('=== END GET ALL PROVIDERS ===');
 });
 
+router.get('/search', async (req, res) => {
+  console.log('=== START PROVIDER SEARCH ===');
+  const searchQuery = req.query.q?.toLowerCase();
+
+  try {
+    if (!searchQuery) {
+      return res.json({ providers: [] });
+    }
+
+    const query = `
+      SELECT 
+        sp.id,
+        sp.business_name,
+        sp.description,
+        sp.email,
+        sp.phone_number,
+        sp.num_likes,
+        s.name as service_type,
+        u.name as recommended_by_name
+      FROM service_providers sp
+      JOIN services s ON sp.service_id = s.service_id
+      JOIN service_categories sc ON s.category_id = sc.service_id
+      JOIN users u ON sp.recommended_by = u.id
+      WHERE 
+        LOWER(sp.business_name) LIKE $1 
+        OR LOWER(s.name) LIKE $1
+        OR LOWER(sp.description) LIKE $1
+    `;
+
+    const searchPattern = `%${searchQuery}%`;
+    const result = await pool.query(query, [searchPattern]);
+
+    // Format the response to match frontend expectations
+    const formattedProviders = result.rows.map(provider => ({
+      id: provider.id,
+      name: provider.business_name,
+      services: [provider.service_type],
+      description: provider.description,
+      email: provider.email,
+      phone: provider.phone_number,
+      likes: provider.num_likes,
+      recommendedBy: provider.recommended_by_name
+    }));
+
+    res.json({ providers: formattedProviders });
+
+  } catch (error) {
+    console.error('Search Error:', error);
+    res.status(500).json({
+      error: 'Failed to search providers',
+      details: error.message
+    });
+  }
+  console.log('=== END PROVIDER SEARCH ===');
+});
+
 // Get provider by ID
 router.get('/:id', async (req, res) => {
   console.log('=== START GET PROVIDER BY ID ===');

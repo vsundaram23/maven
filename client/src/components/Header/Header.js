@@ -405,14 +405,14 @@ const Header = () => {
                   description: e.target.value
                 })}
               />
-              <textarea
+              {/* <textarea
                 placeholder="Additional Notes"
                 value={recommendationForm.notes}
                 onChange={(e) => setRecommendationForm({
                   ...recommendationForm,
                   notes: e.target.value
                 })}
-              />
+              /> */}
               <select
                 value={recommendationForm.category}
                 onChange={(e) => setRecommendationForm({
