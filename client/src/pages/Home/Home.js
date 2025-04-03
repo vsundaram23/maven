@@ -75,7 +75,9 @@ const Home = () => {
   return (
     <div className="home">
       <div className="hero-container">
-        <h1 className="typewriter-title">{displayText}<span className="cursor"></span></h1>
+      <h1 className="typewriter-title">
+        Find recs,<span className="highlight-box"> fast.</span>
+      </h1>
         <p className="subtitle">Where trusted people share trusted service providers.</p>
         <div className="search-wrapper">
           <input

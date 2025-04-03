@@ -15,7 +15,7 @@ const ProfileAvatar = ({ email }) => {
         width: '32px',
         height: '32px',
         borderRadius: '50%',
-        backgroundColor: 'var(--secondary-blue)',
+        backgroundColor: 'var(--primary-blue)', // ← use the darker blue
         color: 'white',
         display: 'flex',
         alignItems: 'center',

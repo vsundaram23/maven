@@ -9,7 +9,7 @@
 
 .header {
   background: var(--white);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
   position: fixed;
   width: 100%;
   top: 0;
@@ -24,6 +24,14 @@
   align-items: center;
   padding: 1rem 2rem;
   position: relative;
+}
+
+.logo {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--primary-blue);
+  text-decoration: none;
+  letter-spacing: -0.3px;
 }
 
 .mobile-menu-button {
@@ -47,14 +55,6 @@
   background: var(--primary-blue);
   border-radius: 3px;
   transition: all 0.3s ease;
-}
-
-.logo {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--primary-blue);
-  text-decoration: none;
-  letter-spacing: -0.5px;
 }
 
 .nav-links {
@@ -102,7 +102,7 @@
   top: 100%;
   left: 0;
   background: var(--white);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
   border-radius: 6px;
   padding: 0.5rem 0;
   min-width: 180px;
@@ -123,20 +123,25 @@
   color: var(--primary-blue);
 }
 
-.login-button, .add-recommendation-button {
-  padding: 0.6rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  background-color: var(--secondary-blue);
-  color: var(--white);
-  font-weight: 500;
+/* 🔥 Ethos-style Buttons */
+
+.login-button,
+.add-recommendation-button {
+  padding: 0.55rem 1.25rem;
+  background-color: transparent;
+  color: var(--primary-blue);
+  border: 2px solid var(--primary-blue);
+  font-weight: 600;
+  border-radius: 9999px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  margin-left: 1rem;
+  transition: all 0.2s ease;
+  margin-left: 0.75rem;
 }
 
-.login-button:hover, .add-recommendation-button:hover {
-  background-color: var(--hover-blue);
+.login-button:hover,
+.add-recommendation-button:hover {
+  background-color: var(--primary-blue);
+  color: var(--white);
 }
 
 .modal-overlay {
@@ -191,7 +196,9 @@
   gap: 1.2rem;
 }
 
-.modal input, .modal select, .modal textarea {
+.modal input,
+.modal select,
+.modal textarea {
   padding: 0.8rem;
   border: 2px solid #e2e8f0;
   border-radius: 6px;
@@ -200,7 +207,9 @@
   width: 100%;
 }
 
-.modal input:focus, .modal select:focus, .modal textarea:focus {
+.modal input:focus,
+.modal select:focus,
+.modal textarea:focus {
   outline: none;
   border-color: var(--secondary-blue);
 }
@@ -257,6 +266,7 @@
   border-color: #3182CE;
 }
 
+/* 📱 Mobile Nav */
 @media (max-width: 768px) {
   .mobile-menu-button {
     display: flex;
@@ -288,7 +298,7 @@
     margin-top: 0.5rem;
   }
 
-  .login-button, 
+  .login-button,
   .add-recommendation-button {
     width: 100%;
     margin: 0.5rem 0;
@@ -323,481 +333,3 @@
     padding: 1.5rem 1rem;
   }
 }
-
-
-/* :root {
-  --primary-blue: #1a365d;
-  --secondary-blue: #2b6cb0;
-  --light-blue: #ebf8ff;
-  --hover-blue: #2c5282;
-  --white: #ffffff;
-  --gray: #718096;
-}
-
-.header {
-  background: var(--white);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  position: fixed;
-  width: 100%;
-  top: 0;
-  z-index: 100;
-}
-
-.header-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-}
-
-.logo {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--primary-blue);
-  text-decoration: none;
-  letter-spacing: -0.5px;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.nav-links > * {
-  margin-left: 10px;
-}
-
-.nav-links a {
-  color: var(--gray);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
-  display: flex;
-  align-items: center;
-}
-
-.nav-links a:hover {
-  color: var(--primary-blue);
-}
-
-.nav-links a:hover .avatar {
-  transform: scale(1.05);
-  transition: transform 0.2s ease;
-}
-
-.dropdown {
-  position: relative;
-  cursor: pointer;
-  color: var(--gray);
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.dropdown:hover {
-  color: var(--primary-blue);
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: var(--white);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
-  padding: 0.5rem 0;
-  min-width: 180px;
-  z-index: 1000;
-  margin-top: 0.5rem;
-}
-
-.dropdown-item {
-  display: block;
-  padding: 0.8rem 1.2rem;
-  text-decoration: none;
-  color: var(--gray);
-  transition: all 0.2s ease;
-}
-
-.dropdown-item:hover {
-  background-color: var(--light-blue);
-  color: var(--primary-blue);
-}
-
-.login-button, .add-recommendation-button {
-  padding: 0.6rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  background-color: var(--secondary-blue);
-  color: var(--white);
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  margin-left: 1rem;
-}
-
-.login-button:hover, .add-recommendation-button:hover {
-  background-color: var(--hover-blue);
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  backdrop-filter: blur(4px);
-  z-index: 1000;
-}
-
-.modal {
-  background: var(--white);
-  padding: 2.5rem;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 400px;
-  position: relative;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.modal h2 {
-  color: var(--primary-blue);
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.close-button {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  border: none;
-  background: none;
-  font-size: 1.5rem;
-  color: var(--gray);
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.close-button:hover {
-  color: var(--primary-blue);
-}
-
-.modal form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-}
-
-.modal input, .modal select, .modal textarea {
-  padding: 0.8rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: border-color 0.2s ease;
-  width: 100%;
-}
-
-.modal input:focus, .modal select:focus, .modal textarea:focus {
-  outline: none;
-  border-color: var(--secondary-blue);
-}
-
-.modal button[type="submit"] {
-  padding: 0.8rem;
-  background-color: var(--secondary-blue);
-  color: var(--white);
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  width: 100%;
-}
-
-.modal button[type="submit"]:hover {
-  background-color: var(--hover-blue);
-}
-
-.error-message {
-  color: #e53e3e;
-  font-size: 0.875rem;
-  text-align: center;
-}
-
-.signup-link {
-  text-align: center;
-  margin-top: 1rem;
-  color: var(--gray);
-}
-
-.signup-link span {
-  color: var(--secondary-blue);
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.signup-link span:hover {
-  color: var(--hover-blue);
-}
-
-.modal select {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.modal select:focus {
-  outline: none;
-  border-color: #3182CE;
-}
-
-@media (max-width: 768px) {
-  .nav-links {
-    gap: 0.5rem;
-  }
-  
-  .nav-links > * {
-    margin-left: 5px;
-  }
-  
-  .header-content {
-    padding: 1rem;
-  }
-  
-  .logo {
-    font-size: 1.5rem;
-  }
-} */
-
-/* :root {
-  --primary-blue: #1a365d;
-  --secondary-blue: #2b6cb0;
-  --light-blue: #ebf8ff;
-  --hover-blue: #2c5282;
-  --white: #ffffff;
-  --gray: #718096;
-}
-
-.header {
-  background: var(--white);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  position: fixed;
-  width: 100%;
-  top: 0;
-  z-index: 100;
-}
-
-.header-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-}
-
-.logo {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--primary-blue);
-  text-decoration: none;
-  letter-spacing: -0.5px;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 2.5rem;
-}
-
-.nav-links a {
-  color: var(--gray);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.nav-links a:hover {
-  color: var(--primary-blue);
-}
-
-.dropdown {
-  position: relative;
-  cursor: pointer;
-  color: var(--gray);
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.dropdown:hover {
-  color: var(--primary-blue);
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: var(--white);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
-  padding: 0.5rem 0;
-  min-width: 180px;
-  z-index: 1000;
-  margin-top: 0.5rem;
-}
-
-.dropdown-item {
-  display: block;
-  padding: 0.8rem 1.2rem;
-  text-decoration: none;
-  color: var(--gray);
-  transition: all 0.2s ease;
-}
-
-.dropdown-item:hover {
-  background-color: var(--light-blue);
-  color: var(--primary-blue);
-}
-
-.login-button, .add-recommendation-button {
-  padding: 0.6rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  background-color: var(--secondary-blue);
-  color: var(--white);
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  margin-left: 1rem;
-}
-
-.login-button:hover, .add-recommendation-button:hover {
-  background-color: var(--hover-blue);
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  backdrop-filter: blur(4px);
-  z-index: 1000;
-}
-
-.modal {
-  background: var(--white);
-  padding: 2.5rem;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 400px;
-  position: relative;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.modal h2 {
-  color: var(--primary-blue);
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.close-button {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  border: none;
-  background: none;
-  font-size: 1.5rem;
-  color: var(--gray);
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.close-button:hover {
-  color: var(--primary-blue);
-}
-
-.modal form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-}
-
-.modal input, .modal select, .modal textarea {
-  padding: 0.8rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: border-color 0.2s ease;
-  width: 100%;
-}
-
-.modal input:focus, .modal select:focus, .modal textarea:focus {
-  outline: none;
-  border-color: var(--secondary-blue);
-}
-
-.modal button[type="submit"] {
-  padding: 0.8rem;
-  background-color: var(--secondary-blue);
-  color: var(--white);
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  width: 100%;
-}
-
-.modal button[type="submit"]:hover {
-  background-color: var(--hover-blue);
-}
-
-.error-message {
-  color: #e53e3e;
-  font-size: 0.875rem;
-  text-align: center;
-}
-
-.signup-link {
-  text-align: center;
-  margin-top: 1rem;
-  color: var(--gray);
-}
-
-.signup-link span {
-  color: var(--secondary-blue);
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.signup-link span:hover {
-  color: var(--hover-blue);
-}
-
-.modal select {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.modal select:focus {
-  outline: none;
-  border-color: #3182CE;
-} */
