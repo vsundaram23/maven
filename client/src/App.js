@@ -70,8 +70,9 @@
 
 // export default App;
 
-import React from 'react';
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+// App.js
+import React, { useEffect } from 'react';
+import { Route, BrowserRouter as Router, Routes, useLocation } from 'react-router-dom';
 import Home from './pages/Home/Home';
 import Profile from './pages/Profile/Profile';
 import ServiceDetails from './pages/ServiceDetails/ServiceDetails';
@@ -84,35 +85,49 @@ import RepairServices from './pages/RepairServices/RepairServices';
 import OutdoorServices from './pages/OutdoorServices/OutdoorServices';
 import MovingServices from './pages/MovingServices/MovingServices';
 import './styles/global.css';
+import './App.css';
 
-const App = () => {
+const AppWrapper = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Add or remove body class for home page styling
+    if (location.pathname === '/') {
+      document.body.classList.add('home-page');
+    } else {
+      document.body.classList.remove('home-page');
+    }
+  }, [location.pathname]);
+
   return (
-    <Router>
-      <div className="App">
-        <Header />
-        <main>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/providers/:id" element={<ServiceDetails />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route 
-              path="/financial-services" 
-              element={<FinancialServices />} 
-            />
-            <Route path="/appliances" element={<ApplianceServices />} />
-            <Route path="/cleaning" element={<CleaningServices />} />
-            <Route path="/utilities" element={<UtilitiesServices />} />
-            <Route path="/repairs" element={<RepairServices />} />
-            <Route path="/outdoor" element={<OutdoorServices />} />
-            <Route path="/moving" element={<MovingServices />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
+    <div className="App">
+      <Header />
+      <main>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/providers/:id" element={<ServiceDetails />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/financial-services" element={<FinancialServices />} />
+          <Route path="/appliances" element={<ApplianceServices />} />
+          <Route path="/cleaning" element={<CleaningServices />} />
+          <Route path="/utilities" element={<UtilitiesServices />} />
+          <Route path="/repairs" element={<RepairServices />} />
+          <Route path="/outdoor" element={<OutdoorServices />} />
+          <Route path="/moving" element={<MovingServices />} />
+        </Routes>
+      </main>
+    </div>
   );
 };
 
+const App = () => (
+  <Router>
+    <AppWrapper />
+  </Router>
+);
+
 export default App;
+
 
 
 

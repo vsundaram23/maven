@@ -249,7 +249,7 @@ const Header = () => {
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
-            Home Services
+            Home Professionals
             {showServicesDropdown && (
               <div 
                 className="dropdown-menu"
@@ -265,13 +265,13 @@ const Header = () => {
               </div>
             )}
           </div>
-          <Link to="/financial-services" className="nav-link">Financial Services</Link>
-          <Link to="/profile" className="nav-link">Profile</Link>
+          <Link to="/financial-services" className="nav-link">Financial Experts</Link>
+          <Link to="/profile" className="nav-link">My Dashboard</Link>
           <button 
             className="add-recommendation-button"
             onClick={() => isLoggedIn ? setShowAddRecommendationModal(true) : setShowLoginModal(true)}
           >
-            Add Recommendation
+            Share a Recommendation
           </button>
           {isLoggedIn ? (
             <Link to="/profile">
@@ -279,10 +279,10 @@ const Header = () => {
             </Link>
           ) : (
             <button 
-              className="login-button blue"
+              className="login-button"
               onClick={() => setShowLoginModal(true)}
             >
-              Login
+              Sign In
             </button>
           )}
         </nav>

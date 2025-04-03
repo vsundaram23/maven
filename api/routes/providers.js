@@ -31,6 +31,7 @@ router.get('/', async (req, res) => {
         sp.email,
         sp.phone_number,
         sp.num_likes,
+        sp.date_of_recommendation,
         s.name as service_type,
         u.name as recommended_by_name
       FROM service_providers sp
@@ -116,7 +117,8 @@ router.get('/search', async (req, res) => {
       email: provider.email,
       phone: provider.phone_number,
       likes: provider.num_likes,
-      recommendedBy: provider.recommended_by_name
+      recommendedBy: provider.recommended_by_name,
+      date_of_recommendation: provider.date_of_recommendation
     }));
 
     res.json({ providers: formattedProviders });

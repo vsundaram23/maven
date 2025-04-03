@@ -1,4 +1,3 @@
-// FinancialServices.js
 import React, { useState, useEffect } from 'react';
 import { FaComment, FaHeart, FaPhone, FaEnvelope, FaStar } from 'react-icons/fa';
 import { fetchProviders } from '../../services/providerService';
@@ -86,9 +85,9 @@ const FinancialServices = () => {
       try {
         setLoading(true);
         const data = await fetchProviders();
+        console.log('Providers data:', data);
         setProviders(data);
   
-        // Get current user's likes
         const userEmail = localStorage.getItem('userEmail');
         if (userEmail) {
           const likesResponse = await fetch(`${API_URL}/api/reviews/user-likes`, {
@@ -144,7 +143,6 @@ const FinancialServices = () => {
       console.error('Error submitting review:', err);
     }
   };
-  
 
   const handleLike = async (providerId, providerEmail) => {
     const userEmail = localStorage.getItem('userEmail');
@@ -196,7 +194,6 @@ const FinancialServices = () => {
       console.error('Error handling like:', error);
     }
   };  
-  
 
   const handlePhoneClick = (phoneNumber) => {
     if (phoneNumber) {
@@ -246,59 +243,44 @@ const FinancialServices = () => {
       <div className="providers-grid">
         {filteredProviders.map(provider => (
           <div className="financial-service-card" key={provider.id}>
+            <div className="recommended-by-top">
+              <div className="recommended-header">
+                <span>Rec'd By:</span>
+                <span className="recommendation-name">{provider.recommended_by_name}</span>
+              </div>
+              {/* <div className="recommendation-date">
+                {new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </div> */}
+            </div>
             <div className="card-content">
               <div className="card-header">
                 <h2 className="card-title">{provider.business_name}</h2>
                 <div className="contact-icons">
-                <div className="contact-icons">
-                {provider.phone_number?.trim() && (
+                  {provider.phone_number?.trim() && (
                     <FaPhone 
-                    className="contact-icon phone-icon" 
-                    size={16} 
-                    onClick={() => handlePhoneClick(provider.phone_number)}
-                    title="Call provider"
+                      className="contact-icon phone-icon" 
+                      size={16} 
+                      onClick={() => handlePhoneClick(provider.phone_number)}
+                      title="Call provider"
                     />
-                )}
-                {provider.email?.trim() && (
+                  )}
+                  {provider.email?.trim() && (
                     <FaEnvelope 
-                        className="contact-icon email-icon" 
-                        size={16}
-                        onClick={() => handleEmailClick(provider.email)}
-                        title="Email provider"
+                      className="contact-icon email-icon" 
+                      size={16}
+                      onClick={() => handleEmailClick(provider.email)}
+                      title="Email provider"
                     />
-                )}
-                </div>
+                  )}
                 </div>
               </div>
-              <div className="card-subtitle">{provider.role}</div>
-              <div className="card-service-type">{provider.service_type}</div>
+              {/* <div className="card-subtitle">{provider.role}</div> */}
+              {/* <div className="card-service-type">{provider.service_type}</div> */}
               <div className="card-description">{provider.description}</div>
-              <div className="recommended-section">
-                <div className="recommended-by">
-                    Recommended by: {provider.recommended_by_name}
-                    <div className="comment-section">
-                    {/* <FaComment 
-                        className="comment-icon"
-                        onClick={() => {
-                        setSelectedProvider(provider);
-                        setIsCommentModalOpen(true);
-                        }}
-                        size={16}
-                    /> */}
-                    {/* <span className="comment-count">
-                        {provider.review_count || 0}
-                    </span> */}
-                    </div>
-                    {/* <span className="like-container">
-                    <FaHeart 
-                        className={`heart-icon ${likedProviders.has(provider.id) ? 'liked' : ''}`}
-                        onClick={() => handleLike(provider.id, provider.email)}
-                        size={16}
-                    />
-                    <span className="like-count">{provider.num_likes || 0}</span>
-                    </span> */}
-                </div>
-            </div>
               <button 
                 className="service-button"
                 onClick={() => {
@@ -314,25 +296,17 @@ const FinancialServices = () => {
       </div>
       {isReviewModalOpen && (
         <ReviewModal
-            isOpen={isReviewModalOpen}
-            onClose={() => setIsReviewModalOpen(false)}
-            onSubmit={(reviewData) => handleReviewSubmit({
+          isOpen={isReviewModalOpen}
+          onClose={() => setIsReviewModalOpen(false)}
+          onSubmit={(reviewData) => handleReviewSubmit({
             ...reviewData,
             providerEmail: selectedProvider.email
-            })}
-            provider={selectedProvider}
-        />
-        )}
-        {/* {isCommentModalOpen && (
-        <CommentModal
-          isOpen={isCommentModalOpen}
-          onClose={() => setIsCommentModalOpen(false)}
+          })}
           provider={selectedProvider}
         />
-      )} */}
+      )}
     </div>
   );
 };
 
 export default FinancialServices;
-
