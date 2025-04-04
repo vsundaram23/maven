@@ -30,6 +30,30 @@ export const fetchProviders = async () => {
   }
 };
 
+export const fetchFinancialProviders = async () => {
+  try {
+    const response = await fetch(`${API_URL}/api/financialProviders`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      mode: 'cors'
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+    
+  } catch (error) {
+    console.error('Failed to fetch financial providers:', error);
+    throw error;
+  }
+};
+
 export const fetchApplianceProviders = async () => {
   try {
     const response = await fetch(`${API_URL}/api/applianceProviders`, {
