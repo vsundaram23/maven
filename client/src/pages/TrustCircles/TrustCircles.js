@@ -47,7 +47,7 @@ const TrustCircles = () => {
 
   return (
     <div className="trust-circles-container">
-      <h1 className="trust-circles-header">Your Personal Trust Circle</h1>
+      <h1 className="trust-circles-header">Personal Trust Circle</h1>
 
       {loading ? (
         <p>Loading your connections...</p>

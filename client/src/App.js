@@ -85,6 +85,7 @@ import RepairServices from './pages/RepairServices/RepairServices';
 import OutdoorServices from './pages/OutdoorServices/OutdoorServices';
 import MovingServices from './pages/MovingServices/MovingServices';
 import TrustCircles from './pages/TrustCircles/TrustCircles';
+import Search from './pages/Search/Search';
 import './styles/global.css';
 import './App.css';
 
@@ -116,6 +117,7 @@ const AppWrapper = () => {
           <Route path="/outdoor" element={<OutdoorServices />} />
           <Route path="/moving" element={<MovingServices />} />
           <Route path="/trustcircles" element={<TrustCircles />} />
+          <Route path="/search" element={<Search />} />
         </Routes>
       </main>
     </div>
