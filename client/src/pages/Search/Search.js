@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { FaPhone, FaEnvelope, FaHeart } from 'react-icons/fa';
 import './Search.css';
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -11,6 +12,7 @@ const Search = () => {
   const params = new URLSearchParams(location.search);
   const query = params.get('q');
   const noResults = params.get('noResults') === 'true';
+  const [likedProviders, setLikedProviders] = useState({});
 
   useEffect(() => {
     if (!query || noResults) {
@@ -30,9 +32,16 @@ const Search = () => {
       });
   }, [query, noResults]);
 
+  const handleLike = (id) => {
+    setLikedProviders(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
   return (
     <div className="search-page">
-      <h1 className="search-heading">Results for “{query}”</h1>
+      <h1 className="search-heading">Results for “{query}”:</h1>
 
       {loading ? (
         <p className="search-loading">Loading results...</p>
@@ -47,16 +56,37 @@ const Search = () => {
         <ul className="provider-list">
           {results.map((provider) => (
             <li key={provider.id} className="provider-card">
-              <h2>{provider.business_name || provider.name}</h2>
-              <p className="service-type">{provider.service_type}</p>
-              <p>{provider.description}</p>
-              <div className="provider-meta">
-                {provider.phone_number && <span>📞 {provider.phone_number}</span>}
-                {provider.email && <span>✉️ {provider.email}</span>}
-                {provider.recommended_by_name && (
-                  <span className="recommended-by">Recommended by {provider.recommended_by_name}</span>
+              <div className="card-header">
+                <h2 className="card-title">{provider.business_name || provider.name}</h2>
+                {provider.service_type && (
+                  <span className="badge">{provider.service_type}</span>
                 )}
               </div>
+
+              <p className="card-description">{provider.description}</p>
+
+              <div className="card-meta">
+                {provider.phone_number && (
+                  <span className="meta-item"><FaPhone /> {provider.phone_number}</span>
+                )}
+                {provider.email && (
+                  <span className="meta-item"><FaEnvelope /> {provider.email}</span>
+                )}
+              </div>
+
+              {provider.recommended_by_name && (
+                <div className="recommended-row">
+                  <span className="recommended-label">Recommended by:</span>
+                  <span className="recommended-name">{provider.recommended_by_name}</span>
+
+                  <button
+                    className={`heart-button ${likedProviders[provider.id] ? 'liked' : ''}`}
+                    onClick={() => handleLike(provider.id)}
+                  >
+                    <FaHeart />
+                  </button>
+                </div>
+              )}
             </li>
           ))}
         </ul>

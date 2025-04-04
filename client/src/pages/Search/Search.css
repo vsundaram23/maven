@@ -1,5 +1,5 @@
 .search-page {
-    padding: 2rem 1.5rem;
+    padding: 120px 1rem 2rem;
     max-width: 960px;
     margin: 0 auto;
     font-family: 'Inter', sans-serif;
@@ -9,21 +9,23 @@
   .search-heading {
     font-size: 2rem;
     font-weight: 700;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
     color: #1a365d;
+    text-align: left;
   }
   
   .search-loading {
     font-size: 1.1rem;
     color: #718096;
+    text-align: left;
   }
   
   .no-results {
     background-color: #fef2f2;
     border: 1px solid #fecaca;
-    padding: 1.5rem;
+    padding: 2rem;
     border-radius: 12px;
-    text-align: center;
+    text-align: left;
   }
   
   .bump-network-button {
@@ -31,7 +33,7 @@
     background-color: #1a365d;
     color: white;
     border: none;
-    padding: 0.75rem 1.25rem;
+    padding: 0.75rem 1.5rem;
     border-radius: 9999px;
     font-weight: 600;
     cursor: pointer;
@@ -43,129 +45,92 @@
   }
   
   .provider-list {
-    display: grid;
-    gap: 1.5rem;
-    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
     padding: 0;
     margin: 0;
+    list-style: none;
   }
   
   .provider-card {
+    background: #fff;
     border: 1px solid #e2e8f0;
-    padding: 1.25rem;
     border-radius: 12px;
-    background: #ffffff;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.03);
-  }
-  
-  .provider-card h2 {
-    margin: 0 0 0.25rem;
-    font-size: 1.25rem;
-    color: #1a365d;
-  }
-  
-  .service-type {
-    font-size: 0.9rem;
-    color: #4a5568;
-    margin-bottom: 0.5rem;
-  }
-  
-  .provider-meta {
-    margin-top: 0.75rem;
-    font-size: 0.9rem;
-    color: #4a5568;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-  
-  .recommended-by {
-    font-weight: 600;
-    color: #2b6cb0;
-  }
-  .search-page {
-    padding: 2rem 1.5rem;
-    max-width: 960px;
-    margin: 0 auto;
-    font-family: 'Inter', sans-serif;
-    color: #1a202c;
-  }
-  
-  .search-heading {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 2rem;
-    color: #1a365d;
-  }
-  
-  .search-loading {
-    font-size: 1.1rem;
-    color: #718096;
-  }
-  
-  .no-results {
-    background-color: #fef2f2;
-    border: 1px solid #fecaca;
     padding: 1.5rem;
-    border-radius: 12px;
-    text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
   }
   
-  .bump-network-button {
-    margin-top: 1rem;
-    background-color: #1a365d;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.25rem;
-    border-radius: 9999px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
   
-  .bump-network-button:hover {
-    background-color: #2c5282;
-  }
-  
-  .provider-list {
-    display: grid;
-    gap: 1.5rem;
-    list-style: none;
-    padding: 0;
+  .card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1a365d;
     margin: 0;
   }
   
-  .provider-card {
-    border: 1px solid #e2e8f0;
-    padding: 1.25rem;
-    border-radius: 12px;
-    background: #ffffff;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.03);
+  .badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    background-color: #edf2f7;
+    color: #2b6cb0;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
   }
   
-  .provider-card h2 {
-    margin: 0 0 0.25rem;
-    font-size: 1.25rem;
-    color: #1a365d;
-  }
-  
-  .service-type {
-    font-size: 0.9rem;
+  .card-description {
+    margin: 0.75rem 0 0.5rem;
     color: #4a5568;
-    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
   }
   
-  .provider-meta {
-    margin-top: 0.75rem;
-    font-size: 0.9rem;
-    color: #4a5568;
+  .card-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
+    font-size: 0.9rem;
+    color: #4a5568;
+    margin-bottom: 0.75rem;
   }
   
-  .recommended-by {
-    font-weight: 600;
-    color: #2b6cb0;
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
   }
-    
+  
+  .recommended-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .recommended-label {
+    font-weight: 600;
+    color: #4a5568;
+  }
+  
+  .recommended-name {
+    color: #2b6cb0;
+    font-weight: 600;
+  }
+  
+  .heart-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #cbd5e0;
+    font-size: 1.1rem;
+    margin-left: auto;
+  }
+  
+  .heart-button.liked {
+    color: #e53e3e;
+  }
+  

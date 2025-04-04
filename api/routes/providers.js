@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { validate: isUuid } = require('uuid'); // ✅ UUID validator
+const { validate: isUuid } = require('uuid'); 
 
 const {
   getAllProviders,
@@ -15,7 +15,7 @@ router.get('/', getAllProviders);
 // GET /api/providers/search?q=term
 router.get('/search', searchProviders);
 
-// ✅ GET /api/providers/:id (only if it's a valid UUID)
+// GET /api/providers/:id (only if it's a valid UUID)
 router.get('/:id', (req, res, next) => {
   const { id } = req.params;
 

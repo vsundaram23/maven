@@ -75,15 +75,16 @@ const Home = () => {
   */
 
   const handleSearch = async (e) => {
-    if (e) e.preventDefault(); // Prevent form refresh
-
+    if (e) e.preventDefault();
+  
     if (!searchQuery.trim()) return;
-
+  
     try {
       const res = await fetch(`${API_URL}/api/providers/search?q=${encodeURIComponent(searchQuery.trim())}`);
       const data = await res.json();
-
-      if (data && data.length > 0) {
+  
+      // SAFELY access providers array
+      if (data && Array.isArray(data.providers) && data.providers.length > 0) {
         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       } else {
         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}&noResults=true`);
@@ -92,6 +93,7 @@ const Home = () => {
       console.error("Search failed:", err);
     }
   };
+  
 
   // Only show the hero on the homepage
   if (location.pathname !== '/') return null;
