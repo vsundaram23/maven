@@ -16,7 +16,7 @@ const Home = () => {
   const isMobile = useMediaQuery({ maxWidth: 768 });
   const location = useLocation();
 
-  const fullText = 'Find recs, fast.';
+  const fullText = 'Find services, fast.';
 
   useEffect(() => {
     if (isTyping) {
@@ -76,7 +76,7 @@ const Home = () => {
     <div className="home">
       <div className="hero-container">
       <h1 className="typewriter-title">
-        Find recs,<span className="highlight-box"> fast.</span>
+        Find services,<span className="highlight-box"> fast.</span>
       </h1>
         <p className="subtitle">Where trusted people share trusted service providers.</p>
         <div className="search-wrapper">

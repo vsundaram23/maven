@@ -15,6 +15,7 @@ const outdoorProviderRoutes = require('./routes/outdoorProviders');
 const movingProviderRoutes = require('./routes/movingProviders');
 const recommendationRoutes = require('./routes/recommendations');
 
+
 const app = express();
 
 // CORS configuration

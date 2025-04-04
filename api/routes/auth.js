@@ -5,40 +5,66 @@ const pool = require('../config/db.config');
 const { checkEmail, getUserByEmail } = require('../controllers/authController');
 
 // Existing email check route
+
 router.post('/check-email', async (req, res) => {
   const { email } = req.body;
-  
-  try {
-    const result = await pool.query(
-      'SELECT name, email FROM users WHERE email = $1',
-      [email]
-    );
-    // console.log('Full query result:', result);
-    // console.log('Query rows:', result.rows);
-    // console.log('First row:', result.rows[0]);
 
-    const exists = result.rows.length > 0;
-    const user = result.rows[0];
-    
-    if (exists) {
+  try {
+    const result = await checkEmail(email);
+
+    console.log('Full result from checkEmail():', result);
+
+    if (result.exists) {
       const token = crypto.randomBytes(64).toString('hex');
       res.json({
-        exists,
+        exists: true,
         message: 'Email found',
         token,
-        name: result.rows[0].name,
-        email: result.rows[0].email
+        user: result.user
       });
     } else {
-      res.json({ 
-        exists,
-        message: 'Email not found'
-      });
+      res.json({ exists: false, message: 'Email not found' });
     }
   } catch (error) {
+    console.error('check-email error:', error.message);
     res.status(500).json({ error: 'Server error checking email' });
   }
 });
+// router.post('/check-email', async (req, res) => {
+//   const { email } = req.body;
+  
+//   try {
+//     const result = await pool.query(
+//       'SELECT name, email FROM users WHERE email = $1',
+//       [email]
+//     );
+//     // console.log('Full query result:', result);
+//     // console.log('Query rows:', result.rows);
+//     // console.log('First row:', result.rows[0]);
+
+//     const exists = result.rows.length > 0;
+//     const user = result.rows[0];
+    
+//     if (exists) {
+//       const token = crypto.randomBytes(64).toString('hex');
+//       res.json({
+//         exists,
+//         message: 'Email found',
+//         token,
+//         id: result.rows[0].id,
+//         name: result.rows[0].name,
+//         email: result.rows[0].email
+//       });
+//     } else {
+//       res.json({ 
+//         exists,
+//         message: 'Email not found'
+//       });
+//     }
+//   } catch (error) {
+//     res.status(500).json({ error: 'Server error checking email' });
+//   }
+// });
 
 router.post('/signup', async (req, res) => {
   const { name, email } = req.body;
@@ -67,7 +93,10 @@ router.post('/signup', async (req, res) => {
       success: true,
       message: 'User created successfully',
       token,
-      user: result.rows[0]
+      user: result.rows[0],
+      id: result.rows[0].id,
+      name: result.rows[0].name,
+      email: result.rows[0].email
     });
   } catch (error) {
     console.error('Signup error:', error);
