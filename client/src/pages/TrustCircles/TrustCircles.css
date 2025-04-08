@@ -1,6 +1,5 @@
-/* src/pages/TrustCircles/TrustCircles.css */
 .trust-circles-container {
-    padding-top: 120px; 
+    padding-top: 120px;
     max-width: 1100px;
     margin: 0 auto;
   }
@@ -9,6 +8,14 @@
     font-size: 2rem;
     font-weight: 600;
     margin-bottom: 24px;
+    color: #1c2a4d;
+  }
+  
+  .section-header {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-top: 60px;
+    margin-bottom: 20px;
     color: #1c2a4d;
   }
   
@@ -66,9 +73,65 @@
     cursor: pointer;
     font-weight: 500;
     transition: background-color 0.2s;
+    margin-top: 12px;
   }
   
   .action-button:hover {
     background-color: #003080;
+  }
+  
+  .community-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .community-card {
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 16px;
+    background-color: #fafafa;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .community-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #1c2a4d;
+  }
+  
+  .community-description {
+    font-size: 0.95rem;
+    color: #444;
+  }
+  
+  .pending-requests {
+    margin-top: 12px;
+    background-color: #f9f9f9;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+  }
+  
+  .request-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+  }
+  
+  .approve-button {
+    background-color: #2e7d32;
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  
+  .approve-button:hover {
+    background-color: #1b5e20;
   }
   

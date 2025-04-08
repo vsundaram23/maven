@@ -5,13 +5,6 @@ import './ApplianceServices.css';
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
 
-// const API_URL = process.env.NODE_ENV === 'production'
-//   ? '/api'
-// : 'http://localhost:3000/api';
-
-
-// const API_URL = 'http://localhost:3000/api';
-
 const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
@@ -148,70 +141,66 @@ const ApplianceServices = () => {
 
   return (
     <div className="appliance-services-container">
-      <div className="category-tabs">
-        <button className="tab active">
-          All Services
-        </button>
-      </div>
+      <h1 className="page-title">Appliance Services</h1>
+  
       <div className="providers-grid">
-        {providers.map(provider => (
-          <div className="financial-service-card" key={provider.id}>
-            <div className="card-content">
-              <div className="card-header">
-                <h2 className="card-title">{provider.business_name}</h2>
-                <div className="contact-icons">
-                  {provider.phone_number?.trim() && (
-                    <FaPhone 
-                      className="contact-icon phone-icon"
-                      size={16}
-                      onClick={() => handlePhoneClick(provider.phone_number)}
-                      title="Call provider"
-                    />
-                  )}
-                  {provider.email?.trim() && (
-                    <FaEnvelope 
-                      className="contact-icon email-icon"
-                      size={16}
-                      onClick={() => handleEmailClick(provider.email)}
-                      title="Email provider"
-                    />
-                  )}
-                </div>
-              </div>
-              <div className="card-subtitle">{provider.role}</div>
-              <div className="card-service-type">{provider.service_type}</div>
-              <div className="card-description">{provider.description}</div>
-              <div className="recommended-section">
-                <div className="recommended-by">
-                  Recommended by: {provider.recommended_by_name}
-                </div>
-              </div>
-              <button 
-                className="service-button"
-                onClick={() => {
-                  setSelectedProvider(provider);
-                  setIsReviewModalOpen(true);
-                }}
-              >
-                Have you used this service?
-              </button>
+        {providers.map((provider) => (
+          <div className="service-card" key={provider.id}>
+            <div className="service-tag">Appliance Services</div>
+  
+            <h2 className="provider-name">{provider.business_name}</h2>
+  
+            <div className="contact-row">
+              {provider.phone_number?.trim() && (
+                <FaPhone
+                  className="icon"
+                  onClick={() => handlePhoneClick(provider.phone_number)}
+                  title="Call"
+                />
+              )}
+              {provider.email?.trim() && (
+                <FaEnvelope
+                  className="icon"
+                  onClick={() => handleEmailClick(provider.email)}
+                  title="Email"
+                />
+              )}
             </div>
+  
+            <div className="provider-description">{provider.description || 'No description available'}</div>
+  
+            <div className="recommended">
+              <span>Recommended by:</span> {provider.recommended_by_name}
+            </div>
+  
+            <button
+              className="review-button"
+              onClick={() => {
+                setSelectedProvider(provider);
+                setIsReviewModalOpen(true);
+              }}
+            >
+              Have you used this service?
+            </button>
           </div>
         ))}
       </div>
+  
       {isReviewModalOpen && (
         <ReviewModal
           isOpen={isReviewModalOpen}
           onClose={() => setIsReviewModalOpen(false)}
-          onSubmit={(reviewData) => handleReviewSubmit({
-            ...reviewData,
-            providerEmail: selectedProvider.email
-          })}
+          onSubmit={(reviewData) =>
+            handleReviewSubmit({
+              ...reviewData,
+              providerEmail: selectedProvider.email,
+            })
+          }
           provider={selectedProvider}
         />
       )}
     </div>
-  );
+  );  
 };
 
 export default ApplianceServices;
