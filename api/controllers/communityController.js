@@ -80,48 +80,57 @@ const getJoinRequests = async (communityId, creatorId) => {
 
 // Approve a user's membership and create mutual connections
 const approveMembership = async (community_id, newUserId) => {
-  const client = await pool.connect();
-
-  try {
-    await client.query('BEGIN');
-
-    // Approve the membership
-    await client.query(
-      `UPDATE community_memberships
-       SET status = 'approved', approved_at = NOW()
-       WHERE user_id = $1 AND community_id = $2`,
-      [newUserId, community_id]
-    );
-
-    // Fetch other approved users
-    const otherUsers = await client.query(
-      `SELECT user_id FROM community_memberships
-       WHERE community_id = $1 AND status = 'approved' AND user_id != $2`,
-      [community_id, newUserId]
-    );
-
-    // Insert mutual connections
-    for (const row of otherUsers.rows) {
-      const existingUserId = row.user_id;
-
+    const client = await pool.connect();
+  
+    try {
+      await client.query('BEGIN');
+  
+      // 1. Approve the membership
       await client.query(
-        `INSERT INTO user_connections (user_id, connected_user_id, status, connected_at)
-         VALUES ($1, $2, 'accepted', NOW()),
-                ($2, $1, 'accepted', NOW())
-         ON CONFLICT DO NOTHING`,
-        [newUserId, existingUserId]
+        `UPDATE community_memberships
+         SET status = 'approved', approved_at = NOW()
+         WHERE user_id = $1 AND community_id = $2`,
+        [newUserId, community_id]
       );
+  
+      // 2. Fetch all *other* approved users
+      const otherUsers = await client.query(
+        `SELECT user_id FROM community_memberships
+         WHERE community_id = $1 AND status = 'approved' AND user_id != $2`,
+        [community_id, newUserId]
+      );
+  
+      for (const row of otherUsers.rows) {
+        const existingUserId = row.user_id;
+  
+        // 3. Check if a connection already exists
+        const connectionExists = await client.query(
+          `SELECT 1 FROM user_connections
+           WHERE (user_id = $1 AND connected_user_id = $2)
+              OR (user_id = $2 AND connected_user_id = $1)`,
+          [newUserId, existingUserId]
+        );
+  
+        // 4. Only insert if no connection exists
+        if (connectionExists.rows.length === 0) {
+          await client.query(
+            `INSERT INTO user_connections (user_id, connected_user_id, status, connected_at)
+             VALUES ($1, $2, 'accepted', NOW()),
+                    ($2, $1, 'accepted', NOW())`,
+            [newUserId, existingUserId]
+          );
+        }
+      }
+  
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error approving community membership:', error.message);
+      throw new Error('Database error approving membership');
+    } finally {
+      client.release();
     }
-
-    await client.query('COMMIT');
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error approving community membership:', error.message);
-    throw new Error('Database error approving membership');
-  } finally {
-    client.release();
-  }
-};
+  };
 
 module.exports = {
   createCommunity,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPhone, FaEnvelope, FaStar } from 'react-icons/fa';
+import { FaStar } from 'react-icons/fa';
 import { fetchApplianceProviders } from '../../services/providerService';
 import './ApplianceServices.css';
 
@@ -31,7 +31,9 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
         <h2>Review {provider.business_name}</h2>
         <form onSubmit={handleSubmit}>
           <div className="rating-container">
-            <label>Rate your experience: <span className="required">*</span></label>
+            <label>
+              Rate your experience: <span className="required">*</span>
+            </label>
             <div className="stars">
               {[...Array(5)].map((_, index) => (
                 <FaStar
@@ -81,16 +83,9 @@ const ApplianceServices = () => {
         setLoading(true);
         const data = await fetchApplianceProviders();
         const applianceProviders = data.filter(
-          provider => provider.service_type === 'Appliance Services'
+          (provider) => provider.service_type === 'Appliance Services'
         );
         setProviders(applianceProviders);
-        // setLoading(true);
-        // const response = await fetch(`$/api/applianceProviders`);
-        // if (!response.ok) {
-        //   throw new Error('Failed to fetch providers');
-        // }
-        // const data = await response.json();
-        // setProviders(data);
       } catch (err) {
         setError('Failed to fetch providers');
         console.error('Error:', err);
@@ -105,20 +100,18 @@ const ApplianceServices = () => {
   const handleReviewSubmit = async (reviewData) => {
     const userEmail = localStorage.getItem('userEmail');
     if (!selectedProvider) return;
-    
+
     try {
       const response = await fetch(`${API_URL}/api/reviews`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider_id: selectedProvider.id,
-          provider_email: reviewData.providerEmail,
+          provider_email: selectedProvider.email,
           email: userEmail,
           rating: reviewData.rating,
-          content: reviewData.review
-        })
+          content: reviewData.review,
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to submit review');
@@ -127,65 +120,60 @@ const ApplianceServices = () => {
     }
   };
 
-  const handlePhoneClick = (phoneNumber) => {
-    if (phoneNumber) window.location.href = `tel:${phoneNumber}`;
-  };
-
-  const handleEmailClick = (email) => {
-    if (email) window.location.href = `mailto:${email}`;
-  };
-
   if (loading) return <div className="loading-spinner">Loading...</div>;
   if (error) return <div className="error-message">Error: {error}</div>;
   if (providers.length === 0) return <div className="no-data">No appliance service providers found</div>;
 
   return (
     <div className="appliance-services-container">
-      <h1 className="page-title">Appliance Services</h1>
-  
-      <div className="providers-grid">
+      <h1 className="section-heading">Top Appliance Service Providers</h1>
+
+      <ul className="provider-list">
         {providers.map((provider) => (
-          <div className="service-card" key={provider.id}>
-            <div className="service-tag">Appliance Services</div>
-  
-            <h2 className="provider-name">{provider.business_name}</h2>
-  
-            <div className="contact-row">
-              {provider.phone_number?.trim() && (
-                <FaPhone
-                  className="icon"
-                  onClick={() => handlePhoneClick(provider.phone_number)}
-                  title="Call"
-                />
-              )}
-              {provider.email?.trim() && (
-                <FaEnvelope
-                  className="icon"
-                  onClick={() => handleEmailClick(provider.email)}
-                  title="Email"
-                />
-              )}
+          <li key={provider.id} className="provider-card">
+            <div className="card-header">
+              <h2 className="card-title">{provider.business_name}</h2>
+              <span className="badge">Appliance Services</span>
             </div>
-  
-            <div className="provider-description">{provider.description || 'No description available'}</div>
-  
-            <div className="recommended">
-              <span>Recommended by:</span> {provider.recommended_by_name}
+
+            <p className="card-description">{provider.description || 'No description available'}</p>
+
+            {provider.recommended_by_name && (
+              <div className="recommended-row">
+                <span className="recommended-label">Recommended by:</span>
+                <span className="recommended-name">{provider.recommended_by_name}</span>
+              </div>
+            )}
+
+            <div className="action-buttons">
+              <button
+                className="primary-button"
+                onClick={() => {
+                  if (provider.phone_number) {
+                    window.location.href = `sms:${provider.phone_number}?body=Hi ${provider.business_name}, ${provider.recommended_by_name} recommended you, and I’d like to request a consultation.`;
+                  } else if (provider.email) {
+                    window.location.href = `mailto:${provider.email}?subject=Request%20for%20Consultation&body=Hi%20${provider.business_name},%20I%E2%80%99d%20like%20to%20request%20a%20consultation%20via%20Tried%20%26%20Trusted.`;
+                  } else {
+                    alert("Thanks for requesting a consultation. We'll reach out to you shortly.");
+                  }
+                }}
+              >
+                Request a Consultation
+              </button>
+              <button
+                className="secondary-button"
+                onClick={() => {
+                  setSelectedProvider(provider);
+                  setIsReviewModalOpen(true);
+                }}
+              >
+                Have you used this service?
+              </button>
             </div>
-  
-            <button
-              className="review-button"
-              onClick={() => {
-                setSelectedProvider(provider);
-                setIsReviewModalOpen(true);
-              }}
-            >
-              Have you used this service?
-            </button>
-          </div>
+          </li>
         ))}
-      </div>
-  
+      </ul>
+
       {isReviewModalOpen && (
         <ReviewModal
           isOpen={isReviewModalOpen}
@@ -193,17 +181,17 @@ const ApplianceServices = () => {
           onSubmit={(reviewData) =>
             handleReviewSubmit({
               ...reviewData,
-              providerEmail: selectedProvider.email,
             })
           }
           provider={selectedProvider}
         />
       )}
     </div>
-  );  
+  );
 };
 
 export default ApplianceServices;
+
 
 
 // import React, { useState, useEffect } from 'react';

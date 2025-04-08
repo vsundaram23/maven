@@ -6,7 +6,8 @@ const {
   getAllProviders,
   getProviderById,
   getRecommendationsByUser,
-  searchProviders
+  searchProviders,
+  getProviderCount
 } = require('../controllers/providerController');
 
 // GET /api/providers
@@ -15,16 +16,7 @@ router.get('/', getAllProviders);
 // GET /api/providers/search?q=term
 router.get('/search', searchProviders);
 
-// GET /api/providers/:id (only if it's a valid UUID)
-router.get('/:id', (req, res, next) => {
-  const { id } = req.params;
-
-  if (!isUuid(id)) {
-    return res.status(400).json({ error: 'Invalid provider ID format' });
-  }
-
-  next();
-}, getProviderById);
+router.get('/count', getProviderCount);
 
 // POST /api/providers/user-recommendations
 router.post('/user-recommendations', async (req, res) => {
@@ -38,6 +30,16 @@ router.post('/user-recommendations', async (req, res) => {
   }
 });
 
+// GET /api/providers/:id (only if it's a valid UUID)
+router.get('/:id', (req, res, next) => {
+  const { id } = req.params;
+
+  if (!isUuid(id)) {
+    return res.status(400).json({ error: 'Invalid provider ID format' });
+  }
+
+  next();
+}, getProviderById);
 module.exports = router;
 
 

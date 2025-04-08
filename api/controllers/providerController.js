@@ -31,6 +31,18 @@ const getAllProviders = async (req, res) => {
   }
 };
 
+const getProviderCount = async (req, res) => {
+  try {
+    const result = await pool.query('SELECT COUNT(*) FROM service_providers');
+    const count = parseInt(result.rows[0].count, 10);
+
+    res.json({ count });
+  } catch (error) {
+    console.error('Error getting provider count:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 const getProviderById = async (req, res) => {
   const { id } = req.params;
   console.log('[ROUTE] /api/providers/:id hit with ID:', req.params.id);
@@ -163,7 +175,8 @@ module.exports = {
   getAllProviders,
   getProviderById,
   getRecommendationsByUser,
-  searchProviders
+  searchProviders,
+  getProviderCount
 };
 
 

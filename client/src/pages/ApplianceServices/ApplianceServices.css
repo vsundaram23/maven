@@ -3,143 +3,129 @@ body {
   padding: 0;
   box-sizing: border-box;
   background-color: #f9fafa;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Inter', sans-serif;
+  color: #1a202c;
 }
 
 .appliance-services-container {
-  margin-top: 100px;
-  padding: 2rem;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
+  padding: 120px 1rem 2rem;
+  max-width: 960px;
+  margin: 0 auto;
 }
 
-.page-title {
-  text-align: center;
+.section-heading {
   font-size: 2rem;
   font-weight: 700;
-  color: #2B6CB0;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
+  color: #1a365d;
+  text-align: left;
 }
 
-.providers-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 2rem;
-}
-
-.service-card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 1.75rem;
-  border: 1px solid #e6e6e6;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+.provider-list {
   display: flex;
   flex-direction: column;
-  transition: all 0.2s ease-in-out;
+  gap: 1.75rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
-.service-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+.provider-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
 }
 
-.service-tag {
-  font-size: 0.85rem;
-  font-weight: 600;
-  background-color: #ebf8ff;
-  color: #2b6cb0;
-  padding: 6px 12px;
-  border-radius: 6px;
-  display: inline-block;
-  margin-bottom: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.provider-name {
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: #1a202c;
-  margin-bottom: 0.5rem;
-}
-
-.contact-row {
+.card-header {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  margin-top: -0.25rem;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.icon {
-  cursor: pointer;
-  color: #4a5568;
-  transition: color 0.2s, transform 0.2s;
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a365d;
+  margin: 0;
 }
 
-.icon:hover {
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: #edf2f7;
   color: #2b6cb0;
-  transform: scale(1.1);
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
 }
 
-.provider-description {
+.card-description {
+  margin: 0.75rem 0 0.5rem;
+  color: #4a5568;
   font-size: 0.95rem;
-  color: #444;
-  margin-bottom: 1.25rem;
-  line-height: 1.5;
 }
 
-.recommended {
-  font-size: 0.85rem;
-  color: #718096;
-  margin-top: auto;
-  padding-top: 1rem;
-  border-top: 1px solid #e0e0e0;
+.recommended-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
 }
 
-.review-button {
-  background-color: #2B6CB0;
+.recommended-label {
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.recommended-name {
+  color: #1A365D;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.primary-button {
+  background-color: #1A365D;
   color: white;
   border: none;
-  padding: 0.75rem 1rem;
+  padding: 0.65rem 1.5rem;
   border-radius: 6px;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 1rem;
-  font-weight: 500;
+  font-size: 0.95rem;
   transition: background-color 0.2s ease;
 }
 
-.review-button:hover {
-  background-color: #225ea8;
+.primary-button:hover {
+  background-color: #153150;
 }
 
-.category-tabs {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  padding: 1rem 0;
-  justify-content: center;
-}
-
-.tab {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  background-color: #EBF8FF;
-  color: #2B6CB0;
+.secondary-button {
+  background-color: white;
+  color: #1A365D;
+  border: 2px solid #1A365D;
+  padding: 0.65rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 500;
   font-size: 0.95rem;
+  transition: all 0.2s ease;
 }
 
-.tab.active {
-  background-color: #2B6CB0;
+.secondary-button:hover {
+  background-color: #1A365D;
   color: white;
 }
 
-/* Modal Styling */
-
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -224,22 +210,15 @@ body {
 
 @media (max-width: 768px) {
   .appliance-services-container {
-    margin-top: 80px;
-    padding: 1rem;
+    padding: 100px 1rem 2rem;
   }
 
-  .providers-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    padding: 0.5rem;
+  .section-heading {
+    text-align: center;
   }
 
-  .provider-name {
-    font-size: 1.2rem;
-  }
-
-  .tab {
-    padding: 0.5rem 1rem;
+  .action-buttons {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
-
