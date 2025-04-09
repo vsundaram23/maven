@@ -222,3 +222,66 @@ body {
     align-items: stretch;
   }
 }
+.review-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.star-rating .filled {
+  color: #f6ad55;
+}
+
+.star-rating .half {
+  color: #f6ad55;
+  opacity: 0.5;
+}
+
+.star-rating .empty {
+  color: #e2e8f0;
+}
+
+.review-count {
+  font-size: 0.85rem;
+  color: #4a5568;
+}
+
+.see-all-button {
+  font-size: 0.8rem;
+  color: #2B6CB0;
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.reviews-list {
+  margin-top: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.review-entry {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.review-stars {
+  color: #f6ad55;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.review-content {
+  font-style: italic;
+  margin-bottom: 0.25rem;
+}
+
+.review-user {
+  font-size: 0.85rem;
+  color: #4a5568;
+}
+
+

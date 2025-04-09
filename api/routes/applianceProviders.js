@@ -1,13 +1,3 @@
-// const express = require('express');
-// const router = express.Router();
-// const { Pool } = require('@neondatabase/serverless');
-// require('dotenv').config();
-
-// const pool = new Pool({
-//   connectionString: process.env.DATABASE_URL,
-//   ssl: true
-// });
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/db.config');
@@ -31,6 +21,7 @@ router.get('/', async (req, res) => {
         sp.email,
         sp.phone_number,
         sp.num_likes,
+        sp.date_of_recommendation,
         s.name as service_type,
         u.name as recommended_by_name
       FROM service_providers sp
@@ -47,6 +38,7 @@ router.get('/', async (req, res) => {
     
     res.setHeader('Content-Type', 'application/json');
     res.json(result.rows);
+    console.log('Returned fields from SQL:', result.rows[0]);
     
   } catch (error) {
     console.error('=== ERROR IN GET ALL APPLIANCE PROVIDERS ===');
@@ -72,19 +64,17 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     const query = `
       SELECT 
-        sp.id,
-        sp.business_name,
-        sp.description,
-        sp.email,
-        sp.phone_number,
-        sp.num_likes,
+        sp.*,
         s.name as service_type,
-        u.name as recommended_by_name
+        u.name as recommended_by_name,
+        ROUND(AVG(r.rating), 2) as average_rating,
+        COUNT(r.id) as total_reviews
       FROM service_providers sp
       JOIN services s ON sp.service_id = s.service_id
-      JOIN service_categories sc ON s.category_id = sc.service_id
       JOIN users u ON sp.recommended_by = u.id
+      LEFT JOIN reviews r ON sp.id = r.provider_id
       WHERE s.name = 'Appliance Services' AND sp.id = $1
+      GROUP BY sp.id, s.name, u.name
     `;
     
     const result = await pool.query(query, [id]);
@@ -107,6 +97,9 @@ router.get('/:id', async (req, res) => {
 
 module.exports = router;
 
+//
+
+// working 4/9
 
 // const express = require('express');
 // const router = express.Router();
@@ -206,4 +199,3 @@ module.exports = router;
 // });
 
 // module.exports = router;
-

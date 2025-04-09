@@ -5,6 +5,26 @@ import './ApplianceServices.css';
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
 
+// const API_URL = 'http://localhost:3000';
+
+const StarRating = ({ rating }) => {
+  const fullStars = Math.floor(rating);
+  const hasHalf = rating - fullStars >= 0.5;
+  const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
+
+  return (
+    <div className="star-rating">
+      {[...Array(fullStars)].map((_, i) => (
+        <FaStar key={`full-${i}`} className="filled" />
+      ))}
+      {hasHalf && <FaStar className="half" />}
+      {[...Array(emptyStars)].map((_, i) => (
+        <FaStar key={`empty-${i}`} className="empty" />
+      ))}
+    </div>
+  );
+};
+
 const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
@@ -70,22 +90,79 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   );
 };
 
+const AllReviewsModal = ({ isOpen, onClose, provider, reviews }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h2>All Reviews for {provider.business_name}</h2>
+        <div className="reviews-list">
+          {reviews.length === 0 ? (
+            <p>No reviews yet.</p>
+          ) : (
+            reviews.map((review, index) => (
+              <div key={index} className="review-entry">
+                <div className="review-stars">
+                  {[...Array(5)].map((_, i) => (
+                    <FaStar
+                      key={i}
+                      className={i < review.rating ? 'star active' : 'star'}
+                    />
+                  ))}
+                </div>
+                <p className="review-content">"{review.content}"</p>
+                <p className="review-user">– {review.user_name || 'Anonymous'}</p>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="modal-buttons">
+          <button className="cancel-button" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ApplianceServices = () => {
   const [providers, setProviders] = useState([]);
+  const [reviewStatsMap, setReviewStatsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
+  const [isAllReviewsModalOpen, setIsAllReviewsModalOpen] = useState(false);
+  const [allReviews, setAllReviews] = useState([]);
 
   useEffect(() => {
     const getProviders = async () => {
       try {
         setLoading(true);
-        const data = await fetchApplianceProviders();
-        const applianceProviders = data.filter(
-          (provider) => provider.service_type === 'Appliance Services'
+        const applianceProviders = await fetchApplianceProviders();
+        console.log("Returned appliance providers:", applianceProviders);
+        const filtered = applianceProviders.filter(p => p.service_type === 'Appliance Services');
+        console.log('Filtered providers:', filtered);
+        setProviders(filtered);
+
+        const statsMap = {};
+        await Promise.all(
+          filtered.map(async (provider) => {
+            try {
+              const res = await fetch(`${API_URL}/api/reviews/stats/${provider.id}`);
+              const data = await res.json();
+              statsMap[provider.id] = {
+                average_rating: parseFloat(data.average_rating) || 0,
+                total_reviews: parseInt(data.total_reviews) || 0,
+              };
+            } catch (err) {
+              console.error('Error fetching stats for', provider.business_name);
+            }
+          })
         );
-        setProviders(applianceProviders);
+        setReviewStatsMap(statsMap);
       } catch (err) {
         setError('Failed to fetch providers');
         console.error('Error:', err);
@@ -120,6 +197,18 @@ const ApplianceServices = () => {
     }
   };
 
+  const handleSeeAllReviews = async (provider) => {
+    try {
+      const res = await fetch(`${API_URL}/api/reviews/${provider.id}`);
+      const data = await res.json();
+      setAllReviews(data);
+      setSelectedProvider(provider);
+      setIsAllReviewsModalOpen(true);
+    } catch (err) {
+      console.error('Error fetching all reviews:', err);
+    }
+  };
+
   if (loading) return <div className="loading-spinner">Loading...</div>;
   if (error) return <div className="error-message">Error: {error}</div>;
   if (providers.length === 0) return <div className="no-data">No appliance service providers found</div>;
@@ -136,12 +225,36 @@ const ApplianceServices = () => {
               <span className="badge">Appliance Services</span>
             </div>
 
+            {reviewStatsMap[provider.id] && (
+              <div className="review-summary">
+                <StarRating rating={reviewStatsMap[provider.id].average_rating} />
+                <span className="review-count">
+                  ({reviewStatsMap[provider.id].total_reviews} reviews)
+                </span>
+                <button className="see-all-button" onClick={() => handleSeeAllReviews(provider)}>
+                  See all
+                </button>
+              </div>
+            )}
+
             <p className="card-description">{provider.description || 'No description available'}</p>
 
             {provider.recommended_by_name && (
               <div className="recommended-row">
                 <span className="recommended-label">Recommended by:</span>
-                <span className="recommended-name">{provider.recommended_by_name}</span>
+                <span className="recommended-name">
+                  {provider.recommended_by_name}
+                  {provider.date_of_recommendation && (
+                    <>
+                      ,{' '}
+                      {new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
+                        year: '2-digit',
+                        month: 'numeric',
+                        day: 'numeric',
+                      })}
+                    </>
+                  )}
+                </span>
               </div>
             )}
 
@@ -178,12 +291,17 @@ const ApplianceServices = () => {
         <ReviewModal
           isOpen={isReviewModalOpen}
           onClose={() => setIsReviewModalOpen(false)}
-          onSubmit={(reviewData) =>
-            handleReviewSubmit({
-              ...reviewData,
-            })
-          }
+          onSubmit={(reviewData) => handleReviewSubmit({ ...reviewData })}
           provider={selectedProvider}
+        />
+      )}
+
+      {isAllReviewsModalOpen && selectedProvider && (
+        <AllReviewsModal
+          isOpen={isAllReviewsModalOpen}
+          onClose={() => setIsAllReviewsModalOpen(false)}
+          provider={selectedProvider}
+          reviews={allReviews}
         />
       )}
     </div>
@@ -193,11 +311,13 @@ const ApplianceServices = () => {
 export default ApplianceServices;
 
 
-
+// working 4/9
 // import React, { useState, useEffect } from 'react';
-// import { FaPhone, FaEnvelope, FaStar } from 'react-icons/fa';
+// import { FaStar } from 'react-icons/fa';
 // import { fetchApplianceProviders } from '../../services/providerService';
 // import './ApplianceServices.css';
+
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
 
 // const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
 //   const [rating, setRating] = useState(0);
@@ -225,7 +345,9 @@ export default ApplianceServices;
 //         <h2>Review {provider.business_name}</h2>
 //         <form onSubmit={handleSubmit}>
 //           <div className="rating-container">
-//             <label>Rate your experience: <span className="required">*</span></label>
+//             <label>
+//               Rate your experience: <span className="required">*</span>
+//             </label>
 //             <div className="stars">
 //               {[...Array(5)].map((_, index) => (
 //                 <FaStar
@@ -275,7 +397,7 @@ export default ApplianceServices;
 //         setLoading(true);
 //         const data = await fetchApplianceProviders();
 //         const applianceProviders = data.filter(
-//           provider => provider.service_type === 'Appliance Services'
+//           (provider) => provider.service_type === 'Appliance Services'
 //         );
 //         setProviders(applianceProviders);
 //       } catch (err) {
@@ -292,20 +414,18 @@ export default ApplianceServices;
 //   const handleReviewSubmit = async (reviewData) => {
 //     const userEmail = localStorage.getItem('userEmail');
 //     if (!selectedProvider) return;
-    
+
 //     try {
-//       const response = await fetch('http://localhost:3000/api/reviews', {
+//       const response = await fetch(`${API_URL}/api/reviews`, {
 //         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json'
-//         },
+//         headers: { 'Content-Type': 'application/json' },
 //         body: JSON.stringify({
 //           provider_id: selectedProvider.id,
-//           provider_email: reviewData.providerEmail,
+//           provider_email: selectedProvider.email,
 //           email: userEmail,
 //           rating: reviewData.rating,
-//           content: reviewData.review
-//         })
+//           content: reviewData.review,
+//         }),
 //       });
 
 //       if (!response.ok) throw new Error('Failed to submit review');
@@ -314,60 +434,48 @@ export default ApplianceServices;
 //     }
 //   };
 
-//   const handlePhoneClick = (phoneNumber) => {
-//     if (phoneNumber) window.location.href = `tel:${phoneNumber}`;
-//   };
-
-//   const handleEmailClick = (email) => {
-//     if (email) window.location.href = `mailto:${email}`;
-//   };
-
 //   if (loading) return <div className="loading-spinner">Loading...</div>;
 //   if (error) return <div className="error-message">Error: {error}</div>;
 //   if (providers.length === 0) return <div className="no-data">No appliance service providers found</div>;
 
 //   return (
 //     <div className="appliance-services-container">
-//       <div className="category-tabs">
-//         <button className="tab active">
-//           All Services
-//         </button>
-//       </div>
-//       <div className="providers-grid">
-//         {providers.map(provider => (
-//           <div className="financial-service-card" key={provider.id}>
-//             <div className="card-content">
-//               <div className="card-header">
-//                 <h2 className="card-title">{provider.business_name}</h2>
-//                 <div className="contact-icons">
-//                   {provider.phone_number?.trim() && (
-//                     <FaPhone 
-//                       className="contact-icon phone-icon"
-//                       size={16}
-//                       onClick={() => handlePhoneClick(provider.phone_number)}
-//                       title="Call provider"
-//                     />
-//                   )}
-//                   {provider.email?.trim() && (
-//                     <FaEnvelope 
-//                       className="contact-icon email-icon"
-//                       size={16}
-//                       onClick={() => handleEmailClick(provider.email)}
-//                       title="Email provider"
-//                     />
-//                   )}
-//                 </div>
+//       <h1 className="section-heading">Top Appliance Service Providers</h1>
+
+//       <ul className="provider-list">
+//         {providers.map((provider) => (
+//           <li key={provider.id} className="provider-card">
+//             <div className="card-header">
+//               <h2 className="card-title">{provider.business_name}</h2>
+//               <span className="badge">Appliance Services</span>
+//             </div>
+
+//             <p className="card-description">{provider.description || 'No description available'}</p>
+
+//             {provider.recommended_by_name && (
+//               <div className="recommended-row">
+//                 <span className="recommended-label">Recommended by:</span>
+//                 <span className="recommended-name">{provider.recommended_by_name}</span>
 //               </div>
-//               <div className="card-subtitle">{provider.role}</div>
-//               <div className="card-service-type">{provider.service_type}</div>
-//               <div className="card-description">{provider.description}</div>
-//               <div className="recommended-section">
-//                 <div className="recommended-by">
-//                   Recommended by: {provider.recommended_by_name}
-//                 </div>
-//               </div>
-//               <button 
-//                 className="service-button"
+//             )}
+
+//             <div className="action-buttons">
+//               <button
+//                 className="primary-button"
+//                 onClick={() => {
+//                   if (provider.phone_number) {
+//                     window.location.href = `sms:${provider.phone_number}?body=Hi ${provider.business_name}, ${provider.recommended_by_name} recommended you, and I’d like to request a consultation.`;
+//                   } else if (provider.email) {
+//                     window.location.href = `mailto:${provider.email}?subject=Request%20for%20Consultation&body=Hi%20${provider.business_name},%20I%E2%80%99d%20like%20to%20request%20a%20consultation%20via%20Tried%20%26%20Trusted.`;
+//                   } else {
+//                     alert("Thanks for requesting a consultation. We'll reach out to you shortly.");
+//                   }
+//                 }}
+//               >
+//                 Request a Consultation
+//               </button>
+//               <button
+//                 className="secondary-button"
 //                 onClick={() => {
 //                   setSelectedProvider(provider);
 //                   setIsReviewModalOpen(true);
@@ -376,17 +484,19 @@ export default ApplianceServices;
 //                 Have you used this service?
 //               </button>
 //             </div>
-//           </div>
+//           </li>
 //         ))}
-//       </div>
+//       </ul>
+
 //       {isReviewModalOpen && (
 //         <ReviewModal
 //           isOpen={isReviewModalOpen}
 //           onClose={() => setIsReviewModalOpen(false)}
-//           onSubmit={(reviewData) => handleReviewSubmit({
-//             ...reviewData,
-//             providerEmail: selectedProvider.email
-//           })}
+//           onSubmit={(reviewData) =>
+//             handleReviewSubmit({
+//               ...reviewData,
+//             })
+//           }
 //           provider={selectedProvider}
 //         />
 //       )}
@@ -395,3 +505,5 @@ export default ApplianceServices;
 // };
 
 // export default ApplianceServices;
+
+

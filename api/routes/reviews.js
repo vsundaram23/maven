@@ -34,6 +34,31 @@ router.post('/user-likes', async (req, res) => {
     }
 });
 
+router.get('/stats/:providerId', async (req, res) => {
+  const { providerId } = req.params;
+
+  try {
+    const result = await pool.query(`
+      SELECT 
+        provider_id,
+        ROUND(AVG(rating), 1) AS average_rating,
+        COUNT(*) AS total_reviews
+      FROM reviews
+      WHERE provider_id = $1
+      GROUP BY provider_id
+    `, [providerId]);
+
+    if (result.rows.length === 0) {
+      return res.json({ average_rating: 0, total_reviews: 0 });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error in /stats route:', error);
+    res.status(500).json({ error: 'Error fetching rating stats' });
+  }
+});
+
 router.delete('/', async (req, res) => {
     const { provider_email, email } = req.body;
     
