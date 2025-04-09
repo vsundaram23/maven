@@ -85,6 +85,13 @@ body {
   cursor: pointer;
 }
 
+.recommendation-date {
+  text-decoration: none;
+  color: #718096; /* gray-600 */
+  font-weight: normal;
+  font-size: 0.9rem;
+}
+
 .action-buttons {
   display: flex;
   flex-wrap: wrap;
@@ -284,4 +291,115 @@ body {
   color: #4a5568;
 }
 
+.review-score {
+  font-size: 0.95rem;
+  color: #2d3748;
+  margin-left: 0.5rem;
+}
 
+.stars-and-score {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem; /* match See all size */
+  color: #4a5568;    /* subtle gray tone */
+}
+
+.profile-modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.profile-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a365d;
+}
+
+.profile-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: #edf2f7;
+  color: #2b6cb0;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+}
+
+.profile-section {
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  color: #2d3748;
+}
+
+.profile-section p {
+  margin: 0.25rem 0;
+}
+
+.profile-reviews {
+  margin-top: 1.5rem;
+}
+
+.profile-review {
+  margin-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1rem;
+}
+
+.review-stars {
+  color: #f6ad55;
+  font-size: 1rem;
+}
+
+.review-content {
+  font-style: italic;
+  margin: 0.25rem 0;
+}
+
+.review-user {
+  font-size: 0.85rem;
+  color: #4a5568;
+}
+
+.no-reviews {
+  color: #718096;
+  font-style: italic;
+}
+
+.profile-badges {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.top-rated-badge {
+  background-color: #2f855a; /* dark green */
+  color: white;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.top-rated-badge:hover {
+  background-color: #276749;
+  transition: background-color 0.2s ease;
+}
+
+.badge-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
