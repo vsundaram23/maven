@@ -21,10 +21,73 @@ const StarRating = ({ rating }) => {
   );
 };
 
+// const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
+//   const [rating, setRating] = useState(0);
+//   const [hover, setHover] = useState(0);
+//   const [review, setReview] = useState('');
+//   const [error, setError] = useState('');
+
+//   const handleSubmit = (e) => {
+//     e.preventDefault();
+//     if (!rating) {
+//       setError('Please select a rating');
+//       return;
+//     }
+//     onSubmit({ rating, review });
+//     setRating(0);
+//     setReview('');
+//     onClose();
+//   };
+
+//   if (!isOpen) return null;
+
+//   return (
+//     <div className="modal-overlay">
+//       <div className="modal-content">
+//         <h2>Review {provider.business_name}</h2>
+//         <form onSubmit={handleSubmit}>
+//           <div className="rating-container">
+//             <label>
+//               Rate your experience: <span className="required">*</span>
+//             </label>
+//             <div className="stars">
+//               {[...Array(5)].map((_, index) => (
+//                 <FaStar
+//                   key={index}
+//                   className={index < (hover || rating) ? 'star active' : 'star'}
+//                   onClick={() => setRating(index + 1)}
+//                   onMouseEnter={() => setHover(index + 1)}
+//                   onMouseLeave={() => setHover(rating)}
+//                 />
+//               ))}
+//             </div>
+//             {error && <div className="error-message">{error}</div>}
+//           </div>
+//           <div className="review-input">
+//             <label>Tell us about your experience:</label>
+//             <textarea
+//               value={review}
+//               onChange={(e) => setReview(e.target.value)}
+//               placeholder="Optional: Share your thoughts..."
+//               rows={4}
+//             />
+//           </div>
+//           <div className="modal-buttons">
+//             <button type="button" onClick={onClose} className="cancel-button">Cancel</button>
+//             <button type="submit" className="submit-button">Submit Review</button>
+//           </div>
+//         </form>
+//       </div>
+//     </div>
+//   );
+// };
+
 const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [review, setReview] = useState('');
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = (e) => {
@@ -33,10 +96,27 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
       setError('Please select a rating');
       return;
     }
-    onSubmit({ rating, review });
+    onSubmit({ rating, review, tags });
     setRating(0);
     setReview('');
+    setTags([]);
+    setTagInput('');
     onClose();
+  };
+
+  const handleTagKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const trimmed = tagInput.trim();
+      if (trimmed && !tags.includes(trimmed)) {
+        setTags([...tags, trimmed]);
+      }
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tagToRemove) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
   if (!isOpen) return null;
@@ -63,6 +143,7 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
             </div>
             {error && <div className="error-message">{error}</div>}
           </div>
+
           <div className="review-input">
             <label>Tell us about your experience:</label>
             <textarea
@@ -72,6 +153,26 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
               rows={4}
             />
           </div>
+
+          <div className="tag-input-group">
+            <label>Add tags (press Enter to add):</label>
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleTagKeyDown}
+              placeholder="e.g. friendly, affordable"
+            />
+            <div className="tag-container">
+              {tags.map((tag, idx) => (
+                <span key={idx} className="tag-badge">
+                  {tag}
+                  <span className="remove-tag" onClick={() => removeTag(tag)}>×</span>
+                </span>
+              ))}
+            </div>
+          </div>
+
           <div className="modal-buttons">
             <button type="button" onClick={onClose} className="cancel-button">Cancel</button>
             <button type="submit" className="submit-button">Submit Review</button>

@@ -470,3 +470,21 @@ body {
 .used-by-names span {
   margin-right: 4px;
 }
+.tag-input-group {
+  margin-top: 1rem;
+}
+
+.tag-input-group input {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+}
+
+.remove-tag {
+  margin-left: 8px;
+  cursor: pointer;
+  color: #e53e3e;
+  font-weight: bold;
+}
