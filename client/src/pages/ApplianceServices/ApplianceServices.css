@@ -482,6 +482,34 @@ body {
   border-radius: 4px;
 }
 
+.add-tag-button {
+  margin-left: 8px;
+  padding: 4px 6px; /* Added more padding to make it look balanced */
+  font-size: 18px; /* Adjusted the font size */
+  line-height: 1;
+  background-color: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 50%;
+  color: #6b7280;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  width: 24px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.add-tag-button:hover {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.add-tag-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #cbd5e1;
+}
+
 .remove-tag {
   margin-left: 8px;
   cursor: pointer;

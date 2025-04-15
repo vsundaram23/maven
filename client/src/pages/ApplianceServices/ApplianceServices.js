@@ -172,7 +172,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
               ))}
             </div>
           </div>
-
           <div className="modal-buttons">
             <button type="button" onClick={onClose} className="cancel-button">Cancel</button>
             <button type="submit" className="submit-button">Submit Review</button>
@@ -426,10 +425,24 @@ const ApplianceServices = () => {
               <p className="card-description">{provider.description || 'No description available'}</p>
               {Array.isArray(provider.tags) && provider.tags.length > 0 && (
                 <div className="tag-container">
-                  {provider.tags.map((tag, idx) => (
+                {provider.tags && provider.tags.length > 0 ? (
+                  provider.tags.map((tag, idx) => (
                     <span key={idx} className="tag-badge">{tag}</span>
-                  ))}
-                </div>
+                  ))
+                ) : (
+                  <span className="no-tags">No tags yet</span>
+                )}
+                <button
+                  className="add-tag-button"
+                  onClick={() => {
+                    setSelectedProvider(provider);
+                    setIsReviewModalOpen(true);
+                  }}
+                  aria-label="Add a tag"
+                >
+                  +
+                </button>
+              </div>
               )}
               {provider.recommended_by_name && (
                 <>
