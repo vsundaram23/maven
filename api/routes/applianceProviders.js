@@ -22,6 +22,7 @@ router.get('/', async (req, res) => {
         sp.phone_number,
         sp.num_likes,
         sp.date_of_recommendation,
+        sp.tags,
         s.name as service_type,
         u.name as recommended_by_name
       FROM service_providers sp
@@ -65,6 +66,7 @@ router.get('/:id', async (req, res) => {
     const query = `
       SELECT 
         sp.*,
+        sp.tags,
         s.name as service_type,
         u.name as recommended_by_name,
         ROUND(AVG(r.rating), 2) as average_rating,

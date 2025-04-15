@@ -1,4 +1,4 @@
-// working 4/10 – updated to show "Recommended by" from reviews
+// working 4/15 – updated to show "Recommended by" from reviews
 import React, { useState, useEffect } from 'react';
 import { FaStar } from 'react-icons/fa';
 import { fetchApplianceProviders } from '../../services/providerService';
@@ -87,6 +87,8 @@ const ProviderProfileModal = ({ isOpen, onClose, provider, reviews = [] }) => {
 
   const reviewerNames = [...new Set(reviews.map(r => r.user_name).filter(Boolean))];
 
+  console.log("🔍 Provider tags for modal:", provider.business_name, provider.tags);
+
   return (
     <div className="modal-overlay">
       <div className="profile-modal-content">
@@ -103,7 +105,7 @@ const ProviderProfileModal = ({ isOpen, onClose, provider, reviews = [] }) => {
           <p><strong>Description:</strong> {provider.description || 'N/A'}</p>
           <p><strong>Phone:</strong> {provider.phone_number || 'Not provided'}</p>
           <p><strong>Email:</strong> {provider.email || 'Not provided'}</p>
-          {provider.tags && provider.tags.length > 0 && (
+          {Array.isArray(provider.tags) && provider.tags.length > 0 && (
             <div className="modal-tags">
               <strong>Tags:</strong>
               <div className="tag-container">
@@ -175,7 +177,8 @@ const ApplianceServices = () => {
   useEffect(() => {
     const getProviders = async () => {
       try {
-        const applianceProviders = await fetchApplianceProviders();
+        const applianceProviders = await fetchApplianceProviders(); // must return data.providers
+        // console.log("✅ First fetched provider:", applianceProviders[0]);
         const filtered = applianceProviders.filter(p => p.service_type === 'Appliance Services');
   
         const statsMap = {};
@@ -204,14 +207,14 @@ const ApplianceServices = () => {
         setReviewStatsMap(statsMap);
         setReviewMap(allReviewsMap);
   
-        // Enrich providers with stats
+        // ✅ Enrich providers with stats (tags already preserved from ...p)
         const enriched = filtered.map(p => ({
           ...p,
           average_rating: statsMap[p.id]?.average_rating || 0,
           total_reviews: statsMap[p.id]?.total_reviews || 0,
         }));
   
-        // Sort providers based on sortOption
+        // ✅ Sort based on selected option
         let sorted = [];
         if (sortOption === 'topRated') {
           sorted = enriched
@@ -314,13 +317,13 @@ const ApplianceServices = () => {
                     setSelectedProvider(provider);
                     setIsReviewModalOpen(true);
                   }}>
-                    Used this service?
+                    Also used this service?
                   </button>
                 </div>
               )}
 
               <p className="card-description">{provider.description || 'No description available'}</p>
-              {provider.tags && provider.tags.length > 0 && (
+              {Array.isArray(provider.tags) && provider.tags.length > 0 && (
                 <div className="tag-container">
                   {provider.tags.map((tag, idx) => (
                     <span key={idx} className="tag-badge">{tag}</span>
@@ -328,32 +331,40 @@ const ApplianceServices = () => {
                 </div>
               )}
               {provider.recommended_by_name && (
-                <div className="recommended-row">
-                  <span className="recommended-label">Recommended by:</span>
-                  <span className="recommended-name clickable" onClick={() => handleViewProfile(provider)}>
-                    {(() => {
-                      const allReviewerNames = [...new Set(reviews.map(r => r.user_name).filter(Boolean))];
-                      const primary = provider.recommended_by_name;
-                      const additional = allReviewerNames.filter(name => name !== primary);
-
-                      const nameStr = [primary];
-                      if (additional[0]) nameStr.push(additional[0]);
-                      const others = additional.length > 1 ? ` and ${additional.length - 1} others` : '';
-
-                      return nameStr.join(', ') + others;
-                    })()}
-                  </span>
-                  {provider.date_of_recommendation && (
-                    <span className="recommendation-date">
-                      {' '}
-                      ({new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
-                        year: '2-digit',
-                        month: 'numeric',
-                        day: 'numeric',
-                      })})
+                <>
+                  <div className="recommended-row">
+                    <span className="recommended-label">Recommended by:</span>
+                    <span
+                      className="recommended-name clickable"
+                      onClick={() => handleViewProfile(provider)}
+                    >
+                      {provider.recommended_by_name}
                     </span>
+                    {provider.date_of_recommendation && (
+                      <span className="recommendation-date">
+                        {' '}
+                        ({new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
+                          year: '2-digit',
+                          month: 'numeric',
+                          day: 'numeric',
+                        })})
+                      </span>
+                    )}
+                  </div>
+
+                  {reviews.length > 0 && (
+                    <div className="recommended-row">
+                      <span className="recommended-label">Also used by:</span>
+                      <span className="used-by-names">
+                        {[...new Set(
+                          reviews
+                            .map((r) => r.user_name)
+                            .filter(name => name && name !== provider.recommended_by_name)
+                        )].join(', ') || 'No additional users yet'}
+                      </span>
+                    </div>
                   )}
-                </div>
+                </>
               )}
               <div className="action-buttons">
                 <button className="primary-button" onClick={() => handleViewProfile(provider)}>
