@@ -134,9 +134,8 @@ body {
 
 /* Modal Styles */
 .modal-overlay {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
 }
 
 .modal-content {
@@ -329,6 +328,7 @@ body {
   box-shadow: 0 6px 20px rgba(0,0,0,0.2);
 }
 
+
 .profile-header {
   display: flex;
   justify-content: space-between;
@@ -515,4 +515,32 @@ body {
   cursor: pointer;
   color: #e53e3e;
   font-weight: bold;
+}
+
+.review-stars {
+  color: #1A365D; /* dark navy blue to match logo */
+  font-size: 1.1rem;
+}
+
+.profile-review {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.modal-icons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.modal-icons a {
+  color: #2d3748;
+  font-size: 1.1rem;
+  transition: color 0.2s ease;
+}
+
+.modal-icons a:hover {
+  color: #1A365D;
 }

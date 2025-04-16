@@ -1,6 +1,7 @@
 // working 4/15 – updated to show "Recommended by" from reviews
+import { Link } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
-import { FaStar } from 'react-icons/fa';
+import { FaStar, FaPhone, FaEnvelope } from 'react-icons/fa';
 import { fetchApplianceProviders } from '../../services/providerService';
 import './ApplianceServices.css';
 
@@ -20,67 +21,6 @@ const StarRating = ({ rating }) => {
     </div>
   );
 };
-
-// const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
-//   const [rating, setRating] = useState(0);
-//   const [hover, setHover] = useState(0);
-//   const [review, setReview] = useState('');
-//   const [error, setError] = useState('');
-
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-//     if (!rating) {
-//       setError('Please select a rating');
-//       return;
-//     }
-//     onSubmit({ rating, review });
-//     setRating(0);
-//     setReview('');
-//     onClose();
-//   };
-
-//   if (!isOpen) return null;
-
-//   return (
-//     <div className="modal-overlay">
-//       <div className="modal-content">
-//         <h2>Review {provider.business_name}</h2>
-//         <form onSubmit={handleSubmit}>
-//           <div className="rating-container">
-//             <label>
-//               Rate your experience: <span className="required">*</span>
-//             </label>
-//             <div className="stars">
-//               {[...Array(5)].map((_, index) => (
-//                 <FaStar
-//                   key={index}
-//                   className={index < (hover || rating) ? 'star active' : 'star'}
-//                   onClick={() => setRating(index + 1)}
-//                   onMouseEnter={() => setHover(index + 1)}
-//                   onMouseLeave={() => setHover(rating)}
-//                 />
-//               ))}
-//             </div>
-//             {error && <div className="error-message">{error}</div>}
-//           </div>
-//           <div className="review-input">
-//             <label>Tell us about your experience:</label>
-//             <textarea
-//               value={review}
-//               onChange={(e) => setReview(e.target.value)}
-//               placeholder="Optional: Share your thoughts..."
-//               rows={4}
-//             />
-//           </div>
-//           <div className="modal-buttons">
-//             <button type="button" onClick={onClose} className="cancel-button">Cancel</button>
-//             <button type="submit" className="submit-button">Submit Review</button>
-//           </div>
-//         </form>
-//       </div>
-//     </div>
-//   );
-// };
 
 const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   const [rating, setRating] = useState(0);
@@ -182,62 +122,269 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   );
 };
 
-const ProviderProfileModal = ({ isOpen, onClose, provider, reviews = [] }) => {
+// const ProviderProfileModal = ({ isOpen, onClose, provider, reviews = [] }) => {
+//   if (!isOpen || !provider) return null;
+
+//   const reviewerNames = [...new Set(reviews.map(r => r.user_name).filter(Boolean))];
+
+//   console.log("🔍 Provider tags for modal:", provider.business_name, provider.tags);
+
+//   return (
+//     <div className="modal-overlay">
+//       <div className="profile-modal-content">
+//         <button className="modal-close-x" onClick={onClose}>×</button>
+//         <div className="profile-header">
+//           <h2 className="profile-name">{provider.business_name}</h2>
+//           <div className="profile-badges">
+//             {provider.average_rating >= 4.5 && <span className="top-rated-badge">Top Rated</span>}
+//             <span className="profile-badge">Appliance Services</span>
+//           </div>
+//         </div>
+
+//         <div className="profile-section">
+//           <p><strong>Description:</strong> {provider.description || 'N/A'}</p>
+//           <p><strong>Phone:</strong> {provider.phone_number || 'Not provided'}</p>
+//           <p><strong>Email:</strong> {provider.email || 'Not provided'}</p>
+//           {Array.isArray(provider.tags) && provider.tags.length > 0 && (
+//             <div className="modal-tags">
+//               <strong>Tags:</strong>
+//               <div className="tag-container">
+//                 {provider.tags.map((tag, idx) => (
+//                   <span key={idx} className="tag-badge">{tag}</span>
+//                 ))}
+//               </div>
+//             </div>
+//           )}
+//           <p><strong>Date of Recommendation:</strong> {provider.date_of_recommendation
+//             ? new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
+//                 year: '2-digit',
+//                 month: 'numeric',
+//                 day: 'numeric',
+//               })
+//             : 'Not provided'}
+//           </p>
+//           {(() => {
+//             const allNames = new Set();
+//             if (provider.recommended_by_name) allNames.add(provider.recommended_by_name);
+//             reviews.forEach(r => r.user_name && allNames.add(r.user_name));
+
+//             return (
+//               <p>
+//                 <strong>Recommended by:</strong>{' '}
+//                 {[...allNames].join(', ')}
+//               </p>
+//             );
+//           })()}
+//         </div>
+//         <div className="profile-reviews">
+//           <h3>Reviews</h3>
+//           {reviews.length === 0 ? (
+//             <p className="no-reviews">No reviews yet.</p>
+//           ) : (
+//             reviews.map((review, index) => (
+//               <div key={index} className="profile-review">
+//                 <div className="review-stars">
+//                   {[...Array(5)].map((_, i) => (
+//                     <FaStar key={i} className={i < review.rating ? 'star active' : 'star'} />
+//                   ))}
+//                 </div>
+//                 <p className="review-content">"{review.content}"</p>
+//                 <p className="review-user">– {review.user_name || 'Anonymous'}</p>
+//               </div>
+//             ))
+//           )}
+//         </div>
+
+//         <div className="modal-buttons">
+//           <button className="cancel-button" onClick={onClose}>Close</button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// const ProviderProfileModal = ({ isOpen, onClose, provider, reviews = [], setSelectedProvider, setIsReviewModalOpen }) => {
+//   if (!isOpen || !provider) return null;
+
+//   const formattedDate = provider.date_of_recommendation
+//     ? new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
+//         year: '2-digit',
+//         month: 'numeric',
+//         day: 'numeric',
+//       })
+//     : 'Not provided';
+
+//   const recommendersSet = new Set();
+//   if (provider.recommended_by_name) recommendersSet.add(provider.recommended_by_name);
+//   reviews.forEach(r => r.user_name && recommendersSet.add(r.user_name));
+//   const recommenders = [...recommendersSet];
+
+//   return (
+//     <div className="modal-overlay">
+//       <div className="profile-modal-content p-6 rounded-xl bg-white shadow-lg w-full max-w-3xl">
+//         <button className="modal-close-x text-gray-500 hover:text-black" onClick={onClose}>×</button>
+
+//         {/* Header */}
+//         <div className="flex justify-between items-start mb-4">
+//           <div>
+//             <h2 className="text-2xl font-bold text-gray-800">{provider.business_name}</h2>
+//             <div className="flex gap-2 mt-1">
+//               {provider.average_rating >= 4.5 && (
+//                 <span className="bg-green-600 text-white text-sm px-2 py-1 rounded-full">Top Rated</span>
+//               )}
+//               <span className="bg-blue-100 text-blue-700 text-sm px-2 py-1 rounded-full">
+//                 {provider.service_type}
+//               </span>
+//             </div>
+//           </div>
+//           <div className="flex gap-4 items-center">
+//             {provider.phone_number && (
+//               <a href={`tel:${provider.phone_number}`} className="text-gray-500 hover:text-blue-700" title="Call">
+//                 📞
+//               </a>
+//             )}
+//             {provider.email && (
+//               <a href={`mailto:${provider.email}`} className="text-gray-500 hover:text-blue-700" title="Email">
+//                 📧
+//               </a>
+//             )}
+//           </div>
+//         </div>
+
+//         {/* Provider Info */}
+//         <div className="space-y-2 text-sm text-gray-700">
+//           <p><strong>Description:</strong> {provider.description || 'N/A'}</p>
+//           <p><strong>Date of Recommendation:</strong> {formattedDate}</p>
+//           <p><strong>Recommended by:</strong> {provider.recommended_by_name || 'N/A'}</p>
+//           {recommenders.length > 1 && (
+//             <p><strong>Also used by:</strong> {recommenders.filter(r => r !== provider.recommended_by_name).join(', ')}</p>
+//           )}
+//           {Array.isArray(provider.tags) && provider.tags.length > 0 && (
+//             <div className="tag-container mt-3">
+//               {provider.tags.map((tag, idx) => (
+//                 <span key={idx} className="tag-badge">{tag}</span>
+//               ))}
+//               <button
+//                 className="add-tag-button"
+//                 onClick={() => {
+//                   setSelectedProvider(provider);
+//                   setIsReviewModalOpen(true);
+//                 }}
+//               >
+//                 +
+//               </button>
+//             </div>
+//           )}
+//         </div>
+
+//         <hr className="my-4" />
+
+//         {/* Reviews */}
+//         <div>
+//           <h3 className="text-lg font-semibold text-gray-800 mb-2">Reviews</h3>
+//           {reviews.length === 0 ? (
+//             <p className="text-gray-500 italic">No reviews yet.</p>
+//           ) : (
+//             reviews.map((review, index) => (
+//               <div key={index} className="border-b pb-4 mb-4">
+//                 <div className="flex items-center gap-1 mb-1">
+//                   {[...Array(5)].map((_, i) => (
+//                     <FaStar key={i} className={i < review.rating ? 'text-[#1A365D]' : 'text-gray-300'} />
+//                   ))}
+//                 </div>
+//                 <p className="italic text-sm text-gray-700 mb-1">"{review.content}"</p>
+//                 <p className="text-xs text-gray-500">– {review.user_name || 'Anonymous'}</p>
+//               </div>
+//             ))
+//           )}
+//         </div>
+
+//         <div className="modal-buttons mt-6">
+//           <button className="cancel-button" onClick={onClose}>Close</button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+const ProviderProfileModal = ({ isOpen, onClose, provider, reviews = [], setSelectedProvider, setIsReviewModalOpen }) => {
   if (!isOpen || !provider) return null;
 
-  const reviewerNames = [...new Set(reviews.map(r => r.user_name).filter(Boolean))];
+  const formattedDate = provider.date_of_recommendation
+    ? new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
+        year: '2-digit',
+        month: 'numeric',
+        day: 'numeric',
+      })
+    : 'Not provided';
 
-  console.log("🔍 Provider tags for modal:", provider.business_name, provider.tags);
+  const recommenders = new Set();
+  if (provider.recommended_by_name) recommenders.add(provider.recommended_by_name);
+  reviews.forEach((r) => r.user_name && recommenders.add(r.user_name));
+
+  const alsoUsedBy = Array.from(recommenders).filter(name => name !== provider.recommended_by_name);
 
   return (
     <div className="modal-overlay">
       <div className="profile-modal-content">
         <button className="modal-close-x" onClick={onClose}>×</button>
+
+        {/* Header */}
         <div className="profile-header">
           <h2 className="profile-name">{provider.business_name}</h2>
-          <div className="profile-badges">
-            {provider.average_rating >= 4.5 && <span className="top-rated-badge">Top Rated</span>}
-            <span className="profile-badge">Appliance Services</span>
+          <div className="badge-wrapper">
+            {provider.average_rating >= 4.5 && (
+              <span className="top-rated-badge">Top Rated</span>
+            )}
+            <span className="profile-badge">{provider.service_type}</span>
+            <div className="modal-icons">
+              {provider.phone_number && (
+                <a href={`tel:${provider.phone_number}`} title="Call">
+                  <FaPhone />
+                </a>
+              )}
+              {provider.email && (
+                <a href={`mailto:${provider.email}`} title="Email">
+                  <FaEnvelope />
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
+        {/* Body Info */}
         <div className="profile-section">
           <p><strong>Description:</strong> {provider.description || 'N/A'}</p>
-          <p><strong>Phone:</strong> {provider.phone_number || 'Not provided'}</p>
-          <p><strong>Email:</strong> {provider.email || 'Not provided'}</p>
+          <p><strong>Date of Recommendation:</strong> {formattedDate}</p>
+          {provider.recommended_by_name && (
+            <p><strong>Recommended by:</strong> {provider.recommended_by_name}</p>
+          )}
+          {alsoUsedBy.length > 0 && (
+            <p><strong>Also used by:</strong> {alsoUsedBy.join(', ')}</p>
+          )}
           {Array.isArray(provider.tags) && provider.tags.length > 0 && (
-            <div className="modal-tags">
-              <strong>Tags:</strong>
-              <div className="tag-container">
-                {provider.tags.map((tag, idx) => (
-                  <span key={idx} className="tag-badge">{tag}</span>
-                ))}
-              </div>
+            <div className="tag-container">
+              {provider.tags.map((tag, idx) => (
+                <span key={idx} className="tag-badge">{tag}</span>
+              ))}
+              <button
+                className="add-tag-button"
+                onClick={() => {
+                  setSelectedProvider(provider);
+                  setIsReviewModalOpen(true);
+                }}
+              >
+                +
+              </button>
             </div>
           )}
-          <p><strong>Date of Recommendation:</strong> {provider.date_of_recommendation
-            ? new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
-                year: '2-digit',
-                month: 'numeric',
-                day: 'numeric',
-              })
-            : 'Not provided'}
-          </p>
-          {(() => {
-            const allNames = new Set();
-            if (provider.recommended_by_name) allNames.add(provider.recommended_by_name);
-            reviews.forEach(r => r.user_name && allNames.add(r.user_name));
-
-            return (
-              <p>
-                <strong>Recommended by:</strong>{' '}
-                {[...allNames].join(', ')}
-              </p>
-            );
-          })()}
         </div>
+
+        <hr className="my-4" />
+
+        {/* Reviews */}
         <div className="profile-reviews">
-          <h3>Reviews</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Reviews</h3>
           {reviews.length === 0 ? (
             <p className="no-reviews">No reviews yet.</p>
           ) : (
@@ -245,7 +392,7 @@ const ProviderProfileModal = ({ isOpen, onClose, provider, reviews = [] }) => {
               <div key={index} className="profile-review">
                 <div className="review-stars">
                   {[...Array(5)].map((_, i) => (
-                    <FaStar key={i} className={i < review.rating ? 'star active' : 'star'} />
+                    <FaStar key={i} className={i < review.rating ? 'star active' : 'star'} style={{ color: '#1A365D' }} />
                   ))}
                 </div>
                 <p className="review-content">"{review.content}"</p>
@@ -255,7 +402,7 @@ const ProviderProfileModal = ({ isOpen, onClose, provider, reviews = [] }) => {
           )}
         </div>
 
-        <div className="modal-buttons">
+        <div className="modal-buttons mt-6">
           <button className="cancel-button" onClick={onClose}>Close</button>
         </div>
       </div>
@@ -417,7 +564,7 @@ const ApplianceServices = () => {
                     setSelectedProvider(provider);
                     setIsReviewModalOpen(true);
                   }}>
-                    Also used this service?
+                    Write a Review
                   </button>
                 </div>
               )}
@@ -481,9 +628,17 @@ const ApplianceServices = () => {
                 </>
               )}
               <div className="action-buttons">
-                <button className="primary-button" onClick={() => handleViewProfile(provider)}>
-                  View Profile
-                </button>
+              <a
+                href={`/provider/${provider.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  localStorage.setItem('selectedProvider', JSON.stringify(provider));
+                }}
+                className="primary-button"
+              >
+                View Profile
+              </a>
                 <button className="secondary-button" onClick={() => {
                   if (provider.phone_number) {
                     window.location.href = `sms:${provider.phone_number}?body=Hi ${provider.business_name}, someone recommended you, and I’d like to request a consultation.`;
@@ -523,6 +678,69 @@ const ApplianceServices = () => {
 };
 
 export default ApplianceServices;
+
+// 4/10 working review modal: 
+
+// const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
+//   const [rating, setRating] = useState(0);
+//   const [hover, setHover] = useState(0);
+//   const [review, setReview] = useState('');
+//   const [error, setError] = useState('');
+
+//   const handleSubmit = (e) => {
+//     e.preventDefault();
+//     if (!rating) {
+//       setError('Please select a rating');
+//       return;
+//     }
+//     onSubmit({ rating, review });
+//     setRating(0);
+//     setReview('');
+//     onClose();
+//   };
+
+//   if (!isOpen) return null;
+
+//   return (
+//     <div className="modal-overlay">
+//       <div className="modal-content">
+//         <h2>Review {provider.business_name}</h2>
+//         <form onSubmit={handleSubmit}>
+//           <div className="rating-container">
+//             <label>
+//               Rate your experience: <span className="required">*</span>
+//             </label>
+//             <div className="stars">
+//               {[...Array(5)].map((_, index) => (
+//                 <FaStar
+//                   key={index}
+//                   className={index < (hover || rating) ? 'star active' : 'star'}
+//                   onClick={() => setRating(index + 1)}
+//                   onMouseEnter={() => setHover(index + 1)}
+//                   onMouseLeave={() => setHover(rating)}
+//                 />
+//               ))}
+//             </div>
+//             {error && <div className="error-message">{error}</div>}
+//           </div>
+//           <div className="review-input">
+//             <label>Tell us about your experience:</label>
+//             <textarea
+//               value={review}
+//               onChange={(e) => setReview(e.target.value)}
+//               placeholder="Optional: Share your thoughts..."
+//               rows={4}
+//             />
+//           </div>
+//           <div className="modal-buttons">
+//             <button type="button" onClick={onClose} className="cancel-button">Cancel</button>
+//             <button type="submit" className="submit-button">Submit Review</button>
+//           </div>
+//         </form>
+//       </div>
+//     </div>
+//   );
+// };
 
 
 // old version
