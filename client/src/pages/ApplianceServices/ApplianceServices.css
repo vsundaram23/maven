@@ -99,37 +99,39 @@ body {
   margin-top: 1.5rem;
 }
 
+.primary-button,
+.secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px; /* force consistent height */
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  white-space: nowrap;
+  vertical-align: middle; /* ensures alignment with baseline text */
+}
+
 .primary-button {
-  background-color: #1A365D;
+  background: #1a365d;
   color: white;
   border: none;
-  padding: 0.65rem 1.5rem;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: background-color 0.2s ease;
 }
 
 .primary-button:hover {
-  background-color: #153150;
+  background: #12264a;
 }
 
 .secondary-button {
-  background-color: white;
-  color: #1A365D;
-  border: 2px solid #1A365D;
-  padding: 0.65rem 1.5rem;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
+  background: white;
+  color: #1a365d;
+  border: 2px solid #1a365d;
 }
 
 .secondary-button:hover {
-  background-color: #1A365D;
-  color: white;
+  background: #f0f4f8;
 }
 
 /* Modal Styles */
@@ -543,4 +545,90 @@ body {
 
 .modal-icons a:hover {
   color: #1A365D;
+}
+
+.badge-wrapper-with-menu {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.badge-group {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.right-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-icons a {
+  font-size: 1rem;
+  color: #1a365d;
+  margin-right: 0.4rem;
+  text-decoration: none;
+}
+
+.three-dots-button {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 6px;
+  color: #1a365d;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.three-dots-button:hover {
+  background-color: #edf2f7;
+}
+
+.dropdown-wrapper {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+}
+
+.dropdown-item {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #1a365d;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
+.dropdown-item:hover {
+  background-color: #f0f4f8;
+}
+
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: #1a365d;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
 }

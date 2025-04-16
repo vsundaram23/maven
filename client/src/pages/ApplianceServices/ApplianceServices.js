@@ -422,6 +422,9 @@ const ApplianceServices = () => {
   const [sortOption, setSortOption] = useState('recommended');
   const [clickedRecommender, setClickedRecommender] = useState(null);
   const [showFeatureComingModal, setShowFeatureComingModal] = useState(false);
+  const [dropdownOpenForId, setDropdownOpenForId] = useState(null);
+  const [showLinkCopied, setShowLinkCopied] = useState(false);
+
 
   useEffect(() => {
     const getProviders = async () => {
@@ -548,12 +551,60 @@ const ApplianceServices = () => {
             <li key={provider.id} className="provider-card">
               <div className="card-header">
                 <h2 className="card-title">{provider.business_name}</h2>
-                <div className="badge-wrapper">
-                  {reviewStatsMap[provider.id]?.average_rating >= 4.5 && (
-                    <span className="top-rated-badge">Top rated</span>
+                <div className="badge-wrapper-with-menu">
+                <div className="badge-group">
+                  {provider.average_rating >= 4.5 && (
+                    <span className="top-rated-badge">Top Rated</span>
                   )}
-                  <span className="badge">Appliance Services</span>
+                  <span className="profile-badge">{provider.service_type}</span>
                 </div>
+
+                <div className="right-actions">
+                  {/* <div className="modal-icons">
+                    {provider.phone_number && (
+                      <a href={`tel:${provider.phone_number}`} title="Call">
+                        <FaPhone />
+                      </a>
+                    )}
+                    {provider.email && (
+                      <a href={`mailto:${provider.email}`} title="Email">
+                        <FaEnvelope />
+                      </a>
+                    )}
+                  </div> */}
+                  <div className="dropdown-wrapper">
+                  <button
+                    className="three-dots-button"
+                    onClick={() =>
+                      setDropdownOpenForId(dropdownOpenForId === provider.id ? null : provider.id)
+                    }
+                    title="Options"
+                  >
+                    ⋮
+                  </button>
+
+                  {dropdownOpenForId === provider.id && (
+                    <div className="dropdown-menu">
+                      <button
+                        className="dropdown-item"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`https://triedandtrusted.ai/provider/${provider.id}`);
+                          setDropdownOpenForId(null);
+                          setShowLinkCopied(true);
+                          setTimeout(() => setShowLinkCopied(false), 2000);
+                        }}
+                      >
+                        Share this Rec
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {showLinkCopied && (
+                  <div className="toast">Link copied!</div>
+                )}
+                </div>
+              </div>
               </div>
 
               {reviewStatsMap[provider.id] && (
