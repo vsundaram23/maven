@@ -51,47 +51,64 @@ const getProviderCount = async (req, res) => {
 
 const getProviderById = async (req, res) => {
   const { id } = req.params;
-  console.log('[ROUTE] /api/providers/:id hit with ID:', req.params.id);
 
   try {
     const result = await pool.query(`
       SELECT 
-        sp.*,
-        sp.tags, 
+        sp.id,
+        sp.business_name,
+        sp.description,
+        sp.email,
+        sp.phone_number,
+        sp.tags,
         sp.website,
+        sp.service_scope,
         sp.city,
         sp.state,
         sp.zip_code,
-        sp.service_scope,
-        c.name as category,
-        ROUND(AVG(r.rating), 2) as average_rating,
-        COUNT(r.id) as total_reviews
+        sp.price_range,
+        sp.date_of_recommendation,
+        sp.num_likes,
+        c.name AS category,
+        ROUND(AVG(r.rating), 2) AS average_rating,
+        COUNT(r.id) AS total_reviews,
+        u.name AS recommended_by_name
       FROM service_providers sp
       LEFT JOIN categories c ON sp.category_id = c.id
       LEFT JOIN reviews r ON sp.id = r.provider_id
+      LEFT JOIN users u ON sp.recommended_by = u.id
       WHERE sp.id = $1
-      GROUP BY sp.id, c.name
+      GROUP BY 
+        sp.id,
+        sp.business_name,
+        sp.description,
+        sp.email,
+        sp.phone_number,
+        sp.tags,
+        sp.website,
+        sp.service_scope,
+        sp.city,
+        sp.state,
+        sp.zip_code,
+        sp.price_range,
+        sp.date_of_recommendation,
+        sp.num_likes,
+        c.name,
+        u.name
     `, [id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Provider not found'
-      });
+      return res.status(404).json({ success: false, message: 'Provider not found' });
     }
 
-    res.json({
-      success: true,
-      provider: result.rows[0]
-    });
+    res.json({ success: true, provider: result.rows[0] });
   } catch (err) {
     console.error('Database error:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching provider'
-    });
+    res.status(500).json({ success: false, message: 'Error fetching provider' });
   }
 };
+
+
 
 const getRecommendationsByUser = async (email) => {
   try {

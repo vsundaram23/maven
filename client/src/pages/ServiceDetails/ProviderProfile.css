@@ -295,3 +295,90 @@
   .provider-link:hover {
     color: #2B6CB0;
   }
+
+  /* --- Provider Info Grid (Website, Location, etc.) --- */
+  .provider-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 2rem;
+    margin: 1.25rem 0;
+  }
+  
+  .info-item {
+    font-size: 0.95rem;
+    color: #2d3748;
+  }
+  
+  .info-item strong {
+    font-weight: 600;
+    margin-right: 0.25rem;
+  }
+  
+  .provider-link {
+    color: #2b6cb0;
+    text-decoration: underline;
+  }
+  
+  .provider-link:hover {
+    color: #1a365d;
+  }
+
+  .meta-badge-stack {
+  margin-top: 0rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.meta-badge {
+  background-color: #edf2f7;
+  color: #2b6cb0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  text-decoration: none;
+  display: inline-block;
+  transition: background-color 0.2s ease;
+}
+
+.website-badge {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 500;
+  }
+
+.meta-badge:hover {
+  background-color: #e2e8f0;
+  color: #1a365d;
+}
+  
+  
+.credentials-section {
+    margin-top: 2rem;
+  }
+  
+  .credentials-header {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1a365d;
+    margin-bottom: 0.75rem;
+  }
+  
+  .credentials-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+  }
+  
+  .credentials-note {
+    font-size: 0.95rem;
+    color: #4a5568;
+  }
+  
