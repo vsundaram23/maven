@@ -420,6 +420,8 @@ const ApplianceServices = () => {
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [sortOption, setSortOption] = useState('recommended');
+  const [clickedRecommender, setClickedRecommender] = useState(null);
+  const [showFeatureComingModal, setShowFeatureComingModal] = useState(false);
 
   useEffect(() => {
     const getProviders = async () => {
@@ -597,7 +599,7 @@ const ApplianceServices = () => {
                     <span className="recommended-label">Recommended by:</span>
                     <span
                       className="recommended-name clickable"
-                      onClick={() => handleViewProfile(provider)}
+                      onClick={() => setClickedRecommender(provider.recommended_by_name)}
                     >
                       {provider.recommended_by_name}
                     </span>
@@ -673,6 +675,62 @@ const ApplianceServices = () => {
           reviews={reviewMap[selectedProvider.id] || []}
         />
       )}
+      {clickedRecommender && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <button
+              className="modal-close-x"
+              onClick={() => setClickedRecommender(null)}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '16px',
+                fontSize: '1.25rem',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#999',
+              }}
+            >
+              ×
+            </button>
+            <h3 style={{ marginTop: '1.5rem' }}>
+              Want to connect with {clickedRecommender}?
+            </h3>
+            <div className="modal-buttons">
+              <button
+                className="secondary-button"
+                onClick={() => {
+                  setClickedRecommender(null);
+                  setShowFeatureComingModal(true);
+                }}
+              >
+                Thank {clickedRecommender}
+              </button>
+              <button
+                className="secondary-button"
+                onClick={() => {
+                  setClickedRecommender(null);
+                  setShowFeatureComingModal(true);
+                }}
+              >
+                Ask {clickedRecommender} a question
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    
+    {showFeatureComingModal && (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <p>We're about to launch this feature. Stay tuned 👁️</p>
+          <div className="modal-buttons">
+            <button className="primary-button" onClick={() => setShowFeatureComingModal(false)}>OK</button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 };
