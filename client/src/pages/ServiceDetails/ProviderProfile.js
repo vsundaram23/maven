@@ -63,6 +63,8 @@ const ProviderProfile = () => {
     setActiveTab(tab);
   };
 
+  console.log(provider);
+
   return (
     <div className="profile-wrapper">
       <div className="profile-card">
@@ -77,7 +79,26 @@ const ProviderProfile = () => {
             {provider.email && <a href={`mailto:${provider.email}`}><FaEnvelope /></a>}
           </div>
         </div>
+        {provider.website && (
+        <p className="provider-meta">
+            <strong>Website:</strong>{' '}
+            <a href={provider.website} target="_blank" rel="noopener noreferrer" className="provider-link">
+            {provider.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+            </a>
+        </p>
+        )}
 
+        {provider.service_scope === 'local' && provider.city && provider.state && (
+        <p className="provider-meta">
+            <strong>Location:</strong> {provider.city}, {provider.state} {provider.zip_code}
+        </p>
+        )}
+
+        {provider.service_scope === 'remote' && (
+        <p className="provider-meta">
+            <strong>Service Scope:</strong> Remote
+        </p>
+        )}
         <p className="description-text"><strong>Description:</strong> {provider.description || 'N/A'}</p>
         <p><strong>Recommended by:</strong> {provider.recommended_by_name || 'N/A'}{' '}
           {provider.date_of_recommendation && `(${new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {

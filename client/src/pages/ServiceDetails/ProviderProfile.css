@@ -279,3 +279,19 @@
     color: #1A365D;
     border-bottom: 2px solid #1A365D;
   }
+
+  .provider-meta {
+    font-size: 0.95rem;
+    color: #2d3748;
+    margin: 0.25rem 0;
+  }
+  
+  .provider-link {
+    color: #1A365D;
+    text-decoration: underline;
+    font-weight: 500;
+  }
+  
+  .provider-link:hover {
+    color: #2B6CB0;
+  }

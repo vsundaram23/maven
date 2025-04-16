@@ -10,6 +10,11 @@ const getAllProviders = async (req, res) => {
         sp.email,
         sp.phone_number,
         sp.tags,
+        sp.website,
+        sp.city,
+        sp.state,
+        sp.zip_code,
+        sp.service_scope,
         c.name as category,
         ROUND(AVG(r.rating), 2) as average_rating,
         COUNT(r.id) as total_reviews
@@ -52,7 +57,12 @@ const getProviderById = async (req, res) => {
     const result = await pool.query(`
       SELECT 
         sp.*,
-        sp.tags,
+        sp.tags, 
+        sp.website,
+        sp.city,
+        sp.state,
+        sp.zip_code,
+        sp.service_scope,
         c.name as category,
         ROUND(AVG(r.rating), 2) as average_rating,
         COUNT(r.id) as total_reviews
