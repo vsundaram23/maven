@@ -3,8 +3,8 @@ import { useParams, useLocation } from 'react-router-dom';
 import { FaStar, FaPhone, FaEnvelope } from 'react-icons/fa';
 import './ProviderProfile.css';
 
-// const API_URL = 'https://api.seanag-recommendations.org:8080';
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = 'http://localhost:3000';
 
 const ProviderProfile = () => {
     const { id } = useParams();

@@ -5,8 +5,8 @@ import { FaStar, FaPhone, FaEnvelope } from 'react-icons/fa';
 import { fetchApplianceProviders } from '../../services/providerService';
 import './ApplianceServices.css';
 
-// const API_URL = 'https://api.seanag-recommendations.org:8080';
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = 'http://localhost:3000';
 
 const StarRating = ({ rating }) => {
   const fullStars = Math.floor(rating);
