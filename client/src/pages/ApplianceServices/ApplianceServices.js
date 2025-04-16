@@ -728,27 +728,12 @@ const ApplianceServices = () => {
       )}
       {clickedRecommender && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <button
-              className="modal-close-x"
-              onClick={() => setClickedRecommender(null)}
-              style={{
-                position: 'absolute',
-                top: '12px',
-                right: '16px',
-                fontSize: '1.25rem',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#999',
-              }}
-            >
-              ×
-            </button>
-            <h3 style={{ marginTop: '1.5rem' }}>
-              Want to connect with {clickedRecommender}?
+          <div className="simple-modal">
+            <button className="modal-close-x" onClick={() => setClickedRecommender(null)}>×</button>
+            <h3 className="modal-title">
+              Want to connect with <span className="highlight">{clickedRecommender}</span>?
             </h3>
-            <div className="modal-buttons">
+            <div className="modal-buttons-vertical">
               <button
                 className="secondary-button"
                 onClick={() => {
