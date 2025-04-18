@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { FaStar, FaPhone, FaEnvelope } from 'react-icons/fa';
+import { FaStar, FaPhone, FaEnvelope, FaRegThumbsUp, FaRegComment} from 'react-icons/fa';
+import { FiSend } from 'react-icons/fi';
+
 import './ProviderProfile.css';
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -13,6 +15,8 @@ const ProviderProfile = () => {
     const [reviews, setReviews] = useState([]);
     const [showContactChoice, setShowContactChoice] = useState(false);
     const [activeTab, setActiveTab] = useState('Reviews');
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [showLinkCopied, setShowLinkCopied] = useState(false);
   
     useEffect(() => {
       const fetchProvider = async () => {
@@ -117,34 +121,9 @@ const ProviderProfile = () => {
 
             {provider.recommender_message && (
             <div className="recommender-quote">
+                <div className="recommender-message-header">Recommender’s Message:</div>
                 <div className="recommender-quote-top">
                 <p>{provider.recommender_message}</p>
-                {/* <div className="quote-actions">
-                    {provider.recommended_by_phone && (
-                    <>
-                        <span
-                        className="quote-icon"
-                        role="button"
-                        title="Thank the recommender"
-                        onClick={() =>
-                            window.location.href = `sms:${provider.recommended_by_phone}?body=Hey, just wanted to say thank you for recommending ${provider.business_contact}! 🙏`
-                        }
-                        >
-                        🙏
-                        </span>
-                        <span
-                        className="quote-icon"
-                        role="button"
-                        title="Ask a question"
-                        onClick={() =>
-                            window.location.href = `sms:${provider.recommended_by_phone}?body=Hi! I saw your recommendation for ${provider.business_contact} on Tried & Trusted and had a quick question — do you mind if I ask?`
-                        }
-                        >
-                        💬
-                        </span>
-                    </>
-                    )}
-                </div> */}
                 </div>
                 <div className="recommender-signoff-row">
                     <div className="quote-actions-inline">
@@ -152,26 +131,37 @@ const ProviderProfile = () => {
                         <>
                             <span
                             className="quote-icon"
-                            role="button"
                             title="Thank the recommender"
                             onClick={() =>
                                 window.location.href = `sms:${provider.recommended_by_phone}?body=Hey, just wanted to say thank you for recommending ${provider.business_contact}! 🙏`
                             }
                             >
-                            🙏
+                            <FaRegThumbsUp />
                             </span>
+
                             <span
                             className="quote-icon"
-                            role="button"
                             title="Ask a question"
                             onClick={() =>
                                 window.location.href = `sms:${provider.recommended_by_phone}?body=Hi! I saw your recommendation for ${provider.business_contact} on Tried & Trusted and had a quick question — do you mind if I ask?`
                             }
                             >
-                            💬
+                            <FaRegComment />
                             </span>
                         </>
                         )}
+                        <span
+                        className="quote-icon share-icon-wrapper"
+                        title="Share this recommendation"
+                        onClick={() => {
+                            navigator.clipboard.writeText(`https://triedandtrusted.ai/provider/${provider.id}`);
+                            setShowLinkCopied(true);
+                            setTimeout(() => setShowLinkCopied(false), 2000);
+                        }}
+                        >
+                        <FiSend className="share-icon" />
+                        {showLinkCopied && <span className="copied-tooltip">Copied!</span>}
+                        </span>
                     </div>
                     <div className="recommender-name">
                     <strong>
@@ -233,7 +223,7 @@ const ProviderProfile = () => {
   
           {Array.isArray(provider.tags) && provider.tags.length > 0 && (
             <>
-              <h3 className="highlights-header">Highlights from the Business</h3>
+              <h3 className="highlights-header">Highlights from Users</h3>
               <div className="tag-container">
                 {provider.tags.map((tag, i) => (
                   <span key={i} className="tag-badge">{tag}</span>
