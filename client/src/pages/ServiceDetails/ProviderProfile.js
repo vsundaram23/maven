@@ -71,10 +71,10 @@ const ProviderProfile = () => {
         <div className="profile-card">
           <div className="profile-header">
             <h1>{provider.business_name}</h1>
-            <div className="modal-icons">
+            {/* <div className="modal-icons">
               {provider.phone_number && <a href={`tel:${provider.phone_number}`}><FaPhone /></a>}
               {provider.email && <a href={`mailto:${provider.email}`}><FaEnvelope /></a>}
-            </div>
+            </div> */}
           </div>
   
           {/* Meta Badges */}
@@ -101,27 +101,135 @@ const ProviderProfile = () => {
   
           {/* Description + Recommenders */}
           <p className="description-text"><strong>Description:</strong> {provider.description || 'N/A'}</p>
-          <p><strong>Recommended by:</strong> {provider.recommended_by_name || 'N/A'}{' '}
+          {/* <p><strong>Recommended by:</strong> {provider.recommended_by_name || 'N/A'}{' '}
             {provider.date_of_recommendation && `(${new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
               year: '2-digit',
               month: 'numeric',
               day: 'numeric'
             })})`}
-          </p>
-          {alsoUsedBy.length > 0 && (
-            <p><strong>Also used by:</strong> {alsoUsedBy.join(', ')}</p>
-          )}
-  
-          <button className="consultation-button" onClick={requestConsultation}>
-            Request a Consultation
-          </button>
-  
-          {showContactChoice && (
-            <div className="contact-choice">
-              <button onClick={() => window.location.href = `tel:${provider.phone_number}`}>Call</button>
-              <button onClick={() => window.location.href = `mailto:${provider.email}`}>Email</button>
+          </p> */}
+          
+          {provider.provider_message && (
+            <p>
+                <strong>Message from {provider.business_contact || 'the provider'}:</strong> “{provider.provider_message}”
+            </p>
+            )}
+
+            {provider.recommender_message && (
+            <div className="recommender-quote">
+                <div className="recommender-quote-top">
+                <p>{provider.recommender_message}</p>
+                {/* <div className="quote-actions">
+                    {provider.recommended_by_phone && (
+                    <>
+                        <span
+                        className="quote-icon"
+                        role="button"
+                        title="Thank the recommender"
+                        onClick={() =>
+                            window.location.href = `sms:${provider.recommended_by_phone}?body=Hey, just wanted to say thank you for recommending ${provider.business_contact}! 🙏`
+                        }
+                        >
+                        🙏
+                        </span>
+                        <span
+                        className="quote-icon"
+                        role="button"
+                        title="Ask a question"
+                        onClick={() =>
+                            window.location.href = `sms:${provider.recommended_by_phone}?body=Hi! I saw your recommendation for ${provider.business_contact} on Tried & Trusted and had a quick question — do you mind if I ask?`
+                        }
+                        >
+                        💬
+                        </span>
+                    </>
+                    )}
+                </div> */}
+                </div>
+                <div className="recommender-signoff-row">
+                    <div className="quote-actions-inline">
+                        {provider.recommended_by_phone && (
+                        <>
+                            <span
+                            className="quote-icon"
+                            role="button"
+                            title="Thank the recommender"
+                            onClick={() =>
+                                window.location.href = `sms:${provider.recommended_by_phone}?body=Hey, just wanted to say thank you for recommending ${provider.business_contact}! 🙏`
+                            }
+                            >
+                            🙏
+                            </span>
+                            <span
+                            className="quote-icon"
+                            role="button"
+                            title="Ask a question"
+                            onClick={() =>
+                                window.location.href = `sms:${provider.recommended_by_phone}?body=Hi! I saw your recommendation for ${provider.business_contact} on Tried & Trusted and had a quick question — do you mind if I ask?`
+                            }
+                            >
+                            💬
+                            </span>
+                        </>
+                        )}
+                    </div>
+                    <div className="recommender-name">
+                    <strong>
+                    <a
+                        href={`/user/${provider.recommended_by}/recommendations`}
+                        className="recommender-link"
+                    >
+                        {provider.recommended_by_name}
+                    </a>
+                    </strong>
+                        {provider.date_of_recommendation && (
+                        <> ({new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
+                            year: '2-digit',
+                            month: 'numeric',
+                            day: 'numeric'
+                        })})</>
+                        )}
+                    </div>
+                    </div>
             </div>
-          )}
+            )}
+
+            {alsoUsedBy.length > 0 && (
+            <p>
+                <strong>Also used by:</strong>{' '}
+                {alsoUsedBy.slice(0, 2).join(', ')}
+                {alsoUsedBy.length > 2 && ` and ${alsoUsedBy.length - 2} others`}
+            </p>
+            )}
+  
+            <div className="contact-choice">
+            {provider.phone_number && (
+                <button
+                className="consultation-button"
+                onClick={() => window.location.href = `tel:${provider.phone_number}`}
+                >
+                Call {provider.business_contact}
+                </button>
+            )}
+            {provider.phone_number && (
+                <button
+                className="consultation-button"
+                onClick={() => window.location.href = `sms:${provider.phone_number}?body=Hi ${provider.business_name}, someone recommended you, and I’d like to request a consultation.`}
+                >
+                Text {provider.business_contact}
+                </button>
+            )}
+            {provider.email && (
+                <button
+                className="consultation-button"
+                onClick={() =>
+                    window.location.href = `mailto:${provider.email}?subject=Request%20for%20Consultation&body=Hi%20${provider.business_name},%20I%E2%80%99d%20like%20to%20request%20a%20consultation%20via%20Tried%20%26%20Trusted.`
+                }
+                >
+                Email
+                </button>
+            )}
+            </div>
   
           {Array.isArray(provider.tags) && provider.tags.length > 0 && (
             <>

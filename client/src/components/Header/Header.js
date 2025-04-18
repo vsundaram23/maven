@@ -329,12 +329,24 @@ const Header = () => {
           </div>
           <Link to="/financial-services" className="nav-link">Financial Experts</Link>
           <Link to="/trustcircles" className="nav-link">Trust Circles</Link>
-          <button 
+          {/* <button 
             className="add-recommendation-button"
             onClick={() => isLoggedIn ? setShowAddRecommendationModal(true) : setShowLoginModal(true)}
           >
             Share a Recommendation
-          </button>
+          </button> */}
+          {isLoggedIn ? (
+            <Link to="/share-recommendation" className="add-recommendation-button">
+              Share a Recommendation
+            </Link>
+          ) : (
+            <button 
+              className="add-recommendation-button"
+              onClick={() => setShowLoginModal(true)}
+            >
+              Share a Recommendation
+            </button>
+          )}
           {isLoggedIn ? (
             <Link to="/profile">
               <ProfileAvatar email={localStorage.getItem('userEmail')} />

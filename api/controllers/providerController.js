@@ -57,7 +57,10 @@ const getProviderById = async (req, res) => {
       SELECT 
         sp.id,
         sp.business_name,
+        sp.business_contact,
         sp.description,
+        sp.provider_message,
+        sp.recommender_message,
         sp.email,
         sp.phone_number,
         sp.tags,
@@ -72,7 +75,9 @@ const getProviderById = async (req, res) => {
         c.name AS category,
         ROUND(AVG(r.rating), 2) AS average_rating,
         COUNT(r.id) AS total_reviews,
-        u.name AS recommended_by_name
+        u.name AS recommended_by_name,
+        u.phone_number AS recommended_by_phone,
+        u.id AS recommended_by
       FROM service_providers sp
       LEFT JOIN categories c ON sp.category_id = c.id
       LEFT JOIN reviews r ON sp.id = r.provider_id
@@ -81,7 +86,10 @@ const getProviderById = async (req, res) => {
       GROUP BY 
         sp.id,
         sp.business_name,
+        sp.business_contact,
         sp.description,
+        sp.provider_message,
+        sp.recommender_message,
         sp.email,
         sp.phone_number,
         sp.tags,
@@ -94,7 +102,9 @@ const getProviderById = async (req, res) => {
         sp.date_of_recommendation,
         sp.num_likes,
         c.name,
-        u.name
+        u.name,
+        u.phone_number,
+        u.id
     `, [id]);
 
     if (result.rows.length === 0) {
@@ -107,6 +117,7 @@ const getProviderById = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error fetching provider' });
   }
 };
+
 
 
 

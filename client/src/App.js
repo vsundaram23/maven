@@ -1,3 +1,70 @@
+// App.js
+import React, { useEffect } from 'react';
+import { Route, BrowserRouter as Router, Routes, useLocation } from 'react-router-dom';
+import Home from './pages/Home/Home';
+import Profile from './pages/Profile/Profile';
+import ServiceDetails from './pages/ServiceDetails/ServiceDetails';
+import Header from './components/Header/Header';
+import FinancialServices from './pages/FinancialServices/FinancialServices';
+import ApplianceServices from './pages/ApplianceServices/ApplianceServices';
+import CleaningServices from './pages/CleaningServices/CleaningServices';
+import UtilitiesServices from './pages/UtilitiesServices/UtilitiesServices';
+import RepairServices from './pages/RepairServices/RepairServices';
+import OutdoorServices from './pages/OutdoorServices/OutdoorServices';
+import MovingServices from './pages/MovingServices/MovingServices';
+import TrustCircles from './pages/TrustCircles/TrustCircles';
+import Search from './pages/Search/Search';
+import ProviderProfile from './pages/ServiceDetails/ProviderProfile';
+import ShareRecommendation from './pages/ShareRecommendation/ShareRecommendation';
+import UserRecommendations from './pages/UserRecommendations/UserRecommendations';
+import './styles/global.css';
+import './App.css';
+
+const AppWrapper = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Add or remove body class for home page styling
+    if (location.pathname === '/') {
+      document.body.classList.add('home-page');
+    } else {
+      document.body.classList.remove('home-page');
+    }
+  }, [location.pathname]);
+
+  return (
+    <div className="App">
+      <Header />
+      <main>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/providers/:id" element={<ServiceDetails />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/financial-services" element={<FinancialServices />} />
+          <Route path="/appliances" element={<ApplianceServices />} />
+          <Route path="/cleaning" element={<CleaningServices />} />
+          <Route path="/utilities" element={<UtilitiesServices />} />
+          <Route path="/repairs" element={<RepairServices />} />
+          <Route path="/outdoor" element={<OutdoorServices />} />
+          <Route path="/moving" element={<MovingServices />} />
+          <Route path="/trustcircles" element={<TrustCircles />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/provider/:id" element={<ProviderProfile />} />
+          <Route path="/share-recommendation" element={<ShareRecommendation />} />
+          <Route path="/user/:id/recommendations" element={<UserRecommendations />} />
+        </Routes>
+      </main>
+    </div>
+  );
+};
+
+const App = () => (
+  <Router>
+    <AppWrapper />
+  </Router>
+);
+
+export default App;
 // import React from 'react';
 // import { Route, BrowserRouter as Router, Routes, Navigate } from 'react-router-dom';
 // import Home from './pages/Home/Home';
@@ -69,70 +136,6 @@
 // };
 
 // export default App;
-
-// App.js
-import React, { useEffect } from 'react';
-import { Route, BrowserRouter as Router, Routes, useLocation } from 'react-router-dom';
-import Home from './pages/Home/Home';
-import Profile from './pages/Profile/Profile';
-import ServiceDetails from './pages/ServiceDetails/ServiceDetails';
-import Header from './components/Header/Header';
-import FinancialServices from './pages/FinancialServices/FinancialServices';
-import ApplianceServices from './pages/ApplianceServices/ApplianceServices';
-import CleaningServices from './pages/CleaningServices/CleaningServices';
-import UtilitiesServices from './pages/UtilitiesServices/UtilitiesServices';
-import RepairServices from './pages/RepairServices/RepairServices';
-import OutdoorServices from './pages/OutdoorServices/OutdoorServices';
-import MovingServices from './pages/MovingServices/MovingServices';
-import TrustCircles from './pages/TrustCircles/TrustCircles';
-import Search from './pages/Search/Search';
-import ProviderProfile from './pages/ServiceDetails/ProviderProfile';
-import './styles/global.css';
-import './App.css';
-
-const AppWrapper = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    // Add or remove body class for home page styling
-    if (location.pathname === '/') {
-      document.body.classList.add('home-page');
-    } else {
-      document.body.classList.remove('home-page');
-    }
-  }, [location.pathname]);
-
-  return (
-    <div className="App">
-      <Header />
-      <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/providers/:id" element={<ServiceDetails />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/financial-services" element={<FinancialServices />} />
-          <Route path="/appliances" element={<ApplianceServices />} />
-          <Route path="/cleaning" element={<CleaningServices />} />
-          <Route path="/utilities" element={<UtilitiesServices />} />
-          <Route path="/repairs" element={<RepairServices />} />
-          <Route path="/outdoor" element={<OutdoorServices />} />
-          <Route path="/moving" element={<MovingServices />} />
-          <Route path="/trustcircles" element={<TrustCircles />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/provider/:id" element={<ProviderProfile />} />
-        </Routes>
-      </main>
-    </div>
-  );
-};
-
-const App = () => (
-  <Router>
-    <AppWrapper />
-  </Router>
-);
-
-export default App;
 
 
 
