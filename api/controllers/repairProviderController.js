@@ -42,6 +42,7 @@ const getRepairProviderById = async (req, res) => {
         const result = await pool.query(`
             SELECT 
                 sp.*,
+                sp.date_of_recommendation,
                 s.name as service_type,
                 ROUND(AVG(r.rating), 2) as average_rating,
                 COUNT(r.id) as total_reviews
