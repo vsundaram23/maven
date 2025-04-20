@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
         sp.email,
         sp.phone_number,
         sp.num_likes,
+        sp.date_of_recommendation,
         s.name as service_type,
         u.name as recommended_by_name
       FROM service_providers sp
@@ -68,6 +69,7 @@ router.get('/:id', async (req, res) => {
         sp.email,
         sp.phone_number,
         sp.num_likes,
+        sp.date_of_recommendation,
         s.name as service_type,
         u.name as recommended_by_name
       FROM service_providers sp

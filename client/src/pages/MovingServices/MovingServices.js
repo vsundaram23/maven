@@ -328,8 +328,17 @@ const MovingServices = () => {
                     >
                       {provider.recommended_by_name}
                     </span>
+                    {provider.date_of_recommendation && (
+                      <span className="recommendation-date">
+                        {' '}
+                        ({new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
+                          year: '2-digit',
+                          month: 'numeric',
+                          day: 'numeric',
+                        })})
+                      </span>
+                    )}
                   </div>
-
                   {reviews.length > 0 && (
                     <div className="recommended-row">
                       <span className="recommended-label">Also used by:</span>

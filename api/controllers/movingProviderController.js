@@ -9,6 +9,7 @@ const getAllMovingProviders = async (req, res) => {
                 sp.description,
                 sp.email,
                 sp.phone_number,
+                sp.date_of_recommendation,
                 s.name as service_type,
                 u.name as recommended_by_name
             FROM service_providers sp
@@ -42,6 +43,7 @@ const getMovingProviderById = async (req, res) => {
         const result = await pool.query(`
             SELECT 
                 sp.*,
+                sp.date_of_recommendation,
                 s.name as service_type,
                 ROUND(AVG(r.rating), 2) as average_rating,
                 COUNT(r.id) as total_reviews
