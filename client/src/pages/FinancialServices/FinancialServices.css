@@ -1,3 +1,5 @@
+/* FinancialServices.css — cloned and adapted from RepairServices.css */
+
 body {
   margin: 0;
   padding: 0;
@@ -19,6 +21,22 @@ body {
   margin-bottom: 2.5rem;
   color: #1a365d;
   text-align: left;
+}
+
+.sort-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.sort-dropdown {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 15px;
 }
 
 .provider-list {
@@ -51,7 +69,14 @@ body {
   margin: 0;
 }
 
-.badge {
+.badge-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.top-rated-badge,
+.profile-badge {
   font-size: 0.75rem;
   font-weight: 600;
   background-color: #edf2f7;
@@ -60,10 +85,142 @@ body {
   border-radius: 9999px;
 }
 
+.dropdown-wrapper {
+  position: relative;
+}
+
+.three-dots-button {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 6px;
+  color: #1a365d;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.three-dots-button:hover {
+  background-color: #edf2f7;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+}
+
+.dropdown-item {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #1a365d;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
+.dropdown-item:hover {
+  background-color: #f0f4f8;
+}
+
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: #1a365d;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+}
+
+.review-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.star-rating .filled {
+  color: #f6ad55;
+}
+
+.star-rating .half {
+  color: #f6ad55;
+  opacity: 0.5;
+}
+
+.star-rating .empty {
+  color: #e2e8f0;
+}
+
+.review-score {
+  font-size: 0.8rem;
+  color: #4a5568;
+}
+
+.see-all-button {
+  font-size: 0.8rem;
+  color: #2b6cb0;
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .card-description {
   margin: 0.75rem 0 0.5rem;
   color: #4a5568;
   font-size: 0.95rem;
+}
+
+.tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.tag-badge {
+  background-color: #edf2f7;
+  color: #2b6cb0;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.add-tag-button {
+  margin-left: 8px;
+  padding: 4px 6px;
+  font-size: 18px;
+  background-color: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 50%;
+  color: #6b7280;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  width: 24px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.add-tag-button:hover {
+  background-color: #f3f4f6;
+  color: #4b5563;
 }
 
 .recommended-row {
@@ -79,10 +236,21 @@ body {
 }
 
 .recommended-name {
-  color: #1A365D;
+  color: #1a365d;
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
+}
+
+.recommendation-date {
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
+.used-by-names {
+  font-weight: 400;
+  color: #4a5568;
+  text-decoration: none;
 }
 
 .action-buttons {
@@ -92,64 +260,75 @@ body {
   margin-top: 1.5rem;
 }
 
+.primary-button,
+.secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 .primary-button {
-  background-color: #1A365D;
+  background: #1a365d;
   color: white;
   border: none;
-  padding: 0.65rem 1.5rem;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: background-color 0.2s ease;
 }
 
 .primary-button:hover {
-  background-color: #153150;
+  background: #12264a;
 }
 
 .secondary-button {
-  background-color: white;
-  color: #1A365D;
-  border: 2px solid #1A365D;
-  padding: 0.65rem 1.5rem;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
+  background: white;
+  color: #1a365d;
+  border: 2px solid #1a365d;
 }
 
 .secondary-button:hover {
-  background-color: #1A365D;
-  color: white;
+  background: #f0f4f8;
 }
 
-/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 9999;
 }
 
-.modal-content {
+.modal-content,
+.simple-modal {
   background: white;
   padding: 2rem;
   border-radius: 8px;
-  width: 90%;
   max-width: 500px;
+  width: 90%;
   position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
-.required {
-  color: red;
+.modal-close-x {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
 .stars {
@@ -204,7 +383,7 @@ body {
 }
 
 .submit-button {
-  background-color: #2B6CB0;
+  background-color: #2b6cb0;
   color: white;
 }
 
@@ -225,11 +404,9 @@ body {
   .financial-services-container {
     padding: 100px 1rem 2rem;
   }
-
   .section-heading {
     text-align: center;
   }
-
   .action-buttons {
     flex-direction: column;
     align-items: stretch;
