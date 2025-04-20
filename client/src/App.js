@@ -6,6 +6,7 @@ import Profile from './pages/Profile/Profile';
 import ServiceDetails from './pages/ServiceDetails/ServiceDetails';
 import Header from './components/Header/Header';
 import FinancialServices from './pages/FinancialServices/FinancialServices';
+import AutoServices from './pages/AutoServices/AutoServices';
 import ApplianceServices from './pages/ApplianceServices/ApplianceServices';
 import CleaningServices from './pages/CleaningServices/CleaningServices';
 import UtilitiesServices from './pages/UtilitiesServices/UtilitiesServices';
@@ -41,6 +42,7 @@ const AppWrapper = () => {
           <Route path="/providers/:id" element={<ServiceDetails />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/financial-services" element={<FinancialServices />} />
+          <Route path="/auto-services" element={<AutoServices />} />
           <Route path="/appliances" element={<ApplianceServices />} />
           <Route path="/cleaning" element={<CleaningServices />} />
           <Route path="/utilities" element={<UtilitiesServices />} />

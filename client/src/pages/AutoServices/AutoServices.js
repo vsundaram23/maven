@@ -1,16 +1,16 @@
-// FinancialServices.js
+// AutoServices.js
 import { Link } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { FaStar, FaPhone, FaEnvelope } from 'react-icons/fa';
-import { fetchFinancialProviders } from '../../services/providerService';
-import './FinancialServices.css';
+import { fetchAutoProviders } from '../../services/providerService';
+import './AutoServices.css';
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
 // const API_URL = 'http://localhost:3000';
 
 const StarRating = ({ rating }) => {
   const fullStars = Math.floor(rating);
-  const hasHalf = rating - fullStars >= 0.5;
+  const hasHalf   = rating - fullStars >= 0.5;
   const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
 
   return (
@@ -23,12 +23,12 @@ const StarRating = ({ rating }) => {
 };
 
 const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
-  const [rating, setRating] = useState(0);
-  const [hover, setHover] = useState(0);
-  const [review, setReview] = useState('');
-  const [tags, setTags] = useState([]);
+  const [rating, setRating]     = useState(0);
+  const [hover, setHover]       = useState(0);
+  const [review, setReview]     = useState('');
+  const [tags, setTags]         = useState([]);
   const [tagInput, setTagInput] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError]       = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -67,14 +67,16 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
         <h2>Review {provider.business_name}</h2>
         <form onSubmit={handleSubmit}>
           <div className="rating-container">
-            <label>Rate your experience: <span className="required">*</span></label>
+            <label>
+              Rate your experience: <span className="required">*</span>
+            </label>
             <div className="stars">
-              {[...Array(5)].map((_, index) => (
+              {[...Array(5)].map((_, idx) => (
                 <FaStar
-                  key={index}
-                  className={index < (hover || rating) ? 'star active' : 'star'}
-                  onClick={() => setRating(index + 1)}
-                  onMouseEnter={() => setHover(index + 1)}
+                  key={idx}
+                  className={idx < (hover || rating) ? 'star active' : 'star'}
+                  onClick={() => setRating(idx + 1)}
+                  onMouseEnter={() => setHover(idx + 1)}
                   onMouseLeave={() => setHover(rating)}
                 />
               ))}
@@ -193,9 +195,7 @@ const ProviderProfileModal = ({
                   setSelectedProvider(provider);
                   setIsReviewModalOpen(true);
                 }}
-              >
-                +
-              </button>
+              >+</button>
             </div>
           )}
         </div>
@@ -233,40 +233,40 @@ const ProviderProfileModal = ({
   );
 };
 
-const FinancialServices = () => {
-  const [providers, setProviders] = useState([]);
-  const [reviewStatsMap, setReviewStatsMap] = useState({});
-  const [reviewMap, setReviewMap] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState(null);
+const AutoServices = () => {
+  const [providers, setProviders]             = useState([]);
+  const [reviewStatsMap, setReviewStatsMap]   = useState({});
+  const [reviewMap, setReviewMap]             = useState({});
+  const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState(null);
+  const [isReviewModalOpen, setIsReviewModalOpen]   = useState(false);
+  const [selectedProvider, setSelectedProvider]     = useState(null);
   const [clickedRecommender, setClickedRecommender] = useState(null);
   const [showFeatureComingModal, setShowFeatureComingModal] = useState(false);
-  const [sortOption, setSortOption] = useState('recommended');
+  const [sortOption, setSortOption]           = useState('recommended');
   const [dropdownOpenForId, setDropdownOpenForId] = useState(null);
-  const [showLinkCopied, setShowLinkCopied] = useState(false);
+  const [showLinkCopied, setShowLinkCopied]   = useState(false);
 
   useEffect(() => {
     const getProviders = async () => {
       try {
-        const { providers: rawProviders } = await fetchFinancialProviders();
-        
-        const statsMap = {};
+        const { providers: rawProviders } = await fetchAutoProviders();
+
+        const statsMap      = {};
         const allReviewsMap = {};
 
         await Promise.all(rawProviders.map(async (provider) => {
           try {
-            const statsRes = await fetch(`${API_URL}/api/reviews/stats/${provider.id}`);
+            const statsRes  = await fetch(`${API_URL}/api/reviews/stats/${provider.id}`);
             const statsData = await statsRes.json();
             statsMap[provider.id] = {
               average_rating: parseFloat(statsData.average_rating) || 0,
-              total_reviews: parseInt(statsData.total_reviews) || 0,
+              total_reviews:  parseInt(statsData.total_reviews) || 0
             };
 
-            const reviewsRes = await fetch(`${API_URL}/api/reviews/${provider.id}`);
-            const reviewsData = await reviewsRes.json();
-            allReviewsMap[provider.id] = reviewsData;
+            const revRes     = await fetch(`${API_URL}/api/reviews/${provider.id}`);
+            const revData    = await revRes.json();
+            allReviewsMap[provider.id] = revData;
           } catch {
             allReviewsMap[provider.id] = [];
           }
@@ -278,16 +278,16 @@ const FinancialServices = () => {
         const enriched = rawProviders.map(p => ({
           ...p,
           average_rating: statsMap[p.id]?.average_rating || 0,
-          total_reviews: statsMap[p.id]?.total_reviews || 0,
+          total_reviews:  statsMap[p.id]?.total_reviews  || 0
         }));
 
         let sorted;
         if (sortOption === 'topRated') {
           sorted = enriched
             .filter(p => p.average_rating >= 4.5)
-            .sort((a, b) => b.average_rating - a.average_rating || b.total_reviews - a.total_reviews);
+            .sort((a,b) => b.average_rating - a.average_rating || b.total_reviews - a.total_reviews);
         } else {
-          sorted = enriched.sort((a, b) => {
+          sorted = enriched.sort((a,b) => {
             const aAbove4 = a.average_rating >= 4 ? 1 : 0;
             const bAbove4 = b.average_rating >= 4 ? 1 : 0;
             if (aAbove4 !== bAbove4) return bAbove4 - aAbove4;
@@ -315,11 +315,11 @@ const FinancialServices = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider_id: selectedProvider.id,
+          provider_id:    selectedProvider.id,
           provider_email: selectedProvider.email,
-          email: userEmail,
-          rating: reviewData.rating,
-          content: reviewData.review,
+          email:          userEmail,
+          rating:         reviewData.rating,
+          content:        reviewData.review,
         }),
       });
     } catch (err) {
@@ -329,20 +329,22 @@ const FinancialServices = () => {
 
   const handleConsultation = (provider) => {
     if (provider.phone_number) {
-      window.location.href = `sms:${provider.phone_number}?body=Hi ${provider.business_name}, someone recommended you, and I’d like to request a consultation.`;
+      window.location.href = 
+        `sms:${provider.phone_number}?body=Hi ${provider.business_name}, someone recommended you, and I’d like to request a consultation.`;
     } else if (provider.email) {
-      window.location.href = `mailto:${provider.email}?subject=Request%20for%20Consultation&body=Hi%20${provider.business_name},%20I%E2%80%99d%20like%20to%20request%20a%20consultation%20via%20Tried%20%26%20Trusted.`;
+      window.location.href = 
+        `mailto:${provider.email}?subject=Request%20for%20Consultation&body=Hi%20${provider.business_name}`;
     } else {
-      alert("Thanks for requesting a consultation. We'll reach out to you shortly.");
+      alert("Thanks for requesting a consultation — we'll reach out shortly.");
     }
   };
 
   if (loading) return <div className="loading-spinner">Loading...</div>;
-  if (error) return <div className="error-message">Error: {error}</div>;
+  if (error)   return <div className="error-message">Error: {error}</div>;
 
   return (
-    <div className="financial-services-container">
-      <h1 className="section-heading">Top Financial Service Providers</h1>
+    <div className="auto-services-container">
+      <h1 className="section-heading">Top Auto Service Providers</h1>
 
       <div className="sort-bar">
         Sort by:
@@ -357,7 +359,7 @@ const FinancialServices = () => {
       </div>
 
       <ul className="provider-list">
-        {providers.map((provider) => {
+        {providers.map(provider => {
           const reviews = reviewMap[provider.id] || [];
 
           return (
@@ -366,21 +368,16 @@ const FinancialServices = () => {
                 <h2 className="card-title">{provider.business_name}</h2>
                 <div className="badge-wrapper-with-menu">
                   <div className="badge-group">
-                    {provider.average_rating >= 4.5 && (
-                      <span className="top-rated-badge">Top Rated</span>
-                    )}
+                    {provider.average_rating >= 4.5 && <span className="top-rated-badge">Top Rated</span>}
                     <span className="profile-badge">{provider.service_type}</span>
                   </div>
+
                   <div className="dropdown-wrapper">
                     <button
                       className="three-dots-button"
-                      onClick={() =>
-                        setDropdownOpenForId(dropdownOpenForId === provider.id ? null : provider.id)
-                      }
+                      onClick={() => setDropdownOpenForId(dropdownOpenForId === provider.id ? null : provider.id)}
                       title="Options"
-                    >
-                      ⋮
-                    </button>
+                    >⋮</button>
                     {dropdownOpenForId === provider.id && (
                       <div className="dropdown-menu">
                         <button
@@ -391,13 +388,12 @@ const FinancialServices = () => {
                             setShowLinkCopied(true);
                             setTimeout(() => setShowLinkCopied(false), 2000);
                           }}
-                        >
-                          Share this Rec
-                        </button>
+                        >Share this Rec</button>
                       </div>
                     )}
-                    {showLinkCopied && <div className="toast">Link copied!</div>}
                   </div>
+
+                  {showLinkCopied && <div className="toast">Link copied!</div>}
                 </div>
               </div>
 
@@ -412,12 +408,12 @@ const FinancialServices = () => {
                     setSelectedProvider(provider);
                     setIsReviewModalOpen(true);
                   }}
-                >
-                  Write a Review
-                </button>
+                >Write a Review</button>
               </div>
 
-              <p className="card-description">{provider.description || 'No description available'}</p>
+              <p className="card-description">
+                {provider.description || 'No description available'}
+              </p>
 
               {provider.tags?.length > 0 && (
                 <div className="tag-container">
@@ -430,9 +426,7 @@ const FinancialServices = () => {
                       setSelectedProvider(provider);
                       setIsReviewModalOpen(true);
                     }}
-                  >
-                    +
-                  </button>
+                  >+</button>
                 </div>
               )}
 
@@ -442,17 +436,11 @@ const FinancialServices = () => {
                   <span
                     className="recommended-name clickable"
                     onClick={() => setClickedRecommender(provider.recommended_by_name)}
-                  >
-                    {provider.recommended_by_name}
-                  </span>
+                  >{provider.recommended_by_name}</span>
                   {provider.date_of_recommendation && (
                     <span className="recommendation-date">
-                      {' '}
-                      ({new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
-                        year: '2-digit',
-                        month: 'numeric',
-                        day: 'numeric',
-                      })})
+                      ({new Date(provider.date_of_recommendation)
+                        .toLocaleDateString('en-US',{year:'2-digit',month:'numeric',day:'numeric'} )})
                     </span>
                   )}
                 </div>
@@ -463,7 +451,8 @@ const FinancialServices = () => {
                   <span className="recommended-label">Also used by:</span>
                   <span className="used-by-names">
                     {[...new Set(
-                      reviews.map(r => r.user_name).filter(name => name && name !== provider.recommended_by_name)
+                      reviews.map(r => r.user_name)
+                             .filter(n => n && n !== provider.recommended_by_name)
                     )].join(', ') || 'No additional users yet'}
                   </span>
                 </div>
@@ -474,19 +463,15 @@ const FinancialServices = () => {
                   href={`/provider/${provider.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => {
-                    localStorage.setItem('selectedProvider', JSON.stringify(provider));
-                  }}
                   className="primary-button"
-                >
-                  View Profile
-                </a>
+                  onClick={() => 
+                    localStorage.setItem('selectedProvider', JSON.stringify(provider))
+                  }
+                >View Profile</a>
                 <button
                   className="secondary-button"
                   onClick={() => handleConsultation(provider)}
-                >
-                  Request a Consultation
-                </button>
+                >Request a Consultation</button>
               </div>
             </li>
           );
@@ -497,7 +482,7 @@ const FinancialServices = () => {
         <ReviewModal
           isOpen={isReviewModalOpen}
           onClose={() => setIsReviewModalOpen(false)}
-          onSubmit={(reviewData) => handleReviewSubmit({ ...reviewData })}
+          onSubmit={handleReviewSubmit}
           provider={selectedProvider}
         />
       )}
@@ -516,18 +501,14 @@ const FinancialServices = () => {
                   setClickedRecommender(null);
                   setShowFeatureComingModal(true);
                 }}
-              >
-                Thank {clickedRecommender}
-              </button>
+              >Thank {clickedRecommender}</button>
               <button
                 className="secondary-button"
                 onClick={() => {
                   setClickedRecommender(null);
                   setShowFeatureComingModal(true);
                 }}
-              >
-                Ask {clickedRecommender} a question
-              </button>
+              >Ask {clickedRecommender} a question</button>
             </div>
           </div>
         </div>
@@ -547,189 +528,4 @@ const FinancialServices = () => {
   );
 };
 
-export default FinancialServices;
-
-// working 4/20
-// import React, { useState, useEffect } from 'react';
-// import { FaStar } from 'react-icons/fa';
-// import { fetchFinancialProviders } from '../../services/providerService';
-// import './FinancialServices.css';
-
-// const API_URL = 'https://api.seanag-recommendations.org:8080';
-
-// const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
-//   const [rating, setRating] = useState(0);
-//   const [hover, setHover] = useState(0);
-//   const [review, setReview] = useState('');
-//   const [error, setError] = useState('');
-
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-//     if (!rating) {
-//       setError('Please select a rating');
-//       return;
-//     }
-//     onSubmit({ rating, review });
-//     setRating(0);
-//     setReview('');
-//     onClose();
-//   };
-
-//   if (!isOpen || !provider) return null;
-
-//   return (
-//     <div className="modal-overlay">
-//       <div className="modal-content">
-//         <h2>Review {provider.business_name}</h2>
-//         <form onSubmit={handleSubmit}>
-//           <div className="rating-container">
-//             <label>Rate your experience: <span className="required">*</span></label>
-//             <div className="stars">
-//               {[...Array(5)].map((_, index) => (
-//                 <FaStar
-//                   key={index}
-//                   className={index < (hover || rating) ? 'star active' : 'star'}
-//                   onClick={() => setRating(index + 1)}
-//                   onMouseEnter={() => setHover(index + 1)}
-//                   onMouseLeave={() => setHover(rating)}
-//                 />
-//               ))}
-//             </div>
-//             {error && <div className="error-message">{error}</div>}
-//           </div>
-//           <div className="review-input">
-//             <label>Tell us about your experience:</label>
-//             <textarea
-//               value={review}
-//               onChange={(e) => setReview(e.target.value)}
-//               placeholder="Optional: Share your thoughts..."
-//               rows={4}
-//             />
-//           </div>
-//           <div className="modal-buttons">
-//             <button type="button" onClick={onClose} className="cancel-button">Cancel</button>
-//             <button type="submit" className="submit-button">Submit Review</button>
-//           </div>
-//         </form>
-//       </div>
-//     </div>
-//   );
-// };
-
-// const FinancialServices = () => {
-//   const [providers, setProviders] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState(null);
-//   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-//   const [selectedProvider, setSelectedProvider] = useState(null);
-
-//   useEffect(() => {
-//     const getProviders = async () => {
-//       try {
-//         const data = await fetchFinancialProviders();
-//         console.log('[Financial Providers]', data?.providers);
-//         setProviders(data?.providers || []);
-//       } catch (err) {
-//         console.error('Error fetching financial providers:', err);
-//         setError('Failed to fetch providers');
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-  
-//     getProviders();
-//   }, []);
-
-//   const handleReviewSubmit = async (reviewData) => {
-//     const userEmail = localStorage.getItem('userEmail');
-//     if (!selectedProvider) return;
-
-//     try {
-//       const response = await fetch(`${API_URL}/api/reviews`, {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify({
-//           provider_id: selectedProvider.id,
-//           provider_email: selectedProvider.email || '',
-//           email: userEmail,
-//           rating: reviewData.rating,
-//           content: reviewData.review,
-//         }),
-//       });
-
-//       if (!response.ok) throw new Error('Failed to submit review');
-//     } catch (err) {
-//       console.error('Error submitting review:', err);
-//     }
-//   };
-
-//   const handleConsultation = (provider) => {
-//     if (provider.phone_number) {
-//       window.location.href = `sms:${provider.phone_number}?body=Hi ${provider.business_name}, ${provider.recommended_by_name} recommended you, and I’d like to request a consultation.`;
-//     } else if (provider.email) {
-//       window.location.href = `mailto:${provider.email}?subject=Request%20for%20Consultation&body=Hi%20${provider.business_name},%20I%E2%80%99d%20like%20to%20request%20a%20consultation%20via%20Tried%20%26%20Trusted.`;
-//     } else {
-//       alert("Thanks for requesting a consultation. We'll reach out to you shortly.");
-//     }
-//   };
-
-//   if (loading) return <div className="loading-spinner">Loading...</div>;
-//   if (error) return <div className="error-message">Error: {error}</div>;
-//   if (!providers.length) return <div className="no-data">No financial service providers found</div>;
-
-//   return (
-//     <div className="financial-services-container">
-//       <h1 className="section-heading">Top Financial Service Providers</h1>
-//       <ul className="provider-list">
-//         {providers.map((provider) => (
-//           <li key={provider.id || Math.random()} className="provider-card">
-//             <div className="card-header">
-//               <h2 className="card-title">{provider.business_name || 'Unnamed Provider'}</h2>
-//               <span className="badge">Financial Services</span>
-//             </div>
-
-//             <p className="card-description">
-//               {provider.description || 'No description available'}
-//             </p>
-
-//             {provider.recommended_by_name && (
-//               <div className="recommended-row">
-//                 <span className="recommended-label">Recommended by:</span>
-//                 <span className="recommended-name">{provider.recommended_by_name}</span>
-//               </div>
-//             )}
-
-//             <div className="action-buttons">
-//               <button
-//                 className="primary-button"
-//                 onClick={() => handleConsultation(provider)}
-//               >
-//                 Request a Consultation
-//               </button>
-//               <button
-//                 className="secondary-button"
-//                 onClick={() => {
-//                   setSelectedProvider(provider);
-//                   setIsReviewModalOpen(true);
-//                 }}
-//               >
-//                 Have you used this service?
-//               </button>
-//             </div>
-//           </li>
-//         ))}
-//       </ul>
-
-//       {isReviewModalOpen && (
-//         <ReviewModal
-//           isOpen={isReviewModalOpen}
-//           onClose={() => setIsReviewModalOpen(false)}
-//           onSubmit={handleReviewSubmit}
-//           provider={selectedProvider}
-//         />
-//       )}
-//     </div>
-//   );
-// };
-
-// export default FinancialServices;
+export default AutoServices;

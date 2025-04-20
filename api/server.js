@@ -17,6 +17,7 @@ const recommendationRoutes = require('./routes/recommendations');
 const financialProviderRoutes = require('./routes/financialProviders');
 const communityRoutes = require('./routes/communities');
 const userRoutes = require('./routes/users');
+const autoProviderRoutes = require('./routes/autoProviders');
 
 
 const app = express();
@@ -77,6 +78,7 @@ app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/financialProviders', financialProviderRoutes);
 app.use('/api/communities', communityRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/autoProviders', autoProviderRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

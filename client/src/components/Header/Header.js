@@ -347,7 +347,8 @@ const Header = () => {
               </div>
             )}
           </div>
-          <Link to="/financial-services" className="nav-link">Financial Experts</Link>
+          <Link to="/financial-services" className="nav-link">Financial Services</Link>
+          <Link to="/auto-services"      className="nav-link">Auto Services</Link>
           {/* <Link to="/trustcircles" className="nav-link">Trust Circles</Link> */}
           {/* <button 
             className="add-recommendation-button"

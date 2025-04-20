@@ -126,6 +126,30 @@ export const fetchUtilitiesProviders = async () => {
   }
 };
 
+export const fetchAutoProviders = async () => {
+  try {
+    const response = await fetch(`${API_URL}/api/autoProviders`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      mode: 'cors'
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data;
+    
+  } catch (error) {
+    console.error('Failed to fetch utilities providers:', error);
+    throw error;
+  }
+};
+
 export const fetchRepairProviders = async () => {
   try {
     const response = await fetch(`${API_URL}/api/repairProviders`, {
