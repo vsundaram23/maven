@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { FaCaretDown } from 'react-icons/fa';
 import './Header.css';
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -42,6 +43,9 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
   const isLoggedIn = localStorage.getItem('userEmail');
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const profileDropdownRef = useRef(null);
+
 
   const [signUpForm, setSignUpForm] = useState({
     name: '',
@@ -100,6 +104,22 @@ const Header = () => {
   
     window.addEventListener('forceLogin', forceOpenLogin);
     return () => window.removeEventListener('forceLogin', forceOpenLogin);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target)
+      ) {
+        setShowProfileDropdown(false);
+      }
+    };
+  
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   // useEffect(() => {
@@ -311,24 +331,24 @@ const Header = () => {
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
-            Home Professionals
+            Home Services
             {showServicesDropdown && (
               <div 
                 className="dropdown-menu"
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
               >
-                <Link to="/appliances" className="dropdown-item">Appliances</Link>
-                <Link to="/cleaning" className="dropdown-item">Cleaning</Link>
-                <Link to="/utilities" className="dropdown-item">Utilities</Link>
-                <Link to="/repairs" className="dropdown-item">Repairs</Link>
-                <Link to="/outdoor" className="dropdown-item">Outdoor</Link>
-                <Link to="/moving" className="dropdown-item">Moving</Link>
+                <Link to="/appliances" className="dropdown-item">Repair Services</Link>
+                <Link to="/cleaning" className="dropdown-item">Cleaning Services</Link>
+                {/* <Link to="/utilities" className="dropdown-item">Utilities</Link> */}
+                <Link to="/repairs" className="dropdown-item">Home Renovation</Link>
+                <Link to="/outdoor" className="dropdown-item">Outdoor Services</Link>
+                <Link to="/moving" className="dropdown-item">Moving Services</Link>
               </div>
             )}
           </div>
           <Link to="/financial-services" className="nav-link">Financial Experts</Link>
-          <Link to="/trustcircles" className="nav-link">Trust Circles</Link>
+          {/* <Link to="/trustcircles" className="nav-link">Trust Circles</Link> */}
           {/* <button 
             className="add-recommendation-button"
             onClick={() => isLoggedIn ? setShowAddRecommendationModal(true) : setShowLoginModal(true)}
@@ -348,9 +368,21 @@ const Header = () => {
             </button>
           )}
           {isLoggedIn ? (
-            <Link to="/profile">
-              <ProfileAvatar email={localStorage.getItem('userEmail')} />
-            </Link>
+            <div className="profile-dropdown-wrapper" ref={profileDropdownRef}>
+              <div 
+                className="profile-avatar-dropdown"
+                onClick={() => setShowProfileDropdown(prev => !prev)}
+              >
+                <ProfileAvatar email={localStorage.getItem('userEmail')} />
+                <FaCaretDown style={{ color: 'var(--primary-blue)', marginLeft: '4px' }} />
+              </div>
+              {showProfileDropdown && (
+                <div className="dropdown-menu profile-dropdown-menu">
+                  <Link to="/profile" className="dropdown-item">My Profile</Link>
+                  <Link to="/trustcircles" className="dropdown-item">Trust Circles</Link>
+                </div>
+              )}
+            </div>
           ) : (
             <button 
               className="login-button"

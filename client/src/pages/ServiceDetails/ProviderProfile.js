@@ -216,7 +216,7 @@ const ProviderProfile = () => {
                     window.location.href = `mailto:${provider.email}?subject=Request%20for%20Consultation&body=Hi%20${provider.business_name},%20I%E2%80%99d%20like%20to%20request%20a%20consultation%20via%20Tried%20%26%20Trusted.`
                 }
                 >
-                Email
+                Email {provider.business_contact}
                 </button>
             )}
             </div>

@@ -345,7 +345,7 @@ const ApplianceServices = () => {
 
   return (
     <div className="appliance-services-container">
-      <h1 className="section-heading">Top Appliance Service Providers</h1>
+      <h1 className="section-heading">Top Repair Service Providers</h1>
       <div className="sort-bar">
         Sort by:
         <select
