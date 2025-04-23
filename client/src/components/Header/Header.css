@@ -85,6 +85,11 @@
   transition: transform 0.2s ease;
 }
 
+.nav-links a.add-recommendation-button:hover {
+  /* override the nav-links rule */
+  color: var(--white);
+}
+
 .dropdown {
   position: relative;
   cursor: pointer;
