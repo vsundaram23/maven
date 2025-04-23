@@ -1,71 +1,313 @@
+/* ShareRecommendation.css */
+
+/* 1) Variables & Base */
+:root {
+  --font-base: 'Inter', sans-serif;
+  --color-bg: #ffffff;
+  --color-primary: #1A365D;
+  --color-accent: #2D6CB0;
+  --color-secondary: #4A5568;
+  --color-border: #E2E8F0;
+  --color-muted: #CBD5E0;
+  --color-success: #2F855A;
+  --color-error: #E53E3E;
+  --radius-pill: 999px;
+  --radius-default: 0.5rem;
+  --spacing: 1rem;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-base);
+  background: var(--color-bg);
+  color: var(--color-secondary);
+}
+
+/* 2) Layout Containers */
 .recommendation-wrapper {
-    padding: 120px 1rem 3rem;
-    background: white;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
+  padding-top: calc(80px + var(--spacing));
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.recommendation-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 var(--spacing);
+}
+
+/* 3) Tabs & Progress */
+.tabs {
+  display: flex;
+  gap: 2rem;
+  background: var(--color-bg);
+  position: sticky;
+  top: 80px;
+  z-index: 100;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-secondary);
+  cursor: pointer;
+  padding: 0.5rem 0;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.tab-active {
+  color: var(--color-primary);
+}
+
+.tab-active::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 3px;
+  background: var(--color-primary);
+  border-radius: 3px 3px 0 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--color-border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.progress-bar .progress {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  transition: width 0.3s ease;
+}
+
+/* 4) Form Sections */
+.form-section {
+  margin-bottom: 2.5rem;
+}
+
+.form-section h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+}
+
+/* 5) Option Buttons */
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.option {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(26, 54, 93, 0.1);
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.4s forwards;
+  transition: transform 0.25s, background 0.25s, color 0.25s;
+}
+
+.option:nth-child(1) { animation-delay: 0.1s; }
+.option:nth-child(2) { animation-delay: 0.2s; }
+/* extend as needed */
+
+.option:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.option.selected {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: transparent;
+}
+
+/* 6) Inputs, Textareas, Selects */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea,
+.price-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-default);
+  font-size: 1rem;
+  color: #1a202c;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus,
+.price-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(26,54,93,0.1);
+}
+
+.form-group textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* 7) Price Tier + Exact */
+.price-tier-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.price-tier-buttons button {
+  flex: 1;
+  padding: 0.75rem 0;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-secondary);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.price-tier-buttons button:hover {
+  border-color: var(--color-primary);
+}
+
+.price-tier-buttons button.selected {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+/* 8) Star Rating */
+.star-rating {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.star {
+  cursor: pointer;
+  color: var(--color-muted);
+  transition: color 0.2s;
+}
+
+.star.selected,
+.star:hover,
+.star.active {
+  color: var(--color-primary);
+}
+
+/* 9) Tags */
+.tag-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.tag-pill {
+  padding: 0.25rem 0.75rem;
+  background: var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: 0.875rem;
+  color: var(--color-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tag-pill .remove-tag {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* 10) Navigation Buttons */
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-pill);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border: 2px solid var(--color-primary);
+}
+
+.btn-primary:hover {
+  background: #fff;
+  color: var(--color-primary);
+}
+
+.btn-secondary {
+  background: var(--color-bg);
+  color: var(--color-secondary);
+  border: 2px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+  background: var(--color-border);
+}
+
+/* 11) Messages */
+.message {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+}
+
+.message.success {
+  color: var(--color-success);
+}
+
+.message.error {
+  color: var(--color-error);
+}
+
+/* 12) Animations */
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  .recommendation-card {
-    width: 100%;
-    max-width: 600px;
-    background: #ffffff;
-    padding: 2rem;
-    border-radius: 1rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  }
-  
-  .recommendation-card h1 {
-    color: #1a365d;
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-  }
-  
-  .recommendation-card p {
-    font-size: 1rem;
-    margin-bottom: 1.5rem;
-    color: #444;
-  }
-  
-  .recommendation-card form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .recommendation-card input,
-  .recommendation-card textarea,
-  .recommendation-card select {
-    padding: 0.75rem 1rem;
-    border: 1px solid #ccc;
-    border-radius: 0.5rem;
-    font-size: 1rem;
-  }
-  
-  .recommendation-card button {
-    background-color: #1a365d;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border: 2px solid transparent;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    font-family: 'Inter', sans-serif; /* Make sure you're using this globally */
-  }
-  
-  .recommendation-card button:hover {
-    background-color: white;
-    color: #1a365d;
-    border: 2px solid #1a365d;
-  }
-  
-  .submit-message {
-    text-align: center;
-    margin-top: 1rem;
-    font-size: 0.95rem;
-    color: #2f855a;
-  }
-  
+}

@@ -215,3 +215,15 @@ body {
 .info-grid .info-item .info-value {
   text-transform: capitalize;
 }
+
+.login-prompt {
+  color: #718096;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
+
+/* placeholder cell in the connections table */
+.placeholder-cell {
+  color: #718096;
+  text-align: center;
+}

@@ -17,7 +17,8 @@ const Home = () => {
   const isMobile = useMediaQuery({ maxWidth: 768 });
   const location = useLocation();
 
-  const fullText = 'Find services,';
+  // const fullText = 'Find services,';
+  const fullText = 'Find trusted service';
 
   useEffect(() => {
     const email = localStorage.getItem('userEmail');
@@ -91,15 +92,15 @@ const Home = () => {
         )} */}
 
         <h1 className="typewriter-title">
-          <motion.span
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            {displayText}
-          </motion.span>
-          <span className="highlight-box">fast.</span>
-        </h1>
+            <motion.span
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              {displayText}
+            </motion.span>
+            <span className="highlight-box">recs.</span>
+          </h1>
 
         <p className="subtitle">Where trusted people share trusted service providers.</p>
 
