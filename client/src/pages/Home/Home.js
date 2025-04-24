@@ -18,7 +18,9 @@ const Home = () => {
   const location = useLocation();
 
   // const fullText = 'Find services,';
-  const fullText = 'Find trusted service';
+  // const fullText = 'Find trusted service';
+  // const fullText = 'Find <span class="highlight-box">trusted</span> service recs.';
+  const fullText = 'Find trusted service recs.';
 
   useEffect(() => {
     const email = localStorage.getItem('userEmail');
@@ -91,7 +93,7 @@ const Home = () => {
           </motion.p>
         )} */}
 
-        <h1 className="typewriter-title">
+        {/* <h1 className="typewriter-title">
             <motion.span
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -100,7 +102,47 @@ const Home = () => {
               {displayText}
             </motion.span>
             <span className="highlight-box">recs.</span>
-          </h1>
+          </h1> */}
+        {/* <h1 className="typewriter-title">
+          <motion.span
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            Find&nbsp;
+          </motion.span>
+          <motion.span
+            className="highlight-box"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            trusted
+          </motion.span>
+          <motion.span
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+          >
+            &nbsp;service recs.
+          </motion.span>
+        </h1> */}
+        <h1 className="typewriter-title">
+          <motion.span
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            dangerouslySetInnerHTML={{
+              __html: displayText.includes('trusted')
+                ? displayText.replace(
+                    'trusted',
+                    '<span class="highlight-box">trusted</span>'
+                  )
+                : displayText
+            }}
+          />
+          <span className="normal-word">&nbsp;</span>
+        </h1>
 
         <p className="subtitle">Where trusted people share trusted service providers.</p>
 
@@ -133,6 +175,143 @@ const Home = () => {
 };
 
 export default Home;
+
+// working 4/24
+// import React, { useEffect, useState } from 'react';
+// import { useNavigate, useLocation } from 'react-router-dom';
+// import { useMediaQuery } from 'react-responsive';
+// import { motion } from 'framer-motion';
+// import CountUp from 'react-countup';
+// import './Home.css';
+
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+
+// const Home = () => {
+//   const [displayText, setDisplayText] = useState('');
+//   const [isTyping, setIsTyping] = useState(true);
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const [userName, setUserName] = useState('');
+//   const [providerCount, setProviderCount] = useState(null);
+//   const navigate = useNavigate();
+//   const isMobile = useMediaQuery({ maxWidth: 768 });
+//   const location = useLocation();
+
+//   // const fullText = 'Find services,';
+//   const fullText = 'Find trusted service';
+
+//   useEffect(() => {
+//     const email = localStorage.getItem('userEmail');
+//     if (email) {
+//       const firstName = email.split('@')[0];
+//       setUserName(firstName.charAt(0).toUpperCase() + firstName.slice(1));
+//     }
+//   }, []);
+
+//   useEffect(() => {
+//     if (isTyping) {
+//       const timeout = setTimeout(() => {
+//         setDisplayText(fullText.substring(0, displayText.length + 1));
+//         if (displayText.length === fullText.length - 1) {
+//           setIsTyping(false);
+//         }
+//       }, 100);
+//       return () => clearTimeout(timeout);
+//     }
+//   }, [displayText, isTyping]);
+
+//   useEffect(() => {
+//     fetch(`${API_URL}/api/providers/count`)
+//       .then(res => res.json())
+//       .then(data => setProviderCount(data.count))
+//       .catch(err => console.error('Failed to fetch provider count:', err));
+//   }, []);
+
+//   const handleSearch = async (e) => {
+//     if (e) e.preventDefault();
+//     if (!searchQuery.trim()) return;
+
+//     try {
+//       const res = await fetch(`${API_URL}/api/providers/search?q=${encodeURIComponent(searchQuery.trim())}`);
+//       const data = await res.json();
+//       if (data && Array.isArray(data.providers) && data.providers.length > 0) {
+//         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+//       } else {
+//         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}&noResults=true`);
+//       }
+//     } catch (err) {
+//       console.error("Search failed:", err);
+//     }
+//   };
+
+//   if (location.pathname !== '/') return null;
+
+//   return (
+//     <motion.div 
+//       className="home"
+//       initial={{ opacity: 0 }} 
+//       animate={{ opacity: 1 }} 
+//       transition={{ duration: 1 }}
+//     >
+//       <motion.div 
+//         className="hero-container"
+//         initial={{ y: 30, opacity: 0 }} 
+//         animate={{ y: 0, opacity: 1 }} 
+//         transition={{ delay: 0.2, duration: 0.8 }}
+//       >
+//         {/* Uncomment to show personalized welcome */}
+//         {/* {userName && (
+//           <motion.p 
+//             className="welcome-tagline"
+//             initial={{ opacity: 0 }}
+//             animate={{ opacity: 1 }}
+//             transition={{ delay: 0.6 }}
+//           >
+//             Welcome back, {userName} 👋
+//           </motion.p>
+//         )} */}
+
+//         <h1 className="typewriter-title">
+//             <motion.span
+//               initial={{ opacity: 0, y: 20 }}
+//               animate={{ opacity: 1, y: 0 }}
+//               transition={{ duration: 0.8 }}
+//             >
+//               {displayText}
+//             </motion.span>
+//             <span className="highlight-box">recs.</span>
+//           </h1>
+
+//         <p className="subtitle">Where trusted people share trusted service providers.</p>
+
+//         <form className="search-wrapper" onSubmit={handleSearch}>
+//           <input
+//             type="text"
+//             value={searchQuery}
+//             onChange={(e) => setSearchQuery(e.target.value)}
+//             placeholder={isMobile ? "Search services..." : "Search for home services, financial advisors..."}
+//             className="search-input"
+//           />
+//           <button type="submit" className="search-button">→</button>
+//         </form>
+
+//         {providerCount !== null && (
+//           <motion.div 
+//             className="live-counter"
+//             initial={{ opacity: 0, y: 10 }} 
+//             animate={{ opacity: 1, y: 0 }} 
+//             transition={{ delay: 1, duration: 0.6 }}
+//           >
+//             <p className="provider-count">
+//               <CountUp end={providerCount} duration={2} separator="," /> recommendations shared this week
+//             </p>
+//           </motion.div>
+//         )}
+//       </motion.div>
+//     </motion.div>
+//   );
+// };
+
+// export default Home;
 
 
 // import React, { useEffect, useState /*, useRef */ } from 'react';
