@@ -65,7 +65,7 @@ const createRecommendation = async (req, res) => {
       (SELECT u.id            FROM users u      WHERE u.email = $5),
       (SELECT s.service_id    FROM services s  WHERE s.name = $6),
       $7, $8, $9,
-      $10::date,
+      COALESCE($10::date, CURRENT_DATE),
       $11,
       $12, $13, $14, $15, $16,
       $17, $18, $19, $20, $21

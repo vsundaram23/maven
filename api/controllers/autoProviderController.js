@@ -12,6 +12,7 @@ const getAllAutoProviders = async (req, res) => {
         sp.phone_number,
         sp.num_likes,
         sp.date_of_recommendation,
+        sp.tags,
         s.name        AS service_type,
         u.name        AS recommended_by_name
       FROM service_providers sp
@@ -46,6 +47,7 @@ const getAutoProviderById = async (req, res) => {
       SELECT 
         sp.*,
         sp.date_of_recommendation,
+        sp.tags,
         s.name                AS service_type,
         ROUND(AVG(r.rating), 2) AS average_rating,
         COUNT(r.id)            AS total_reviews

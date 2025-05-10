@@ -20,7 +20,7 @@ const Home = () => {
   // const fullText = 'Find services,';
   // const fullText = 'Find trusted service';
   // const fullText = 'Find <span class="highlight-box">trusted</span> service recs.';
-  const fullText = 'Find trusted service recs.';
+  const fullText = 'Find trusted recommendations.';
 
   useEffect(() => {
     const email = localStorage.getItem('userEmail');
