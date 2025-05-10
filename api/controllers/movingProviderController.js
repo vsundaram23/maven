@@ -15,7 +15,6 @@ const getAllMovingProviders = async (req, res) => {
                 u.name as recommended_by_name
             FROM service_providers sp
             JOIN services s ON sp.service_id = s.service_id
-            JOIN service_categories sc ON s.category_id = sc.service_id
             JOIN users u ON sp.recommended_by = u.id
             WHERE s.name = 'Moving and Misc'
         `);
