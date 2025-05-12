@@ -276,29 +276,68 @@ const ApplianceServices = () => {
         setReviewStatsMap(statsMap);
         setReviewMap(allReviewsMap);
   
-        // ✅ Enrich providers with stats (tags already preserved from ...p)
-        const enriched = filtered.map(p => ({
+        const enriched = filtered.map((p, idx) => ({
           ...p,
+          originalIndex:  idx,
           average_rating: statsMap[p.id]?.average_rating || 0,
-          total_reviews: statsMap[p.id]?.total_reviews || 0,
+          total_reviews:  statsMap[p.id]?.total_reviews || 0,
         }));
+        // let sorted = [];
+        // if (sortOption === 'topRated') {
+        //   sorted = enriched
+        //     .filter(p => p.average_rating >= 4.5)
+        //     .sort((a, b) => b.average_rating - a.average_rating || b.total_reviews - a.total_reviews);
+        // } else {
+        //   sorted = enriched
+        //     .sort((a, b) => {
+        //       const aAbove4 = a.average_rating >= 4 ? 1 : 0;
+        //       const bAbove4 = b.average_rating >= 4 ? 1 : 0;
+        //       if (aAbove4 !== bAbove4) return bAbove4 - aAbove4;
+        //       return b.total_reviews - a.total_reviews;
+        //     });
+        // }
   
-        // ✅ Sort based on selected option
-        let sorted = [];
+        // setProviders(sorted);
+        const getBand = rating => {
+          if (rating >= 4) return 0;
+          if (rating >= 3) return 1;
+          if (rating >= 2) return 2;
+          if (rating >= 1) return 3;
+          return 4;
+        };
+        
+        // 3) Sort
+        let sorted;
         if (sortOption === 'topRated') {
+          // keep your existing topRated logic, e.g. filter >=4.5 then sort by score
           sorted = enriched
             .filter(p => p.average_rating >= 4.5)
-            .sort((a, b) => b.average_rating - a.average_rating || b.total_reviews - a.total_reviews);
-        } else {
-          sorted = enriched
             .sort((a, b) => {
-              const aAbove4 = a.average_rating >= 4 ? 1 : 0;
-              const bAbove4 = b.average_rating >= 4 ? 1 : 0;
-              if (aAbove4 !== bAbove4) return bAbove4 - aAbove4;
-              return b.total_reviews - a.total_reviews;
+              const aScore = a.average_rating * a.total_reviews;
+              const bScore = b.average_rating * b.total_reviews;
+              if (bScore !== aScore) return bScore - aScore;
+              if (b.average_rating !== a.average_rating) return b.average_rating - a.average_rating;
+              if (b.total_reviews !== a.total_reviews) return b.total_reviews - a.total_reviews;
+              return a.originalIndex - b.originalIndex;
             });
+        } else {
+          // “Recommended”: group by band, then by score, then avg, then count, then originalIndex
+          sorted = enriched.sort((a, b) => {
+            const bandA = getBand(a.average_rating);
+            const bandB = getBand(b.average_rating);
+            if (bandA !== bandB) return bandA - bandB;
+        
+            const scoreA = a.average_rating * a.total_reviews;
+            const scoreB = b.average_rating * b.total_reviews;
+            if (scoreB !== scoreA) return scoreB - scoreA;
+        
+            if (b.average_rating !== a.average_rating) return b.average_rating - a.average_rating;
+            if (b.total_reviews !== a.total_reviews) return b.total_reviews - a.total_reviews;
+        
+            return a.originalIndex - b.originalIndex;
+          });
         }
-  
+        
         setProviders(sorted);
       } catch (err) {
         setError('Failed to fetch providers');
@@ -466,12 +505,20 @@ const ApplianceServices = () => {
                 <>
                   <div className="recommended-row">
                     <span className="recommended-label">Recommended by:</span>
-                    <span
-                      className="recommended-name clickable"
-                      onClick={() => setClickedRecommender(provider.recommended_by_name)}
-                    >
-                      {provider.recommended_by_name}
-                    </span>
+                    {provider.recommended_by ? (
+                      <Link
+                        to={`/user/${provider.recommended_by}/recommendations`}
+                        className="recommended-name clickable"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {provider.recommended_by_name}
+                      </Link>
+                    ) : (
+                      <span className="recommended-name">
+                        {provider.recommended_by_name}
+                      </span>
+                    )}
                     {provider.date_of_recommendation && (
                       <span className="recommendation-date">
                         {' '}
@@ -549,7 +596,20 @@ const ApplianceServices = () => {
                 {/* 3) Connect with Recommender */}
                 <button
                   className="secondary-button"
-                  onClick={() => setClickedRecommender(provider.recommended_by_name)}
+                  onClick={() => {
+                    // prefer SMS if possible
+                    if (provider.recommender_phone) {
+                      window.location.href = `sms:${provider.recommender_phone}`;
+                    } 
+                    // otherwise email
+                    else if (provider.recommender_email) {
+                      window.location.href = `mailto:${provider.recommender_email}`;
+                    } 
+                    // fallback
+                    else {
+                      alert('Sorry, contact info not available.');
+                    }
+                  }}
                 >
                   Connect with Recommender
                 </button>
@@ -620,6 +680,8 @@ const ApplianceServices = () => {
     {isQuoteModalOpen && selectedProvider && (
       <QuoteModal
         providerName={selectedProvider.business_name}
+        providerEmail={selectedProvider.email} 
+        providerPhotoUrl={selectedProvider.profile_image}
         onClose={() => setIsQuoteModalOpen(false)}
       />
     )}

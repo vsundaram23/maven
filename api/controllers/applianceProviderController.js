@@ -5,6 +5,7 @@ const getAllApplianceProviders = async (req, res) => {
     const result = await pool.query(`
       SELECT 
         sp.id,
+        sp.recommended_by        AS recommended_by,
         sp.business_name,
         sp.description,
         sp.email,
@@ -13,7 +14,9 @@ const getAllApplianceProviders = async (req, res) => {
         sp.date_of_recommendation,
         sp.tags,
         s.name as service_type,
-        u.name as recommended_by_name
+        u.name as recommended_by_name,
+        u.email AS recommender_email,
+        u.phone_number AS recommender_phone
       FROM service_providers sp
       JOIN services s ON sp.service_id = s.service_id
       JOIN service_categories sc ON s.category_id = sc.service_id
@@ -45,9 +48,12 @@ const getApplianceProviderById = async (req, res) => {
     const result = await pool.query(`
       SELECT 
         sp.*,
+        sp.recommended_by        AS recommended_by,
         sp.tags,
         s.name as service_type,
         u.name as recommended_by_name,
+        u.email AS recommender_email,
+        u.phone_number AS recommender_phone,
         ROUND(AVG(r.rating), 2) as average_rating,
         COUNT(r.id) as total_reviews
       FROM service_providers sp
@@ -55,7 +61,7 @@ const getApplianceProviderById = async (req, res) => {
       JOIN users u ON sp.recommended_by = u.id
       LEFT JOIN reviews r ON sp.id = r.provider_id
       WHERE sp.id = $1 AND s.name = 'Appliance Services'
-      GROUP BY sp.id, s.name, u.name
+      GROUP BY sp.id, sp.recommended_by, s.name, u.name
     `, [id]);
 
     if (result.rows.length === 0) {
