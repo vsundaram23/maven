@@ -182,9 +182,9 @@ const Header = () => {
       localStorage.setItem('token', sessionData.token);
 
       const profileRes = await fetch(
-        `/api/auth/users/email/${encodeURIComponent(email)}`,
+        `${API_URL}/api/auth/users/email/${encodeURIComponent(email)}`,
         {
-          credentials: 'include',
+          credentials: 'include',            // if you rely on cookies
           headers: { 'Accept': 'application/json' }
         }
       );
