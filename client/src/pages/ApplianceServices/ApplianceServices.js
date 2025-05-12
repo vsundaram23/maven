@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { FaStar, FaPhone, FaEnvelope } from 'react-icons/fa';
 import { fetchApplianceProviders } from '../../services/providerService';
+import QuoteModal from '../../components/QuoteModal/QuoteModal';
 import './ApplianceServices.css';
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -239,6 +240,7 @@ const ApplianceServices = () => {
   const [showFeatureComingModal, setShowFeatureComingModal] = useState(false);
   const [dropdownOpenForId, setDropdownOpenForId] = useState(null);
   const [showLinkCopied, setShowLinkCopied] = useState(false);
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
 
   useEffect(() => {
@@ -365,7 +367,20 @@ const ApplianceServices = () => {
           return (
             <li key={provider.id} className="provider-card">
               <div className="card-header">
-                <h2 className="card-title">{provider.business_name}</h2>
+              <h2 className="card-title">
+                <Link
+                  to={`/provider/${provider.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="clickable"
+                  onClick={() => {
+                    // preserve for your profile page if you need it
+                    localStorage.setItem('selectedProvider', JSON.stringify(provider));
+                  }}
+                >
+                  {provider.business_name}
+                </Link>
+              </h2>
                 <div className="badge-wrapper-with-menu">
                 <div className="badge-group">
                   {provider.average_rating >= 4.5 && (
@@ -483,7 +498,7 @@ const ApplianceServices = () => {
                   )}
                 </>
               )}
-              <div className="action-buttons">
+              {/* <div className="action-buttons">
               <a
                 href={`/provider/${provider.id}`}
                 target="_blank"
@@ -505,6 +520,38 @@ const ApplianceServices = () => {
                   }
                 }}>
                   Request a Consultation
+                </button>
+              </div> */}
+              <div className="action-buttons">
+                {/* 2) Request a Quote */}
+                {/* <button
+                  className="primary-button"
+                  onClick={() => {
+                    const msg = prompt(`Tell ${provider.business_name} what you need:`);
+                    if (msg !== null && msg.trim() !== '') {
+                      alert(`Thanks. ${provider.business_name} will reach out to you directly.`);
+                      // ← if you want to POST msg to your backend, do it here
+                    }
+                  }}
+                >
+                  Request a Quote
+                </button> */}
+                <button
+                  className="primary-button"
+                  onClick={() => {
+                    setSelectedProvider(provider);
+                    setIsQuoteModalOpen(true);
+                  }}
+                >
+                  Request a Quote
+                </button>
+
+                {/* 3) Connect with Recommender */}
+                <button
+                  className="secondary-button"
+                  onClick={() => setClickedRecommender(provider.recommended_by_name)}
+                >
+                  Connect with Recommender
                 </button>
               </div>
             </li>
@@ -569,6 +616,12 @@ const ApplianceServices = () => {
           </div>
         </div>
       </div>
+    )}
+    {isQuoteModalOpen && selectedProvider && (
+      <QuoteModal
+        providerName={selectedProvider.business_name}
+        onClose={() => setIsQuoteModalOpen(false)}
+      />
     )}
     </div>
   );
