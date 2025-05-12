@@ -30,6 +30,8 @@ router.post('/check-email', async (req, res) => {
     res.status(500).json({ error: 'Server error checking email' });
   }
 });
+
+
 // router.post('/check-email', async (req, res) => {
 //   const { email } = req.body;
   
@@ -67,45 +69,42 @@ router.post('/check-email', async (req, res) => {
 // });
 
 router.post('/signup', async (req, res) => {
-  const { name, email } = req.body;
-  
+  const { name, preferred_name, email, phone_number } = req.body;
+
   try {
+    // 1) check for existing email
     const emailCheck = await pool.query(
       'SELECT email FROM users WHERE email = $1',
       [email]
     );
-    
     if (emailCheck.rows.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email already exists' 
-      });
+      return res.status(400).json({ success: false, message: 'Email already exists' });
     }
-    
+
+    // 2) insert with phone_number
     const result = await pool.query(
-      'INSERT INTO users (name, email, profile_image) VALUES ($1, $2, $3) RETURNING id, name, email, profile_image, created_at',
-      [name, email, null]
+      `INSERT INTO users 
+         (name, preferred_name, email, profile_image, phone_number) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING id, name, preferred_name, email, profile_image, phone_number, created_at`,
+      [name, preferred_name, email, null, phone_number]
     );
-    
+
+    // 3) respond
     const token = crypto.randomBytes(64).toString('hex');
-    
     res.status(201).json({
       success: true,
       message: 'User created successfully',
       token,
-      user: result.rows[0],
-      id: result.rows[0].id,
-      name: result.rows[0].name,
-      email: result.rows[0].email
+      user: result.rows[0]
     });
+
   } catch (error) {
     console.error('Signup error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error during signup' 
-    });
+    res.status(500).json({ success: false, message: 'Server error during signup' });
   }
 });
+
 
 
 // Existing session creation route
@@ -117,10 +116,16 @@ router.post('/create-session', (req, res) => {
 
 // New route to get user data by email
 router.get('/users/email/:email', async (req, res) => {
+  const { email } = req.params;
   try {
-    const result = await getUserByEmail(req, res);
+    const user = await getUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    return res.json({ user });
   } catch (error) {
-    res.status(500).json({ message: 'Error retrieving user data' });
+    console.error('Error retrieving user by email:', error.message);
+    return res.status(500).json({ message: 'Error retrieving user data' });
   }
 });
 

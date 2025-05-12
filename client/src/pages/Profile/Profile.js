@@ -67,16 +67,26 @@ const Profile = () => {
 
   // Logout clears everything
   const handleLogout = () => {
-    localStorage.removeItem('userEmail');
+    // 1) Remove all auth/user keys from localStorage
     localStorage.removeItem('token');
+    localStorage.removeItem('user');        // your full user JSON
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userId');
+  
+    // (Optionally, if you want to clear absolutely everything:)
+    // localStorage.clear();
+  
+    // 2) Reset all Profile state
     setUserData(null);
     setName('—');
     setEmail('—');
     setConnections([]);
     setRecommendations([]);
+  
+    // 3) Navigate back home
     navigate('/');
   };
-
+  
   useEffect(() => {
     // Initial load
     fetchAllData();

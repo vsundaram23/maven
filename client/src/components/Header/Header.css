@@ -360,3 +360,95 @@
   z-index: 1000;
   min-width: 160px;
 }
+
+/* ─── NAV / EXPLORE PANEL ───────────────────────────────────────────── */
+
+/* ─── EXPLORE + ALIGNMENT FIXES ────────────────────────────────────── */
+
+.nav-item.explore {
+  position: relative;
+}
+
+/* match font & size to Share a Recommendation */
+.btn-explore {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--primary-blue);
+  background: none;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.btn-explore:hover {
+  color: var(--hover-blue);
+}
+
+/* caret flip */
+.caret {
+  margin-left: 0.25rem;
+  transition: transform 0.2s;
+}
+.caret.open {
+  transform: rotate(180deg);
+}
+
+.explore-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  gap: 1.5rem;
+  background: var(--white);
+  border: 1px solid #E2E8F0;                /* subtle border */
+  border-radius: 12px;                       /* rounder corners */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* lighter, softer shadow */
+  backdrop-filter: blur(4px);                /* gentle backdrop blur */
+  padding: 1rem 1.5rem;                      /* generous padding */
+  z-index: 1000;
+
+  /* keep it on-screen & scroll if necessary */
+  max-width: 90vw;
+  overflow-x: auto;
+}
+
+.explore-panel h4 {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary-blue);
+  border-bottom: 2px solid var(--light-blue); /* underline as divider */
+}
+
+.explore-panel h4,
+.explore-panel .panel-link {
+  white-space: nowrap; /* never wrap text */
+}
+
+.panel-link {
+  display: block;
+  padding: 0.45rem 0.75rem;                  /* clickable padding */
+  font-size: 0.9rem;
+  color: #4A5568;                            /* gray-700 for contrast */
+  text-decoration: none;
+  border-radius: 6px;                        /* pill-hover shape */
+  transition: background 0.2s, color 0.2s;
+}
+
+.panel-link:hover {
+  background: var(--light-blue);
+  color: var(--primary-blue);
+}
+
+/* maintain spacing between Explore & the other buttons */
+.nav-links .btn-explore,
+.nav-links .btn-outline,
+.nav-links .btn-solid {
+  margin-left: 10px;
+}
+
+
