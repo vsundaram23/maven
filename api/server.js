@@ -18,6 +18,7 @@ const financialProviderRoutes = require('./routes/financialProviders');
 const communityRoutes = require('./routes/communities');
 const userRoutes = require('./routes/users');
 const autoProviderRoutes = require('./routes/autoProviders');
+const quoteRoutes = require('./routes/quotes');
 
 const app = express();
 
@@ -73,6 +74,7 @@ app.use('/api/financialProviders', financialProviderRoutes);
 app.use('/api/communities', communityRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/autoProviders', autoProviderRoutes);
+app.use('/api/quotes', quoteRoutes);
 
 // 500 handler
 app.use((err, req, res, next) => {
