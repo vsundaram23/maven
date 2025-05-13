@@ -4,12 +4,10 @@ import { Link, useLocation } from 'react-router-dom';
 import { FaStar, FaPhone, FaEnvelope } from 'react-icons/fa';
 import './Search.css';
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = 'http://localhost:3000';
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = 'http://localhost:3000';
 
-//
-// StarRating: displays full, half, and empty stars
-//
+// ... (StarRating, ReviewModal, ProviderProfileModal components remain the same) ...
 const StarRating = ({ rating }) => {
   const fullStars  = Math.floor(rating);
   const hasHalf    = rating - fullStars >= 0.5;
@@ -28,9 +26,6 @@ const StarRating = ({ rating }) => {
   );
 };
 
-//
-// ReviewModal: lets users rate, write a review, and add tags
-//
 const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   const [rating, setRating]     = useState(0);
   const [hover, setHover]       = useState(0);
@@ -39,7 +34,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   const [tagInput, setTagInput] = useState('');
   const [error, setError]       = useState('');
 
-  // Add tag on Enter
   const handleTagKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -51,7 +45,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
     }
   };
 
-  // Remove a tag
   const removeTag = (tagToRemove) =>
     setTags(tags.filter(tag => tag !== tagToRemove));
 
@@ -62,7 +55,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
       return;
     }
     onSubmit({ rating, review, tags });
-    // reset state
     setRating(0);
     setReview('');
     setTags([]);
@@ -78,7 +70,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
       <div className="modal-content">
         <h2>Review {provider.business_name}</h2>
         <form onSubmit={handleSubmit}>
-          {/* Rating */}
           <div className="rating-container">
             <label>
               Rate your experience: <span className="required">*</span>
@@ -96,8 +87,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
             </div>
             {error && <div className="error-message">{error}</div>}
           </div>
-
-          {/* Review text */}
           <div className="review-input">
             <label>Tell us about your experience:</label>
             <textarea
@@ -107,8 +96,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
               rows={4}
             />
           </div>
-
-          {/* Tag input */}
           <div className="tag-input-group">
             <label>Add tags (press Enter to add):</label>
             <input
@@ -131,8 +118,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
               ))}
             </div>
           </div>
-
-          {/* Actions */}
           <div className="modal-buttons">
             <button type="button" onClick={onClose} className="cancel-button">
               Cancel
@@ -147,9 +132,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   );
 };
 
-//
-// ProviderProfileModal: shows full provider details + reviews
-//
 const ProviderProfileModal = ({
   isOpen,
   onClose,
@@ -166,7 +148,6 @@ const ProviderProfileModal = ({
       })
     : 'Not provided';
 
-  // Build list of all recommenders
   const recommenders = new Set();
   if (provider.recommended_by_name) recommenders.add(provider.recommended_by_name);
   reviews.forEach(r => r.user_name && recommenders.add(r.user_name));
@@ -222,9 +203,7 @@ const ProviderProfileModal = ({
             </div>
           )}
         </div>
-
         <hr />
-
         <div className="profile-reviews">
           <h3>Reviews</h3>
           {reviews.length === 0
@@ -245,7 +224,6 @@ const ProviderProfileModal = ({
               ))
           }
         </div>
-
         <div className="modal-buttons">
           <button className="cancel-button" onClick={onClose}>Close</button>
         </div>
@@ -254,9 +232,7 @@ const ProviderProfileModal = ({
   );
 };
 
-//
-// Main Search component
-//
+
 const Search = () => {
   const location     = useLocation();
   const params       = new URLSearchParams(location.search);
@@ -278,49 +254,92 @@ const Search = () => {
   const [dropdownOpenForId, setDropdownOpenForId]     = useState(null);
   const [showLinkCopied, setShowLinkCopied]           = useState(false);
 
-  // Fetch providers, stats, and reviews
+  // Directly get user ID from localStorage
+  const getCurrentUserId = () => {
+    const userString = localStorage.getItem('user'); // Assuming key is 'user'
+    if (userString) {
+      try {
+        const userObject = JSON.parse(userString);
+        return userObject?.id || null;
+      } catch (e) {
+        console.error("Error parsing user from localStorage:", e);
+        return null;
+      }
+    }
+    return null;
+  };
+
   useEffect(() => {
     if (!query || noResults) {
       setLoading(false);
+      setProviders([]);
       return;
     }
+
+    const currentUserId = getCurrentUserId();
+
+    if (!currentUserId) {
+        console.warn("Search cannot be performed: User ID not found in localStorage. Please log in.");
+        setError("Please log in to search for recommendations.");
+        setLoading(false);
+        setProviders([]);
+        return;
+    }
+
+    setLoading(true);
+    setError(null);
+
     (async () => {
       try {
-        const res  = await fetch(
-          `${API_URL}/api/providers/search?q=${encodeURIComponent(query)}`
-        );
-        const data = await res.json();
-        let raw = data.providers || [];
+        const fetchUrl = `${API_URL}/api/providers/search?q=${encodeURIComponent(query)}&user_id=${currentUserId}`;
+        console.log("Fetching search results from:", fetchUrl);
+        const res  = await fetch(fetchUrl);
 
-        // Fetch stats + reviews in parallel
-        const stats = {}, revs = {};
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || `Failed to fetch with status: ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (!data.success) {
+            throw new Error(data.message || data.error || 'Search request was not successful');
+        }
+
+        let raw = data.providers || [];
+        const stats = {};
+        const revs = {};
+
         await Promise.all(raw.map(async p => {
-          try {
-            const sRes = await fetch(`${API_URL}/api/reviews/stats/${p.id}`);
-            const sData = await sRes.json();
-            stats[p.id] = {
-              average_rating: parseFloat(sData.average_rating) || 0,
-              total_reviews:  parseInt(sData.total_reviews, 10) || 0
-            };
-          } catch {
-            stats[p.id] = { average_rating: 0, total_reviews: 0 };
+          if (p.average_rating === undefined || p.total_reviews === undefined) {
+            try {
+                const sRes = await fetch(`${API_URL}/api/reviews/stats/${p.id}`);
+                const sData = await sRes.json();
+                stats[p.id] = {
+                average_rating: parseFloat(sData.average_rating) || 0,
+                total_reviews:  parseInt(sData.total_reviews, 10) || 0
+                };
+            } catch {
+                stats[p.id] = { average_rating: 0, total_reviews: 0 };
+            }
+          } else {
+            stats[p.id] = { average_rating: p.average_rating, total_reviews: p.total_reviews };
           }
           try {
-            const rRes = await fetch(`${API_URL}/api/reviews/${p.id}`);
-            revs[p.id] = await rRes.json();
+              const rRes = await fetch(`${API_URL}/api/reviews/${p.id}`);
+              revs[p.id] = await rRes.json();
           } catch {
-            revs[p.id] = [];
+              revs[p.id] = [];
           }
         }));
         setReviewStatsMap(stats);
         setReviewMap(revs);
 
-        // Enrich and sort
         raw = raw.map(p => ({
           ...p,
-          average_rating: stats[p.id].average_rating,
-          total_reviews:  stats[p.id].total_reviews
+          average_rating: stats[p.id]?.average_rating ?? p.average_rating ?? 0,
+          total_reviews:  stats[p.id]?.total_reviews ?? p.total_reviews ?? 0
         }));
+
         let sorted = raw;
         if (sortOption === 'topRated') {
           sorted = raw
@@ -339,18 +358,22 @@ const Search = () => {
         }
         setProviders(sorted);
       } catch (err) {
-        console.error(err);
-        setError('Failed to fetch providers');
+        console.error("Error in search useEffect:", err);
+        setError(err.message || 'Failed to fetch providers');
+        setProviders([]);
       } finally {
         setLoading(false);
       }
     })();
-  }, [query, noResults, sortOption]);
+  }, [query, noResults, sortOption]); // Removed currentLoggedInUser from dependency array as it's read directly inside
 
-  // Submit new review (including tags)
+
   const handleReviewSubmit = async ({ rating, review, tags }) => {
-    const userEmail = localStorage.getItem('userEmail');
-    if (!selectedProvider) return;
+    const userEmail = localStorage.getItem('userEmail'); // Still using email for submitting review for now
+    if (!selectedProvider || !userEmail) {
+        console.error("Cannot submit review: provider or user email missing.");
+        return;
+    }
     try {
       await fetch(`${API_URL}/api/reviews`, {
         method: 'POST',
@@ -369,7 +392,6 @@ const Search = () => {
     }
   };
 
-  // Request consultation
   const handleConsultation = provider => {
     if (provider.phone_number) {
       window.location.href =
@@ -382,13 +404,12 @@ const Search = () => {
     }
   };
 
-  // Loading / error / no results
   if (loading) return <div className="loading-spinner">Loading...</div>;
-  if (error)   return <div className="error-message">{error}</div>;
-  if (noResults || providers.length === 0) {
+  if (error && providers.length === 0) return <div className="error-message">{error}</div>;
+  if ((noResults || providers.length === 0) && !loading) {
     return (
       <div className="no-results">
-        <p>No trusted providers found.</p>
+        <p>No trusted providers found for your search "{query}".</p>
         <button
           className="primary-button"
           onClick={() => alert('Coming soon: Bump your network!')}
@@ -401,9 +422,9 @@ const Search = () => {
 
   return (
     <div className="search-results-container">
-      <h1 className="section-heading">Search Results</h1>
+      <h1 className="section-heading">Search Results for "{query}"</h1>
+      {error && <div className="error-message small-error">{error}</div>}
 
-      {/* Sort bar */}
       <div className="sort-bar">
         Sort by:
         <select
@@ -416,14 +437,12 @@ const Search = () => {
         </select>
       </div>
 
-      {/* Provider cards */}
       <ul className="provider-list">
         {providers.map(p => {
-          const stats = reviewStatsMap[p.id] || { average_rating: 0, total_reviews: 0 };
+          const stats = reviewStatsMap[p.id] || { average_rating: p.average_rating || 0, total_reviews: p.total_reviews || 0 };
           const revs  = reviewMap[p.id]   || [];
           return (
             <li key={p.id} className="provider-card">
-              {/* Header */}
               <div className="card-header">
                 <h2 className="card-title">{p.business_name}</h2>
                 <div className="badge-wrapper-with-menu">
@@ -431,7 +450,7 @@ const Search = () => {
                     {stats.average_rating >= 4.5 && (
                       <span className="top-rated-badge">Top Rated</span>
                     )}
-                    <span className="profile-badge">{p.service_type}</span>
+                    <span className="profile-badge">{p.service_type || p.category}</span>
                   </div>
                   <div className="dropdown-wrapper">
                     <button
@@ -464,7 +483,6 @@ const Search = () => {
                 </div>
               </div>
 
-              {/* Review summary */}
               <div className="review-summary">
                 <StarRating rating={stats.average_rating} />
                 <span className="review-score">
@@ -481,10 +499,8 @@ const Search = () => {
                 </button>
               </div>
 
-              {/* Description */}
               <p className="card-description">{p.description || 'No description available'}</p>
 
-              {/* Tags */}
               {Array.isArray(p.tags) && p.tags.length > 0 && (
                 <div className="tag-container">
                   {p.tags.map((t, i) => (
@@ -493,41 +509,38 @@ const Search = () => {
                 </div>
               )}
 
-              {/* Recommended by */}
-              {p.recommended_by_name && (
+              {p.recommender_name && (
                 <div className="recommended-row">
                   <span className="recommended-label">Recommended by:</span>
                   <span
                     className="recommended-name clickable"
-                    onClick={() => setClickedRecommender(p.recommended_by_name)}
+                    onClick={() => setClickedRecommender(p.recommender_name)}
                   >
-                    {p.recommended_by_name}
+                    {p.recommender_name}
                   </span>
                 </div>
               )}
 
-              {/* Also used by */}
-              {revs.length > 0 && (
+              {revs.length > 0 &&
+                [...new Set(revs.map(r => r.user_name).filter(n => n && n !== p.recommender_name))].length > 0 && (
                 <div className="recommended-row">
                   <span className="recommended-label">Also used by:</span>
                   <span className="used-by-names">
-                    {[...new Set(revs.map(r => r.user_name).filter(n => n && n !== p.recommended_by_name))].join(', ')}
+                    {[...new Set(revs.map(r => r.user_name).filter(n => n && n !== p.recommender_name))].join(', ')}
                   </span>
                 </div>
               )}
 
-              {/* Actions */}
               <div className="action-buttons">
-                <Link
-                  to={`/provider/${p.id}`}
+                <button
                   className="primary-button"
                   onClick={() => {
-                    localStorage.setItem('selectedProvider', JSON.stringify(p));
+                    setSelectedProvider(p);
                     setIsProfileModalOpen(true);
                   }}
                 >
                   View Profile
-                </Link>
+                </button>
                 <button
                   className="secondary-button"
                   onClick={() => handleConsultation(p)}
@@ -540,7 +553,6 @@ const Search = () => {
         })}
       </ul>
 
-      {/* Modals */}
       {isReviewModalOpen && selectedProvider && (
         <ReviewModal
           isOpen={isReviewModalOpen}
