@@ -1,46 +1,76 @@
 const express = require('express');
 const router = express.Router();
-const { validate: isUuid } = require('uuid'); 
+const { validate: isUuid } = require('uuid');
 
 const {
-  getAllProviders,
+  getAllVisibleProviders,
   getProviderById,
-  getRecommendationsByUser,
-  searchProviders,
+  getRecommendationsByTargetUser,
+  searchVisibleProviders,
   getProviderCount
 } = require('../controllers/providerController');
 
-// GET /api/providers
-router.get('/', getAllProviders);
+router.get('/', getAllVisibleProviders);
 
-// GET /api/providers/search?q=term
-router.get('/search', searchProviders);
+router.get('/search', searchVisibleProviders);
 
 router.get('/count', getProviderCount);
 
-// POST /api/providers/user-recommendations
-router.post('/user-recommendations', async (req, res) => {
-  const { email } = req.body;
+router.get('/user-recommendations', getRecommendationsByTargetUser);
 
-  try {
-    const recommendations = await getRecommendationsByUser(email);
-    res.json(recommendations);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// GET /api/providers/:id (only if it's a valid UUID)
 router.get('/:id', (req, res, next) => {
   const { id } = req.params;
-
   if (!isUuid(id)) {
     return res.status(400).json({ error: 'Invalid provider ID format' });
   }
-
   next();
 }, getProviderById);
+
 module.exports = router;
+
+// const express = require('express');
+// const router = express.Router();
+// const { validate: isUuid } = require('uuid'); 
+
+// const {
+//   getAllProviders,
+//   getProviderById,
+//   getRecommendationsByUser,
+//   searchProviders,
+//   getProviderCount
+// } = require('../controllers/providerController');
+
+// // GET /api/providers
+// router.get('/', getAllProviders);
+
+// // GET /api/providers/search?q=term
+// router.get('/search', searchProviders);
+
+// router.get('/count', getProviderCount);
+
+// // POST /api/providers/user-recommendations
+// router.post('/user-recommendations', async (req, res) => {
+//   const { email } = req.body;
+
+//   try {
+//     const recommendations = await getRecommendationsByUser(email);
+//     res.json(recommendations);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// // GET /api/providers/:id (only if it's a valid UUID)
+// router.get('/:id', (req, res, next) => {
+//   const { id } = req.params;
+
+//   if (!isUuid(id)) {
+//     return res.status(400).json({ error: 'Invalid provider ID format' });
+//   }
+
+//   next();
+// }, getProviderById);
+// module.exports = router;
 
 
 
