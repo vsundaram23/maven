@@ -1,4 +1,4 @@
-body {
+/* body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -10,4 +10,28 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
-}
+} */
+
+/* src/index.css */
+
+/* If 'Inter' font is NOT meant to be global, and ONLY for ShareRecommendation page,
+   DO NOT import 'Inter' here. The @import for 'Inter' should ONLY be in ShareRecommendation.css */
+
+   body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;  /* This is your original system font stack */
+    color: #212529; /* <<< ADD THIS: A good default dark text color (adjust if needed) */
+    font-weight: 400; /* <<< ADD THIS: Explicitly set normal font weight */
+    background-color: #ffffff; /* Explicit default background, you can keep from App.css if preferred */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+      monospace;
+  }
+  
+  /* Any other truly global styles can go here */

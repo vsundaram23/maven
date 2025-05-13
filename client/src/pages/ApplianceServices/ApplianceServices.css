@@ -439,8 +439,8 @@ body {
 }
 
 .top-rated-badge {
-  background-color: #2f855a; /* dark green */
-  color: white;
+  background-color: #2f855a !important;
+  color: white !important;
   font-weight: 600;
   font-size: 0.75rem;
   padding: 0.3rem 0.75rem;

@@ -34,7 +34,6 @@ const ProviderProfile = () => {
                 const res = await fetch(`${API_URL}/api/providers/${id}`);
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                 const data = await res.json();
-                // --- TODO: Ensure backend sends 'recommended_by_preferred_name' ---
                 setProvider(data.provider);
             } catch (error) {
                 console.error("Failed to fetch provider:", error);
@@ -101,7 +100,6 @@ const ProviderProfile = () => {
 
     const handleBookmarkClick = () => {
         setIsBookmarked(!isBookmarked);
-        // TODO: Add backend persistence logic for bookmark
         console.log("Bookmark toggled:", !isBookmarked);
     };
 
@@ -117,226 +115,573 @@ const ProviderProfile = () => {
 
 
     if (!provider) {
-        return <div className="profile-wrapper"><div className="loading-state">Loading...</div></div>;
+        return (
+            <div id="provider-profile-page"> {/* Wrapper ID */}
+                <div className="profile-wrapper">
+                    <div className="loading-state">Loading...</div>
+                </div>
+            </div>
+        );
     }
 
     const recommendationDate = formatDate(provider.date_of_recommendation);
 
     return (
-        <div className="profile-wrapper">
-            <div className="profile-content">
+        <div id="provider-profile-page"> {/* Wrapper ID */}
+            <div className="profile-wrapper">
+                <div className="profile-content">
 
-                <div className="core-info">
-                    <h1>{provider.business_name}</h1>
+                    <div className="core-info">
+                        <h1>{provider.business_name}</h1>
 
-                    <div className="rating-and-location">
-                        <div className="rating-summary-inline">
-                            <FaStar className="rating-star-icon" />
-                            <span className="avg-rating-text">{avgRating}</span>
-                            <span className="review-count-text">({totalReviews} reviews)</span>
-                        </div>
-                        {provider.service_scope === 'local' && provider.city && provider.state && (
-                            <span className="location-info">
-                                <FaMapMarkerAlt className="info-icon" />
-                                {provider.city}, {provider.state}
-                            </span>
-                        )}
-                        {provider.website && (
-                            <a
-                                href={provider.website.startsWith('http') ? provider.website : `https://${provider.website}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="website-link-inline"
-                            >
-                                <FaExternalLinkAlt className="info-icon" />
-                                {getWebsiteHostname(provider.website)}
-                            </a>
-                        )}
-                         {provider.price_range && (
-                            <span className="price-range-info">{provider.price_range}</span>
-                         )}
-                    </div>
-
-                    <div className="contact-actions-bar">
-                        {provider.phone_number && (
-                            <a href={`tel:${provider.phone_number}`} className="action-button">
-                                <FaPhone /> Call
-                            </a>
-                        )}
-                         {provider.phone_number && (
-                             <a href={`sms:${provider.phone_number}?body=Hi ${provider.business_name}, I saw a recommendation and wanted to connect.`} className="action-button">
-                                <FaSms /> Text
-                            </a>
-                        )}
-                        {provider.email && (
-                             <a href={`mailto:${provider.email}?subject=Inquiry%20via%20Tried%20&%20Trusted`} className="action-button">
-                                <FaEnvelope /> Email
-                            </a>
-                        )}
-                    </div>
-                </div>
-
-                {provider.provider_message && (
-                    <div className="message-block provider-message-block">
-                        <p>
-                            <strong>Message from {provider.business_contact || 'the provider'}:</strong> “{provider.provider_message}”
-                        </p>
-                    </div>
-                )}
-
-                 {provider.description && (
-                    <div className="description-block">
-                        <p>{provider.description}</p>
-                    </div>
-                )}
-
-                {provider.recommender_message && primaryRecommenderName && (
-                    <div className="message-block recommender-quote-block">
-                        <div className="recommender-header">
-                            <strong>{primaryRecommenderName}'s Recommendation</strong>
-                            {recommendationDate && <span className="recommendation-date">from {recommendationDate}</span>}
-                        </div>
-                        <p className="recommender-text">"{provider.recommender_message}"</p>
-                         <div className="quote-actions">
-                             {provider.recommended_by_phone && (
-                                <>
-                                    <a href={`sms:${provider.recommended_by_phone}?body=Hey ${primaryRecommenderName}, just wanted to say thank you for recommending ${provider.business_name || 'them'}! 🙏`}
-                                       className="quote-action-icon"
-                                       title="Thank Recommender"
-                                    >
-                                       <FaRegHandshake />
-                                    </a>
-                                     <a href={`sms:${provider.recommended_by_phone}?body=Hi ${primaryRecommenderName}! I saw your recommendation for ${provider.business_name || 'them'} on Tried & Trusted and had a quick question.`}
-                                       className="quote-action-icon"
-                                       title="Ask Recommender a Question"
-                                    >
-                                       <FaQuestionCircle />
-                                    </a>
-                                </>
-                             )}
-                             <button
-                                 className="quote-action-icon share-button"
-                                 title="Share this recommendation"
-                                 onClick={handleShareClick}
-                             >
-                                 <FaShareAlt />
-                                 {showLinkCopied && <span className="tooltip-copied">Copied!</span>}
-                             </button>
-                              <button
-                                 className={`quote-action-icon bookmark-button ${isBookmarked ? 'bookmarked' : ''}`}
-                                 title={isBookmarked ? "Remove Bookmark" : "Bookmark"}
-                                 onClick={handleBookmarkClick}
-                             >
-                                 {isBookmarked ? <FaBookmark /> : <FaRegBookmark />}
-                             </button>
-                             {provider.recommended_by && (
-                                <a href={`/user/${provider.recommended_by}/recommendations`} className="recommender-profile-link-action">
-                                    View Profile
-                                </a>
-                             )}
-                         </div>
-                    </div>
-                )}
-
-                {alsoUsedBy.length > 0 && (
-                    <p className="also-used-by-text">
-                        Also used by: {alsoUsedBy.slice(0, 3).join(', ')}
-                        {alsoUsedBy.length > 3 && ` and ${alsoUsedBy.length - 3} others`}
-                    </p>
-                )}
-
-                {Array.isArray(provider.tags) && provider.tags.length > 0 && (
-                    <div className="tags-section">
-                        {/* Added header as requested */}
-                        <h3 className="tags-header">Highlights from Previous Users</h3>
-                        <div className="tags-container">
-                            {provider.tags.map((tag, i) => (
-                                <span key={i} className="tag">{tag}</span>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                <div className="profile-tabs-container">
-                    {['Reviews', 'Details'].map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => handleTabClick(tab)}
-                            className={`profile-tab ${activeTab === tab ? 'active' : ''}`}
-                        >
-                            {tab}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="profile-tab-content">
-                    {activeTab === 'Reviews' && (
-                        <div className="reviews-content">
-                             <div className="review-breakdown-section">
-                                <h3 className="tab-section-header">Rating Breakdown</h3>
-                                <div className="rating-bars">
-                                    {[5, 4, 3, 2, 1].map((star) => {
-                                        const count = starCounts[star - 1];
-                                        const percent = totalReviews ? (count / totalReviews) * 100 : 0;
-                                        return (
-                                            <div key={star} className="rating-bar-row">
-                                                <span className="rating-bar-label">{star}★</span>
-                                                <div className="rating-bar-track">
-                                                    <div className="rating-bar-fill" style={{ width: `${percent}%` }}></div>
-                                                </div>
-                                                <span className="rating-bar-count">{count}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                        <div className="rating-and-location">
+                            <div className="rating-summary-inline">
+                                <FaStar className="rating-star-icon" />
+                                <span className="avg-rating-text">{avgRating}</span>
+                                <span className="review-count-text">({totalReviews} reviews)</span>
                             </div>
+                            {provider.service_scope === 'local' && provider.city && provider.state && (
+                                <span className="location-info">
+                                    <FaMapMarkerAlt className="info-icon" />
+                                    {provider.city}, {provider.state}
+                                </span>
+                            )}
+                            {provider.website && (
+                                <a
+                                    href={provider.website.startsWith('http') ? provider.website : `https://${provider.website}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="website-link-inline"
+                                >
+                                    <FaExternalLinkAlt className="info-icon" />
+                                    {getWebsiteHostname(provider.website)}
+                                </a>
+                            )}
+                             {provider.price_range && (
+                                <span className="price-range-info">{provider.price_range}</span>
+                             )}
+                        </div>
 
-                            <h3 className="tab-section-header">User Reviews</h3>
-                            {reviews.length === 0 ? (
-                                <p className="no-reviews-text">No reviews yet.</p>
-                            ) : (
-                                <div className="reviews-list">
-                                    {reviews.map((review, i) => (
-                                        <div key={review.id || i} className="review-item">
-                                            <div className="review-item-header">
-                                                <div className="review-item-stars">
-                                                    {[...Array(5)].map((_, j) => (
-                                                        <FaStar key={j} className={j < review.rating ? 'active' : ''} />
-                                                    ))}
-                                                </div>
-                                                <span className="review-item-user">{review.user_name || 'Anonymous'}</span>
-                                                {review.date && <span className="review-item-date">{formatDate(review.date)}</span>}
-                                            </div>
-                                            <p className="review-item-content">"{review.content}"</p>
-                                        </div>
-                                    ))}
-                                </div>
+                        <div className="contact-actions-bar">
+                            {provider.phone_number && (
+                                <a href={`tel:${provider.phone_number}`} className="action-button">
+                                    <FaPhone /> Call
+                                </a>
+                            )}
+                             {provider.phone_number && (
+                                 <a href={`sms:${provider.phone_number}?body=Hi ${provider.business_name}, I saw a recommendation and wanted to connect.`} className="action-button">
+                                    <FaSms /> Text
+                                </a>
+                            )}
+                            {provider.email && (
+                                 <a href={`mailto:${provider.email}?subject=Inquiry%20via%20Tried%20&%20Trusted`} className="action-button">
+                                    <FaEnvelope /> Email
+                                </a>
                             )}
                         </div>
+                    </div>
+
+                    {provider.provider_message && (
+                        <div className="message-block provider-message-block">
+                            <p>
+                                <strong>Message from {provider.business_contact || 'the provider'}:</strong> “{provider.provider_message}”
+                            </p>
+                        </div>
                     )}
 
-                    {activeTab === 'Details' && (
-                         <div className="details-content">
-                             <h3 className="tab-section-header">Credentials & Information</h3>
-                             <div className="credentials-list">
-                                {avgRating >= 4.5 && totalReviews > 5 && (
-                                    <span className="credential-badge top-rated">Top Rated</span>
-                                )}
-                                {provider.service_type && (
-                                     <span className="credential-badge">{provider.service_type}</span>
-                                )}
+                     {provider.description && (
+                        <div className="description-block">
+                            <p>{provider.description}</p>
+                        </div>
+                    )}
+
+                    {provider.recommender_message && primaryRecommenderName && (
+                        <div className="message-block recommender-quote-block">
+                            <div className="recommender-header">
+                                <strong>{primaryRecommenderName}'s Recommendation</strong>
+                                {recommendationDate && <span className="recommendation-date">from {recommendationDate}</span>}
+                            </div>
+                            <p className="recommender-text">"{provider.recommender_message}"</p>
+                             <div className="quote-actions">
+                                 {provider.recommended_by_phone && (
+                                    <>
+                                        <a href={`sms:${provider.recommended_by_phone}?body=Hey ${primaryRecommenderName}, just wanted to say thank you for recommending ${provider.business_name || 'them'}! 🙏`}
+                                           className="quote-action-icon"
+                                           title="Thank Recommender"
+                                        >
+                                           <FaRegHandshake />
+                                        </a>
+                                         <a href={`sms:${provider.recommended_by_phone}?body=Hi ${primaryRecommenderName}! I saw your recommendation for ${provider.business_name || 'them'} on Tried & Trusted and had a quick question.`}
+                                           className="quote-action-icon"
+                                           title="Ask Recommender a Question"
+                                        >
+                                           <FaQuestionCircle />
+                                        </a>
+                                    </>
+                                 )}
+                                 <button
+                                     className="quote-action-icon share-button"
+                                     title="Share this recommendation"
+                                     onClick={handleShareClick}
+                                 >
+                                     <FaShareAlt />
+                                     {showLinkCopied && <span className="tooltip-copied">Copied!</span>}
+                                 </button>
+                                  <button
+                                     className={`quote-action-icon bookmark-button ${isBookmarked ? 'bookmarked' : ''}`}
+                                     title={isBookmarked ? "Remove Bookmark" : "Bookmark"}
+                                     onClick={handleBookmarkClick}
+                                 >
+                                     {isBookmarked ? <FaBookmark /> : <FaRegBookmark />}
+                                 </button>
+                                 {provider.recommended_by && (
+                                    <a href={`/user/${provider.recommended_by}/recommendations`} className="recommender-profile-link-action">
+                                        View Profile
+                                    </a>
+                                 )}
                              </div>
-                             <p className="details-coming-soon">More details coming soon.</p>
-                         </div>
+                        </div>
                     )}
-                </div>
 
+                    {alsoUsedBy.length > 0 && (
+                        <p className="also-used-by-text">
+                            Also used by: {alsoUsedBy.slice(0, 3).join(', ')}
+                            {alsoUsedBy.length > 3 && ` and ${alsoUsedBy.length - 3} others`}
+                        </p>
+                    )}
+
+                    {Array.isArray(provider.tags) && provider.tags.length > 0 && (
+                        <div className="tags-section">
+                            <h3 className="tags-header">Highlights from Previous Users</h3>
+                            <div className="tags-container">
+                                {provider.tags.map((tag, i) => (
+                                    <span key={i} className="tag">{tag}</span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="profile-tabs-container">
+                        {['Reviews', 'Details'].map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => handleTabClick(tab)}
+                                className={`profile-tab ${activeTab === tab ? 'active' : ''}`}
+                            >
+                                {tab}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="profile-tab-content">
+                        {activeTab === 'Reviews' && (
+                            <div className="reviews-content">
+                                 <div className="review-breakdown-section">
+                                    <h3 className="tab-section-header">Rating Breakdown</h3>
+                                    <div className="rating-bars">
+                                        {[5, 4, 3, 2, 1].map((star) => {
+                                            const count = starCounts[star - 1];
+                                            const percent = totalReviews ? (count / totalReviews) * 100 : 0;
+                                            return (
+                                                <div key={star} className="rating-bar-row">
+                                                    <span className="rating-bar-label">{star}★</span>
+                                                    <div className="rating-bar-track">
+                                                        <div className="rating-bar-fill" style={{ width: `${percent}%` }}></div>
+                                                    </div>
+                                                    <span className="rating-bar-count">{count}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <h3 className="tab-section-header">User Reviews</h3>
+                                {reviews.length === 0 ? (
+                                    <p className="no-reviews-text">No reviews yet.</p>
+                                ) : (
+                                    <div className="reviews-list">
+                                        {reviews.map((review, i) => (
+                                            <div key={review.id || i} className="review-item">
+                                                <div className="review-item-header">
+                                                    <div className="review-item-stars">
+                                                        {[...Array(5)].map((_, j) => (
+                                                            <FaStar key={j} className={j < review.rating ? 'active' : ''} />
+                                                        ))}
+                                                    </div>
+                                                    <span className="review-item-user">{review.user_name || 'Anonymous'}</span>
+                                                    {review.date && <span className="review-item-date">{formatDate(review.date)}</span>}
+                                                </div>
+                                                <p className="review-item-content">"{review.content}"</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'Details' && (
+                             <div className="details-content">
+                                 <h3 className="tab-section-header">Credentials & Information</h3>
+                                 <div className="credentials-list">
+                                    {avgRating >= 4.5 && totalReviews > 5 && (
+                                        <span className="credential-badge top-rated">Top Rated</span>
+                                    )}
+                                    {provider.service_type && (
+                                         <span className="credential-badge">{provider.service_type}</span>
+                                    )}
+                                 </div>
+                                 <p className="details-coming-soon">More details coming soon.</p>
+                             </div>
+                        )}
+                    </div>
+
+                </div>
             </div>
         </div>
     );
 };
 
 export default ProviderProfile;
+
+// import React, { useEffect, useState } from 'react';
+// import { useParams } from 'react-router-dom';
+// import {
+//     FaStar,
+//     FaPhone,
+//     FaEnvelope,
+//     FaMapMarkerAlt,
+//     FaQuestionCircle,
+//     FaShareAlt,
+//     FaRegBookmark,
+//     FaBookmark,
+//     FaSms,
+//     FaExternalLinkAlt,
+//     FaRegHandshake
+// } from 'react-icons/fa';
+
+// import './ProviderProfile.css';
+
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+// // const API_URL = 'http://localhost:3000';
+
+// const ProviderProfile = () => {
+//     const { id } = useParams();
+//     const [provider, setProvider] = useState(null);
+//     const [reviews, setReviews] = useState([]);
+//     const [activeTab, setActiveTab] = useState('Reviews');
+//     const [showLinkCopied, setShowLinkCopied] = useState(false);
+//     const [isBookmarked, setIsBookmarked] = useState(false);
+
+//     useEffect(() => {
+//         const fetchProvider = async () => {
+//             if (!id) return;
+//             try {
+//                 const res = await fetch(`${API_URL}/api/providers/${id}`);
+//                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+//                 const data = await res.json();
+//                 // --- TODO: Ensure backend sends 'recommended_by_preferred_name' ---
+//                 setProvider(data.provider);
+//             } catch (error) {
+//                 console.error("Failed to fetch provider:", error);
+//                 setProvider(null);
+//             }
+//         };
+//         fetchProvider();
+//     }, [id]);
+
+//     useEffect(() => {
+//         const fetchReviews = async () => {
+//              if (!id) return;
+//              try {
+//                 const res = await fetch(`${API_URL}/api/reviews/${id}`);
+//                  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+//                 const data = await res.json();
+//                 setReviews(Array.isArray(data) ? data : []);
+//             } catch (error) {
+//                  console.error("Failed to fetch reviews:", error);
+//                  setReviews([]);
+//             }
+//         };
+//         fetchReviews();
+//     }, [id]);
+
+//     const avgRating = provider ? parseFloat(provider.average_rating || 0).toFixed(1) : '0.0';
+//     const totalReviews = provider ? parseInt(provider.total_reviews || 0) : 0;
+
+//     const starCounts = React.useMemo(() => {
+//         const counts = [0, 0, 0, 0, 0];
+//         reviews.forEach((r) => {
+//             const rating = parseInt(r.rating);
+//             if (rating >= 1 && rating <= 5) {
+//                 counts[rating - 1]++;
+//             }
+//         });
+//         return counts;
+//     }, [reviews]);
+
+//     const formatDate = (dateString) => {
+//         if (!dateString) return '';
+//         try {
+//             return new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+//         } catch (e) { return ''; }
+//     };
+
+//     const getWebsiteHostname = (url) => {
+//         if (!url) return '';
+//         try {
+//             const parsedUrl = new URL(url.startsWith('http') ? url : `https://${url}`);
+//             return parsedUrl.hostname.replace(/^www\./, '');
+//         } catch (e) { return url; }
+//     };
+
+//     const handleShareClick = () => {
+//         const shareUrl = `${window.location.origin}/provider/${provider?.id}`;
+//         navigator.clipboard.writeText(shareUrl)
+//             .then(() => {
+//                 setShowLinkCopied(true);
+//                 setTimeout(() => setShowLinkCopied(false), 2500);
+//             })
+//             .catch(err => console.error('Failed to copy: ', err));
+//     };
+
+//     const handleBookmarkClick = () => {
+//         setIsBookmarked(!isBookmarked);
+//         // TODO: Add backend persistence logic for bookmark
+//         console.log("Bookmark toggled:", !isBookmarked);
+//     };
+
+//     const handleTabClick = (tab) => setActiveTab(tab);
+
+//      const primaryRecommenderName = provider?.recommended_by_preferred_name || provider?.recommended_by_name;
+//      const alsoUsedBy = React.useMemo(() => {
+//         const recommenders = new Set();
+//         if (primaryRecommenderName) recommenders.add(primaryRecommenderName);
+//         reviews.forEach((r) => r.user_name && recommenders.add(r.user_name));
+//         return Array.from(recommenders).filter((n) => n !== primaryRecommenderName);
+//      }, [reviews, primaryRecommenderName]);
+
+
+//     if (!provider) {
+//         return <div className="profile-wrapper"><div className="loading-state">Loading...</div></div>;
+//     }
+
+//     const recommendationDate = formatDate(provider.date_of_recommendation);
+
+//     return (
+//         <div className="profile-wrapper">
+//             <div className="profile-content">
+
+//                 <div className="core-info">
+//                     <h1>{provider.business_name}</h1>
+
+//                     <div className="rating-and-location">
+//                         <div className="rating-summary-inline">
+//                             <FaStar className="rating-star-icon" />
+//                             <span className="avg-rating-text">{avgRating}</span>
+//                             <span className="review-count-text">({totalReviews} reviews)</span>
+//                         </div>
+//                         {provider.service_scope === 'local' && provider.city && provider.state && (
+//                             <span className="location-info">
+//                                 <FaMapMarkerAlt className="info-icon" />
+//                                 {provider.city}, {provider.state}
+//                             </span>
+//                         )}
+//                         {provider.website && (
+//                             <a
+//                                 href={provider.website.startsWith('http') ? provider.website : `https://${provider.website}`}
+//                                 target="_blank"
+//                                 rel="noopener noreferrer"
+//                                 className="website-link-inline"
+//                             >
+//                                 <FaExternalLinkAlt className="info-icon" />
+//                                 {getWebsiteHostname(provider.website)}
+//                             </a>
+//                         )}
+//                          {provider.price_range && (
+//                             <span className="price-range-info">{provider.price_range}</span>
+//                          )}
+//                     </div>
+
+//                     <div className="contact-actions-bar">
+//                         {provider.phone_number && (
+//                             <a href={`tel:${provider.phone_number}`} className="action-button">
+//                                 <FaPhone /> Call
+//                             </a>
+//                         )}
+//                          {provider.phone_number && (
+//                              <a href={`sms:${provider.phone_number}?body=Hi ${provider.business_name}, I saw a recommendation and wanted to connect.`} className="action-button">
+//                                 <FaSms /> Text
+//                             </a>
+//                         )}
+//                         {provider.email && (
+//                              <a href={`mailto:${provider.email}?subject=Inquiry%20via%20Tried%20&%20Trusted`} className="action-button">
+//                                 <FaEnvelope /> Email
+//                             </a>
+//                         )}
+//                     </div>
+//                 </div>
+
+//                 {provider.provider_message && (
+//                     <div className="message-block provider-message-block">
+//                         <p>
+//                             <strong>Message from {provider.business_contact || 'the provider'}:</strong> “{provider.provider_message}”
+//                         </p>
+//                     </div>
+//                 )}
+
+//                  {provider.description && (
+//                     <div className="description-block">
+//                         <p>{provider.description}</p>
+//                     </div>
+//                 )}
+
+//                 {provider.recommender_message && primaryRecommenderName && (
+//                     <div className="message-block recommender-quote-block">
+//                         <div className="recommender-header">
+//                             <strong>{primaryRecommenderName}'s Recommendation</strong>
+//                             {recommendationDate && <span className="recommendation-date">from {recommendationDate}</span>}
+//                         </div>
+//                         <p className="recommender-text">"{provider.recommender_message}"</p>
+//                          <div className="quote-actions">
+//                              {provider.recommended_by_phone && (
+//                                 <>
+//                                     <a href={`sms:${provider.recommended_by_phone}?body=Hey ${primaryRecommenderName}, just wanted to say thank you for recommending ${provider.business_name || 'them'}! 🙏`}
+//                                        className="quote-action-icon"
+//                                        title="Thank Recommender"
+//                                     >
+//                                        <FaRegHandshake />
+//                                     </a>
+//                                      <a href={`sms:${provider.recommended_by_phone}?body=Hi ${primaryRecommenderName}! I saw your recommendation for ${provider.business_name || 'them'} on Tried & Trusted and had a quick question.`}
+//                                        className="quote-action-icon"
+//                                        title="Ask Recommender a Question"
+//                                     >
+//                                        <FaQuestionCircle />
+//                                     </a>
+//                                 </>
+//                              )}
+//                              <button
+//                                  className="quote-action-icon share-button"
+//                                  title="Share this recommendation"
+//                                  onClick={handleShareClick}
+//                              >
+//                                  <FaShareAlt />
+//                                  {showLinkCopied && <span className="tooltip-copied">Copied!</span>}
+//                              </button>
+//                               <button
+//                                  className={`quote-action-icon bookmark-button ${isBookmarked ? 'bookmarked' : ''}`}
+//                                  title={isBookmarked ? "Remove Bookmark" : "Bookmark"}
+//                                  onClick={handleBookmarkClick}
+//                              >
+//                                  {isBookmarked ? <FaBookmark /> : <FaRegBookmark />}
+//                              </button>
+//                              {provider.recommended_by && (
+//                                 <a href={`/user/${provider.recommended_by}/recommendations`} className="recommender-profile-link-action">
+//                                     View Profile
+//                                 </a>
+//                              )}
+//                          </div>
+//                     </div>
+//                 )}
+
+//                 {alsoUsedBy.length > 0 && (
+//                     <p className="also-used-by-text">
+//                         Also used by: {alsoUsedBy.slice(0, 3).join(', ')}
+//                         {alsoUsedBy.length > 3 && ` and ${alsoUsedBy.length - 3} others`}
+//                     </p>
+//                 )}
+
+//                 {Array.isArray(provider.tags) && provider.tags.length > 0 && (
+//                     <div className="tags-section">
+//                         {/* Added header as requested */}
+//                         <h3 className="tags-header">Highlights from Previous Users</h3>
+//                         <div className="tags-container">
+//                             {provider.tags.map((tag, i) => (
+//                                 <span key={i} className="tag">{tag}</span>
+//                             ))}
+//                         </div>
+//                     </div>
+//                 )}
+
+//                 <div className="profile-tabs-container">
+//                     {['Reviews', 'Details'].map(tab => (
+//                         <button
+//                             key={tab}
+//                             onClick={() => handleTabClick(tab)}
+//                             className={`profile-tab ${activeTab === tab ? 'active' : ''}`}
+//                         >
+//                             {tab}
+//                         </button>
+//                     ))}
+//                 </div>
+
+//                 <div className="profile-tab-content">
+//                     {activeTab === 'Reviews' && (
+//                         <div className="reviews-content">
+//                              <div className="review-breakdown-section">
+//                                 <h3 className="tab-section-header">Rating Breakdown</h3>
+//                                 <div className="rating-bars">
+//                                     {[5, 4, 3, 2, 1].map((star) => {
+//                                         const count = starCounts[star - 1];
+//                                         const percent = totalReviews ? (count / totalReviews) * 100 : 0;
+//                                         return (
+//                                             <div key={star} className="rating-bar-row">
+//                                                 <span className="rating-bar-label">{star}★</span>
+//                                                 <div className="rating-bar-track">
+//                                                     <div className="rating-bar-fill" style={{ width: `${percent}%` }}></div>
+//                                                 </div>
+//                                                 <span className="rating-bar-count">{count}</span>
+//                                             </div>
+//                                         );
+//                                     })}
+//                                 </div>
+//                             </div>
+
+//                             <h3 className="tab-section-header">User Reviews</h3>
+//                             {reviews.length === 0 ? (
+//                                 <p className="no-reviews-text">No reviews yet.</p>
+//                             ) : (
+//                                 <div className="reviews-list">
+//                                     {reviews.map((review, i) => (
+//                                         <div key={review.id || i} className="review-item">
+//                                             <div className="review-item-header">
+//                                                 <div className="review-item-stars">
+//                                                     {[...Array(5)].map((_, j) => (
+//                                                         <FaStar key={j} className={j < review.rating ? 'active' : ''} />
+//                                                     ))}
+//                                                 </div>
+//                                                 <span className="review-item-user">{review.user_name || 'Anonymous'}</span>
+//                                                 {review.date && <span className="review-item-date">{formatDate(review.date)}</span>}
+//                                             </div>
+//                                             <p className="review-item-content">"{review.content}"</p>
+//                                         </div>
+//                                     ))}
+//                                 </div>
+//                             )}
+//                         </div>
+//                     )}
+
+//                     {activeTab === 'Details' && (
+//                          <div className="details-content">
+//                              <h3 className="tab-section-header">Credentials & Information</h3>
+//                              <div className="credentials-list">
+//                                 {avgRating >= 4.5 && totalReviews > 5 && (
+//                                     <span className="credential-badge top-rated">Top Rated</span>
+//                                 )}
+//                                 {provider.service_type && (
+//                                      <span className="credential-badge">{provider.service_type}</span>
+//                                 )}
+//                              </div>
+//                              <p className="details-coming-soon">More details coming soon.</p>
+//                          </div>
+//                     )}
+//                 </div>
+
+//             </div>
+//         </div>
+//     );
+// };
+
+// export default ProviderProfile;
 
 //  import React, { useEffect, useState } from 'react';
 // import { useParams, useLocation } from 'react-router-dom';
