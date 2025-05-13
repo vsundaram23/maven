@@ -94,7 +94,7 @@ const QuoteModal = ({
           }
           <div className="chat-header-info">
             <h3 className="chat-provider-name">{providerName}</h3>
-            <span className="chat-status">Live Chat</span>
+            <span className="chat-status">AI Assistant</span>
           </div>
         </div>
 
