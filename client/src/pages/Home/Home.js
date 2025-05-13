@@ -1,4 +1,3 @@
-// src/pages/Home/Home.js
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useMediaQuery } from 'react-responsive';
@@ -7,6 +6,7 @@ import CountUp from 'react-countup';
 import './Home.css';
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = 'http://localhost:3000';
 const BRAND_PHRASE = 'Tried & Trusted.';
 
 const Home = () => {
@@ -14,54 +14,57 @@ const Home = () => {
   const location = useLocation();
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
-  // — load user name
   const [name, setName] = useState('');
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [isUserSessionResolved, setIsUserSessionResolved] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+
+
   useEffect(() => {
-    const updateName = () => {
+    const updateUserSessionData = () => {
       const raw = localStorage.getItem('user');
-      if (!raw) {
-        setName('');
-        return;
+      let userId = null;
+      let userName = '';
+      if (raw) {
+        try {
+          const u = JSON.parse(raw);
+          userName = u.preferred_name || u.firstName || u.name || (u.email && u.email.split('@')[0]) || '';
+          userId = u.id || null;
+        } catch (e) {
+          console.error("HOME.JS: Error parsing user from localStorage:", e);
+        }
       }
-      try {
-        const u = JSON.parse(raw);
-        setName(
-          u.preferred_name ||
-          u.firstName ||
-          u.name ||
-          (u.email && u.email.split('@')[0]) ||
-          ''
-        );
-      } catch {
-        setName('');
-      }
+      setName(userName);
+      setCurrentUserId(userId);
+      setIsUserSessionResolved(true);
     };
-  
-    updateName();
-    window.addEventListener('userLogin', updateName);
+
+    updateUserSessionData();
+    window.addEventListener('userLogin', updateUserSessionData);
+    window.addEventListener('userLogout', updateUserSessionData);
     return () => {
-      window.removeEventListener('userLogin', updateName);
+      window.removeEventListener('userLogin', updateUserSessionData);
+      window.removeEventListener('userLogout', updateUserSessionData);
     };
   }, []);
 
-  // — greeting text
   const targetText = name
     ? `Welcome back, ${name}.`
     : `Welcome to ${BRAND_PHRASE}`;
 
-  // — typewriter state
   const [displayText, setDisplayText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
 
-  // reset on greeting change
   useEffect(() => {
     setDisplayText('');
     setIsTyping(true);
   }, [targetText]);
 
-  // typewriter effect
   useEffect(() => {
-    if (!isTyping) return;
+    if (!isTyping || !targetText) {
+        setIsTyping(false);
+        return;
+    }
     const next = targetText.substring(0, displayText.length + 1);
     const t = setTimeout(() => {
       setDisplayText(next);
@@ -72,53 +75,127 @@ const Home = () => {
     return () => clearTimeout(t);
   }, [displayText, isTyping, targetText]);
 
-  // — stats
-  const [providerCount, setProviderCount] = useState(null);
-  const [trustCount, setTrustCount] = useState(null);
+  const [providerCount, setProviderCount] = useState(0);
+  const [trustCount, setTrustCount] = useState(0);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/providers/count`, { credentials: 'include' })
-      .then(r => r.json())
-      .then(d => setProviderCount(d.count))
-      .catch(console.error);
+    if (!isUserSessionResolved) return;
 
-    fetch(`${API_URL}/api/trust-circle/count`, { credentials: 'include' })
-      .then(r => r.json())
-      .then(d => setTrustCount(d.count))
-      .catch(console.error);
-  }, []);
+    const fetchCounts = async () => {
+      let providerApiUrl = `${API_URL}/api/providers/count`;
+      let trustApiUrl = `${API_URL}/api/trust-circle/count`;
 
-  // — search
+      if (currentUserId) {
+        providerApiUrl += `?user_id=${currentUserId}`;
+        trustApiUrl += `?user_id=${currentUserId}`;
+      }
+
+      try {
+        const providerRes = await fetch(providerApiUrl, { credentials: 'include' });
+        if (providerRes.ok) {
+          const providerData = await providerRes.json();
+          setProviderCount(providerData.count || 0);
+        } else {
+          setProviderCount(0);
+        }
+      } catch (err) {
+        setProviderCount(0);
+      }
+
+      try {
+        const trustRes = await fetch(trustApiUrl, { credentials: 'include' });
+        if (trustRes.ok) {
+          const trustData = await trustRes.json();
+          setTrustCount(trustData.count || 0);
+        } else {
+          setTrustCount(0);
+        }
+      } catch (err) {
+        setTrustCount(0);
+      }
+    };
+
+    fetchCounts();
+  }, [currentUserId, isUserSessionResolved]);
+
   const [searchQuery, setSearchQuery] = useState('');
-  const handleSearch = e => {
+
+  const handleSearch = async (e) => {
     if (e) e.preventDefault();
     const q = searchQuery.trim();
     if (!q) return;
-    fetch(`${API_URL}/api/providers/search?q=${encodeURIComponent(q)}`)
-      .then(r => r.json())
-      .then(d => {
+
+    if (!isUserSessionResolved) {
+      alert("Session still loading, please try again in a moment.");
+      return;
+    }
+
+    if (!currentUserId) {
+      console.warn("HOME.JS: Search cannot be performed - User ID not available. Please log in.");
+      alert("Please log in to search for recommendations.");
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const searchUrl = `${API_URL}/api/providers/search?q=${encodeURIComponent(q)}&user_id=${currentUserId}`;
+    console.log("HOME.JS: Attempting to fetch search results from URL:", searchUrl);
+
+    try {
+      const r = await fetch(searchUrl);
+      console.log("HOME.JS: Fetch response status:", r.status); 
+      
+      const responseBody = await r.text(); 
+      console.log("HOME.JS: Fetch response body:", responseBody);
+
+      if (!r.ok) {
+        let errorPayload;
+        try {
+            errorPayload = JSON.parse(responseBody);
+        } catch (parseError) {
+            throw new Error(`HTTP error! status: ${r.status}, Non-JSON response: ${responseBody}`);
+        }
+        throw new Error(errorPayload.message || errorPayload.error || `HTTP error! status: ${r.status}`);
+      }
+      
+      const d = JSON.parse(responseBody);
+
+      if (d.success) {
         const base = `/search?q=${encodeURIComponent(q)}`;
-        navigate(d.providers?.length > 0 ? base : base + '&noResults=true');
-      })
-      .catch(console.error);
+        navigate(
+          d.providers?.length > 0 ? base : base + '&noResults=true',
+          {
+            state: {
+              initialProviders: d.providers,
+              currentSearchUserId: currentUserId 
+            }
+          }
+        );
+      } else {
+        throw new Error(d.message || d.error || "Search was not successful according to API response");
+      }
+    } catch (err) {
+      console.error("Error in Home.js handleSearch:", err);
+      alert(`Search failed: ${err.message}. Please check the console for more details.`);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   if (location.pathname !== '/') return null;
 
-  // — what to highlight
   const highlightTarget = name || BRAND_PHRASE;
 
   return (
     <div className="home">
       <div className="hero-container">
-        {/* Hero title */}
         <motion.h1
           className="main-title"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
           dangerouslySetInnerHTML={{
-            __html: displayText.includes(highlightTarget)
+            __html: (displayText && highlightTarget && displayText.includes(highlightTarget))
               ? displayText.replace(
                   highlightTarget,
                   `<span class="highlight-box">${highlightTarget}</span>`
@@ -126,14 +203,10 @@ const Home = () => {
               : displayText,
           }}
         />
-
-        {/* Subtitle */}
         <p className="subtitle">
           Find trusted recommendations from&nbsp;
           <span className="underline-highlight">your network.</span>
         </p>
-
-        {/* Search */}
         <form className="search-wrapper" onSubmit={handleSearch}>
           <input
             className="search-input"
@@ -145,13 +218,12 @@ const Home = () => {
             }
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
+            disabled={isSearching}
           />
-          <button type="submit" className="search-button">
-            →
+          <button type="submit" className="search-button" disabled={isSearching}>
+            {isSearching ? '...' : '→'}
           </button>
         </form>
-
-        {/* NEW: Recommender Banner */}
         <motion.div
           className="recommender-banner"
           initial={{ opacity: 0, y: 10 }}
@@ -161,8 +233,6 @@ const Home = () => {
           You are the <strong>#3</strong> recommender in SEANAG!
         </motion.div>
       </div>
-
-      {/* YC-Style Stats */}
       <div className="yc-stats">
         <div className="stat">
           <p className="number">
@@ -172,7 +242,7 @@ const Home = () => {
         </div>
         <div className="stat">
           <p className="number">
-            #{trustCount != null ? trustCount + 1 : '—'}
+            #{typeof trustCount === 'number' && trustCount >= 0 ? trustCount + 1 : '—'}
           </p>
           <p className="label">Your Recommender<br />Rank</p>
         </div>
@@ -183,9 +253,7 @@ const Home = () => {
           <p className="label">People in Your<br />Trust Circle</p>
         </div>
       </div>
-
-      {/* Grow-Network CTA */}
-      {trustCount != null && (
+      {typeof trustCount === 'number' && trustCount >=0 && (
         <motion.div
           className="network-cta"
           initial={{ opacity: 0, y: 20 }}
@@ -201,6 +269,445 @@ const Home = () => {
 };
 
 export default Home;
+
+// import React, { useEffect, useState } from 'react';
+// import { useNavigate, useLocation } from 'react-router-dom';
+// import { useMediaQuery } from 'react-responsive';
+// import { motion } from 'framer-motion';
+// import CountUp from 'react-countup';
+// import './Home.css';
+
+// // const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = 'http://localhost:3000';
+// const BRAND_PHRASE = 'Tried & Trusted.';
+
+// const Home = () => {
+//   const navigate = useNavigate();
+//   const location = useLocation();
+//   const isMobile = useMediaQuery({ maxWidth: 768 });
+
+//   const [name, setName] = useState('');
+//   const [currentUserId, setCurrentUserId] = useState(null);
+
+//   useEffect(() => {
+//     const updateUserSessionData = () => {
+//       const raw = localStorage.getItem('user');
+//       if (!raw) {
+//         setName('');
+//         setCurrentUserId(null);
+//         return;
+//       }
+//       try {
+//         const u = JSON.parse(raw);
+//         setName(
+//           u.preferred_name ||
+//           u.firstName ||
+//           u.name ||
+//           (u.email && u.email.split('@')[0]) ||
+//           ''
+//         );
+//         setCurrentUserId(u.id || null);
+//       } catch {
+//         setName('');
+//         setCurrentUserId(null);
+//       }
+//     };
+
+//     updateUserSessionData();
+//     window.addEventListener('userLogin', updateUserSessionData);
+//     window.addEventListener('userLogout', updateUserSessionData);
+//     return () => {
+//       window.removeEventListener('userLogin', updateUserSessionData);
+//       window.removeEventListener('userLogout', updateUserSessionData);
+//     };
+//   }, []);
+
+//   const targetText = name
+//     ? `Welcome back, ${name}.`
+//     : `Welcome to ${BRAND_PHRASE}`;
+
+//   const [displayText, setDisplayText] = useState('');
+//   const [isTyping, setIsTyping] = useState(true);
+
+//   useEffect(() => {
+//     setDisplayText('');
+//     setIsTyping(true);
+//   }, [targetText]);
+
+//   useEffect(() => {
+//     if (!isTyping) return;
+//     const next = targetText.substring(0, displayText.length + 1);
+//     const t = setTimeout(() => {
+//       setDisplayText(next);
+//       if (next.length === targetText.length) {
+//         setIsTyping(false);
+//       }
+//     }, 100);
+//     return () => clearTimeout(t);
+//   }, [displayText, isTyping, targetText]);
+
+//   const [providerCount, setProviderCount] = useState(null);
+//   const [trustCount, setTrustCount] = useState(null);
+
+//   useEffect(() => {
+//     const fetchCounts = async () => {
+//       try {
+//         const providerCountUrl = currentUserId
+//           ? `${API_URL}/api/providers/count?user_id=${currentUserId}`
+//           : `${API_URL}/api/providers/count`; // Fallback or public count
+//         const providerRes = await fetch(providerCountUrl, { credentials: 'include' });
+//         const providerData = await providerRes.json();
+//         setProviderCount(providerData.count);
+//       } catch (err) {
+//         console.error("Error fetching provider count:", err);
+//         setProviderCount(0);
+//       }
+
+//       try {
+//         // Assuming /api/trust-circle/count also might need user_id or handles anonymity
+//         const trustCircleUrl = currentUserId
+//           ? `${API_URL}/api/trust-circle/count?user_id=${currentUserId}`
+//           : `${API_URL}/api/trust-circle/count`;
+//         const trustRes = await fetch(trustCircleUrl, { credentials: 'include' });
+//         const trustData = await trustRes.json();
+//         setTrustCount(trustData.count);
+//       } catch (err) {
+//         console.error("Error fetching trust circle count:", err);
+//         setTrustCount(0);
+//       }
+//     };
+
+//     fetchCounts();
+//   }, [currentUserId]);
+
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const handleSearch = e => {
+//     if (e) e.preventDefault();
+//     const q = searchQuery.trim();
+//     if (!q) return;
+
+//     if (!currentUserId) {
+//       console.warn("Search cannot be performed from Home: User ID not available. Please log in.");
+//       alert("Please log in to search for recommendations."); // Or a more subtle notification
+//       return;
+//     }
+
+//     const searchUrl = `${API_URL}/api/providers/search?q=${encodeURIComponent(q)}&user_id=${currentUserId}`;
+//     console.log("HOME.JS: Fetching search results from URL:", searchUrl);
+
+//     fetch(searchUrl)
+//       .then(r => {
+//         if (!r.ok) {
+//           return r.json().then(errData => {
+//             throw new Error(errData.message || `HTTP error! status: ${r.status}`);
+//           });
+//         }
+//         return r.json();
+//       })
+//       .then(d => {
+//         if (d.success) {
+//           const base = `/search?q=${encodeURIComponent(q)}`;
+//           navigate(d.providers?.length > 0 ? base : base + '&noResults=true');
+//         } else {
+//           throw new Error(d.message || d.error || "Search was not successful");
+//         }
+//       })
+//       .catch(err => {
+//         console.error("Error in Home.js handleSearch:", err);
+//         alert(`Search failed: ${err.message}`); // Or a more subtle notification
+//       });
+//   };
+
+//   if (location.pathname !== '/') return null;
+
+//   const highlightTarget = name || BRAND_PHRASE;
+
+//   return (
+//     <div className="home">
+//       <div className="hero-container">
+//         <motion.h1
+//           className="main-title"
+//           initial={{ opacity: 0, y: 20 }}
+//           animate={{ opacity: 1, y: 0 }}
+//           transition={{ delay: 0.4, duration: 0.6 }}
+//           dangerouslySetInnerHTML={{
+//             __html: displayText.includes(highlightTarget)
+//               ? displayText.replace(
+//                   highlightTarget,
+//                   `<span class="highlight-box">${highlightTarget}</span>`
+//                 )
+//               : displayText,
+//           }}
+//         />
+//         <p className="subtitle">
+//           Find trusted recommendations from&nbsp;
+//           <span className="underline-highlight">your network.</span>
+//         </p>
+//         <form className="search-wrapper" onSubmit={handleSearch}>
+//           <input
+//             className="search-input"
+//             type="text"
+//             placeholder={
+//               isMobile
+//                 ? 'Search services...'
+//                 : 'Search for home services, financial advisors...'
+//             }
+//             value={searchQuery}
+//             onChange={e => setSearchQuery(e.target.value)}
+//           />
+//           <button type="submit" className="search-button">
+//             →
+//           </button>
+//         </form>
+//         <motion.div
+//           className="recommender-banner"
+//           initial={{ opacity: 0, y: 10 }}
+//           animate={{ opacity: 1, y: 0 }}
+//           transition={{ delay: 1.2, duration: 0.6 }}
+//         >
+//           You are the <strong>#3</strong> recommender in SEANAG!
+//         </motion.div>
+//       </div>
+//       <div className="yc-stats">
+//         <div className="stat">
+//           <p className="number">
+//             <CountUp end={providerCount || 0} duration={2} separator="," />
+//           </p>
+//           <p className="label">Recommendations<br />shared this week</p>
+//         </div>
+//         <div className="stat">
+//           <p className="number">
+//             #{trustCount != null ? trustCount + 1 : '—'}
+//           </p>
+//           <p className="label">Your Recommender<br />Rank</p>
+//         </div>
+//         <div className="stat">
+//           <p className="number">
+//             <CountUp end={trustCount || 0} duration={2} />
+//           </p>
+//           <p className="label">People in Your<br />Trust Circle</p>
+//         </div>
+//       </div>
+//       {trustCount != null && (
+//         <motion.div
+//           className="network-cta"
+//           initial={{ opacity: 0, y: 20 }}
+//           animate={{ opacity: 1, y: 0 }}
+//           transition={{ delay: 2.2, duration: 0.6 }}
+//         >
+//           <p>Want even more recommendations? Invite friends to unlock new insights!</p>
+//           <button className="grow-button">Grow Your Network</button>
+//         </motion.div>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default Home;
+
+// // src/pages/Home/Home.js
+// import React, { useEffect, useState } from 'react';
+// import { useNavigate, useLocation } from 'react-router-dom';
+// import { useMediaQuery } from 'react-responsive';
+// import { motion } from 'framer-motion';
+// import CountUp from 'react-countup';
+// import './Home.css';
+
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const BRAND_PHRASE = 'Tried & Trusted.';
+
+// const Home = () => {
+//   const navigate = useNavigate();
+//   const location = useLocation();
+//   const isMobile = useMediaQuery({ maxWidth: 768 });
+
+//   // — load user name
+//   const [name, setName] = useState('');
+//   useEffect(() => {
+//     const updateName = () => {
+//       const raw = localStorage.getItem('user');
+//       if (!raw) {
+//         setName('');
+//         return;
+//       }
+//       try {
+//         const u = JSON.parse(raw);
+//         setName(
+//           u.preferred_name ||
+//           u.firstName ||
+//           u.name ||
+//           (u.email && u.email.split('@')[0]) ||
+//           ''
+//         );
+//       } catch {
+//         setName('');
+//       }
+//     };
+  
+//     updateName();
+//     window.addEventListener('userLogin', updateName);
+//     return () => {
+//       window.removeEventListener('userLogin', updateName);
+//     };
+//   }, []);
+
+//   // — greeting text
+//   const targetText = name
+//     ? `Welcome back, ${name}.`
+//     : `Welcome to ${BRAND_PHRASE}`;
+
+//   // — typewriter state
+//   const [displayText, setDisplayText] = useState('');
+//   const [isTyping, setIsTyping] = useState(true);
+
+//   // reset on greeting change
+//   useEffect(() => {
+//     setDisplayText('');
+//     setIsTyping(true);
+//   }, [targetText]);
+
+//   // typewriter effect
+//   useEffect(() => {
+//     if (!isTyping) return;
+//     const next = targetText.substring(0, displayText.length + 1);
+//     const t = setTimeout(() => {
+//       setDisplayText(next);
+//       if (next.length === targetText.length) {
+//         setIsTyping(false);
+//       }
+//     }, 100);
+//     return () => clearTimeout(t);
+//   }, [displayText, isTyping, targetText]);
+
+//   // — stats
+//   const [providerCount, setProviderCount] = useState(null);
+//   const [trustCount, setTrustCount] = useState(null);
+
+//   useEffect(() => {
+//     fetch(`${API_URL}/api/providers/count`, { credentials: 'include' })
+//       .then(r => r.json())
+//       .then(d => setProviderCount(d.count))
+//       .catch(console.error);
+
+//     fetch(`${API_URL}/api/trust-circle/count`, { credentials: 'include' })
+//       .then(r => r.json())
+//       .then(d => setTrustCount(d.count))
+//       .catch(console.error);
+//   }, []);
+
+//   // — search
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const handleSearch = e => {
+//     if (e) e.preventDefault();
+//     const q = searchQuery.trim();
+//     if (!q) return;
+//     fetch(`${API_URL}/api/providers/search?q=${encodeURIComponent(q)}`)
+//       .then(r => r.json())
+//       .then(d => {
+//         const base = `/search?q=${encodeURIComponent(q)}`;
+//         navigate(d.providers?.length > 0 ? base : base + '&noResults=true');
+//       })
+//       .catch(console.error);
+//   };
+
+//   if (location.pathname !== '/') return null;
+
+//   // — what to highlight
+//   const highlightTarget = name || BRAND_PHRASE;
+
+//   return (
+//     <div className="home">
+//       <div className="hero-container">
+//         {/* Hero title */}
+//         <motion.h1
+//           className="main-title"
+//           initial={{ opacity: 0, y: 20 }}
+//           animate={{ opacity: 1, y: 0 }}
+//           transition={{ delay: 0.4, duration: 0.6 }}
+//           dangerouslySetInnerHTML={{
+//             __html: displayText.includes(highlightTarget)
+//               ? displayText.replace(
+//                   highlightTarget,
+//                   `<span class="highlight-box">${highlightTarget}</span>`
+//                 )
+//               : displayText,
+//           }}
+//         />
+
+//         {/* Subtitle */}
+//         <p className="subtitle">
+//           Find trusted recommendations from&nbsp;
+//           <span className="underline-highlight">your network.</span>
+//         </p>
+
+//         {/* Search */}
+//         <form className="search-wrapper" onSubmit={handleSearch}>
+//           <input
+//             className="search-input"
+//             type="text"
+//             placeholder={
+//               isMobile
+//                 ? 'Search services...'
+//                 : 'Search for home services, financial advisors...'
+//             }
+//             value={searchQuery}
+//             onChange={e => setSearchQuery(e.target.value)}
+//           />
+//           <button type="submit" className="search-button">
+//             →
+//           </button>
+//         </form>
+
+//         {/* NEW: Recommender Banner */}
+//         <motion.div
+//           className="recommender-banner"
+//           initial={{ opacity: 0, y: 10 }}
+//           animate={{ opacity: 1, y: 0 }}
+//           transition={{ delay: 1.2, duration: 0.6 }}
+//         >
+//           You are the <strong>#3</strong> recommender in SEANAG!
+//         </motion.div>
+//       </div>
+
+//       {/* YC-Style Stats */}
+//       <div className="yc-stats">
+//         <div className="stat">
+//           <p className="number">
+//             <CountUp end={providerCount || 0} duration={2} separator="," />
+//           </p>
+//           <p className="label">Recommendations<br />shared this week</p>
+//         </div>
+//         <div className="stat">
+//           <p className="number">
+//             #{trustCount != null ? trustCount + 1 : '—'}
+//           </p>
+//           <p className="label">Your Recommender<br />Rank</p>
+//         </div>
+//         <div className="stat">
+//           <p className="number">
+//             <CountUp end={trustCount || 0} duration={2} />
+//           </p>
+//           <p className="label">People in Your<br />Trust Circle</p>
+//         </div>
+//       </div>
+
+//       {/* Grow-Network CTA */}
+//       {trustCount != null && (
+//         <motion.div
+//           className="network-cta"
+//           initial={{ opacity: 0, y: 20 }}
+//           animate={{ opacity: 1, y: 0 }}
+//           transition={{ delay: 2.2, duration: 0.6 }}
+//         >
+//           <p>Want even more recommendations? Invite friends to unlock new insights!</p>
+//           <button className="grow-button">Grow Your Network</button>
+//         </motion.div>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default Home;
 
 
 
