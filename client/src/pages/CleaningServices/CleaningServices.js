@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
-import { FaStar, FaPhone, FaEnvelope } from 'react-icons/fa';
-import { fetchCleaningProviders } from '../../services/providerService';
+import { FaStar, FaPhone, FaEnvelope, FaUsers, FaPlusCircle } from 'react-icons/fa';
 import QuoteModal from '../../components/QuoteModal/QuoteModal';
 import './CleaningServices.css';
 
@@ -91,7 +90,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
             </div>
             {error && <div className="error-message">{error}</div>}
           </div>
-
           <div className="review-input">
             <label>Tell us about your experience:</label>
             <textarea
@@ -101,7 +99,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
               rows={4}
             />
           </div>
-
           <div className="tag-input-group">
             <label>Add tags (press Enter to add):</label>
             <input
@@ -152,7 +149,6 @@ const ProviderProfileModal = ({ isOpen, onClose, provider, reviews = [], setSele
     <div className="modal-overlay">
       <div className="profile-modal-content">
         <button className="modal-close-x" onClick={onClose}>×</button>
-
         <div className="profile-header">
           <h2 className="profile-name">{provider.business_name}</h2>
           <div className="badge-wrapper">
@@ -173,7 +169,6 @@ const ProviderProfileModal = ({ isOpen, onClose, provider, reviews = [], setSele
             </div>
           </div>
         </div>
-
         <div className="profile-section">
           <p><strong>Description:</strong> {provider.description || 'N/A'}</p>
           <p><strong>Service Type:</strong> {provider.service_type || 'N/A'}</p>
@@ -230,7 +225,6 @@ const ProviderProfileModal = ({ isOpen, onClose, provider, reviews = [], setSele
 
 const CleaningServices = () => {
   const [providers, setProviders] = useState([]);
-  const [reviewStatsMap, setReviewStatsMap] = useState({});
   const [reviewMap, setReviewMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -247,89 +241,144 @@ const CleaningServices = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const rawUser = localStorage.getItem('user');
-    if (rawUser) {
+    const updateUserId = () => {
+      const rawUser = localStorage.getItem('user');
+      if (rawUser) {
         try {
-            const userObject = JSON.parse(rawUser);
-            setCurrentUserId(userObject?.id || null);
+          const userObject = JSON.parse(rawUser);
+          setCurrentUserId(userObject?.id || null);
         } catch (e) {
-            setCurrentUserId(null);
+          setCurrentUserId(null);
         }
-    }
+      } else {
+        setCurrentUserId(null);
+      }
+    };
+    updateUserId();
+    window.addEventListener('userLogin', updateUserId);
+    window.addEventListener('userLogout', updateUserId);
+    return () => {
+      window.removeEventListener('userLogin', updateUserId);
+      window.removeEventListener('userLogout', updateUserId);
+    };
   }, []);
 
-  const fetchProviderDataAndReviews = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const cleaningProviders = await fetchCleaningProviders();
-      const filtered = cleaningProviders.filter(p => p.service_type === 'Cleaning and Upkeep');
-
-      const statsMap = {};
-      const allReviewsMap = {};
-
-      await Promise.all(
-        filtered.map(async (provider) => {
-          try {
-            const statsRes = await fetch(`${API_URL}/api/reviews/stats/${provider.id}`);
-            if (statsRes.ok) {
-                const statsData = await statsRes.json();
-                statsMap[provider.id] = {
-                  average_rating: parseFloat(statsData.average_rating) || 0,
-                  total_reviews: parseInt(statsData.total_reviews, 10) || 0,
-                };
-            } else {
-                statsMap[provider.id] = { average_rating: 0, total_reviews: 0 };
-            }
-
-            const reviewsRes = await fetch(`${API_URL}/api/reviews/${provider.id}`);
-            if (reviewsRes.ok) {
-                allReviewsMap[provider.id] = await reviewsRes.json();
-            } else {
-                allReviewsMap[provider.id] = [];
-            }
-          } catch (err) {
-            statsMap[provider.id] = { average_rating: 0, total_reviews: 0 };
-            allReviewsMap[provider.id] = [];
-          }
-        })
-      );
-
-      setReviewStatsMap(statsMap);
-      setReviewMap(allReviewsMap);
-
-      const enriched = filtered.map(p => ({
-        ...p,
-        average_rating: statsMap[p.id]?.average_rating || 0,
-        total_reviews: statsMap[p.id]?.total_reviews || 0,
-      }));
-
-      let sorted = [];
-      if (sortOption === 'topRated') {
-        sorted = enriched
-          .filter(p => p.average_rating >= 4.5)
-          .sort((a, b) => b.average_rating - a.average_rating || b.total_reviews - a.total_reviews);
-      } else {
-        sorted = enriched
-          .sort((a, b) => {
-            const aAbove4 = a.average_rating >= 4 ? 1 : 0;
-            const bAbove4 = b.average_rating >= 4 ? 1 : 0;
-            if (aAbove4 !== bAbove4) return bAbove4 - aAbove4;
-            if (b.total_reviews !== a.total_reviews) return b.total_reviews - a.total_reviews;
-            return (b.average_rating || 0) - (a.average_rating || 0);
-          });
-      }
-      setProviders(sorted);
-    } catch (err) {
-      setError('Failed to fetch providers');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchProviderDataAndReviews();
-  }, [sortOption]);
+    if (!currentUserId && !localStorage.getItem('user')) {
+        setError("Please log in to view cleaning service providers.");
+        setLoading(false);
+        setProviders([]);
+        return;
+    }
+    if (!currentUserId && localStorage.getItem('user')) {
+        setLoading(true);
+        return;
+    }
+    if (!currentUserId) return;
+
+    const getProviders = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`${API_URL}/api/cleaningProviders?user_id=${currentUserId}`);
+        if (!response.ok) {
+          const errData = await response.json().catch(()=> ({message: "Failed to fetch providers"}));
+          throw new Error(errData.message || `HTTP error ${response.status}`);
+        }
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.message || "Failed to fetch cleaning providers successfully");
+        }
+
+        let fetchedProviders = data.providers || [];
+        const statsMap = {};
+        const allReviewsMap = {};
+
+        if (fetchedProviders.length > 0) {
+            await Promise.all(
+              fetchedProviders.map(async (provider) => {
+                try {
+                  const statsRes = await fetch(`${API_URL}/api/reviews/stats/${provider.id}`);
+                  if(statsRes.ok) {
+                    const statsData = await statsRes.json();
+                    statsMap[provider.id] = {
+                      average_rating: parseFloat(statsData.average_rating) || 0,
+                      total_reviews: parseInt(statsData.total_reviews, 10) || 0,
+                    };
+                  } else {
+                     statsMap[provider.id] = { average_rating: 0, total_reviews: 0 };
+                  }
+                } catch (err) {
+                  statsMap[provider.id] = { average_rating: 0, total_reviews: 0 };
+                }
+                try {
+                  const reviewsRes = await fetch(`${API_URL}/api/reviews/${provider.id}`);
+                  if(reviewsRes.ok) {
+                    allReviewsMap[provider.id] = await reviewsRes.json();
+                  } else {
+                    allReviewsMap[provider.id] = [];
+                  }
+                } catch (err) {
+                  allReviewsMap[provider.id] = [];
+                }
+              })
+            );
+        }
+        setReviewMap(allReviewsMap);
+        
+        const enrichedProviders = fetchedProviders.map((p, idx) => ({
+          ...p,
+          originalIndex: idx,
+          average_rating: statsMap[p.id]?.average_rating || p.average_rating || 0,
+          total_reviews:  statsMap[p.id]?.total_reviews || p.total_reviews || 0,
+        }));
+
+        const getBand = rating => {
+          if (rating >= 4) return 0;
+          if (rating >= 3) return 1;
+          if (rating >= 2) return 2;
+          if (rating >= 1) return 3;
+          return 4;
+        };
+        
+        let sortedProviders;
+        if (sortOption === 'topRated') {
+          sortedProviders = [...enrichedProviders]
+            .filter(p => p.average_rating >= 4.5)
+            .sort((a, b) => {
+              if (b.average_rating !== a.average_rating) return b.average_rating - a.average_rating;
+              return (b.total_reviews || 0) - (a.total_reviews || 0);
+            });
+        } else {
+          sortedProviders = [...enrichedProviders].sort((a, b) => {
+            const bandA = getBand(a.average_rating);
+            const bandB = getBand(b.average_rating);
+            if (bandA !== bandB) return bandA - bandB;
+        
+            const scoreA = (a.average_rating || 0) * (a.total_reviews || 0);
+            const scoreB = (b.average_rating || 0) * (b.total_reviews || 0);
+            if (scoreB !== scoreA) return scoreB - scoreA;
+        
+            if (b.average_rating !== a.average_rating) return b.average_rating - a.average_rating;
+            if ((b.total_reviews || 0) !== (a.total_reviews || 0)) return (b.total_reviews || 0) - (a.total_reviews || 0);
+            
+            return (a.originalIndex || 0) - (b.originalIndex || 0);
+          });
+        }
+        setProviders(sortedProviders);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch providers');
+        setProviders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    if(currentUserId) {
+        getProviders();
+    }
+  }, [sortOption, currentUserId]);  
 
   const handleReviewSubmit = async (reviewData) => {
     const userEmail = localStorage.getItem('userEmail');
@@ -355,15 +404,20 @@ const CleaningServices = () => {
         const errText = await response.text();
         throw new Error(errText || "Failed to submit review");
       }
-      fetchProviderDataAndReviews();
+      
+      const currentSort = sortOption; 
+      setSortOption(''); 
+      setTimeout(() => setSortOption(currentSort), 0);
+
+
     } catch (err) {
       alert(`Error submitting review: ${err.message}`);
     }
   };
 
   if (loading) return <div className="loading-spinner">Loading...</div>;
-  if (error) return <div className="error-message">Error: {error}</div>;
-
+  if (error && providers.length === 0) return <div className="error-message full-width-error">{error}</div>;
+  
   return (
     <div className="cleaning-services-container">
       <h1 className="section-heading">Top Cleaning Service Providers</h1>
@@ -378,171 +432,195 @@ const CleaningServices = () => {
           <option value="topRated">Top Rated</option>
         </select>
       </div>
-      <ul className="provider-list">
-        {providers.map((provider) => {
-          const currentProviderStats = reviewStatsMap[provider.id] || { average_rating: provider.average_rating || 0, total_reviews: provider.total_reviews || 0 };
-          const currentReviews = reviewMap[provider.id] || [];
-          const displayAvgRating = (parseFloat(currentProviderStats.average_rating) || 0).toFixed(1);
+      
+      {!loading && !error && providers.length === 0 && (
+        <div className="no-providers-message">
+          <FaUsers className="no-providers-icon" />
+          <h2>No Cleaning Services Found In Your Network</h2>
+          <p>
+            We couldn't find any cleaning service recommendations visible to you right now.
+          </p>
+          <div className="no-providers-actions">
+            <button onClick={() => navigate('/trust-circles')} className="primary-button">
+              <FaUsers style={{marginRight: '8px'}}/> Manage Your Trust Circle
+            </button>
+            <button onClick={() => navigate('/add-recommendation')} className="secondary-button">
+              <FaPlusCircle style={{marginRight: '8px'}}/> Recommend a Provider
+            </button>
+          </div>
+        </div>
+      )}
 
-          return (
-            <li key={provider.id} className="provider-card">
-              <div className="card-header">
-                <h2 className="card-title">
-                    <Link
-                        to={`/provider/${provider.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="provider-name-link"
-                        onClick={() => localStorage.setItem('selectedProvider', JSON.stringify(provider))}
-                    >
-                        {provider.business_name}
-                    </Link>
-                </h2>
-                <div className="badge-wrapper-with-menu">
-                  <div className="badge-group">
-                    {(parseFloat(currentProviderStats.average_rating) || 0) >= 4.5 && (
-                      <span className="top-rated-badge">Top Rated</span>
-                    )}
-                  </div>
-                  <div className="dropdown-wrapper">
-                    <button
-                      className="three-dots-button"
-                      onClick={() =>
-                        setDropdownOpenForId(dropdownOpenForId === provider.id ? null : provider.id)
-                      }
-                      title="Options"
-                    >
-                      ⋮
-                    </button>
-                    {dropdownOpenForId === provider.id && (
-                      <div className="dropdown-menu">
-                        <button
-                          className="dropdown-item"
-                          onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}/provider/${provider.id}`);
-                            setDropdownOpenForId(null);
-                            setShowLinkCopied(true);
-                            setTimeout(() => setShowLinkCopied(false), 2000);
-                          }}
-                        >
-                          Share this Rec
-                        </button>
-                      </div>
-                    )}
-                    {showLinkCopied && <div className="toast">Link copied!</div>}
+      {providers.length > 0 && (
+        <ul className="provider-list">
+          {providers.map((provider) => {
+            const currentProviderStats = { 
+                average_rating: provider.average_rating || 0, 
+                total_reviews: provider.total_reviews || 0 
+            };
+            const currentReviews = reviewMap[provider.id] || [];
+            const displayAvgRating = (parseFloat(currentProviderStats.average_rating) || 0).toFixed(1);
+
+            return (
+              <li key={provider.id} className="provider-card">
+                <div className="card-header">
+                  <h2 className="card-title">
+                      <Link
+                          to={`/provider/${provider.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="provider-name-link"
+                          onClick={() => localStorage.setItem('selectedProvider', JSON.stringify(provider))}
+                      >
+                          {provider.business_name}
+                      </Link>
+                  </h2>
+                  <div className="badge-wrapper-with-menu">
+                    <div className="badge-group">
+                      {(parseFloat(currentProviderStats.average_rating) || 0) >= 4.5 && (
+                        <span className="top-rated-badge">Top Rated</span>
+                      )}
+                    </div>
+                    <div className="dropdown-wrapper">
+                      <button
+                        className="three-dots-button"
+                        onClick={() =>
+                          setDropdownOpenForId(dropdownOpenForId === provider.id ? null : provider.id)
+                        }
+                        title="Options"
+                      >
+                        ⋮
+                      </button>
+                      {dropdownOpenForId === provider.id && (
+                        <div className="dropdown-menu">
+                          <button
+                            className="dropdown-item"
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/provider/${provider.id}`);
+                              setDropdownOpenForId(null);
+                              setShowLinkCopied(true);
+                              setTimeout(() => setShowLinkCopied(false), 2000);
+                            }}
+                          >
+                            Share this Rec
+                          </button>
+                        </div>
+                      )}
+                      {showLinkCopied && <div className="toast">Link copied!</div>}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="review-summary">
-                <StarRating rating={parseFloat(currentProviderStats.average_rating) || 0} />
-                <span className="review-score">
-                  {displayAvgRating} ({currentProviderStats.total_reviews || 0})
-                </span>
-                <button className="see-all-button" onClick={() => {
-                  setSelectedProvider(provider);
-                  setIsReviewModalOpen(true);
-                }}>
-                  Write a Review
-                </button>
-              </div>
-
-              <p className="card-description">{provider.description || 'No description available'}</p>
-
-              {Array.isArray(provider.tags) && provider.tags.length > 0 && (
-                <div className="tag-container">
-                  {provider.tags.map((tag, idx) => (
-                    <span key={`${idx}-${provider.id}`} className="tag-badge">{tag}</span>
-                  ))}
-                  <button
-                    className="add-tag-button"
-                    onClick={() => {
-                      setSelectedProvider(provider);
-                      setIsReviewModalOpen(true);
-                    }}
-                  >
-                    +
+                <div className="review-summary">
+                  <StarRating rating={parseFloat(currentProviderStats.average_rating) || 0} />
+                  <span className="review-score">
+                    {displayAvgRating} ({currentProviderStats.total_reviews || 0})
+                  </span>
+                  <button className="see-all-button" onClick={() => {
+                    setSelectedProvider(provider);
+                    setIsReviewModalOpen(true);
+                  }}>
+                    Write a Review
                   </button>
                 </div>
-              )}
 
-              {provider.recommender_name && (
-                <>
-                  <div className="recommended-row">
-                    <span className="recommended-label">Recommended by:</span>
-                    {provider.recommender_user_id ? (
-                        <Link
-                            to={`/user/${provider.recommender_user_id}/recommendations`}
-                            className="recommended-name clickable"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            {provider.recommender_name}
-                        </Link>
-                    ) : (
-                        <span
-                            className="recommended-name clickable"
-                            onClick={() => setClickedRecommender(provider.recommender_name)}
-                        >
-                            {provider.recommender_name}
-                        </span>
-                    )}
-                    {provider.date_of_recommendation && (
-                      <span className="recommendation-date">
-                        {'('}{new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
-                          year: '2-digit',
-                          month: 'numeric',
-                          day: 'numeric',
-                        })}{')'}
-                      </span>
-                    )}
-                  </div>
+                <p className="card-description">{provider.description || 'No description available'}</p>
 
-                  {currentReviews.length > 0 &&
-                    [...new Set(currentReviews.map(r => r.user_name).filter(name => name && name !== provider.recommender_name))].length > 0 && (
-                    <div className="recommended-row">
-                      <span className="recommended-label">Also used by:</span>
-                      <span className="used-by-names">
-                        {[...new Set(
-                          currentReviews
-                            .map((r) => r.user_name)
-                            .filter(name => name && name !== provider.recommender_name)
-                        )].join(', ') || 'No additional users yet'}
-                      </span>
-                    </div>
-                  )}
-                </>
-              )}
-              <div className="action-buttons">
-                <button
-                    className="primary-button"
-                    onClick={() => {
+                {Array.isArray(provider.tags) && provider.tags.length > 0 && (
+                  <div className="tag-container">
+                    {provider.tags.map((tag, idx) => (
+                      <span key={`${idx}-${provider.id}`} className="tag-badge">{tag}</span>
+                    ))}
+                    <button
+                      className="add-tag-button"
+                      onClick={() => {
                         setSelectedProvider(provider);
-                        setIsQuoteModalOpen(true);
-                    }}
-                >
-                    Request a Quote
-                </button>
-                <button
-                    className="secondary-button"
-                    onClick={() => {
-                        if (provider.recommender_phone) {
-                            window.location.href = `sms:${provider.recommender_phone}`;
-                        } else if (provider.recommender_email) {
-                            window.location.href = `mailto:${provider.recommender_email}`;
-                        } else {
-                            alert('Sorry, contact info for the recommender is not available.');
-                        }
-                    }}
-                    disabled={!provider.recommender_phone && !provider.recommender_email && !provider.recommender_name}
-                >
-                    Connect with Recommender
-                </button>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+                        setIsReviewModalOpen(true);
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
+
+                {provider.recommender_name && (
+                  <>
+                    <div className="recommended-row">
+                      <span className="recommended-label">Recommended by:</span>
+                      {provider.recommender_user_id ? (
+                          <Link
+                              to={`/user/${provider.recommender_user_id}/recommendations`}
+                              className="recommended-name clickable"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                          >
+                              {provider.recommender_name}
+                          </Link>
+                      ) : (
+                          <span
+                              className="recommended-name clickable"
+                              onClick={() => setClickedRecommender(provider.recommender_name)}
+                          >
+                              {provider.recommender_name}
+                          </span>
+                      )}
+                      {provider.date_of_recommendation && (
+                        <span className="recommendation-date">
+                          {'('}{new Date(provider.date_of_recommendation).toLocaleDateString('en-US', {
+                            year: '2-digit',
+                            month: 'numeric',
+                            day: 'numeric',
+                          })}{')'}
+                        </span>
+                      )}
+                    </div>
+
+                    {currentReviews.length > 0 &&
+                      [...new Set(currentReviews.map(r => r.user_name).filter(name => name && name !== provider.recommender_name))].length > 0 && (
+                      <div className="recommended-row">
+                        <span className="recommended-label">Also used by:</span>
+                        <span className="used-by-names">
+                          {[...new Set(
+                            currentReviews
+                              .map((r) => r.user_name)
+                              .filter(name => name && name !== provider.recommender_name)
+                          )].join(', ') || 'No additional users yet'}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+                <div className="action-buttons">
+                  <button
+                      className="primary-button"
+                      onClick={() => {
+                          setSelectedProvider(provider);
+                          setIsQuoteModalOpen(true);
+                      }}
+                  >
+                      Request a Quote
+                  </button>
+                  <button
+                      className="secondary-button"
+                      onClick={() => {
+                          if (provider.recommender_phone) {
+                              window.location.href = `sms:${provider.recommender_phone}`;
+                          } else if (provider.recommender_email) {
+                              window.location.href = `mailto:${provider.recommender_email}`;
+                          } else {
+                              alert('Sorry, contact info for the recommender is not available.');
+                          }
+                      }}
+                      disabled={!provider.recommender_phone && !provider.recommender_email && !provider.recommender_name}
+                  >
+                      Connect with Recommender
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       {isReviewModalOpen && selectedProvider && (
         <ReviewModal
