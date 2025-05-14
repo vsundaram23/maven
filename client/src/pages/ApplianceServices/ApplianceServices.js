@@ -464,7 +464,7 @@ const ApplianceServices = () => {
             Try expanding your Trust Circle or check back later!
           </p>
           <div className="no-providers-actions">
-            <button onClick={() => navigate('/trust-circles')} className="primary-button">
+            <button onClick={() => navigate('/trustcircles')} className="primary-button">
               <FaUsers style={{marginRight: '8px'}}/> Manage Your Trust Circle
             </button>
             <button onClick={() => navigate('/share-recommendation')} className="secondary-button">
