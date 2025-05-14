@@ -1,19 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom'; // Added useNavigate
 import {
-    FaStar,
-    FaPhone,
-    FaEnvelope,
-    FaMapMarkerAlt,
-    FaQuestionCircle,
-    FaShareAlt,
-    FaRegBookmark,
-    FaBookmark,
-    FaSms,
-    FaExternalLinkAlt,
-    FaRegHandshake
+    FaStar, FaPhone, FaEnvelope, FaMapMarkerAlt, FaQuestionCircle,
+    FaShareAlt, FaRegBookmark, FaBookmark, FaSms, FaExternalLinkAlt, FaRegHandshake
 } from 'react-icons/fa';
-
 import './ProviderProfile.css';
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -26,26 +16,88 @@ const ProviderProfile = () => {
     const [activeTab, setActiveTab] = useState('Reviews');
     const [showLinkCopied, setShowLinkCopied] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState(null);
+    const [loadingProvider, setLoadingProvider] = useState(true);
+    const [loadingReviews, setLoadingReviews] = useState(true);
+    const [error, setError] = useState(null);
+    const navigate = useNavigate();
+
 
     useEffect(() => {
-        const fetchProvider = async () => {
-            if (!id) return;
+        const updateUserId = () => {
+          const rawUser = localStorage.getItem('user');
+          if (rawUser) {
             try {
-                const res = await fetch(`${API_URL}/api/providers/${id}`);
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+              const userObject = JSON.parse(rawUser);
+              setCurrentUserId(userObject?.id || null);
+            } catch (e) {
+              setCurrentUserId(null);
+            }
+          } else {
+            setCurrentUserId(null);
+          }
+        };
+        updateUserId();
+        window.addEventListener('userLogin', updateUserId);
+        window.addEventListener('userLogout', updateUserId);
+        return () => {
+          window.removeEventListener('userLogin', updateUserId);
+          window.removeEventListener('userLogout', updateUserId);
+        };
+    }, []);
+
+
+    useEffect(() => {
+        if (!id) {
+            setLoadingProvider(false);
+            setError("Provider ID is missing.");
+            return;
+        }
+        if (!currentUserId && localStorage.getItem('user')) {
+            // Waiting for currentUserId to be set by the other effect
+            return;
+        }
+        if (!currentUserId) {
+            setError("Please log in to view provider details.");
+            setLoadingProvider(false);
+            return;
+        }
+
+        const fetchProvider = async () => {
+            setLoadingProvider(true);
+            setError(null);
+            try {
+                const fetchUrl = `${API_URL}/api/providers/${id}?user_id=${currentUserId}`;
+                console.log("PROVIDER_PROFILE.JS: Fetching provider from:", fetchUrl);
+                const res = await fetch(fetchUrl);
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.message || `HTTP error! status: ${res.status}`);
+                }
                 const data = await res.json();
-                setProvider(data.provider);
+                if (data.success) {
+                    setProvider(data.provider);
+                } else {
+                    throw new Error(data.message || "Failed to fetch provider details");
+                }
             } catch (error) {
                 console.error("Failed to fetch provider:", error);
+                setError(error.message);
                 setProvider(null);
+            } finally {
+                setLoadingProvider(false);
             }
         };
         fetchProvider();
-    }, [id]);
+    }, [id, currentUserId]);
 
     useEffect(() => {
+        if (!id) {
+            setLoadingReviews(false);
+            return;
+        }
         const fetchReviews = async () => {
-             if (!id) return;
+             setLoadingReviews(true);
              try {
                 const res = await fetch(`${API_URL}/api/reviews/${id}`);
                  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -54,13 +106,18 @@ const ProviderProfile = () => {
             } catch (error) {
                  console.error("Failed to fetch reviews:", error);
                  setReviews([]);
+            } finally {
+                setLoadingReviews(false);
             }
         };
         fetchReviews();
     }, [id]);
 
-    const avgRating = provider ? parseFloat(provider.average_rating || 0).toFixed(1) : '0.0';
-    const totalReviews = provider ? parseInt(provider.total_reviews || 0) : 0;
+    // Calculate avgRating and totalReviews from the provider object if they are now included
+    // OR if you prefer, fetch them from /api/reviews/stats/:id like CleaningServices
+    const avgRating = provider ? (parseFloat(provider.average_rating) || 0).toFixed(1) : '0.0';
+    const totalReviews = provider ? (parseInt(provider.total_reviews, 10) || 0) : 0;
+
 
     const starCounts = React.useMemo(() => {
         const counts = [0, 0, 0, 0, 0];
@@ -100,12 +157,11 @@ const ProviderProfile = () => {
 
     const handleBookmarkClick = () => {
         setIsBookmarked(!isBookmarked);
-        console.log("Bookmark toggled:", !isBookmarked);
     };
 
     const handleTabClick = (tab) => setActiveTab(tab);
 
-     const primaryRecommenderName = provider?.recommended_by_preferred_name || provider?.recommended_by_name;
+     const primaryRecommenderName = provider?.recommender_name; // Use directly from provider if available
      const alsoUsedBy = React.useMemo(() => {
         const recommenders = new Set();
         if (primaryRecommenderName) recommenders.add(primaryRecommenderName);
@@ -114,20 +170,41 @@ const ProviderProfile = () => {
      }, [reviews, primaryRecommenderName]);
 
 
-    if (!provider) {
+    if (loadingProvider || (!provider && !error)) { // Show loading if provider is loading OR if provider is null and no error yet
         return (
-            <div id="provider-profile-page"> {/* Wrapper ID */}
+            <div id="provider-profile-page">
                 <div className="profile-wrapper">
-                    <div className="loading-state">Loading...</div>
+                    <div className="loading-state">Loading Profile...</div>
                 </div>
             </div>
         );
     }
 
+    if (error) {
+        return (
+            <div id="provider-profile-page">
+                <div className="profile-wrapper">
+                    <div className="error-message full-width-error">Error: {error}</div>
+                </div>
+            </div>
+        );
+    }
+    
+    if (!provider) { // Should be caught by error state if fetch failed, but as a fallback
+         return (
+            <div id="provider-profile-page">
+                <div className="profile-wrapper">
+                    <div className="no-providers-message">Provider not found or not accessible.</div>
+                </div>
+            </div>
+        );
+    }
+
+
     const recommendationDate = formatDate(provider.date_of_recommendation);
 
     return (
-        <div id="provider-profile-page"> {/* Wrapper ID */}
+        <div id="provider-profile-page">
             <div className="profile-wrapper">
                 <div className="profile-content">
 
@@ -184,7 +261,7 @@ const ProviderProfile = () => {
                     {provider.provider_message && (
                         <div className="message-block provider-message-block">
                             <p>
-                                <strong>Message from {provider.business_contact || 'the provider'}:</strong> “{provider.provider_message}”
+                                <strong>Message from {provider.business_contact || provider.business_name || 'the provider'}:</strong> “{provider.provider_message}”
                             </p>
                         </div>
                     )}
@@ -203,15 +280,15 @@ const ProviderProfile = () => {
                             </div>
                             <p className="recommender-text">"{provider.recommender_message}"</p>
                              <div className="quote-actions">
-                                 {provider.recommended_by_phone && (
+                                 {provider.recommender_phone && (
                                     <>
-                                        <a href={`sms:${provider.recommended_by_phone}?body=Hey ${primaryRecommenderName}, just wanted to say thank you for recommending ${provider.business_name || 'them'}! 🙏`}
+                                        <a href={`sms:${provider.recommender_phone}?body=Hey ${primaryRecommenderName}, just wanted to say thank you for recommending ${provider.business_name || 'them'}! 🙏`}
                                            className="quote-action-icon"
                                            title="Thank Recommender"
                                         >
                                            <FaRegHandshake />
                                         </a>
-                                         <a href={`sms:${provider.recommended_by_phone}?body=Hi ${primaryRecommenderName}! I saw your recommendation for ${provider.business_name || 'them'} on Tried & Trusted and had a quick question.`}
+                                         <a href={`sms:${provider.recommender_phone}?body=Hi ${primaryRecommenderName}! I saw your recommendation for ${provider.business_name || 'them'} on Tried & Trusted and had a quick question.`}
                                            className="quote-action-icon"
                                            title="Ask Recommender a Question"
                                         >
@@ -234,10 +311,10 @@ const ProviderProfile = () => {
                                  >
                                      {isBookmarked ? <FaBookmark /> : <FaRegBookmark />}
                                  </button>
-                                 {provider.recommended_by && (
-                                    <a href={`/user/${provider.recommended_by}/recommendations`} className="recommender-profile-link-action">
-                                        View Profile
-                                    </a>
+                                 {provider.recommender_user_id && (
+                                    <Link to={`/user/${provider.recommender_user_id}/recommendations`} className="recommender-profile-link-action">
+                                        View Recommender's Profile
+                                    </Link>
                                  )}
                              </div>
                         </div>
@@ -281,7 +358,7 @@ const ProviderProfile = () => {
                                     <div className="rating-bars">
                                         {[5, 4, 3, 2, 1].map((star) => {
                                             const count = starCounts[star - 1];
-                                            const percent = totalReviews ? (count / totalReviews) * 100 : 0;
+                                            const percent = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
                                             return (
                                                 <div key={star} className="rating-bar-row">
                                                     <span className="rating-bar-label">{star}★</span>
@@ -295,9 +372,9 @@ const ProviderProfile = () => {
                                     </div>
                                 </div>
 
-                                <h3 className="tab-section-header">User Reviews</h3>
-                                {reviews.length === 0 ? (
-                                    <p className="no-reviews-text">No reviews yet.</p>
+                                <h3 className="tab-section-header">User Reviews ({reviews.length})</h3>
+                                {loadingReviews ? <p>Loading reviews...</p> : reviews.length === 0 ? (
+                                    <p className="no-reviews-text">No reviews yet for this provider.</p>
                                 ) : (
                                     <div className="reviews-list">
                                         {reviews.map((review, i) => (
@@ -309,7 +386,7 @@ const ProviderProfile = () => {
                                                         ))}
                                                     </div>
                                                     <span className="review-item-user">{review.user_name || 'Anonymous'}</span>
-                                                    {review.date && <span className="review-item-date">{formatDate(review.date)}</span>}
+                                                    {review.date && <span className="review-item-date">{formatDate(review.created_at || review.date)}</span>}
                                                 </div>
                                                 <p className="review-item-content">"{review.content}"</p>
                                             </div>
@@ -323,7 +400,7 @@ const ProviderProfile = () => {
                              <div className="details-content">
                                  <h3 className="tab-section-header">Credentials & Information</h3>
                                  <div className="credentials-list">
-                                    {avgRating >= 4.5 && totalReviews > 5 && (
+                                    {(parseFloat(avgRating) || 0) >= 4.5 && totalReviews > 5 && (
                                         <span className="credential-badge top-rated">Top Rated</span>
                                     )}
                                     {provider.service_type && (
@@ -334,7 +411,6 @@ const ProviderProfile = () => {
                              </div>
                         )}
                     </div>
-
                 </div>
             </div>
         </div>
