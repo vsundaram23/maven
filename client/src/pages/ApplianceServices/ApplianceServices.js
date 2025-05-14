@@ -467,7 +467,7 @@ const ApplianceServices = () => {
             <button onClick={() => navigate('/trust-circles')} className="primary-button">
               <FaUsers style={{marginRight: '8px'}}/> Manage Your Trust Circle
             </button>
-            <button onClick={() => navigate('/add-recommendation')} className="secondary-button">
+            <button onClick={() => navigate('/share-recommendation')} className="secondary-button">
               <FaPlusCircle style={{marginRight: '8px'}}/> Recommend a Provider
             </button>
           </div>

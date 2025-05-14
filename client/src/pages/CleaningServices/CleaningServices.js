@@ -4,8 +4,8 @@ import { FaStar, FaPhone, FaEnvelope, FaUsers, FaPlusCircle } from 'react-icons/
 import QuoteModal from '../../components/QuoteModal/QuoteModal';
 import './CleaningServices.css';
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = 'http://localhost:3000';
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = 'http://localhost:3000';
 
 const StarRating = ({ rating }) => {
   const numRating = parseFloat(rating) || 0;
@@ -444,7 +444,7 @@ const CleaningServices = () => {
             <button onClick={() => navigate('/trust-circles')} className="primary-button">
               <FaUsers style={{marginRight: '8px'}}/> Manage Your Trust Circle
             </button>
-            <button onClick={() => navigate('/add-recommendation')} className="secondary-button">
+            <button onClick={() => navigate('/share-recommendation')} className="secondary-button">
               <FaPlusCircle style={{marginRight: '8px'}}/> Recommend a Provider
             </button>
           </div>
