@@ -450,7 +450,6 @@ const CleaningServices = () => {
           </div>
         </div>
       )}
-
       {providers.length > 0 && (
         <ul className="provider-list">
           {providers.map((provider) => {
