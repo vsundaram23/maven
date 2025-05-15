@@ -15,7 +15,7 @@ const createRecommendation = async (req, res) => {
     user_email,
     email,       
     phone_number,
-    tags,
+    tags, // These tags will now go directly into service_providers.tags
     rating,      
     website,
     provider_contact_name, 
@@ -70,7 +70,7 @@ const createRecommendation = async (req, res) => {
         recommended_by, date_of_recommendation,
         email, phone_number, website, tags, 
         city, state, zip_code, service_scope, price_range,
-        contact_name, provider_message, recommender_message,
+        business_contact, provider_message, recommender_message,
         visibility, num_likes, notes, price_paid,
         submitted_category_name, submitted_service_name,
         created_at, updated_at
@@ -90,7 +90,7 @@ const createRecommendation = async (req, res) => {
       toNull(email),                 
       toNull(phone_number),          
       toNull(website),               
-      tags || [],                    
+      tags || [],  // Tags from the form payload directly into service_providers.tags
       toNull(city),                  
       toNull(state),                 
       toNull(zip_code),              
@@ -111,11 +111,12 @@ const createRecommendation = async (req, res) => {
 
     await client.query(providerInsertQuery, providerValues);
 
+    // Insert the review WITHOUT tags, as tags are now on the provider
     const reviewInsertQuery = `
-      INSERT INTO reviews (id, provider_id, user_id, rating, content, created_at, tags)
-      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, $6);
+      INSERT INTO reviews (id, provider_id, user_id, rating, content, created_at)
+      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP);
     `;
-    await client.query(reviewInsertQuery, [uuidv4(), newProviderId, recommenderUserId, rating, recommender_message, tags || []]);
+    await client.query(reviewInsertQuery, [uuidv4(), newProviderId, recommenderUserId, rating, recommender_message]);
     
     if (publish_scope === 'Specific Trust Circles' && trust_circle_ids && trust_circle_ids.length > 0) {
         for (const communityId of trust_circle_ids) {
@@ -142,6 +143,65 @@ const createRecommendation = async (req, res) => {
   }
 };
 
+// --- For subsequent reviews from ReviewModal on service pages ---
+// This function would handle POST /api/reviews
+const addReviewToProvider = async (req, res) => {
+  const { 
+    provider_id, 
+    // email, // user_email from localStorage is used by ShareRecommendation, here it might be user_id
+    user_id, // Assuming you send user_id of reviewer
+    rating, 
+    content, 
+    tags 
+  } = req.body;
+
+  if (!provider_id || !user_id || !rating || !content) {
+    return res.status(400).json({ success: false, message: "Missing required fields for review." });
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+
+    // 1. Insert the review (without tags in this table)
+    const reviewInsertQuery = `
+      INSERT INTO reviews (id, provider_id, user_id, rating, content, created_at)
+      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP) RETURNING *;
+    `;
+    const reviewResult = await client.query(reviewInsertQuery, [uuidv4(), provider_id, user_id, rating, content]);
+    const newReview = reviewResult.rows[0];
+
+    // 2. Update service_providers.tags by merging new tags
+    if (tags && tags.length > 0) {
+      const updateTagsQuery = `
+        UPDATE service_providers
+        SET tags = (
+          SELECT array_agg(DISTINCT unnest_val)
+          FROM (
+            SELECT unnest(COALESCE(tags, ARRAY[]::TEXT[])) AS unnest_val FROM service_providers WHERE id = $1
+            UNION
+            SELECT unnest($2::TEXT[])
+          ) AS combined_tags
+        )
+        WHERE id = $1;
+      `;
+      await client.query(updateTagsQuery, [provider_id, tags]);
+    }
+
+    await client.query('COMMIT');
+    res.status(201).json({ success: true, message: "Review added successfully!", review: newReview });
+
+  } catch (error) {
+    if (client) await client.query('ROLLBACK');
+    console.error("Error adding review:", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to add review." });
+  } finally {
+    if (client) client.release();
+  }
+};
+
+
 const getAllRecommendations = async (req, res) => {
   try {
     const query = `
@@ -152,7 +212,7 @@ const getAllRecommendations = async (req, res) => {
         u.email AS recommender_email
       FROM service_providers sp
       LEFT JOIN services actual_s ON sp.service_id = actual_s.service_id
-      LEFT JOIN service_categories actual_sc ON actual_s.category_id = actual_sc.category_id 
+      LEFT JOIN service_categories actual_sc ON actual_s.category_id = actual_sc.service_id 
       LEFT JOIN users u ON sp.recommended_by = u.id
       WHERE sp.service_id != $1 
       ORDER BY sp.created_at DESC;
@@ -175,7 +235,7 @@ const getRecommendationById = async (req, res) => {
         u.email AS recommender_email
       FROM service_providers sp
       LEFT JOIN services actual_s ON sp.service_id = actual_s.service_id
-      LEFT JOIN service_categories actual_sc ON actual_s.category_id = actual_sc.category_id
+      LEFT JOIN service_categories actual_sc ON actual_s.category_id = actual_sc.service_id
       LEFT JOIN users u ON sp.recommended_by = u.id
       WHERE sp.id = $1;
     `;
@@ -198,7 +258,7 @@ const updateRecommendation = async (req, res) => {
     subcategory, 
     email,
     phone_number,
-    tags,
+    tags, // These tags will update service_providers.tags directly
     price_range,
     service_scope,
     city,
@@ -218,12 +278,12 @@ const updateRecommendation = async (req, res) => {
 
     let actualCategoryIdToUpdate = null;
     if (category) {
-        const categoryResult = await client.query('SELECT category_id FROM service_categories WHERE name = $1', [category]);
+        const categoryResult = await client.query('SELECT service_id FROM service_categories WHERE name = $1', [category]);
         if (categoryResult.rows.length === 0) {
             await client.query('ROLLBACK');
             return res.status(400).json({ success: false, message: `Category '${category}' not found for update.`});
         }
-        actualCategoryIdToUpdate = categoryResult.rows[0].category_id;
+        actualCategoryIdToUpdate = categoryResult.rows[0].service_id; 
     }
 
     let actualServiceIdToUpdate = null;
@@ -245,7 +305,7 @@ const updateRecommendation = async (req, res) => {
         service_id            = COALESCE($4, service_id), 
         email                 = COALESCE($5, email),
         phone_number          = COALESCE($6, phone_number),
-        tags                  = COALESCE($7, tags),
+        tags                  = COALESCE($7, tags), 
         price_range           = COALESCE($8, price_range),
         service_scope         = COALESCE($9, service_scope),
         city                  = COALESCE($10, city),
@@ -253,7 +313,7 @@ const updateRecommendation = async (req, res) => {
         zip_code              = COALESCE($12, zip_code),
         website               = COALESCE($13, website),
         provider_message      = COALESCE($14, provider_message),
-        contact_name          = COALESCE($15, contact_name), 
+        business_contact      = COALESCE($15, business_contact), 
         recommender_message   = COALESCE($16, recommender_message),
         visibility            = COALESCE($17, visibility),
         updated_at            = CURRENT_TIMESTAMP,
@@ -270,7 +330,7 @@ const updateRecommendation = async (req, res) => {
       actualServiceIdToUpdate,  
       toNull(email),
       toNull(phone_number),
-      tags || [],
+      tags || [], // Directly update service_providers.tags
       toNull(price_range),
       toNull(service_scope),
       toNull(city),
@@ -278,7 +338,7 @@ const updateRecommendation = async (req, res) => {
       toNull(zip_code),
       toNull(website),
       toNull(provider_message),
-      toNull(provider_contact_name),
+      toNull(provider_contact_name), 
       toNull(recommender_message),
       toNull(visibility),
       req.params.id
@@ -324,7 +384,8 @@ module.exports = {
   getAllRecommendations,
   getRecommendationById,
   updateRecommendation,
-  deleteRecommendation
+  deleteRecommendation,
+  addReviewToProvider 
 };
 
 // // controllers/recommendationController.js
