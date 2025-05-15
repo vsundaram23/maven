@@ -151,11 +151,11 @@ useEffect(() => {
   };
 
   const homeServices = [
-    { name: 'Repair Services',   slug: 'appliances' },
-    { name: 'Cleaning Services', slug: 'cleaning'   },
-    { name: 'Home Renovation',   slug: 'repairs'    },
-    { name: 'Outdoor Services',  slug: 'outdoor'    },
-    { name: 'Moving Services',   slug: 'moving'     },
+    { name: 'Repair Services',   slug: 'repair-services' },
+    { name: 'Cleaning Services', slug: 'cleaning-services'   },
+    { name: 'Home Renovation',   slug: 'renovation-services'    },
+    { name: 'Outdoor Services',  slug: 'outdoor-services'    },
+    { name: 'Moving Services',   slug: 'moving-services'     },
   ];
   const otherLinks = [
     { name: 'Financial Experts', slug: 'financial-services' },

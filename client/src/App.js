@@ -43,12 +43,12 @@ const AppWrapper = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/financial-services" element={<FinancialServices />} />
           <Route path="/auto-services" element={<AutoServices />} />
-          <Route path="/appliances" element={<ApplianceServices />} />
-          <Route path="/cleaning" element={<CleaningServices />} />
+          <Route path="/repair-services" element={<ApplianceServices />} />
+          <Route path="/cleaning-services" element={<CleaningServices />} />
           <Route path="/utilities" element={<UtilitiesServices />} />
-          <Route path="/repairs" element={<RepairServices />} />
-          <Route path="/outdoor" element={<OutdoorServices />} />
-          <Route path="/moving" element={<MovingServices />} />
+          <Route path="/renovation-services" element={<RepairServices />} />
+          <Route path="/outdoor-services" element={<OutdoorServices />} />
+          <Route path="/moving-services" element={<MovingServices />} />
           <Route path="/trustcircles" element={<TrustCircles />} />
           <Route path="/search" element={<Search />} />
           <Route path="/provider/:id" element={<ProviderProfile />} />
