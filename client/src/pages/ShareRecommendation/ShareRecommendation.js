@@ -40,6 +40,9 @@ export default function ShareRecommendation() {
   const [typewriterText, setTypewriterText] = useState('');
   const [typewriterIndex, setTypewriterIndex] = useState(0);
 
+  const [categoryState, setCategoryState] = useState(''); // State variable for category
+  const [subcategoryState, setSubcategoryState] = useState(''); // State variable for subcategory
+
   const [businessName, setBusinessName] = useState('');
   const [providerContactName, setProviderContactName] = useState(''); // New state
   const [recommendationBlurb, setRecommendationBlurb] = useState('');
@@ -97,6 +100,14 @@ export default function ShareRecommendation() {
     }
     setIsSubmitting(true);
     setMessage('');
+    console.log('--- handleSubmit Values ---');
+    console.log('userEmail:', userEmail);
+    console.log('businessName:', businessName.trim());
+    console.log('recommenderMessage:', recommendationBlurb);
+    console.log('rating:', rating);
+    console.log('category:', categoryState);
+    console.log('subcategory:', subcategoryState);
+    console.log('-------------------------');
     const payload = {
       user_email: userEmail,
       business_name: businessName,

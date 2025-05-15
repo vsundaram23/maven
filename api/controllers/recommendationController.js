@@ -33,7 +33,7 @@ const createRecommendation = async (req, res) => {
     price_paid 
   } = req.body;
 
-  if (!user_email || !business_name || !recommender_message || !rating || !category || !subcategory) {
+  if (!user_email || !business_name || !recommender_message || !rating) {
     return res
       .status(400)
       .json({ success: false, message: 'Missing required fields (user_email, business_name, recommender_message, rating, and intended category/subcategory names).' });
