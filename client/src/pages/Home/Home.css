@@ -110,7 +110,7 @@ body {
 
 .recommender-banner {
   max-width: 600px;
-  margin: 1.5rem auto 2.5rem;
+  margin: 1.5rem auto 1.5rem;
   background: #e7f5ff;
   border: 1px solid #a5d8ff;
   color: #1A365D;
@@ -138,7 +138,7 @@ body {
   display: flex;
   justify-content: center;
   gap: clamp(2rem, 5vw, 4rem);
-  margin: 3rem 1rem 2rem;
+  margin: 2rem 1rem 2rem;
   flex-wrap: wrap;
 }
 
