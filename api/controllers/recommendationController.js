@@ -1,8 +1,8 @@
 const pool = require('../config/db.config');
 const { v4: uuidv4 } = require('uuid');
 
-const PENDING_SERVICE_PK_ID = '8b6a6d09-4a7d-4730-aad8-455cc603226f'; 
-const PENDING_CATEGORY_PK_ID = '9305bf5b-838f-4d72-a2d1-893d6b209b7e'; 
+const PENDING_SERVICE_PK_ID = 'e2c2b91a-c577-448b-8bd1-3e0c17b20e46'; 
+const PENDING_CATEGORY_PK_ID = '93859f52-830f-4b72-92fc-9316db28fb7e'; 
 
 const toNull = v => (v === undefined || v === '' || (Array.isArray(v) && v.length === 0) ? null : v);
 
