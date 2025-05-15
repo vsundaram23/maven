@@ -6,7 +6,6 @@ import CountUp from 'react-countup';
 import './Home.css';
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = 'http://localhost:3000';
 const BRAND_PHRASE = 'Tried & Trusted.';
 
 const Home = () => {
@@ -15,28 +14,31 @@ const Home = () => {
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const [name, setName] = useState('');
+  const [currentUserEmail, setCurrentUserEmail] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isUserSessionResolved, setIsUserSessionResolved] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-
 
   useEffect(() => {
     const updateUserSessionData = () => {
       const raw = localStorage.getItem('user');
       let userId = null;
       let userName = '';
+      let userEmail = null;
       if (raw) {
         try {
           const u = JSON.parse(raw);
           userName = u.preferred_name || u.firstName || u.name || (u.email && u.email.split('@')[0]) || '';
           userId = u.id || null;
+          userEmail = u.email || null;
         } catch (e) {
-          console.error("HOME.JS: Error parsing user from localStorage:", e);
+          // console.error("HOME.JS: Error parsing user from localStorage:", e);
         }
       }
       setName(userName);
       setCurrentUserId(userId);
-      setIsUserSessionResolved(true);
+      setCurrentUserEmail(userEmail);
+      setIsUserSessionResolved(true); 
     };
 
     updateUserSessionData();
@@ -46,7 +48,7 @@ const Home = () => {
       window.removeEventListener('userLogin', updateUserSessionData);
       window.removeEventListener('userLogout', updateUserSessionData);
     };
-  }, []);
+  }, [location]); 
 
   const targetText = name
     ? `Welcome back, ${name}.`
@@ -65,33 +67,32 @@ const Home = () => {
         setIsTyping(false);
         return;
     }
-    const next = targetText.substring(0, displayText.length + 1);
-    const t = setTimeout(() => {
-      setDisplayText(next);
-      if (next.length === targetText.length) {
+    if (displayText.length < targetText.length) {
+        const next = targetText.substring(0, displayText.length + 1);
+        const t = setTimeout(() => {
+        setDisplayText(next);
+        }, 100);
+        return () => clearTimeout(t);
+    } else {
         setIsTyping(false);
-      }
-    }, 100);
-    return () => clearTimeout(t);
+    }
   }, [displayText, isTyping, targetText]);
 
   const [providerCount, setProviderCount] = useState(0);
-  const [trustCount, setTrustCount] = useState(0);
+  const [connectionCount, setConnectionCount] = useState(0);
+  const recommenderRankDisplay = "N/A"; 
 
   useEffect(() => {
     if (!isUserSessionResolved) return;
 
     const fetchCounts = async () => {
       let providerApiUrl = `${API_URL}/api/providers/count`;
-      let trustApiUrl = `${API_URL}/api/trust-circle/count`;
-
       if (currentUserId) {
         providerApiUrl += `?user_id=${currentUserId}`;
-        trustApiUrl += `?user_id=${currentUserId}`;
       }
 
       try {
-        const providerRes = await fetch(providerApiUrl, { credentials: 'include' });
+        const providerRes = await fetch(providerApiUrl);
         if (providerRes.ok) {
           const providerData = await providerRes.json();
           setProviderCount(providerData.count || 0);
@@ -101,22 +102,31 @@ const Home = () => {
       } catch (err) {
         setProviderCount(0);
       }
-
-      try {
-        const trustRes = await fetch(trustApiUrl, { credentials: 'include' });
-        if (trustRes.ok) {
-          const trustData = await trustRes.json();
-          setTrustCount(trustData.count || 0);
-        } else {
-          setTrustCount(0);
+      
+      if (currentUserEmail) {
+        try {
+            const connectionsResponse = await fetch(`${API_URL}/api/connections/check-connections`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: currentUserEmail })
+            });
+            if (connectionsResponse.ok) {
+                const connectionsData = await connectionsResponse.json();
+                const uniqueConnections = Array.isArray(connectionsData) ? Array.from(new Set(connectionsData.map(u => u.email))) : [];
+                setConnectionCount(uniqueConnections.length);
+            } else {
+                setConnectionCount(0);
+            }
+        } catch (err) {
+            setConnectionCount(0);
         }
-      } catch (err) {
-        setTrustCount(0);
+      } else if (!currentUserId) { 
+        setConnectionCount(0);
       }
     };
-
+    
     fetchCounts();
-  }, [currentUserId, isUserSessionResolved]);
+  }, [currentUserId, currentUserEmail, isUserSessionResolved]);
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -131,7 +141,6 @@ const Home = () => {
     }
 
     if (!currentUserId) {
-      console.warn("HOME.JS: Search cannot be performed - User ID not available. Please log in.");
       alert("Please log in to search for recommendations.");
       setIsSearching(false);
       return;
@@ -139,14 +148,10 @@ const Home = () => {
 
     setIsSearching(true);
     const searchUrl = `${API_URL}/api/providers/search?q=${encodeURIComponent(q)}&user_id=${currentUserId}`;
-    console.log("HOME.JS: Attempting to fetch search results from URL:", searchUrl);
-
+    
     try {
       const r = await fetch(searchUrl);
-      console.log("HOME.JS: Fetch response status:", r.status); 
-      
       const responseBody = await r.text(); 
-      console.log("HOME.JS: Fetch response body:", responseBody);
 
       if (!r.ok) {
         let errorPayload;
@@ -175,11 +180,18 @@ const Home = () => {
         throw new Error(d.message || d.error || "Search was not successful according to API response");
       }
     } catch (err) {
-      console.error("Error in Home.js handleSearch:", err);
       alert(`Search failed: ${err.message}. Please check the console for more details.`);
     } finally {
       setIsSearching(false);
     }
+  };
+  
+  const triggerLoginModal = () => {
+    window.dispatchEvent(new Event('forceLogin'));
+  };
+
+  const triggerSignUpModal = () => {
+    window.dispatchEvent(new CustomEvent('forceSignUp'));
   };
 
   if (location.pathname !== '/') return null;
@@ -191,6 +203,7 @@ const Home = () => {
       <div className="hero-container">
         <motion.h1
           className="main-title"
+          key={targetText} 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
@@ -230,7 +243,16 @@ const Home = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.2, duration: 0.6 }}
         >
-          You are the <strong>#3</strong> recommender in SEANAG!
+          {currentUserId ? (
+            <>Add more recommendations to get a ranking on our leaderboard!</>
+          ) : (
+            <>
+              Unlock trusted recommendations.&nbsp;
+              <span onClick={triggerSignUpModal} className="auth-link">Sign Up</span>
+              &nbsp;or&nbsp;
+              <span onClick={triggerLoginModal} className="auth-link">Log In</span>.
+            </>
+          )}
         </motion.div>
       </div>
       <div className="yc-stats">
@@ -242,18 +264,18 @@ const Home = () => {
         </div>
         <div className="stat">
           <p className="number">
-            #{typeof trustCount === 'number' && trustCount >= 0 ? trustCount + 1 : '—'}
+            {recommenderRankDisplay}
           </p>
           <p className="label">Your Recommender<br />Rank</p>
         </div>
         <div className="stat">
           <p className="number">
-            <CountUp end={trustCount || 0} duration={2} />
+            <CountUp end={connectionCount || 0} duration={2} />
           </p>
           <p className="label">People in Your<br />Trust Circle</p>
         </div>
       </div>
-      {typeof trustCount === 'number' && trustCount >=0 && (
+      {(isUserSessionResolved && currentUserId) && (
         <motion.div
           className="network-cta"
           initial={{ opacity: 0, y: 20 }}
@@ -261,7 +283,12 @@ const Home = () => {
           transition={{ delay: 2.2, duration: 0.6 }}
         >
           <p>Want even more recommendations? Invite friends to unlock new insights!</p>
-          <button className="grow-button">Grow Your Network</button>
+          <button 
+            onClick={() => navigate('/trustcircles')} 
+            className="primary-button"
+          >
+            Grow Your Trust Circle
+          </button>
         </motion.div>
       )}
     </div>
@@ -269,6 +296,279 @@ const Home = () => {
 };
 
 export default Home;
+
+// working 5/14
+// import React, { useEffect, useState } from 'react';
+// import { useNavigate, useLocation } from 'react-router-dom';
+// import { useMediaQuery } from 'react-responsive';
+// import { motion } from 'framer-motion';
+// import CountUp from 'react-countup';
+// import './Home.css';
+
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+// // const API_URL = 'http://localhost:3000';
+// const BRAND_PHRASE = 'Tried & Trusted.';
+
+// const Home = () => {
+//   const navigate = useNavigate();
+//   const location = useLocation();
+//   const isMobile = useMediaQuery({ maxWidth: 768 });
+
+//   const [name, setName] = useState('');
+//   const [currentUserId, setCurrentUserId] = useState(null);
+//   const [isUserSessionResolved, setIsUserSessionResolved] = useState(false);
+//   const [isSearching, setIsSearching] = useState(false);
+
+
+//   useEffect(() => {
+//     const updateUserSessionData = () => {
+//       const raw = localStorage.getItem('user');
+//       let userId = null;
+//       let userName = '';
+//       if (raw) {
+//         try {
+//           const u = JSON.parse(raw);
+//           userName = u.preferred_name || u.firstName || u.name || (u.email && u.email.split('@')[0]) || '';
+//           userId = u.id || null;
+//         } catch (e) {
+//           console.error("HOME.JS: Error parsing user from localStorage:", e);
+//         }
+//       }
+//       setName(userName);
+//       setCurrentUserId(userId);
+//       setIsUserSessionResolved(true);
+//     };
+
+//     updateUserSessionData();
+//     window.addEventListener('userLogin', updateUserSessionData);
+//     window.addEventListener('userLogout', updateUserSessionData);
+//     return () => {
+//       window.removeEventListener('userLogin', updateUserSessionData);
+//       window.removeEventListener('userLogout', updateUserSessionData);
+//     };
+//   }, []);
+
+//   const targetText = name
+//     ? `Welcome back, ${name}.`
+//     : `Welcome to ${BRAND_PHRASE}`;
+
+//   const [displayText, setDisplayText] = useState('');
+//   const [isTyping, setIsTyping] = useState(true);
+
+//   useEffect(() => {
+//     setDisplayText('');
+//     setIsTyping(true);
+//   }, [targetText]);
+
+//   useEffect(() => {
+//     if (!isTyping || !targetText) {
+//         setIsTyping(false);
+//         return;
+//     }
+//     const next = targetText.substring(0, displayText.length + 1);
+//     const t = setTimeout(() => {
+//       setDisplayText(next);
+//       if (next.length === targetText.length) {
+//         setIsTyping(false);
+//       }
+//     }, 100);
+//     return () => clearTimeout(t);
+//   }, [displayText, isTyping, targetText]);
+
+//   const [providerCount, setProviderCount] = useState(0);
+//   const [trustCount, setTrustCount] = useState(0);
+
+//   useEffect(() => {
+//     if (!isUserSessionResolved) return;
+
+//     const fetchCounts = async () => {
+//       let providerApiUrl = `${API_URL}/api/providers/count`;
+//       let trustApiUrl = `${API_URL}/api/trust-circle/count`;
+
+//       if (currentUserId) {
+//         providerApiUrl += `?user_id=${currentUserId}`;
+//         trustApiUrl += `?user_id=${currentUserId}`;
+//       }
+
+//       try {
+//         const providerRes = await fetch(providerApiUrl, { credentials: 'include' });
+//         if (providerRes.ok) {
+//           const providerData = await providerRes.json();
+//           setProviderCount(providerData.count || 0);
+//         } else {
+//           setProviderCount(0);
+//         }
+//       } catch (err) {
+//         setProviderCount(0);
+//       }
+
+//       try {
+//         const trustRes = await fetch(trustApiUrl, { credentials: 'include' });
+//         if (trustRes.ok) {
+//           const trustData = await trustRes.json();
+//           setTrustCount(trustData.count || 0);
+//         } else {
+//           setTrustCount(0);
+//         }
+//       } catch (err) {
+//         setTrustCount(0);
+//       }
+//     };
+
+//     fetchCounts();
+//   }, [currentUserId, isUserSessionResolved]);
+
+//   const [searchQuery, setSearchQuery] = useState('');
+
+//   const handleSearch = async (e) => {
+//     if (e) e.preventDefault();
+//     const q = searchQuery.trim();
+//     if (!q) return;
+
+//     if (!isUserSessionResolved) {
+//       alert("Session still loading, please try again in a moment.");
+//       return;
+//     }
+
+//     if (!currentUserId) {
+//       console.warn("HOME.JS: Search cannot be performed - User ID not available. Please log in.");
+//       alert("Please log in to search for recommendations.");
+//       setIsSearching(false);
+//       return;
+//     }
+
+//     setIsSearching(true);
+//     const searchUrl = `${API_URL}/api/providers/search?q=${encodeURIComponent(q)}&user_id=${currentUserId}`;
+//     console.log("HOME.JS: Attempting to fetch search results from URL:", searchUrl);
+
+//     try {
+//       const r = await fetch(searchUrl);
+//       console.log("HOME.JS: Fetch response status:", r.status); 
+      
+//       const responseBody = await r.text(); 
+//       console.log("HOME.JS: Fetch response body:", responseBody);
+
+//       if (!r.ok) {
+//         let errorPayload;
+//         try {
+//             errorPayload = JSON.parse(responseBody);
+//         } catch (parseError) {
+//             throw new Error(`HTTP error! status: ${r.status}, Non-JSON response: ${responseBody}`);
+//         }
+//         throw new Error(errorPayload.message || errorPayload.error || `HTTP error! status: ${r.status}`);
+//       }
+      
+//       const d = JSON.parse(responseBody);
+
+//       if (d.success) {
+//         const base = `/search?q=${encodeURIComponent(q)}`;
+//         navigate(
+//           d.providers?.length > 0 ? base : base + '&noResults=true',
+//           {
+//             state: {
+//               initialProviders: d.providers,
+//               currentSearchUserId: currentUserId 
+//             }
+//           }
+//         );
+//       } else {
+//         throw new Error(d.message || d.error || "Search was not successful according to API response");
+//       }
+//     } catch (err) {
+//       console.error("Error in Home.js handleSearch:", err);
+//       alert(`Search failed: ${err.message}. Please check the console for more details.`);
+//     } finally {
+//       setIsSearching(false);
+//     }
+//   };
+
+//   if (location.pathname !== '/') return null;
+
+//   const highlightTarget = name || BRAND_PHRASE;
+
+//   return (
+//     <div className="home">
+//       <div className="hero-container">
+//         <motion.h1
+//           className="main-title"
+//           initial={{ opacity: 0, y: 20 }}
+//           animate={{ opacity: 1, y: 0 }}
+//           transition={{ delay: 0.4, duration: 0.6 }}
+//           dangerouslySetInnerHTML={{
+//             __html: (displayText && highlightTarget && displayText.includes(highlightTarget))
+//               ? displayText.replace(
+//                   highlightTarget,
+//                   `<span class="highlight-box">${highlightTarget}</span>`
+//                 )
+//               : displayText,
+//           }}
+//         />
+//         <p className="subtitle">
+//           Find trusted recommendations from&nbsp;
+//           <span className="underline-highlight">your network.</span>
+//         </p>
+//         <form className="search-wrapper" onSubmit={handleSearch}>
+//           <input
+//             className="search-input"
+//             type="text"
+//             placeholder={
+//               isMobile
+//                 ? 'Search services...'
+//                 : 'Search for home services, financial advisors...'
+//             }
+//             value={searchQuery}
+//             onChange={e => setSearchQuery(e.target.value)}
+//             disabled={isSearching}
+//           />
+//           <button type="submit" className="search-button" disabled={isSearching}>
+//             {isSearching ? '...' : '→'}
+//           </button>
+//         </form>
+//         <motion.div
+//           className="recommender-banner"
+//           initial={{ opacity: 0, y: 10 }}
+//           animate={{ opacity: 1, y: 0 }}
+//           transition={{ delay: 1.2, duration: 0.6 }}
+//         >
+//           You are the <strong>#3</strong> recommender in SEANAG!
+//         </motion.div>
+//       </div>
+//       <div className="yc-stats">
+//         <div className="stat">
+//           <p className="number">
+//             <CountUp end={providerCount || 0} duration={2} separator="," />
+//           </p>
+//           <p className="label">Recommendations<br />shared this week</p>
+//         </div>
+//         <div className="stat">
+//           <p className="number">
+//             #{typeof trustCount === 'number' && trustCount >= 0 ? trustCount + 1 : '—'}
+//           </p>
+//           <p className="label">Your Recommender<br />Rank</p>
+//         </div>
+//         <div className="stat">
+//           <p className="number">
+//             <CountUp end={trustCount || 0} duration={2} />
+//           </p>
+//           <p className="label">People in Your<br />Trust Circle</p>
+//         </div>
+//       </div>
+//       {typeof trustCount === 'number' && trustCount >=0 && (
+//         <motion.div
+//           className="network-cta"
+//           initial={{ opacity: 0, y: 20 }}
+//           animate={{ opacity: 1, y: 0 }}
+//           transition={{ delay: 2.2, duration: 0.6 }}
+//         >
+//           <p>Want even more recommendations? Invite friends to unlock new insights!</p>
+//           <button className="grow-button">Grow Your Network</button>
+//         </motion.div>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default Home;
 
 // import React, { useEffect, useState } from 'react';
 // import { useNavigate, useLocation } from 'react-router-dom';

@@ -122,6 +122,16 @@ const Header = () => {
     return () => window.removeEventListener('forceLogin', forceOpenLogin);
   }, []);
 
+useEffect(() => {
+  const handleForceSignUp = () => {
+    setShowSignUpModal(true);
+  };
+  window.addEventListener('forceSignUp', handleForceSignUp);
+  return () => {
+    window.removeEventListener('forceSignUp', handleForceSignUp);
+  };
+}, []); // Assuming setShowSignUpModal is stable (from useState)
+
   useEffect(() => {
     const onClick = e => {
       if (exploreRef.current && !exploreRef.current.contains(e.target)) {
@@ -196,7 +206,7 @@ const Header = () => {
       setTimeout(() => {
         setShowLoginModal(false);
         setEmail('');
-        navigate('/');
+        window.location.href = '/';
       }, 500);
     } catch (err) {
       console.error(err);
@@ -237,7 +247,7 @@ const Header = () => {
         phone_number: '',
         community: ''
       });
-      navigate('/');
+      window.location.href = '/';
     } catch (error) {
       console.error('Signup error:', error);
       setEmailError('Signup failed. Please try again.');
