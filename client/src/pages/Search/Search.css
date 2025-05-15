@@ -318,6 +318,17 @@ body {
   gap: 0.75rem;
   margin-top: 1.5rem;
 }
+
+.no-providers-actions {
+  margin-top: 25px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center; 
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
 .primary-button,
 .secondary-button {
   display: flex;
