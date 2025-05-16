@@ -37,16 +37,17 @@
 .mobile-menu-button {
   position: fixed;
   right: 1rem;
+  top: 1rem; /* Adjusted for better alignment with header padding */
   display: none;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: space-around; /* Adjusted for better span distribution */
   width: 30px;
-  height: 21px;
+  height: 24px; /* Adjusted height */
   background: transparent;
   border: none;
   cursor: pointer;
   padding: 0;
-  z-index: 1001;
+  z-index: 2001; /* Ensure it's above nav-links when closed, below when open */
 }
 
 .mobile-menu-button span {
@@ -60,47 +61,41 @@
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1rem; /* Use gap for spacing between items */
 }
 
 .nav-links > * {
-  margin-left: 10px;
+  margin-left: 0; /* Remove old margin, rely on gap */
+}
+.nav-links > *:first-child {
+    margin-left: 10px; /* Keep margin for the first item if needed or remove if gap is enough */
 }
 
-.nav-links a {
+
+.nav-link,
+.my-trust-circle-link {
   color: var(--gray);
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s ease;
   display: flex;
   align-items: center;
+  padding: 0.5rem 0.75rem; /* Added padding for better click area */
+  border-radius: 6px; /* Added for consistency */
 }
 
-.nav-links a:hover {
+.nav-link:hover,
+.my-trust-circle-link:hover {
   color: var(--primary-blue);
+  background-color: var(--light-blue); /* Subtle hover for links */
 }
 
-.nav-links a:hover .avatar {
+.nav-links a:hover .avatar,
+.my-trust-circle-link:hover .avatar {
   transform: scale(1.05);
   transition: transform 0.2s ease;
 }
 
-.nav-links a.add-recommendation-button:hover {
-  /* override the nav-links rule */
-  color: var(--white);
-}
-
-.dropdown {
-  position: relative;
-  cursor: pointer;
-  color: var(--gray);
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.dropdown:hover {
-  color: var(--primary-blue);
-}
 
 .dropdown-menu {
   position: absolute;
@@ -128,10 +123,33 @@
   color: var(--primary-blue);
 }
 
-/* 🔥 Ethos-style Buttons */
 
-.login-button,
-.add-recommendation-button {
+.add-recommendation-button.styled-button {
+  padding: 0.65rem 1.5rem;
+  background-color: var(--primary-blue);
+  color: var(--white);
+  border: 2px solid var(--primary-blue);
+  font-weight: 600;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.25s ease-in-out;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.add-recommendation-button.styled-button:hover {
+  background-color: var(--white);
+  color: var(--primary-blue);
+  border-color: var(--primary-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+
+.login-button {
   padding: 0.55rem 1.25rem;
   background-color: transparent;
   color: var(--primary-blue);
@@ -143,11 +161,11 @@
   margin-left: 0.75rem;
 }
 
-.login-button:hover,
-.add-recommendation-button:hover {
+.login-button:hover {
   background-color: var(--primary-blue);
   color: var(--white);
 }
+
 
 .modal-overlay {
   position: fixed;
@@ -160,7 +178,7 @@
   justify-content: center;
   align-items: center;
   backdrop-filter: blur(4px);
-  z-index: 1000;
+  z-index: 1900; /* Ensure modals are above header but below mobile menu button if needed */
 }
 
 .modal {
@@ -271,8 +289,8 @@
   border-color: #3182CE;
 }
 
-/* 📱 Mobile Nav */
-@media (max-width: 768px) {
+
+@media (max-width: 992px) { /* Adjusted breakpoint for better responsiveness */
   .mobile-menu-button {
     display: flex;
   }
@@ -280,38 +298,63 @@
   .nav-links {
     position: fixed;
     top: 0;
-    right: -100%;
+    right: -100%; /* Start off-screen */
     height: 100vh;
     width: 70%;
     max-width: 300px;
     background: var(--white);
     flex-direction: column;
     padding: 80px 2rem 2rem;
-    transition: right 0.3s ease;
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
-    gap: 1.5rem;
+    transition: right 0.35s cubic-bezier(0.23, 1, 0.32, 1); /* Smoother transition */
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.15);
+    gap: 1rem; /* Adjusted gap for mobile nav items */
+    align-items: flex-start; /* Align items to the start */
+    z-index: 2000; /* Ensure nav is above content but potentially below mobile menu button when closed */
   }
 
   .nav-links.mobile-open {
     right: 0;
   }
+  
+  .nav-links > * {
+    margin-left: 0; /* Reset margin for column layout */
+    width: 100%; /* Make nav items take full width */
+  }
+
+  .nav-links .nav-link,
+  .nav-links .my-trust-circle-link,
+  .nav-links .add-recommendation-button.styled-button,
+  .nav-links .login-button {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    margin-left: 0;
+    margin-bottom: 0.5rem; /* Add some space between items */
+    justify-content: flex-start;
+  }
+
+  .nav-links .add-recommendation-button.styled-button,
+  .nav-links .login-button {
+      margin-left: 0; /* Override specific margin if any */
+      justify-content: center; /* Center text in buttons */
+  }
+
 
   .dropdown-menu {
     position: static;
     box-shadow: none;
     width: 100%;
     margin-top: 0.5rem;
+    border: none; /* Remove border for nested look */
+    padding-left: 1rem; /* Indent dropdown items */
+  }
+  .profile-dropdown-menu{
+    padding-left: 0; /* Reset for profile */
   }
 
-  .login-button,
-  .add-recommendation-button {
-    width: 100%;
-    margin: 0.5rem 0;
-    text-align: center;
-  }
 
   .header-content {
-    padding: 1rem;
+    padding: 0.75rem 1rem; /* Reduced padding for smaller screens */
   }
 
   .logo {
@@ -324,6 +367,7 @@
     margin: 1rem;
   }
 }
+
 
 @media (max-width: 480px) {
   .nav-links {
@@ -347,46 +391,48 @@
   display: flex;
   align-items: center;
   cursor: pointer;
+  padding: 0.5rem; /* Make it easier to click */
+  border-radius: 6px;
 }
+.profile-avatar-dropdown:hover {
+    background-color: var(--light-blue);
+}
+
 
 .profile-dropdown-menu {
   position: absolute;
   right: 0;
-  top: 40px;
+  top: calc(100% + 0.5rem); /* Ensure it doesn't overlap the avatar trigger */
   background: white;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
   padding: 0.5rem 0;
-  z-index: 1000;
-  min-width: 160px;
+  z-index: 1100; /* Ensure it's above explore panel if both are open */
+  min-width: 180px;
 }
 
-/* ─── NAV / EXPLORE PANEL ───────────────────────────────────────────── */
-
-/* ─── EXPLORE + ALIGNMENT FIXES ────────────────────────────────────── */
 
 .nav-item.explore {
   position: relative;
 }
 
-/* match font & size to Share a Recommendation */
 .btn-explore {
-  font: inherit;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--primary-blue);
+  font-weight: 500;
+  color: var(--gray);
   background: none;
   border: none;
   padding: 0.5rem 0.75rem;
   cursor: pointer;
   display: flex;
   align-items: center;
+  border-radius: 6px;
 }
 .btn-explore:hover {
-  color: var(--hover-blue);
+  color: var(--primary-blue);
+  background-color: var(--light-blue);
 }
 
-/* caret flip */
 .caret {
   margin-left: 0.25rem;
   transition: transform 0.2s;
@@ -398,44 +444,49 @@
 .explore-panel {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
-  display: grid;
-  grid-template-columns: repeat(3, max-content);
-  gap: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%); /* Center the panel */
+  display: flex; /* Changed to flex for better column control */
+  gap: 2rem; /* Increased gap */
   background: var(--white);
-  border: 1px solid #E2E8F0;                /* subtle border */
-  border-radius: 12px;                       /* rounder corners */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* lighter, softer shadow */
-  backdrop-filter: blur(4px);                /* gentle backdrop blur */
-  padding: 1rem 1.5rem;                      /* generous padding */
-  z-index: 1000;
-
-  /* keep it on-screen & scroll if necessary */
-  max-width: 90vw;
-  overflow-x: auto;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* Enhanced shadow */
+  padding: 1.5rem 2rem; /* Increased padding */
+  z-index: 1050; /* Ensure it's above general content but potentially below modals */
+  min-width: max-content; /* Allow it to size to content */
 }
 
+.panel-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem; /* Space between links within a column */
+}
+
+
 .explore-panel h4 {
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.25rem;
-  font-size: 0.95rem;
-  font-weight: 700;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   color: var(--primary-blue);
-  border-bottom: 2px solid var(--light-blue); /* underline as divider */
+  border-bottom: 1px solid #e2e8f0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .explore-panel h4,
 .explore-panel .panel-link {
-  white-space: nowrap; /* never wrap text */
+  white-space: nowrap;
 }
 
 .panel-link {
   display: block;
-  padding: 0.45rem 0.75rem;                  /* clickable padding */
+  padding: 0.5rem 0.25rem;
   font-size: 0.9rem;
-  color: #4A5568;                            /* gray-700 for contrast */
+  color: #4A5568;
   text-decoration: none;
-  border-radius: 6px;                        /* pill-hover shape */
+  border-radius: 4px;
   transition: background 0.2s, color 0.2s;
 }
 
@@ -444,11 +495,81 @@
   color: var(--primary-blue);
 }
 
-/* maintain spacing between Explore & the other buttons */
-.nav-links .btn-explore,
-.nav-links .btn-outline,
-.nav-links .btn-solid {
-  margin-left: 10px;
+.my-trust-circle-link {
+    padding: 0.55rem 1.25rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    color: var(--primary-blue);
+    border: 2px solid transparent; /* Match other button styles */
+    transition: all 0.2s ease;
+}
+
+.my-trust-circle-link:hover {
+    background-color: var(--light-blue);
+    border-color: var(--light-blue); /* Or keep transparent if preferred */
+    color: var(--primary-blue); /* Ensure color remains on hover */
+}
+
+/* Ensure proper spacing for nav items */
+.nav-links .nav-item,
+.nav-links .my-trust-circle-link,
+.nav-links .add-recommendation-button,
+.nav-links .login-button,
+.nav-links .profile-dropdown-wrapper {
+    margin-left: 0.5rem; /* Default spacing */
+}
+
+.nav-links .nav-item.explore { /* Specific adjustment if needed */
+    margin-left: 0.5rem;
+}
+
+
+@media (max-width: 992px) {
+  .explore-panel {
+    position: static; /* Change to static for mobile dropdown */
+    display: block; /* Stack columns vertically */
+    width: 100%;
+    box-shadow: none;
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 0.5rem;
+    padding: 1rem 0;
+    border-radius: 0;
+    transform: none;
+    left: auto;
+  }
+  .panel-column {
+    margin-bottom: 1rem;
+  }
+  .panel-column:last-child {
+    margin-bottom: 0;
+  }
+  .explore-panel h4 {
+    padding-left: 1rem; /* Indent mobile sub-headers */
+  }
+  .panel-link {
+    padding: 0.6rem 1rem; /* Indent mobile sub-links */
+  }
+
+  .nav-links .nav-item,
+  .nav-links .my-trust-circle-link,
+  .nav-links .add-recommendation-button,
+  .nav-links .login-button,
+  .nav-links .profile-dropdown-wrapper {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .my-trust-circle-link {
+      justify-content: flex-start;
+      border: none;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+  }
+  .my-trust-circle-link:hover {
+      background-color: var(--light-blue);
+  }
+
 }
 
 

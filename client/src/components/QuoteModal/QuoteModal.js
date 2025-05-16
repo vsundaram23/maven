@@ -14,7 +14,7 @@ const QuoteModal = ({
   const preferredName = localStorage.getItem('preferred_name') || 'there';
   const userEmail     = localStorage.getItem('userEmail');    // ← grab it
   const initialText   = `Thanks for your interest, ${preferredName}. Let me know what you need and I can give you a quote on what that might cost.`;
-  const responseText  = `Got it. That's helpful context. I'll text you directly with a quote!`;
+  const responseText  = `Got it. That's helpful context. I'll connect with ${providerName}, and they'll directly text you a quote!`;
 
   const [displayedText, setDisplayedText]     = useState('');
   const [chat, setChat]                       = useState([]);

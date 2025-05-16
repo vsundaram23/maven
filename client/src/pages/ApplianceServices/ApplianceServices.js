@@ -451,14 +451,14 @@ const ApplianceServices = () => {
       {!loading && !error && providers.length === 0 && (
         <div className="no-providers-message">
           <FaUsers className="no-providers-icon" />
-          <h2>No Appliance Services Found In Your Network</h2>
+          <h2>No Repair Services Found In Your Network</h2>
           <p>
-            We couldn't find any appliance service recommendations visible to you right now. This might be because:
+            We couldn't find any repair service recommendations visible to you right now. This might be because:
           </p>
           <ul>
-            <li>No public appliance recommendations are currently available.</li>
-            <li>None of your direct connections have shared appliance recommendations with 'connections' visibility.</li>
-            <li>No appliance recommendations have been shared into communities you're a member of.</li>
+            <li>No public repair recommendations are currently available.</li>
+            <li>None of your direct connections have shared repair recommendations with 'connections' visibility.</li>
+            <li>No repair recommendations have been shared into communities you're a member of.</li>
           </ul>
           <p>
             Try expanding your Trust Circle or check back later!
