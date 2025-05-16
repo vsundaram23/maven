@@ -307,6 +307,26 @@
   font-style: italic;
   padding: 0.4rem;
 }
+#share-recommendation-page .loading-trust-circles,
+#share-recommendation-page .error-trust-circles {
+  font-size: 0.85rem;
+  padding: 0.4rem;
+  display: flex;
+  align-items: center;
+}
+#share-recommendation-page .error-trust-circles .retry-button {
+  background-color: #DBEAFE;
+  color: #1E40AF;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+#share-recommendation-page .error-trust-circles .retry-button:hover {
+  background-color: #BFDBFE;
+}
+
 
 #share-recommendation-page .button-row {
   display: flex;
@@ -574,7 +594,7 @@
     justify-content: flex-end;
   }
   #share-recommendation-page .btn {
-    width: auto; /* Revert button width for desktop */
+    width: auto;
   }
 }
 
