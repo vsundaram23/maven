@@ -374,7 +374,7 @@ const Header = () => {
                     localStorage.removeItem('token');
                     window.dispatchEvent(new Event('userLogout'));
                     handleNavLinkClick();
-                    navigate('/');
+                    window.location.href = '/';
                   }}>Logout</Link>
                 </div>
               )}
