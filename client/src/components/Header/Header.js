@@ -305,7 +305,15 @@ const Header = () => {
                       key={item.slug}
                       to={`/${item.slug}`}
                       className="panel-link"
-                      onClick={handleNavLinkClick}
+                      onClick={(e) => {
+                        if (!isLoggedIn) {
+                          e.preventDefault();
+                          setShowLoginModal(true);
+                          handleNavLinkClick();
+                        } else {
+                          handleNavLinkClick();
+                        }
+                      }}
                     >
                       {item.name}
                     </Link>
@@ -319,7 +327,15 @@ const Header = () => {
                         key={item.slug}
                         to={`/${item.slug}`}
                         className="panel-link"
-                        onClick={handleNavLinkClick}
+                        onClick={(e) => {
+                            if (!isLoggedIn) {
+                              e.preventDefault();
+                              setShowLoginModal(true);
+                              handleNavLinkClick();
+                            } else {
+                              handleNavLinkClick();
+                            }
+                          }}
                     >
                         {item.name}
                     </Link>
