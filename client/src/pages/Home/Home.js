@@ -260,7 +260,7 @@ const Home = () => {
           <p className="number">
             <CountUp end={providerCount || 0} duration={2} separator="," />
           </p>
-          <p className="label">Recommendations<br />shared this week</p>
+          <p className="label">Recommendations<br />shared with you</p>
         </div>
         <div className="stat">
           <p className="number">
