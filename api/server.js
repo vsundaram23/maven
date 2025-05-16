@@ -87,11 +87,11 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });
 
-// ✅ Run in HTTP (NOT HTTPS)
+// Run in HTTP (NOT HTTPS)
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`✅ Server running over HTTP on port ${PORT}`);
-    console.log(`🔍 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`Server running over HTTP on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/api/health`);
 });
 
 // const express = require('express');
