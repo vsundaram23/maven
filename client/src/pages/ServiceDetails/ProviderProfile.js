@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom'; // Added useNavigate
+import React, { useEffect, useState, useMemo } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
     FaStar, FaPhone, FaEnvelope, FaMapMarkerAlt, FaQuestionCircle,
     FaShareAlt, FaRegBookmark, FaBookmark, FaSms, FaExternalLinkAlt, FaRegHandshake
@@ -13,15 +13,16 @@ const ProviderProfile = () => {
     const { id } = useParams();
     const [provider, setProvider] = useState(null);
     const [reviews, setReviews] = useState([]);
+    const [reviewStats, setReviewStats] = useState({ average_rating: 0, total_reviews: 0 });
     const [activeTab, setActiveTab] = useState('Reviews');
     const [showLinkCopied, setShowLinkCopied] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [loadingProvider, setLoadingProvider] = useState(true);
     const [loadingReviews, setLoadingReviews] = useState(true);
+    const [loadingStats, setLoadingStats] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
-
 
     useEffect(() => {
         const updateUserId = () => {
@@ -46,7 +47,6 @@ const ProviderProfile = () => {
         };
     }, []);
 
-
     useEffect(() => {
         if (!id) {
             setLoadingProvider(false);
@@ -54,7 +54,6 @@ const ProviderProfile = () => {
             return;
         }
         if (!currentUserId && localStorage.getItem('user')) {
-            // Waiting for currentUserId to be set by the other effect
             return;
         }
         if (!currentUserId) {
@@ -68,7 +67,6 @@ const ProviderProfile = () => {
             setError(null);
             try {
                 const fetchUrl = `${API_URL}/api/providers/${id}?user_id=${currentUserId}`;
-                console.log("PROVIDER_PROFILE.JS: Fetching provider from:", fetchUrl);
                 const res = await fetch(fetchUrl);
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({}));
@@ -80,9 +78,9 @@ const ProviderProfile = () => {
                 } else {
                     throw new Error(data.message || "Failed to fetch provider details");
                 }
-            } catch (error) {
-                console.error("Failed to fetch provider:", error);
-                setError(error.message);
+            } catch (errorCatch) {
+                console.error("Failed to fetch provider:", errorCatch);
+                setError(errorCatch.message);
                 setProvider(null);
             } finally {
                 setLoadingProvider(false);
@@ -100,11 +98,12 @@ const ProviderProfile = () => {
              setLoadingReviews(true);
              try {
                 const res = await fetch(`${API_URL}/api/reviews/${id}`);
-                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status} fetching reviews list`);
                 const data = await res.json();
                 setReviews(Array.isArray(data) ? data : []);
-            } catch (error) {
-                 console.error("Failed to fetch reviews:", error);
+            } catch (errorCatch) {
+                 console.error("Failed to fetch reviews:", errorCatch);
+                 setError(prevError => prevError ? `${prevError}\n${errorCatch.message}` : errorCatch.message);
                  setReviews([]);
             } finally {
                 setLoadingReviews(false);
@@ -113,13 +112,36 @@ const ProviderProfile = () => {
         fetchReviews();
     }, [id]);
 
-    // Calculate avgRating and totalReviews from the provider object if they are now included
-    // OR if you prefer, fetch them from /api/reviews/stats/:id like CleaningServices
-    const avgRating = provider ? (parseFloat(provider.average_rating) || 0).toFixed(1) : '0.0';
-    const totalReviews = provider ? (parseInt(provider.total_reviews, 10) || 0) : 0;
+    useEffect(() => {
+        if (!id) {
+            setLoadingStats(false);
+            return;
+        }
+        const fetchReviewStats = async () => {
+            setLoadingStats(true);
+            try {
+                const res = await fetch(`${API_URL}/api/reviews/stats/${id}`);
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status} fetching review stats`);
+                const data = await res.json();
+                setReviewStats({
+                    average_rating: parseFloat(data.average_rating) || 0,
+                    total_reviews: parseInt(data.total_reviews, 10) || 0,
+                });
+            } catch (errorCatch) {
+                console.error("Failed to fetch review stats:", errorCatch);
+                setError(prevError => prevError ? `${prevError}\n${errorCatch.message}` : errorCatch.message);
+                setReviewStats({ average_rating: 0, total_reviews: 0 });
+            } finally {
+                setLoadingStats(false);
+            }
+        };
+        fetchReviewStats();
+    }, [id]);
 
+    const avgRating = (parseFloat(reviewStats.average_rating) || 0).toFixed(1);
+    const totalReviews = parseInt(reviewStats.total_reviews, 10) || 0;
 
-    const starCounts = React.useMemo(() => {
+    const starCounts = useMemo(() => {
         const counts = [0, 0, 0, 0, 0];
         reviews.forEach((r) => {
             const rating = parseInt(r.rating);
@@ -161,16 +183,15 @@ const ProviderProfile = () => {
 
     const handleTabClick = (tab) => setActiveTab(tab);
 
-     const primaryRecommenderName = provider?.recommender_name; // Use directly from provider if available
-     const alsoUsedBy = React.useMemo(() => {
+     const primaryRecommenderName = provider?.recommender_name;
+     const alsoUsedBy = useMemo(() => {
         const recommenders = new Set();
         if (primaryRecommenderName) recommenders.add(primaryRecommenderName);
         reviews.forEach((r) => r.user_name && recommenders.add(r.user_name));
         return Array.from(recommenders).filter((n) => n !== primaryRecommenderName);
      }, [reviews, primaryRecommenderName]);
 
-
-    if (loadingProvider || (!provider && !error)) { // Show loading if provider is loading OR if provider is null and no error yet
+    if (loadingProvider || loadingReviews || loadingStats) {
         return (
             <div id="provider-profile-page">
                 <div className="profile-wrapper">
@@ -180,7 +201,7 @@ const ProviderProfile = () => {
         );
     }
 
-    if (error) {
+    if (error && !provider) {
         return (
             <div id="provider-profile-page">
                 <div className="profile-wrapper">
@@ -190,7 +211,7 @@ const ProviderProfile = () => {
         );
     }
     
-    if (!provider) { // Should be caught by error state if fetch failed, but as a fallback
+    if (!provider) {
          return (
             <div id="provider-profile-page">
                 <div className="profile-wrapper">
@@ -199,7 +220,6 @@ const ProviderProfile = () => {
             </div>
         );
     }
-
 
     const recommendationDate = formatDate(provider.date_of_recommendation);
 

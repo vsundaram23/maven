@@ -18,6 +18,7 @@ const getVisibleProvidersBaseQuery = (currentUserId) => {
         sp.date_of_recommendation,
         sp.num_likes,
         sp.provider_message,
+        sp.business_contact,
         sp.recommender_message,
         sp.visibility,
         sc.name AS category,
