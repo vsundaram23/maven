@@ -285,12 +285,12 @@ const TrustCircles = () => {
                       <p className="card-info">{community.recommendations} Recommendations</p>
                     </div>
                     <div className="card-actions">
-                      <button
+                      {/* <button
                         className="button button-outline"
                         onClick={() => navigateToCommunity(community.id)}
                       >
                         View Community <LaunchIcon />
-                      </button>
+                      </button> */}
                       {community.created_by === currentUser?.id && joinRequests[community.id] && joinRequests[community.id].length > 0 && (
                         <div className="pending-requests-section">
                           <h4 className="pending-requests-title">Pending Join Requests ({joinRequests[community.id].length}):</h4>
