@@ -1,0 +1,166 @@
+.community-profile-page {
+    max-width: 900px;
+    margin-top: 6rem; 
+    margin-right: auto;
+    margin-bottom: 2rem;
+    margin-left: auto;
+    padding: 2rem; 
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    font-family: 'Arial', sans-serif;
+  }
+  
+  .community-profile-page .profile-loading,
+  .community-profile-page .profile-error,
+  .community-profile-page .profile-empty {
+    text-align: center;
+    padding: 3rem;
+    font-size: 1.2em;
+    color: #555;
+  }
+  
+  .community-profile-page .profile-error {
+    color: var(--primary-red, #d9534f);
+  }
+  
+  .community-profile-page .profile-header {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .community-profile-page .profile-header h1 {
+    font-size: 2.5em;
+    color: var(--primary-blue, #007bff);
+    margin: 0;
+  }
+  
+  .community-profile-page .status-badge {
+    padding: 0.4em 0.8em;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #fff;
+  }
+  
+  .community-profile-page .owner-badge {
+    background-color: var(--primary-green, #5cb85c);
+  }
+  
+  .community-profile-page .member-badge {
+    background-color: var(--primary-blue, #007bff);
+  }
+  
+  .community-profile-page .profile-details-section .description {
+    font-size: 1.1em;
+    line-height: 1.6;
+    color: #333;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border-radius: 6px;
+  }
+  
+  .community-profile-page .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .community-profile-page .detail-item {
+    background-color: #fdfdfd;
+    padding: 1rem;
+    border-radius: 6px;
+    border: 1px solid #efefef;
+    font-size: 1em;
+  }
+  
+  .community-profile-page .detail-item strong {
+    display: block;
+    margin-bottom: 0.3em;
+    color: #555;
+    font-weight: 600;
+  }
+  
+  .community-profile-page .profile-actions-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+    text-align: center;
+  }
+  
+  .community-profile-page .profile-actions-section .button-join,
+  .community-profile-page .profile-actions-section .button-admin-tools,
+  .community-profile-page .profile-actions-section .button-view-recommendations {
+    padding: 0.8rem 1.5rem;
+    font-size: 1em;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin: 0.5rem;
+  }
+  
+  .community-profile-page .button-join {
+    background-color: var(--primary-blue, #007bff);
+    color: white;
+  }
+  .community-profile-page .button-join:hover {
+    background-color: #0056b3;
+  }
+  .community-profile-page .button-join:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .community-profile-page .button-admin-tools {
+    background-color: var(--primary-orange, #f0ad4e);
+    color: white;
+  }
+  .community-profile-page .button-admin-tools:hover {
+    background-color: #ec971f;
+  }
+  
+  .community-profile-page .button-view-recommendations {
+    background-color: var(--primary-teal, #5bc0de);
+    color: white;
+  }
+  .community-profile-page .button-view-recommendations:hover {
+    background-color: #31b0d5;
+  }
+  
+  .community-profile-page .status-info {
+    font-size: 1em;
+    color: #666;
+    margin-top: 1rem;
+  }
+  
+  .community-profile-page .button-link-styled {
+    background: none;
+    border: none;
+    color: var(--primary-blue, #007bff);
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    font-size: inherit;
+  }
+  .community-profile-page .button-link-styled:hover {
+    color: #0056b3;
+  }
+  
+  .community-profile-page .profile-recommendations-list {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+  }
+  
+  .community-profile-page .profile-recommendations-list h2 {
+    font-size: 1.8em;
+    color: #333;
+    margin-bottom: 1rem;
+  }

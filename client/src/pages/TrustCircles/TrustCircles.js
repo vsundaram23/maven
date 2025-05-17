@@ -33,7 +33,6 @@ const TrustCircles = () => {
   const fetchCurrentUserAndData = useCallback(async () => {
     const storedEmail = localStorage.getItem('userEmail');
     if (!storedEmail) {
-      console.warn('No userEmail in localStorage');
       window.dispatchEvent(new Event('forceLogin'));
       navigate('/');
       return;
@@ -97,14 +96,12 @@ const TrustCircles = () => {
           const reqData = await reqRes.json();
           requests[communityId] = Array.isArray(reqData) ? reqData : [];
         } else {
-          console.warn(`Failed to fetch requests for community ${communityId}`);
           requests[communityId] = [];
         }
       }
       setJoinRequests(requests);
 
     } catch (err) {
-      console.error('Error loading Trust Circle data:', err);
       setError(err.message || 'Could not load data. Please try again.');
     } finally {
       setLoading(false);
@@ -146,7 +143,6 @@ const TrustCircles = () => {
       setShowCreateCommunityModal(false);
       fetchCurrentUserAndData();
     } catch (err) {
-      console.error('Error creating community:', err);
       alert(`Error creating community: ${err.message}`);
     }
   };
@@ -166,7 +162,6 @@ const TrustCircles = () => {
       alert('Request to join community sent!');
       fetchCurrentUserAndData();
     } catch (err) {
-      console.error('Error requesting to join community:', err);
       alert(`Error: ${err.message}`);
     }
   };
@@ -189,7 +184,6 @@ const TrustCircles = () => {
       alert('Membership approved!');
       fetchCurrentUserAndData();
     } catch (err) {
-      console.error('Error approving membership:', err);
       alert(`Error: ${err.message}`);
     }
   };
@@ -285,12 +279,12 @@ const TrustCircles = () => {
                       <p className="card-info">{community.recommendations} Recommendations</p>
                     </div>
                     <div className="card-actions">
-                      {/* <button
+                      <button
                         className="button button-outline"
                         onClick={() => navigateToCommunity(community.id)}
                       >
                         View Community <LaunchIcon />
-                      </button> */}
+                      </button>
                       {community.created_by === currentUser?.id && joinRequests[community.id] && joinRequests[community.id].length > 0 && (
                         <div className="pending-requests-section">
                           <h4 className="pending-requests-title">Pending Join Requests ({joinRequests[community.id].length}):</h4>
@@ -421,6 +415,7 @@ const TrustCircles = () => {
 };
 
 export default TrustCircles;
+
 
 // import React, { useEffect, useState, useCallback } from 'react';
 // import { useNavigate } from 'react-router-dom';

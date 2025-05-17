@@ -126,11 +126,11 @@ router.get('/user/:email/communities', async (req, res) => {
     }
 });
 
-// Ensure getCommunityDetails and other necessary functions from controller are imported if you add routes for them
 router.get('/:communityId/details', async (req, res) => {
   const { communityId } = req.params;
-  const { user_id } = req.query;
+  const { user_id } = req.query; // user_id is optional for knowing current user status
   try {
+    // This line calls the function from your controller
     const details = await getCommunityDetails(communityId, user_id ? String(user_id) : null);
     res.json(details);
   } catch (error) {
