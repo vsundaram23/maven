@@ -1,7 +1,8 @@
-const pool = require('../config/db.config');
+const userService = require("../services/userService");
+const pool = require("../config/db.config");
 
 const getVisibleProvidersBaseQueryForRepairPage = (currentUserId) => {
-  const query = `
+    const query = `
     SELECT DISTINCT
         sp.id,
         sp.business_name,
@@ -56,181 +57,121 @@ const getVisibleProvidersBaseQueryForRepairPage = (currentUserId) => {
             (cs.community_id IS NOT NULL AND cm_user_x.user_id IS NOT NULL)
         )
   `;
-  const queryParams = [currentUserId];
-  return { query, queryParams };
+    const queryParams = [currentUserId];
+    return { query, queryParams };
 };
 
 const getAllVisibleRepairProviders = async (req, res) => {
-  const currentUserId = req.query.user_id;
+    console.log("=== START GET ALL REPAIR PROVIDERS ===");
+    const clerkUserId = req.query.user_id;
+    const userEmail = req.query.email;
 
-  if (!currentUserId) {
-    return res.status(400).json({
-      success: false,
-      message: 'User ID is required to fetch repair service providers.'
-    });
-  }
+    if (!clerkUserId || !userEmail) {
+        return res.status(400).json({
+            success: false,
+            message:
+                "User ID and email are required to fetch repair service providers.",
+        });
+    }
 
-  try {
-    const { query: baseQuery, queryParams } = getVisibleProvidersBaseQueryForRepairPage(currentUserId);
-    const serviceName = 'Structural Repairs';
-    const finalQuery = `
+    try {
+        // Convert Clerk ID to internal user ID with required email
+        const internalUserId = await userService.getOrCreateUser({
+            id: clerkUserId,
+            emailAddresses: [{ emailAddress: userEmail }],
+            firstName: req.query.firstName || "",
+            lastName: req.query.lastName || "",
+            phoneNumbers: req.query.phoneNumber
+                ? [{ phoneNumber: req.query.phoneNumber }]
+                : [],
+        });
+
+        const { query: baseQuery, queryParams } =
+            getVisibleProvidersBaseQueryForRepairPage(internalUserId);
+        const serviceName = "Structural Repairs";
+        const finalQuery = `
       SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
       WHERE VisibleProvidersCTE.service_type = $${queryParams.length + 1}
       ORDER BY VisibleProvidersCTE.business_name;
     `;
-    const finalParams = [...queryParams, serviceName];
+        const finalParams = [...queryParams, serviceName];
 
-    const result = await pool.query(finalQuery, finalParams);
+        const result = await pool.query(finalQuery, finalParams);
 
-    res.json({
-      success: true,
-      providers: result.rows
-    });
-  } catch (err) {
-    console.error('Database error fetching repair providers:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching repair providers',
-      error: err.message
-    });
-  }
+        res.json({
+            success: true,
+            providers: result.rows,
+        });
+    } catch (err) {
+        console.error("Database error fetching repair providers:", err);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching repair providers",
+            error: err.message,
+        });
+    }
 };
 
 const getVisibleRepairProviderById = async (req, res) => {
-  const { id: providerId } = req.params;
-  const currentUserId = req.query.user_id;
+    const { id: providerId } = req.params;
+    const clerkUserId = req.query.user_id;
+    const userEmail = req.query.email;
 
-  if (!currentUserId) {
-    return res.status(400).json({
-      success: false,
-      message: 'User ID is required to fetch repair provider details.'
-    });
-  }
-  if (!providerId) {
-    return res.status(400).json({
-        success: false,
-        message: 'Provider ID is required.'
-    });
-  }
+    if (!clerkUserId || !userEmail) {
+        return res.status(400).json({
+            success: false,
+            message:
+                "User ID and email are required to fetch repair provider details.",
+        });
+    }
 
-  try {
-    const { query: baseQuery, queryParams } = getVisibleProvidersBaseQueryForRepairPage(currentUserId);
-    const serviceName = 'Structural Repairs';
-    const paramIndexForId = queryParams.length + 1;
-    const paramIndexForService = queryParams.length + 2;
+    try {
+        const internalUserId = await userService.getOrCreateUser({
+            id: clerkUserId,
+            emailAddresses: [{ emailAddress: userEmail }],
+            firstName: req.query.firstName || "",
+            lastName: req.query.lastName || "",
+            phoneNumbers: req.query.phoneNumber
+                ? [{ phoneNumber: req.query.phoneNumber }]
+                : [],
+        });
 
-    const finalQuery = `
+        const { query: baseQuery, queryParams } =
+            getVisibleProvidersBaseQueryForRepairPage(internalUserId);
+        const serviceName = "Structural Repairs";
+        const paramIndexForId = queryParams.length + 1;
+        const paramIndexForService = queryParams.length + 2;
+
+        const finalQuery = `
       SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
       WHERE VisibleProvidersCTE.id = $${paramIndexForId} AND VisibleProvidersCTE.service_type = $${paramIndexForService};
     `;
-    const finalParams = [...queryParams, providerId, serviceName];
+        const finalParams = [...queryParams, providerId, serviceName];
 
-    const result = await pool.query(finalQuery, finalParams);
+        const result = await pool.query(finalQuery, finalParams);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Repair provider not found or not accessible to this user.'
-      });
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message:
+                    "Repair provider not found or not accessible to this user.",
+            });
+        }
+        res.json({
+            success: true,
+            provider: result.rows[0],
+        });
+    } catch (err) {
+        console.error("Database error fetching specific repair provider:", err);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching repair provider",
+            error: err.message,
+        });
     }
-    res.json({
-      success: true,
-      provider: result.rows[0]
-    });
-  } catch (err) {
-    console.error('Database error fetching specific repair provider:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching repair provider',
-      error: err.message
-    });
-  }
 };
 
 module.exports = {
-  getAllVisibleRepairProviders,
-  getVisibleRepairProviderById
+    getAllVisibleRepairProviders,
+    getVisibleRepairProviderById,
 };
-
-// const pool = require('../config/db.config');
-
-// const getAllRepairProviders = async (req, res) => {
-//     try {
-//         const result = await pool.query(`
-//             SELECT 
-//                 sp.id,
-//                 sp.business_name,
-//                 sp.description,
-//                 sp.email,
-//                 sp.phone_number,
-//                 sp.date_of_recommendation,
-//                 sp.tags,
-//                 s.name as service_type,
-//                 u.name as recommended_by_name
-//             FROM service_providers sp
-//             JOIN services s ON sp.service_id = s.service_id
-//             JOIN service_categories sc ON s.category_id = sc.service_id
-//             JOIN users u ON sp.recommended_by = u.id
-//             WHERE s.name = 'Structural Repairs'
-//         `);
-        
-//         console.log('Query result:', result.rows);
-        
-//         res.json({
-//             success: true,
-//             providers: result.rows
-//         });
-//     } catch (err) {
-//         console.error('Database error details:', err.message);
-//         console.error('Full error object:', err);
-//         res.status(500).json({
-//             success: false,
-//             message: 'Error fetching structural repair providers',
-//             error: err.message
-//         });
-//     }
-// };
-
-// const getRepairProviderById = async (req, res) => {
-//     const { id } = req.params;
-    
-//     try {
-//         const result = await pool.query(`
-//             SELECT 
-//                 sp.*,
-//                 sp.date_of_recommendation,
-//                 sp.tags,
-//                 s.name as service_type,
-//                 ROUND(AVG(r.rating), 2) as average_rating,
-//                 COUNT(r.id) as total_reviews
-//             FROM service_providers sp
-//             JOIN services s ON sp.service_id = s.service_id
-//             LEFT JOIN reviews r ON sp.id = r.provider_id
-//             WHERE sp.id = $1 AND s.name = 'Structural Repairs'
-//             GROUP BY sp.id, s.name
-//         `, [id]);
-
-//         if (result.rows.length === 0) {
-//             return res.status(404).json({
-//                 success: false,
-//                 message: 'Repair provider not found'
-//             });
-//         }
-
-//         res.json({
-//             success: true,
-//             provider: result.rows[0]
-//         });
-//     } catch (err) {
-//         console.error('Database error:', err);
-//         res.status(500).json({
-//             success: false,
-//             message: 'Error fetching Repair provider'
-//         });
-//     }
-// };
-
-// module.exports = {
-//     getAllRepairProviders,
-//     getRepairProviderById
-// };

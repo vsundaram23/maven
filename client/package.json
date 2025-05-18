@@ -6,6 +6,7 @@
   "dependencies": {
     "@babel/core": "^7.26.0",
     "@babel/preset-react": "^7.26.3",
+    "@clerk/clerk-react": "^5.31.4",
     "@gsap/react": "^2.1.2",
     "@heroicons/react": "^2.2.0",
     "cra-template": "1.2.0",
@@ -17,7 +18,7 @@
     "react-icons": "^5.4.0",
     "react-responsive": "^10.0.0",
     "react-router-dom": "^6.28.1",
-    "react-scripts": "^3.4.4"
+    "react-scripts": "^5.0.1"
   },
   "scripts": {
     "start": "NODE_OPTIONS='--openssl-legacy-provider' react-scripts start",
@@ -26,7 +27,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build",
+    "startwindows": "cross-env NODE_OPTIONS=--openssl-legacy-provider react-scripts start"
   },
   "eslintConfig": {
     "extends": [
@@ -52,8 +54,9 @@
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
-    "eslint": "^6.6.0",
+    "eslint": "^6.8.0",
     "eslint-config-react-app": "^5.2.1",
-    "eslint-plugin-react": "^7.19.0"
+    "eslint-plugin-react": "^7.19.0",
+    "eslint-plugin-react-hooks": "^2.5.1"
   }
 }

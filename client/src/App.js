@@ -1,6 +1,7 @@
 // App.js
 import React, { useEffect } from 'react';
 import { Route, BrowserRouter as Router, Routes, useLocation } from 'react-router-dom';
+import { useUser, RedirectToSignIn } from '@clerk/clerk-react';
 import Home from './pages/Home/Home';
 import Profile from './pages/Profile/Profile';
 import ServiceDetails from './pages/ServiceDetails/ServiceDetails';
@@ -21,6 +22,16 @@ import UserRecommendations from './pages/UserRecommendations/UserRecommendations
 import './styles/global.css';
 import './App.css';
 
+const ProtectedRoute = ({ children }) => {
+  const { isSignedIn } = useUser();
+
+  if (!isSignedIn) {
+    return <RedirectToSignIn />;
+  }
+
+  return children;
+};
+
 const AppWrapper = () => {
   const location = useLocation();
 
@@ -39,21 +50,21 @@ const AppWrapper = () => {
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/providers/:id" element={<ServiceDetails />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/financial-services" element={<FinancialServices />} />
-          <Route path="/auto-services" element={<AutoServices />} />
-          <Route path="/repair-services" element={<ApplianceServices />} />
-          <Route path="/cleaning-services" element={<CleaningServices />} />
-          <Route path="/utilities" element={<UtilitiesServices />} />
-          <Route path="/renovation-services" element={<RepairServices />} />
-          <Route path="/outdoor-services" element={<OutdoorServices />} />
-          <Route path="/moving-services" element={<MovingServices />} />
-          <Route path="/trustcircles" element={<TrustCircles />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/provider/:id" element={<ProviderProfile />} />
-          <Route path="/share-recommendation" element={<ShareRecommendation />} />
-          <Route path="/user/:id/recommendations" element={<UserRecommendations />} />
+          <Route path="/providers/:id" element={<ProtectedRoute><ServiceDetails /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/financial-services" element={<ProtectedRoute><FinancialServices /></ProtectedRoute>} />
+          <Route path="/auto-services" element={<ProtectedRoute><AutoServices /></ProtectedRoute>} />
+          <Route path="/repair-services" element={<ProtectedRoute><RepairServices /></ProtectedRoute>} />
+          <Route path="/cleaning-services" element={<ProtectedRoute><CleaningServices /></ProtectedRoute>} />
+          <Route path="/utilities" element={<ProtectedRoute><UtilitiesServices /></ProtectedRoute>} />
+          <Route path="/renovation-services" element={<ProtectedRoute><RepairServices /></ProtectedRoute>} />
+          <Route path="/outdoor-services" element={<ProtectedRoute><OutdoorServices /></ProtectedRoute>} />
+          <Route path="/moving-services" element={<ProtectedRoute><MovingServices /></ProtectedRoute>} />
+          <Route path="/trustcircles" element={<ProtectedRoute><TrustCircles /></ProtectedRoute>} />
+          <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+          <Route path="/provider/:id" element={<ProtectedRoute><ProviderProfile /></ProtectedRoute>} />
+          <Route path="/share-recommendation" element={<ProtectedRoute><ShareRecommendation /></ProtectedRoute>} />
+          <Route path="/user/:id/recommendations" element={<ProtectedRoute><UserRecommendations /></ProtectedRoute>} />
         </Routes>
       </main>
     </div>
