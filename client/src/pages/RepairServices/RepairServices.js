@@ -557,7 +557,7 @@ const RepairServices = () => {
                     </p>
                     <div className="no-providers-actions">
                         <button
-                            onClick={() => navigate("/trust-circles")}
+                            onClick={() => navigate("/trustcircles")}
                             className="primary-button"
                         >
                             <FaUsers style={{ marginRight: "8px" }} /> Manage
