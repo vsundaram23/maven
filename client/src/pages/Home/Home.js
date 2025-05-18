@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useUser, useClerk } from "@clerk/clerk-react";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useMediaQuery } from 'react-responsive';
 import { motion } from 'framer-motion';
@@ -13,6 +14,8 @@ const BRAND_PHRASE = 'Tried & Trusted.';
 const LOCKED_LOCATION = 'Greater Seattle Area';
 
 const Home = () => {
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { openSignIn, openSignUp } = useClerk();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMediaQuery({ maxWidth: 768 });
@@ -190,11 +193,11 @@ const Home = () => {
   };
   
   const triggerLoginModal = () => {
-    window.dispatchEvent(new Event('forceLogin'));
+    openSignIn();
   };
 
   const triggerSignUpModal = () => {
-    window.dispatchEvent(new CustomEvent('forceSignUp'));
+    openSignUp();
   };
 
   const handleLocationClick = () => {
@@ -261,7 +264,7 @@ const Home = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.2, duration: 0.6 }}
         >
-          {currentUserId ? (
+          {isSignedIn ? (
             <>Add more recommendations to get a ranking on our leaderboard!</>
           ) : (
             <>
