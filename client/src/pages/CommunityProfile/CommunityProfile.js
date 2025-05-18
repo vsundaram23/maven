@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './CommunityProfile.css';
-
 const API_URL = 'https://api.seanag-recommendations.org:8080';
 // const API_URL = 'http://localhost:3000';
 
