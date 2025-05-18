@@ -5,14 +5,17 @@ import {
     SignUpButton,
     UserButton,
     useUser,
+    useClerk,
 } from "@clerk/clerk-react";
 import { FaCaretDown, FaUsers } from "react-icons/fa";
 import "./Header.css";
 
-const API_URL = "https://api.seanag-recommendations.org:8080";
-// const API_URL = 'http://localhost:3000';
+// const API_URL = "https://api.seanag-recommendations.org:8080";
+const API_URL = "http://localhost:5000";
 
 const Header = () => {
+    const { isLoaded, isSignedIn, user } = useUser();
+    const { openSignIn } = useClerk();
     const navigate = useNavigate();
     const [showAddRecommendationModal, setShowAddRecommendationModal] =
         useState(false);
@@ -22,9 +25,6 @@ const Header = () => {
     const exploreRef = useRef(null);
     const [showProfileDropdown, setShowProfileDropdown] = useState(false);
     const profileDropdownRef = useRef(null);
-
-    const { isLoaded, isSignedIn, user } = useUser();
-
     const isLoggedIn = isSignedIn;
 
     const userEmail = user?.primaryEmailAddress?.emailAddress;
@@ -95,22 +95,6 @@ const Header = () => {
         };
     }, []);
 
-    useEffect(() => {
-        const forceOpenLogin = () => setShowLoginModal(true);
-        window.addEventListener("forceLogin", forceOpenLogin);
-        return () => window.removeEventListener("forceLogin", forceOpenLogin);
-    }, []);
-
-    useEffect(() => {
-        const handleForceSignUp = () => {
-            setShowSignUpModal(true);
-        };
-        window.addEventListener("forceSignUp", handleForceSignUp);
-        return () => {
-            window.removeEventListener("forceSignUp", handleForceSignUp);
-        };
-    }, []);
-
     const toggleExplore = (e) => {
         e.preventDefault();
         setShowExplore((v) => !v);
@@ -169,6 +153,17 @@ const Header = () => {
         } catch (error) {
             console.error("Error adding recommendation:", error);
         }
+    };
+
+    const handleTrustCircleClick = (e) => {
+        e.preventDefault();
+        if (!isSignedIn) {
+            openSignIn({
+                redirectUrl: "/trustcircles",
+            });
+            return;
+        }
+        navigate("/trustcircles");
     };
 
     return (
@@ -236,16 +231,14 @@ const Header = () => {
                         )}
                     </div>
 
-                    {isLoggedIn && (
-                        <Link
-                            to="/trustcircles"
-                            className="nav-link my-trust-circle-link"
-                            onClick={handleNavLinkClick}
-                        >
-                            <FaUsers style={{ marginRight: "6px" }} /> My Trust
-                            Circle
-                        </Link>
-                    )}
+                    <a
+                        href="/trustcircles"
+                        className="nav-link my-trust-circle-link"
+                        onClick={handleTrustCircleClick}
+                    >
+                        <FaUsers style={{ marginRight: "6px" }} /> My Trust
+                        Circle
+                    </a>
 
                     {isSignedIn ? (
                         <Link
