@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useUser, useClerk } from "@clerk/clerk-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMediaQuery } from "react-responsive";
@@ -26,50 +26,17 @@ const Home = () => {
     const isMobile = useMediaQuery({ maxWidth: 768 });
 
     const [name, setName] = useState("");
-    const [currentUserEmail, setCurrentUserEmail] = useState(null);
-    const [currentUserId, setCurrentUserId] = useState(null);
-    const [isUserSessionResolved, setIsUserSessionResolved] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [showLocationModal, setShowLocationModal] = useState(false);
 
-    useEffect(() => {
-        const updateUserSessionData = () => {
-            const raw = localStorage.getItem("user");
-            let userId = null;
-            let userName = "";
-            let userEmail = null;
-            if (raw) {
-                try {
-                    const u = JSON.parse(raw);
-                    userName =
-                        u.preferred_name ||
-                        u.firstName ||
-                        u.name ||
-                        (u.email && u.email.split("@")[0]) ||
-                        "";
-                    userId = u.id || null;
-                    userEmail = u.email || null;
-                } catch (e) {}
-            }
-            setName(userName);
-            setCurrentUserId(userId);
-            setCurrentUserEmail(userEmail);
-            setIsUserSessionResolved(true);
-        };
-
-        updateUserSessionData();
-        window.addEventListener("userLogin", updateUserSessionData);
-        window.addEventListener("userLogout", updateUserSessionData);
-        return () => {
-            window.removeEventListener("userLogin", updateUserSessionData);
-            window.removeEventListener("userLogout", updateUserSessionData);
-        };
-    }, [location]);
-
-    const targetText = name
-        ? `Welcome back, ${name}.`
-        : `Welcome to ${BRAND_PHRASE}`;
+    const targetText = useMemo(() => {
+        if (!isLoaded) return `Welcome to ${BRAND_PHRASE}`;
+        if (!isSignedIn) return `Welcome to ${BRAND_PHRASE}`;
+        return user?.firstName
+            ? `Welcome back, ${user.firstName}.`
+            : `Welcome to ${BRAND_PHRASE}`;
+    }, [isLoaded, isSignedIn, user?.firstName]);
 
     const [displayText, setDisplayText] = useState("");
     const [isTyping, setIsTyping] = useState(true);
@@ -173,41 +140,43 @@ const Home = () => {
         const q = searchQuery.trim();
         if (!q) return;
 
-        if (!isUserSessionResolved) {
+        if (!isLoaded) {
             alert("Session still loading, please try again in a moment.");
             return;
         }
 
-        if (!currentUserId) {
-            alert("Please log in to search for recommendations.");
+        if (!isSignedIn) {
+            openSignIn();
             setIsSearching(false);
             return;
         }
 
         setIsSearching(true);
-        const searchUrl = `${API_URL}/api/providers/search?q=${encodeURIComponent(
-            q
-        )}&user_id=${currentUserId}&location=${encodeURIComponent(
-            LOCKED_LOCATION
-        )}`;
 
         try {
-            const r = await fetch(searchUrl);
-            const responseBody = await r.text();
+            const params = new URLSearchParams({
+                q: q,
+                user_id: user.id,
+                email: user.primaryEmailAddress?.emailAddress,
+                location: LOCKED_LOCATION,
+            });
+            const searchUrl = `${API_URL}/api/providers/search?${params.toString()}`;
+            const response = await fetch(searchUrl);
+            const responseBody = await response.text();
 
-            if (!r.ok) {
+            if (!response.ok) {
                 let errorPayload;
                 try {
                     errorPayload = JSON.parse(responseBody);
                 } catch (parseError) {
                     throw new Error(
-                        `HTTP error! status: ${r.status}, Non-JSON response: ${responseBody}`
+                        `HTTP error! status: ${response.status}, Non-JSON response: ${responseBody}`
                     );
                 }
                 throw new Error(
                     errorPayload.message ||
                         errorPayload.error ||
-                        `HTTP error! status: ${r.status}`
+                        `HTTP error! status: ${response.status}`
                 );
             }
 
@@ -222,7 +191,7 @@ const Home = () => {
                     {
                         state: {
                             initialProviders: d.providers,
-                            currentSearchUserId: currentUserId,
+                            currentSearchUserId: user.id,
                         },
                     }
                 );
@@ -234,6 +203,7 @@ const Home = () => {
                 );
             }
         } catch (err) {
+            console.error("Search error:", err);
             alert(
                 `Search failed: ${err.message}. Please check the console for more details.`
             );
@@ -386,7 +356,7 @@ const Home = () => {
                     </p>
                 </div>
             </div>
-            {isUserSessionResolved && currentUserId && (
+            {isSignedIn && (
                 <motion.div
                     className="network-cta"
                     initial={{ opacity: 0, y: 20 }}

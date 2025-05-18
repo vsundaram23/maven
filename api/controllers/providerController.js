@@ -153,12 +153,10 @@ const getProviderById = async (req, res) => {
             id,
         ]);
         if (result.rows.length === 0) {
-            return res
-                .status(404)
-                .json({
-                    success: false,
-                    message: "Provider not found or not accessible",
-                });
+            return res.status(404).json({
+                success: false,
+                message: "Provider not found or not accessible",
+            });
         }
         res.json({ success: true, provider: result.rows[0] });
     } catch (err) {
@@ -222,36 +220,48 @@ const getRecommendationsByTargetUser = async (req, res) => {
 
 const searchVisibleProviders = async (req, res) => {
     const { q } = req.query;
-    const currentUserId = req.query.user_id;
+    const clerkUserId = req.query.user_id;
+    const userEmail = req.query.email;
     const searchQuery = q?.toLowerCase().trim();
 
-    if (!currentUserId) {
-        return res
-            .status(400)
-            .json({
-                success: false,
-                message: "User ID is required for search.",
-            });
+    if (!clerkUserId || !userEmail) {
+        return res.status(400).json({
+            success: false,
+            message: "User ID and email are required to perform search.",
+        });
     }
+
     if (!searchQuery) {
         return res.json({ success: true, providers: [] });
     }
+
     try {
+        // Convert Clerk ID to internal user ID
+        const internalUserId = await userService.getOrCreateUser({
+            id: clerkUserId,
+            emailAddresses: [{ emailAddress: userEmail }],
+            firstName: req.query.firstName || "",
+            lastName: req.query.lastName || "",
+            phoneNumbers: req.query.phoneNumber
+                ? [{ phoneNumber: req.query.phoneNumber }]
+                : [],
+        });
+
         const {
             query: baseVisibilityQuery,
             queryParams: baseVisibilityParams,
-        } = getVisibleProvidersBaseQuery(currentUserId);
+        } = getVisibleProvidersBaseQuery(internalUserId);
+
         const ftsParamIndex = baseVisibilityParams.length + 1;
 
         let ftsQuery = `
-      SELECT *, ts_rank(search_vector, plainto_tsquery('english', $${ftsParamIndex})) as rank
-      FROM (
-        ${baseVisibilityQuery}
-      ) AS VisibleProvidersCTE
-      WHERE VisibleProvidersCTE.search_vector @@ plainto_tsquery('english', $${ftsParamIndex})
-      ORDER BY rank DESC
-      LIMIT 10;
-    `;
+            SELECT *, ts_rank(search_vector, plainto_tsquery('english', $${ftsParamIndex})) as rank
+            FROM (${baseVisibilityQuery}) AS VisibleProvidersCTE
+            WHERE VisibleProvidersCTE.search_vector @@ plainto_tsquery('english', $${ftsParamIndex})
+            ORDER BY rank DESC
+            LIMIT 10;
+        `;
+
         let result = await pool.query(ftsQuery, [
             ...baseVisibilityParams,
             searchQuery,
@@ -261,28 +271,34 @@ const searchVisibleProviders = async (req, res) => {
             const ilikeParamIndex = baseVisibilityParams.length + 1;
             const ilikeSearchQuery = `%${searchQuery}%`;
             const fallbackQuery = `
-        SELECT *
-        FROM (
-          ${baseVisibilityQuery}
-        ) AS VisibleProvidersCTE
-        WHERE
-          LOWER(COALESCE(VisibleProvidersCTE.business_name, '')) LIKE $${ilikeParamIndex}
-          OR LOWER(COALESCE(VisibleProvidersCTE.category, '')) LIKE $${ilikeParamIndex}
-          OR LOWER(COALESCE(VisibleProvidersCTE.description, '')) LIKE $${ilikeParamIndex}
-          OR EXISTS (SELECT 1 FROM unnest(VisibleProvidersCTE.tags) AS tag WHERE LOWER(tag) LIKE $${ilikeParamIndex})
-        LIMIT 10;
-      `;
+                SELECT *
+                FROM (${baseVisibilityQuery}) AS VisibleProvidersCTE
+                WHERE
+                    LOWER(COALESCE(VisibleProvidersCTE.business_name, '')) LIKE $${ilikeParamIndex}
+                    OR LOWER(COALESCE(VisibleProvidersCTE.category, '')) LIKE $${ilikeParamIndex}
+                    OR LOWER(COALESCE(VisibleProvidersCTE.description, '')) LIKE $${ilikeParamIndex}
+                    OR EXISTS (
+                        SELECT 1 FROM unnest(VisibleProvidersCTE.tags) AS tag 
+                        WHERE LOWER(tag) LIKE $${ilikeParamIndex}
+                    )
+                LIMIT 10;
+            `;
             result = await pool.query(fallbackQuery, [
                 ...baseVisibilityParams,
                 ilikeSearchQuery,
             ]);
         }
-        res.json({ success: true, providers: result.rows });
+
+        res.json({
+            success: true,
+            providers: result.rows,
+        });
     } catch (error) {
         console.error("Search error:", error);
         res.status(500).json({
             success: false,
             error: "Failed to search providers",
+            message: error.message,
         });
     }
 };
