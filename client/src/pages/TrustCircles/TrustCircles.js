@@ -276,7 +276,8 @@ const TrustCircles = () => {
                       )}
                       <h3 className="card-title">{community.name}</h3>
                       <p className="card-description">{community.description}</p>
-                      <p className="card-info">{community.recommendations} Recommendations</p>
+                      {/* fix this => currently a bug */}
+                      {/* <p className="card-info">{community.recommendations} Recommendations</p> */}
                     </div>
                     <div className="card-actions">
                       <button
