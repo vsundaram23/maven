@@ -2,10 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
     SignInButton,
-    SignUpButton,
-    UserButton,
     useUser,
     useClerk,
+    UserProfile
 } from "@clerk/clerk-react";
 import { FaCaretDown, FaUsers } from "react-icons/fa";
 import "./Header.css";
@@ -13,9 +12,33 @@ import "./Header.css";
 // const API_URL = "https://api.seanag-recommendations.org:8080";
 const API_URL = "http://localhost:5000";
 
+const ProfileAvatar = ({ email }) => {
+    const getInitials = () =>
+        email ? email.split('@')[0].charAt(0).toUpperCase() : '?';
+
+    return (
+        <div
+            style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--primary-blue)',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '16px',
+                fontWeight: 'bold',
+            }}
+        >
+            {getInitials()}
+        </div>
+    );
+};
+
 const Header = () => {
     const { isLoaded, isSignedIn, user } = useUser();
-    const { openSignIn } = useClerk();
+    const { openSignIn, signOut, openUserProfile } = useClerk();
     const navigate = useNavigate();
     const [showAddRecommendationModal, setShowAddRecommendationModal] =
         useState(false);
@@ -25,17 +48,6 @@ const Header = () => {
     const exploreRef = useRef(null);
     const [showProfileDropdown, setShowProfileDropdown] = useState(false);
     const profileDropdownRef = useRef(null);
-    const isLoggedIn = isSignedIn;
-
-    const userEmail = user?.primaryEmailAddress?.emailAddress;
-
-    const [signUpForm, setSignUpForm] = useState({
-        name: "",
-        email: "",
-        preferred_name: "",
-        phone_number: "",
-        community: "",
-    });
 
     const [recommendationForm, setRecommendationForm] = useState({
         business_name: "",
@@ -45,8 +57,22 @@ const Header = () => {
         subcategory: "",
         description: "",
         notes: "",
-        user_email: user?.primaryEmailAddress?.emailAddress || "",
+        user_email: "",
     });
+
+    useEffect(() => {
+        if (isSignedIn && user?.primaryEmailAddress?.emailAddress) {
+            setRecommendationForm(prevForm => ({
+                ...prevForm,
+                user_email: user.primaryEmailAddress.emailAddress
+            }));
+        } else {
+             setRecommendationForm(prevForm => ({
+                ...prevForm,
+                user_email: ""
+            }));
+        }
+    }, [isSignedIn, user]);
 
     const categories = {
         "Home Services": [
@@ -69,10 +95,11 @@ const Header = () => {
                 profileDropdownRef.current &&
                 !profileDropdownRef.current.contains(event.target) &&
                 (!event.target.closest ||
-                    !event.target.closest(".profile-avatar-dropdown"))
+                    !event.target.closest(".profile-avatar-dropdown-trigger")) // Use a specific class for the trigger
             ) {
                 setShowProfileDropdown(false);
             }
+            // ... rest of your handleClickOutside logic for explore and mobile menu ...
             if (
                 exploreRef.current &&
                 !exploreRef.current.contains(event.target) &&
@@ -93,7 +120,7 @@ const Header = () => {
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, []);
+    }, []); 
 
     const toggleExplore = (e) => {
         e.preventDefault();
@@ -165,6 +192,22 @@ const Header = () => {
         }
         navigate("/trustcircles");
     };
+
+    const handleProfileClick = (e) => {
+        e.preventDefault();
+        handleNavLinkClick(); // Close other menus
+        // Option 1: Navigate to a route that renders <UserProfile />
+        navigate('/profile');
+        // Option 2: Open Clerk's modal UserProfile
+        // openUserProfile();
+    };
+
+    const handleLogoutClick = async (e) => {
+        e.preventDefault();
+        handleNavLinkClick(); // Close other menus
+        await signOut({ redirectUrl: '/' });
+    };
+
 
     return (
         <header className="header">
@@ -244,6 +287,7 @@ const Header = () => {
                         <Link
                             to="/share-recommendation"
                             className="add-recommendation-button styled-button"
+                            onClick={handleNavLinkClick}
                         >
                             Share Recommendation
                         </Link>
@@ -255,21 +299,47 @@ const Header = () => {
                         </SignInButton>
                     )}
 
-                    {isSignedIn ? (
-                        <div
-                            className="profile-dropdown-wrapper"
-                            ref={profileDropdownRef}
-                        >
-                            <UserButton afterSignOutUrl="/" />
+                    {isSignedIn && isLoaded ? ( // Ensure Clerk is loaded and user is signed in
+                        <div className="profile-dropdown-wrapper" ref={profileDropdownRef}>
+                            <div
+                                className="profile-avatar-dropdown-trigger" // Added a class for click outside detection
+                                style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', marginLeft: '10px' }}
+                                onClick={() => {
+                                    setShowProfileDropdown(v => !v);
+                                    if (isMobileMenuOpen) {
+                                        setIsMobileMenuOpen(false);
+                                    }
+                                    setShowExplore(false);
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowProfileDropdown(v => !v); }}
+                            >
+                                <ProfileAvatar email={user?.primaryEmailAddress?.emailAddress} />
+                                <FaCaretDown style={{ color: 'var(--primary-blue)', marginLeft: '4px' }} />
+                            </div>
+                            {showProfileDropdown && (
+                                <div className="dropdown-menu profile-dropdown-menu"> {/* Ensure these CSS classes match your old styles */}
+                                    <Link to="/profile" className="dropdown-item" onClick={handleProfileClick}>
+                                        My Profile
+                                    </Link>
+                                    <Link to="#" className="dropdown-item" onClick={handleLogoutClick}>
+                                        Logout
+                                    </Link>
+                                </div>
+                            )}
                         </div>
-                    ) : (
-                        <div className="auth-buttons">
+                    ) : isLoaded ? ( // Clerk is loaded but user is not signed in
+                        <div className="auth-buttons" style={{ marginLeft: '10px' }}>
                             <SignInButton mode="modal">
                                 <button className="login-button nav-link">
                                     Sign In
                                 </button>
                             </SignInButton>
                         </div>
+                    ) : (
+                        // Optional: A placeholder or loader while Clerk is loading
+                        <div style={{ marginLeft: '10px', width: '80px' }}></div> // Placeholder for spacing
                     )}
                 </nav>
             </div>
