@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const { validate: isUuid } = require('uuid');
 
 const {
   getAllVisibleFinancialProviders,
@@ -10,15 +9,7 @@ const {
 
 router.get('/', getAllVisibleFinancialProviders);
 
-router.get('/:id', (req, res, next) => {
-  if (!isUuid(req.params.id)) {
-    return res.status(400).json({
-        success: false,
-        message: 'Invalid provider ID format'
-    });
-  }
-  next();
-}, getVisibleFinancialProviderById);
+router.get('/:id', getVisibleFinancialProviderById);
 
 module.exports = router;
 
