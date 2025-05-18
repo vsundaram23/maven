@@ -62,7 +62,6 @@ const getVisibleProvidersBaseQueryForRepairPage = (currentUserId) => {
 };
 
 const getAllVisibleRepairProviders = async (req, res) => {
-    console.log("=== START GET ALL REPAIR PROVIDERS ===");
     const clerkUserId = req.query.user_id;
     const userEmail = req.query.email;
 

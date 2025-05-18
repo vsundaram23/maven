@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const { validate: isUuid } = require('uuid');
 
 const {
   getAllVisibleCleaningProviders,
@@ -10,15 +9,7 @@ const {
 
 router.get('/', getAllVisibleCleaningProviders);
 
-router.get('/:id', (req, res, next) => {
-  if (!isUuid(req.params.id)) {
-    return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid provider ID format' 
-    });
-  }
-  next();
-}, getVisibleCleaningProviderById);
+router.get('/:id', getVisibleCleaningProviderById);
 
 module.exports = router;
 
