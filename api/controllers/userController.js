@@ -25,7 +25,6 @@ const getRecommendationsByUserId = async (req, res) => {
       WHERE sp.recommended_by = $1
       ORDER BY sp.date_of_recommendation DESC, sp.created_at DESC
     `, [id]);
-
     const userResult = await pool.query(`
       SELECT 
         name, 
