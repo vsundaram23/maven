@@ -1,4 +1,5 @@
-const pool = require('../config/db.config');
+const userService = require("../services/userService");
+const pool = require("../config/db.config");
 
 const getVisibleProvidersBaseQueryForAutoPage = (currentUserId) => {
   const query = `
@@ -61,184 +62,108 @@ const getVisibleProvidersBaseQueryForAutoPage = (currentUserId) => {
 };
 
 const getAllVisibleAutoProviders = async (req, res) => {
-  const currentUserId = req.query.user_id;
+    const clerkUserId = req.query.user_id;
+    const userEmail = req.query.email;
 
-  if (!currentUserId) {
-    return res.status(400).json({
-      success: false,
-      message: 'User ID is required to fetch auto service providers.'
-    });
-  }
+    if (!clerkUserId || !userEmail) {
+        return res.status(400).json({
+            success: false,
+            message: "User ID and email are required to fetch auto service providers."
+        });
+    }
 
-  try {
-    const { query: baseQuery, queryParams } = getVisibleProvidersBaseQueryForAutoPage(currentUserId);
-    const categoryName = 'Auto Services';
-    const finalQuery = `
-      SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
-      WHERE VisibleProvidersCTE.category_name = $${queryParams.length + 1}
-      ORDER BY VisibleProvidersCTE.business_name;
-    `;
-    const finalParams = [...queryParams, categoryName];
+    try {
+        // Convert Clerk ID to internal user ID
+        const internalUserId = await userService.getOrCreateUser({
+            id: clerkUserId,
+            emailAddresses: [{ emailAddress: userEmail }],
+            firstName: req.query.firstName || "",
+            lastName: req.query.lastName || "",
+            phoneNumbers: req.query.phoneNumber ? [{ phoneNumber: req.query.phoneNumber }] : []
+        });
 
-    const result = await pool.query(finalQuery, finalParams);
+        const { query: baseQuery, queryParams } = getVisibleProvidersBaseQueryForAutoPage(internalUserId);
+        const categoryName = 'Auto Services';
+        const finalQuery = `
+            SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
+            WHERE VisibleProvidersCTE.category_name = $${queryParams.length + 1}
+            ORDER BY VisibleProvidersCTE.business_name;
+        `;
+        const finalParams = [...queryParams, categoryName];
 
-    res.json({
-      success: true,
-      providers: result.rows
-    });
-  } catch (err) {
-    console.error('Database error fetching auto providers:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching auto providers',
-      error: err.message
-    });
-  }
+        const result = await pool.query(finalQuery, finalParams);
+
+        res.json({
+            success: true,
+            providers: result.rows
+        });
+    } catch (err) {
+        console.error('Database error fetching auto providers:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching auto providers',
+            error: err.message
+        });
+    }
 };
 
 const getVisibleAutoProviderById = async (req, res) => {
-  const { id: providerId } = req.params;
-  const currentUserId = req.query.user_id;
+    const { id: providerId } = req.params;
+    const clerkUserId = req.query.user_id;
+    const userEmail = req.query.email;
 
-  if (!currentUserId) {
-    return res.status(400).json({
-      success: false,
-      message: 'User ID is required to fetch auto provider details.'
-    });
-  }
-  if (!providerId) {
-    return res.status(400).json({
-        success: false,
-        message: 'Provider ID is required.'
-    });
-  }
-
-  try {
-    const { query: baseQuery, queryParams } = getVisibleProvidersBaseQueryForAutoPage(currentUserId);
-    const categoryName = 'Auto Services';
-    const paramIndexForId = queryParams.length + 1;
-    const paramIndexForCategory = queryParams.length + 2;
-
-    const finalQuery = `
-      SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
-      WHERE VisibleProvidersCTE.id = $${paramIndexForId} AND VisibleProvidersCTE.category_name = $${paramIndexForCategory};
-    `;
-    const finalParams = [...queryParams, providerId, categoryName];
-
-    const result = await pool.query(finalQuery, finalParams);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Auto provider not found or not accessible to this user.'
-      });
+    if (!clerkUserId || !userEmail) {
+        return res.status(400).json({
+            success: false,
+            message: "User ID and email are required to fetch auto provider details."
+        });
     }
-    res.json({
-      success: true,
-      provider: result.rows[0]
-    });
-  } catch (err) {
-    console.error('Database error fetching specific auto provider:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching auto provider',
-      error: err.message
-    });
-  }
+
+    try {
+        const internalUserId = await userService.getOrCreateUser({
+            id: clerkUserId,
+            emailAddresses: [{ emailAddress: userEmail }],
+            firstName: req.query.firstName || "",
+            lastName: req.query.lastName || "",
+            phoneNumbers: req.query.phoneNumber ? [{ phoneNumber: req.query.phoneNumber }] : []
+        });
+
+        const { query: baseQuery, queryParams } = getVisibleProvidersBaseQueryForAutoPage(internalUserId);
+        const categoryName = 'Auto Services';
+        const paramIndexForId = queryParams.length + 1;
+        const paramIndexForCategory = queryParams.length + 2;
+
+        const finalQuery = `
+            SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
+            WHERE VisibleProvidersCTE.id = $${paramIndexForId} 
+            AND VisibleProvidersCTE.category_name = $${paramIndexForCategory};
+        `;
+        const finalParams = [...queryParams, providerId, categoryName];
+
+        const result = await pool.query(finalQuery, finalParams);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Auto provider not found or not accessible to this user."
+            });
+        }
+
+        res.json({
+            success: true,
+            provider: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Database error fetching specific auto provider:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching auto provider',
+            error: err.message
+        });
+    }
 };
 
 module.exports = {
-  getAllVisibleAutoProviders,
-  getVisibleAutoProviderById
+    getAllVisibleAutoProviders,
+    getVisibleAutoProviderById
 };
-
-// // controllers/autoProviderController.js
-// const pool = require('../config/db.config');
-
-// const getAllAutoProviders = async (req, res) => {
-//   try {
-//     const result = await pool.query(`
-//       SELECT 
-//         sp.id,
-//         sp.business_name,
-//         sp.description,
-//         sp.email,
-//         sp.phone_number,
-//         sp.num_likes,
-//         sp.date_of_recommendation,
-//         sp.tags,
-//         s.name        AS service_type,
-//         u.name        AS recommended_by_name
-//       FROM service_providers sp
-//       JOIN services s 
-//         ON sp.service_id = s.service_id
-//       JOIN service_categories sc 
-//         ON s.category_id = sc.service_id
-//       JOIN users u 
-//         ON sp.recommended_by = u.id
-//       WHERE sc.name = 'Auto Services'
-//     `);
-
-//     res.json({
-//       success: true,
-//       providers: result.rows
-//     });
-//   } catch (err) {
-//     console.error('Error fetching auto providers:', err.message);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Error fetching auto providers',
-//       error: err.message
-//     });
-//   }
-// };
-
-// const getAutoProviderById = async (req, res) => {
-//   const { id } = req.params;
-
-//   try {
-//     const result = await pool.query(`
-//       SELECT 
-//         sp.*,
-//         sp.date_of_recommendation,
-//         sp.tags,
-//         s.name                AS service_type,
-//         ROUND(AVG(r.rating), 2) AS average_rating,
-//         COUNT(r.id)            AS total_reviews
-//       FROM service_providers sp
-//       JOIN services s 
-//         ON sp.service_id = s.service_id
-//       JOIN service_categories sc 
-//         ON s.category_id = sc.service_id
-//       LEFT JOIN reviews r 
-//         ON sp.id = r.provider_id
-//       WHERE sp.id = $1
-//         AND sc.name = 'Auto Services'
-//       GROUP BY sp.id, s.name
-//     `, [id]);
-
-//     if (result.rows.length === 0) {
-//       return res.status(404).json({
-//         success: false,
-//         message: 'Auto provider not found'
-//       });
-//     }
-
-//     res.json({
-//       success: true,
-//       provider: result.rows[0]
-//     });
-//   } catch (err) {
-//     console.error('Error fetching auto provider:', err.message);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Error fetching auto provider',
-//       error: err.message
-//     });
-//   }
-// };
-
-// module.exports = {
-//   getAllAutoProviders,
-//   getAutoProviderById
-// };
