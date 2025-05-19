@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/solid";
 import "./Profile.css";
 
+// const API_URL = "https://api.seanag-recommendations.org:8080";
 const API_URL = "http://localhost:5000";
 
 const Profile = () => {
