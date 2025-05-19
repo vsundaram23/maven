@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useUser } from "@clerk/clerk-react";
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FaStar, FaPhone, FaEnvelope, FaUsers, FaPlusCircle } from 'react-icons/fa';
 import QuoteModal from '../../components/QuoteModal/QuoteModal';
 import './UserRecommendations.css';
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = 'http://localhost:3000';
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = 'http://localhost:5000';
 
 const StarRating = ({ rating }) => {
   const numRating = parseFloat(rating) || 0;
@@ -127,6 +128,7 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
 
 
 const UserRecommendations = () => {
+  const { isLoaded, isSignedIn, user } = useUser();
   const { id: userIdPage } = useParams();
   const [recommendations, setRecommendations] = useState([]);
   const [userProfile, setUserProfile] = useState({ name: 'User', phone_number: null, email: null });
@@ -144,33 +146,21 @@ const UserRecommendations = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const updateLoggedInUserId = () => {
-      const rawUser = localStorage.getItem('user');
-      if (rawUser) {
-        try {
-          const userObject = JSON.parse(rawUser);
-          setCurrentLoggedInUserId(userObject?.id || null);
-        } catch (e) {
-          setCurrentLoggedInUserId(null);
-        }
-      } else {
-        setCurrentLoggedInUserId(null);
-      }
-    };
-    updateLoggedInUserId();
-    window.addEventListener('userLogin', updateLoggedInUserId);
-    window.addEventListener('userLogout', updateLoggedInUserId);
-    return () => {
-      window.removeEventListener('userLogin', updateLoggedInUserId);
-      window.removeEventListener('userLogout', updateLoggedInUserId);
-    };
-  }, []);
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
+      navigate('/');
+      return;
+    }
+
+    setCurrentLoggedInUserId(user.id);
+  }, [isLoaded, isSignedIn, user, navigate]);
 
   const fetchPageData = async () => {
-    if (!userIdPage) {
-        setError("User ID not found in URL.");
-        setLoading(false);
-        return;
+    if (!isSignedIn || !userIdPage) {
+      setError("Authentication or user ID missing");
+      setLoading(false);
+      return;
     }
     setLoading(true);
     setError(null);

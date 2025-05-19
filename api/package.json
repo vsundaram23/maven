@@ -7,8 +7,8 @@
     "test": "tests"
   },
   "scripts": {
-    "start": "NODE_ENV=development node api/server.js",
-    "dev": "NODE_ENV=development nodemon api/server.js",
+    "start": "cross-env NODE_ENV=development node server.js",
+    "dev": "cross-env NODE_ENV=development nodemon server.js --watch api",
     "build": "NODE_ENV=production react-scripts build",
     "deploy": "wrangler deploy",
     "test": "jest",
@@ -34,6 +34,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "gh-pages": "^6.3.0",
     "jest": "^29.7.0",
     "nodemon": "^3.1.9",

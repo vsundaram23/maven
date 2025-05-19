@@ -1,7 +1,8 @@
-const pool = require('../config/db.config');
+const userService = require("../services/userService");
+const pool = require("../config/db.config");
 
 const getVisibleProvidersBaseQueryForCleaningPage = (currentUserId) => {
-  const query = `
+    const query = `
     SELECT DISTINCT
         sp.id,
         sp.business_name,
@@ -56,100 +57,120 @@ const getVisibleProvidersBaseQueryForCleaningPage = (currentUserId) => {
             (cs.community_id IS NOT NULL AND cm_user_x.user_id IS NOT NULL)
         )
   `;
-  const queryParams = [currentUserId];
-  return { query, queryParams };
+    const queryParams = [currentUserId];
+    return { query, queryParams };
 };
 
 const getAllVisibleCleaningProviders = async (req, res) => {
-  const currentUserId = req.query.user_id;
+    const clerkUserId = req.query.user_id;
+    const userEmail = req.query.email;
 
-  if (!currentUserId) {
-    return res.status(400).json({
-      success: false,
-      message: 'User ID is required to fetch cleaning service providers.'
-    });
-  }
+    if (!clerkUserId || !userEmail) {
+        return res.status(400).json({
+            success: false,
+            message:
+                "User ID and email are required to fetch cleaning service providers.",
+        });
+    }
 
-  try {
-    const { query: baseQuery, queryParams } = getVisibleProvidersBaseQueryForCleaningPage(currentUserId);
-    const serviceName = 'Cleaning and Upkeep';
-    const finalQuery = `
+    try {
+        // Convert Clerk ID to internal user ID with required email
+        const internalUserId = await userService.getOrCreateUser({
+            id: clerkUserId,
+            emailAddresses: [{ emailAddress: userEmail }],
+            firstName: req.query.firstName || "",
+            lastName: req.query.lastName || "",
+            phoneNumbers: req.query.phoneNumber
+                ? [{ phoneNumber: req.query.phoneNumber }]
+                : [],
+        });
+        const { query: baseQuery, queryParams } =
+            getVisibleProvidersBaseQueryForCleaningPage(internalUserId);
+        const serviceName = "Cleaning and Upkeep";
+        const finalQuery = `
       SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
       WHERE VisibleProvidersCTE.service_type = $${queryParams.length + 1}
       ORDER BY VisibleProvidersCTE.business_name; 
     `;
-    const finalParams = [...queryParams, serviceName];
+        const finalParams = [...queryParams, serviceName];
 
-    const result = await pool.query(finalQuery, finalParams);
+        const result = await pool.query(finalQuery, finalParams);
 
-    res.json({
-      success: true,
-      providers: result.rows
-    });
-  } catch (err) {
-    console.error('Database error fetching cleaning providers:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching cleaning providers',
-      error: err.message
-    });
-  }
+        res.json({
+            success: true,
+            providers: result.rows,
+        });
+    } catch (err) {
+        console.error("Database error fetching cleaning providers:", err);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching cleaning providers",
+            error: err.message,
+        });
+    }
 };
 
 const getVisibleCleaningProviderById = async (req, res) => {
-  const { id: providerId } = req.params;
-  const currentUserId = req.query.user_id;
-
-  if (!currentUserId) {
-    return res.status(400).json({
-      success: false,
-      message: 'User ID is required to fetch cleaning provider details.'
-    });
-  }
-  if (!providerId) {
-    return res.status(400).json({
-        success: false,
-        message: 'Provider ID is required.'
-    });
-  }
-
-  try {
-    const { query: baseQuery, queryParams } = getVisibleProvidersBaseQueryForCleaningPage(currentUserId);
-    const serviceName = 'Cleaning and Upkeep';
-    const paramIndexForId = queryParams.length + 1;
-    const paramIndexForService = queryParams.length + 2;
+    const { id: providerId } = req.params;
+    const clerkUserId = req.query.user_id;
+    const userEmail = req.query.email;
     
-    const finalQuery = `
-      SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
-      WHERE VisibleProvidersCTE.id = $${paramIndexForId} AND VisibleProvidersCTE.service_type = $${paramIndexForService};
-    `;
-    const finalParams = [...queryParams, providerId, serviceName];
-
-    const result = await pool.query(finalQuery, finalParams);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Cleaning provider not found or not accessible to this user.'
-      });
+    if (!clerkUserId || !userEmail) {
+        return res.status(400).json({
+            success: false,
+            message: "User ID and email are required to fetch cleaning provider details.",
+        });
     }
-    res.json({
-      success: true,
-      provider: result.rows[0]
-    });
-  } catch (err) {
-    console.error('Database error fetching specific cleaning provider:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching cleaning provider',
-      error: err.message
-    });
-  }
+
+    try {
+        const internalUserId = await userService.getOrCreateUser({
+            id: clerkUserId,
+            emailAddresses: [{ emailAddress: userEmail }],
+            firstName: req.query.firstName || "",
+            lastName: req.query.lastName || "",
+            phoneNumbers: req.query.phoneNumber
+                ? [{ phoneNumber: req.query.phoneNumber }]
+                : [],
+        });
+
+        const { query: baseQuery, queryParams } = 
+            getVisibleProvidersBaseQueryForCleaningPage(internalUserId);
+        const serviceName = "Cleaning and Upkeep";
+        const paramIndexForId = queryParams.length + 1;
+        const paramIndexForService = queryParams.length + 2;
+
+        const finalQuery = `
+            SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
+            WHERE VisibleProvidersCTE.id = $${paramIndexForId} 
+            AND VisibleProvidersCTE.service_type = $${paramIndexForService};
+        `;
+        const finalParams = [...queryParams, providerId, serviceName];
+
+        const result = await pool.query(finalQuery, finalParams);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Cleaning provider not found or not accessible to this user.",
+            });
+        }
+        res.json({
+            success: true,
+            provider: result.rows[0],
+        });
+    } catch (err) {
+        console.error("Database error fetching specific cleaning provider:", err);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching cleaning provider",
+            error: err.message,
+        });
+    }
 };
 
 module.exports = {
-  getAllVisibleCleaningProviders,
-  getVisibleCleaningProviderById
+    getAllVisibleCleaningProviders,
+    getVisibleCleaningProviderById,
 };
 
 // // cleaningProviderController.js
@@ -158,7 +179,7 @@ module.exports = {
 // const getAllCleaningProviders = async (req, res) => {
 //     try {
 //       const result = await pool.query(`
-//         SELECT 
+//         SELECT
 //           sp.id,
 //           sp.business_name,
 //           sp.description,
@@ -174,7 +195,7 @@ module.exports = {
 //         JOIN users u ON sp.recommended_by = u.id
 //         WHERE s.name = 'Cleaning and Upkeep'
 //       `);
-  
+
 //       res.json({
 //         success: true,
 //         providers: result.rows
@@ -188,14 +209,14 @@ module.exports = {
 //       });
 //     }
 //   };
-  
+
 //   // GET: Cleaning provider by ID
 //   const getCleaningProviderById = async (req, res) => {
 //     const { id } = req.params;
-  
+
 //     try {
 //       const result = await pool.query(`
-//         SELECT 
+//         SELECT
 //           sp.*,
 //           sp.tags,
 //           sp.date_of_recommendation,
@@ -210,14 +231,14 @@ module.exports = {
 //         WHERE sp.id = $1 AND s.name = 'Cleaning and Upkeep'
 //         GROUP BY sp.id, s.name, u.name
 //       `, [id]);
-  
+
 //       if (result.rows.length === 0) {
 //         return res.status(404).json({
 //           success: false,
 //           message: 'Cleaning provider not found'
 //         });
 //       }
-  
+
 //       res.json({
 //         success: true,
 //         provider: result.rows[0]
@@ -231,7 +252,7 @@ module.exports = {
 //       });
 //     }
 //   };
-  
+
 //   module.exports = {
 //     getAllCleaningProviders,
 //     getCleaningProviderById
@@ -242,7 +263,7 @@ module.exports = {
 // const getAllCleaningProviders = async (req, res) => {
 //     try {
 //         const result = await pool.query(`
-//             SELECT 
+//             SELECT
 //                 sp.id,
 //                 sp.business_name,
 //                 sp.description,
@@ -256,9 +277,9 @@ module.exports = {
 //             JOIN users u ON sp.recommended_by = u.id
 //             WHERE s.name = 'Cleaning and Upkeep'
 //         `);
-        
+
 //         console.log('Query result:', result.rows);
-        
+
 //         res.json({
 //             success: true,
 //             providers: result.rows
@@ -276,10 +297,10 @@ module.exports = {
 
 // const getCleaningProviderById = async (req, res) => {
 //     const { id } = req.params;
-    
+
 //     try {
 //         const result = await pool.query(`
-//             SELECT 
+//             SELECT
 //                 sp.*,
 //                 s.name as service_type,
 //                 ROUND(AVG(r.rating), 2) as average_rating,
