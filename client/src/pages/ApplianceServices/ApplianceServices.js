@@ -11,8 +11,8 @@ import {
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import "./ApplianceServices.css";
 
-// const API_URL = 'https://api.seanag-recommendations.org:8080';
-const API_URL = "http://localhost:5000";
+const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = "http://localhost:5000";
 
 const StarRating = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;

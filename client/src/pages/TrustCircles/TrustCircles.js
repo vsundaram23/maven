@@ -3,8 +3,8 @@ import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import "./TrustCircles.css";
 
-// const API_URL = "https://api.seanag-recommendations.org:8080";
-const API_URL = "http://localhost:5000";
+const API_URL = "https://api.seanag-recommendations.org:8080";
+// const API_URL = "http://localhost:5000";
 
 const PersonAddIcon = () => (
     <svg
