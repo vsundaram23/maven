@@ -35,16 +35,15 @@ const Profile = () => {
         const fetchProfileData = async () => {
             setLoading(true);
             try {
-                // Fetch recommendations
                 const params = new URLSearchParams({
                     user_id: user.id,
                     email: user.primaryEmailAddress?.emailAddress,
+                    firstName: user.firstName || "",
+                    lastName: user.lastName || "",
                 });
 
                 const [recommendationsRes, connectionsRes] = await Promise.all([
-                    fetch(
-                        `${API_URL}/api/users/${user.id}/recommendations?${params}`
-                    ),
+                    fetch(`${API_URL}/api/users/me/recommendations?${params}`),
                     fetch(`${API_URL}/api/connections/check-connections`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
