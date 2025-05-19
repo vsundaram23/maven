@@ -5,7 +5,7 @@ import './styles/global.css';
 import './index.css';
 import { ClerkProvider } from '@clerk/clerk-react';
 
-const PUBLISHABLE_KEY = 'pk_live_dWx0aW1hdGUtdGlnZXItOTIuY2xlcmsuYWNjb3VudHMuZGV2JA';
+const PUBLISHABLE_KEY = 'pk_live_Y2xlcmsudHJpZWRhbmR0cnVzdGVkLmFpJA';
 // const PUBLISHABLE_KEY = 'pk_test_dWx0aW1hdGUtdGlnZXItOTIuY2xlcmsuYWNjb3VudHMuZGV2JA';
 
 if (!PUBLISHABLE_KEY) {
