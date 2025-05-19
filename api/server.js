@@ -26,7 +26,7 @@ const app = express();
 const corsOptions = {
     origin: function (origin, callback) {
         const allowedOrigins = [
-            "http://localhost:3001",
+            "http://localhost:3000",
             "http://34.214.248.192:8080",
             "https://maven-frontend.onrender.com",
             "https://triedandtrusted.ai", // Add your production domain
@@ -118,7 +118,7 @@ app.use((req, res) => {
 });
 
 // Run in HTTP (NOT HTTPS)
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running over HTTP on port ${PORT}`);
     console.log(`Health check: http://localhost:${PORT}/api/health`);
