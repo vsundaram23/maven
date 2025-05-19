@@ -48,7 +48,6 @@ const getUserByEmail = async (email) => {
     throw new Error('Database error fetching user by email');
   }
 };
-
 const createUser = async (userData) => {
   try {
     const { name, email } = userData;

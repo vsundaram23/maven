@@ -19,6 +19,7 @@ import Search from './pages/Search/Search';
 import ProviderProfile from './pages/ServiceDetails/ProviderProfile';
 import ShareRecommendation from './pages/ShareRecommendation/ShareRecommendation';
 import UserRecommendations from './pages/UserRecommendations/UserRecommendations';
+import CommunityProfile from './pages/CommunityProfile/CommunityProfile';
 import './styles/global.css';
 import './App.css';
 
@@ -54,7 +55,7 @@ const AppWrapper = () => {
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/financial-services" element={<ProtectedRoute><FinancialServices /></ProtectedRoute>} />
           <Route path="/auto-services" element={<ProtectedRoute><AutoServices /></ProtectedRoute>} />
-          <Route path="/repair-services" element={<ProtectedRoute><RepairServices /></ProtectedRoute>} />
+          <Route path="/repair-services" element={<ProtectedRoute><ApplianceServices /></ProtectedRoute>} />
           <Route path="/cleaning-services" element={<ProtectedRoute><CleaningServices /></ProtectedRoute>} />
           <Route path="/utilities" element={<ProtectedRoute><UtilitiesServices /></ProtectedRoute>} />
           <Route path="/renovation-services" element={<ProtectedRoute><RepairServices /></ProtectedRoute>} />
@@ -65,6 +66,7 @@ const AppWrapper = () => {
           <Route path="/provider/:id" element={<ProtectedRoute><ProviderProfile /></ProtectedRoute>} />
           <Route path="/share-recommendation" element={<ProtectedRoute><ShareRecommendation /></ProtectedRoute>} />
           <Route path="/user/:id/recommendations" element={<ProtectedRoute><UserRecommendations /></ProtectedRoute>} />
+          <Route path="/community/:communityId" element={<ProtectedRoute><CommunityProfile /></ProtectedRoute>} />
         </Routes>
       </main>
     </div>

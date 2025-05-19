@@ -109,6 +109,108 @@ const getUserCommunities = async (userId) => {
     }
 };
 
+// const getCommunityDetails = async (communityId, currentUserId) => {
+//   try {
+//     const communityQuery = `
+//         SELECT
+//             c.id,
+//             c.name,
+//             c.description,
+//             c.created_by,
+//             c.created_at,
+//             u.name as creator_name,
+//             (SELECT COUNT(*) FROM community_memberships cm_count WHERE cm_count.community_id = c.id AND cm_count.status = 'approved') as member_count
+//         FROM communities c
+//         JOIN users u ON c.created_by = u.id
+//         WHERE c.id = $1`;
+//     const communityRes = await pool.query(communityQuery, [communityId]);
+
+//     if (communityRes.rows.length === 0) {
+//       throw new Error('Community not found');
+//     }
+//     const community = communityRes.rows[0];
+//     community.member_count = parseInt(community.member_count, 10) || 0;
+//     community.recommendation_count = 0;
+//     community.isOwner = false;
+//     community.currentUserStatus = 'none';
+
+//     if (currentUserId) {
+//         community.isOwner = community.created_by === currentUserId;
+//         const membershipRes = await pool.query(
+//             `SELECT status FROM community_memberships WHERE user_id = $1 AND community_id = $2`,
+//             [currentUserId, communityId]
+//         );
+//         if (membershipRes.rows.length > 0) {
+//             community.currentUserStatus = membershipRes.rows[0].status;
+//         }
+//     }
+//     return community;
+//   } catch (error) {
+//     console.error('Error fetching community details:', error.message);
+//     if (error.message === 'Community not found') throw error;
+//     throw new Error('Database error fetching community details');
+//   }
+// };
+
+// const getCommunityDetails = async (communityId, currentUserId) => {
+//   try {
+//     // Updated query to include recommendation_count
+//     const communityQuery = `
+//         SELECT
+//             c.id,
+//             c.name,
+//             c.description,
+//             c.created_by,
+//             c.created_at,
+//             u.name as creator_name,
+//             (SELECT COUNT(*) FROM community_memberships cm_count WHERE cm_count.community_id = c.id AND cm_count.status = 'approved') as member_count,
+//             (SELECT COUNT(*) FROM recommendations rec WHERE rec.community_id = c.id) as recommendation_count
+//         FROM communities c
+//         JOIN users u ON c.created_by = u.id
+//         WHERE c.id = $1`;
+//     const communityRes = await pool.query(communityQuery, [communityId]);
+
+//     if (communityRes.rows.length === 0) {
+//       throw new Error('Community not found');
+//     }
+
+//     const community = communityRes.rows[0];
+
+//     // Parse counts
+//     community.member_count = parseInt(community.member_count, 10) || 0;
+//     community.recommendation_count = parseInt(community.recommendation_count, 10) || 0; // Updated to use fetched count
+
+//     // Initialize current user-specific fields
+//     community.isOwner = false;
+//     community.currentUserStatus = 'none'; // Default status if no currentUserId or user is not related
+
+//     if (currentUserId) {
+//       // Check if the current user is the owner
+//       // Ensure consistent type comparison (e.g., if one is number and other is string from params)
+//       community.isOwner = String(community.created_by) === String(currentUserId);
+
+//       // Check current user's membership status in this community
+//       const membershipRes = await pool.query(
+//         `SELECT status FROM community_memberships WHERE user_id = $1 AND community_id = $2`,
+//         [currentUserId, communityId]
+//       );
+//       if (membershipRes.rows.length > 0) {
+//         community.currentUserStatus = membershipRes.rows[0].status;
+//       }
+//     }
+
+//     return community;
+//   } catch (error) {
+//     console.error('Error fetching community details:', error.message);
+//     if (error.message === 'Community not found') { // Preserve specific error for 404 handling
+//         throw error;
+//     }
+//     throw new Error('Database error fetching community details');
+//   }
+// };
+
+// old version right above
+
 const getCommunityDetails = async (communityId, currentUserId) => {
   try {
     const communityQuery = `
@@ -119,7 +221,8 @@ const getCommunityDetails = async (communityId, currentUserId) => {
             c.created_by,
             c.created_at,
             u.name as creator_name,
-            (SELECT COUNT(*) FROM community_memberships cm_count WHERE cm_count.community_id = c.id AND cm_count.status = 'approved') as member_count
+            (SELECT COUNT(*) FROM community_memberships cm_count WHERE cm_count.community_id = c.id AND cm_count.status = 'approved') as member_count,
+            (SELECT COUNT(DISTINCT cs.service_provider_id) FROM community_shares cs WHERE cs.community_id = c.id) recommendation_count
         FROM communities c
         JOIN users u ON c.created_by = u.id
         WHERE c.id = $1`;
@@ -128,26 +231,32 @@ const getCommunityDetails = async (communityId, currentUserId) => {
     if (communityRes.rows.length === 0) {
       throw new Error('Community not found');
     }
+
     const community = communityRes.rows[0];
+
     community.member_count = parseInt(community.member_count, 10) || 0;
-    community.recommendation_count = 0;
+    community.recommendation_count = parseInt(community.recommendation_count, 10) || 0;
+
     community.isOwner = false;
     community.currentUserStatus = 'none';
 
     if (currentUserId) {
-        community.isOwner = community.created_by === currentUserId;
-        const membershipRes = await pool.query(
-            `SELECT status FROM community_memberships WHERE user_id = $1 AND community_id = $2`,
-            [currentUserId, communityId]
-        );
-        if (membershipRes.rows.length > 0) {
-            community.currentUserStatus = membershipRes.rows[0].status;
-        }
+      community.isOwner = String(community.created_by) === String(currentUserId);
+      const membershipRes = await pool.query(
+        `SELECT status FROM community_memberships WHERE user_id = $1 AND community_id = $2`,
+        [currentUserId, communityId]
+      );
+      if (membershipRes.rows.length > 0) {
+        community.currentUserStatus = membershipRes.rows[0].status;
+      }
     }
+
     return community;
   } catch (error) {
-    console.error('Error fetching community details:', error.message);
-    if (error.message === 'Community not found') throw error;
+    console.error('Error fetching community details:', error.message); // This will log the actual DB error
+    if (error.message === 'Community not found') {
+        throw error;
+    }
     throw new Error('Database error fetching community details');
   }
 };
