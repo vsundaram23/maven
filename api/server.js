@@ -26,7 +26,7 @@ const app = express();
 const corsOptions = {
     origin: function (origin, callback) {
         const allowedOrigins = [
-            "http://localhost:3000",
+            "http://localhost:3001",
             "http://34.214.248.192:8080",
             "https://maven-frontend.onrender.com",
             "https://triedandtrusted.ai", // Add your production domain
