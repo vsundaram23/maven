@@ -17,6 +17,7 @@ const getRecommendationsByUserId = async (req, res) => {
         sp.phone_number,
         sp.tags,
         sp.date_of_recommendation, 
+        sp.recommender_message,
         s.name as service_type,
         c.name as category_name 
       FROM service_providers sp

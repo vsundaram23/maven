@@ -123,7 +123,6 @@
   height: 1.1em;
 }
 
-
 .profile-stats-bar {
   display: flex;
   justify-content: space-around;
@@ -226,7 +225,7 @@
 .profile-my-rec-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start; /* Align items to the top */
+  align-items: flex-start;
   margin-bottom: 0.5rem;
 }
 
@@ -234,11 +233,11 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  flex-grow: 1; /* Allow title to take space */
+  flex-grow: 1;
 }
 
 .profile-my-rec-building-icon {
-  width: 1.75rem; /* Adjusted from my-rec-card-icon */
+  width: 1.75rem;
   height: 1.75rem;
   color: var(--profile-primary-color);
   flex-shrink: 0;
@@ -255,7 +254,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-shrink: 0; /* Prevent shrinking */
+  flex-shrink: 0;
 }
 
 .profile-my-rec-top-rated-badge {
@@ -355,43 +354,49 @@
   font-size: 0.8rem;
   color: var(--profile-text-light);
 }
-.profile-my-rec-personal-rating-text {
-  font-size: 0.9rem;
-  color: var(--profile-text-secondary);
-  margin-bottom: 0.75rem;
-  font-weight: 500;
-}
 
 .profile-my-rec-message {
   font-size: 0.95rem;
   color: var(--profile-text-secondary);
   line-height: 1.6;
-  margin: 0.5rem 0;
+  margin: 0.75rem 0;
   display: flex;
   gap: 0.5rem;
+  background-color: var(--profile-bg-light);
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--profile-border-color);
 }
 .profile-my-rec-message .inline-icon {
-  width: 1.2em; height: 1.2em; flex-shrink: 0; margin-top: 0.15em; color: var(--profile-text-light);
+  width: 1.2em; 
+  height: 1.2em; 
+  flex-shrink: 0; 
+  margin-top: 0.15em; 
+  color: var(--profile-text-light);
 }
 
 .profile-my-rec-tag-container {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  align-items: center;
   margin: 0.75rem 0;
+  align-items: center;
 }
+
 .profile-my-rec-tag-badge {
-  background-color: #E0E7FF; /* Lighter indigo */
-  color: #3730A3; /* Indigo */
-  padding: 0.25rem 0.6rem;
-  border-radius: 9999px;
+  background-color: #edf2f7;
+  color: #2b6cb0;
   font-size: 0.75rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 9999px;
   font-weight: 500;
+  white-space: nowrap;
 }
+
 .profile-my-rec-add-tag-button {
+  margin-left: 8px;
   padding: 0;
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1;
   background-color: transparent;
   border: 1px solid var(--profile-border-color);
@@ -401,24 +406,24 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 22px;
-  width: 22px;
-  transition: all 0.2s ease;
+  height: 26px;
+  width: 26px;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 .profile-my-rec-add-tag-button:hover {
-  background-color: var(--profile-bg-light);
-  color: var(--profile-text-primary);
-  border-color: var(--profile-secondary-color);
+  background-color: #eef2ff;
+  color: #3730a3;
+  border-color: #c7d2fe;
 }
+
 .profile-my-rec-no-tags-text {
     font-size: 0.8rem;
     color: var(--profile-text-light);
     font-style: italic;
 }
 
-
 .profile-my-rec-footer {
-  margin-top: auto; /* Pushes footer to bottom */
+  margin-top: auto;
   padding-top: 1rem;
   border-top: 1px solid var(--profile-border-color);
   display: flex;
@@ -457,7 +462,6 @@
   width: 1.1em;
   height: 1.1em;
 }
-
 
 .profile-loading-container {
   display: flex;
@@ -501,7 +505,6 @@
     border-radius: 0.5rem;
     border: 1px dashed var(--profile-border-color);
 }
-
 
 @keyframes spin {
   0% { transform: rotate(0deg); }
@@ -563,7 +566,7 @@
     justify-content: space-between;
   }
   .profile-edit-btn, .profile-logout-btn-header {
-    flex-grow: 1; /* Make buttons take available space */
+    flex-grow: 1;
     justify-content: center;
   }
   .profile-stats-bar {
@@ -587,7 +590,6 @@
     grid-template-columns: 1fr;
   }
 }
-
 
 
 /* working 5/16 (prev version) 
