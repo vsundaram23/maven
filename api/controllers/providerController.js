@@ -62,20 +62,35 @@ const getVisibleProvidersBaseQuery = (currentUserId) => {
 };
 
 const getAllVisibleProviders = async (req, res) => {
-    const currentUserId = req.query.user_id;
-    if (!currentUserId) {
+    const clerkUserId = req.query.user_id;
+    const userEmail = req.query.email;
+
+    if (!clerkUserId || !userEmail) {
         return res.status(400).json({
             success: false,
-            message: "User ID is required to fetch visible providers.",
+            message:
+                "User ID and email are required to fetch visible providers.",
         });
     }
+
     try {
+        // Convert Clerk ID to internal user ID
+        const internalUserId = await userService.getOrCreateUser({
+            id: clerkUserId,
+            emailAddresses: [{ emailAddress: userEmail }],
+            firstName: req.query.firstName || "",
+            lastName: req.query.lastName || "",
+            phoneNumbers: req.query.phoneNumber
+                ? [{ phoneNumber: req.query.phoneNumber }]
+                : [],
+        });
+
         const { query: baseQuery, queryParams } =
-            getVisibleProvidersBaseQuery(currentUserId);
+            getVisibleProvidersBaseQuery(internalUserId);
         const finalQuery = `
-      SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
-      ORDER BY VisibleProvidersCTE.business_name;
-    `;
+            SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
+            ORDER BY VisibleProvidersCTE.business_name;
+        `;
         const result = await pool.query(finalQuery, queryParams);
         res.json({
             success: true,
@@ -86,6 +101,7 @@ const getAllVisibleProviders = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error fetching visible providers",
+            error: err.message,
         });
     }
 };
@@ -129,78 +145,110 @@ const getProviderCount = async (req, res) => {
 
 const getProviderById = async (req, res) => {
     const { id } = req.params;
-    const currentUserId = req.query.user_id;
-    if (!currentUserId) {
+    const clerkUserId = req.query.user_id;
+    const userEmail = req.query.email;
+
+    if (!clerkUserId || !userEmail) {
         return res.status(400).json({
             success: false,
-            message: "User ID is required to fetch provider details.",
+            message:
+                "User ID and email are required to fetch provider details.",
         });
     }
+
     try {
+        // Convert Clerk ID to internal user ID
+        const internalUserId = await userService.getOrCreateUser({
+            id: clerkUserId,
+            emailAddresses: [{ emailAddress: userEmail }],
+            firstName: req.query.firstName || "",
+            lastName: req.query.lastName || "",
+            phoneNumbers: req.query.phoneNumber
+                ? [{ phoneNumber: req.query.phoneNumber }]
+                : [],
+        });
+
         const {
             query: baseVisibilityQuery,
             queryParams: baseVisibilityParams,
-        } = getVisibleProvidersBaseQuery(currentUserId);
+        } = getVisibleProvidersBaseQuery(internalUserId);
+
         const providerIdParamIndex = baseVisibilityParams.length + 1;
         const finalQuery = `
-      SELECT * FROM (
-        ${baseVisibilityQuery}
-      ) AS VisibleProvidersCTE
-      WHERE VisibleProvidersCTE.id = $${providerIdParamIndex};
-    `;
+            SELECT * FROM (${baseVisibilityQuery}) AS VisibleProvidersCTE
+            WHERE VisibleProvidersCTE.id = $${providerIdParamIndex};
+        `;
+
         const result = await pool.query(finalQuery, [
             ...baseVisibilityParams,
             id,
         ]);
+
         if (result.rows.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: "Provider not found or not accessible",
             });
         }
+
         res.json({ success: true, provider: result.rows[0] });
     } catch (err) {
         console.error("Database error in getProviderById:", err);
         res.status(500).json({
             success: false,
             message: "Error fetching provider",
+            error: err.message,
         });
     }
 };
 
 const getRecommendationsByTargetUser = async (req, res) => {
-    const targetUserEmail = req.query.email;
-    const currentUserId = req.query.current_user_id;
+    const targetUserEmail = req.query.target_email;
+    const clerkUserId = req.query.user_id;
+    const userEmail = req.query.email;
 
-    if (!targetUserEmail || !currentUserId) {
+    if (!targetUserEmail || !clerkUserId || !userEmail) {
         return res.status(400).json({
             success: false,
-            message: "Target email and current user ID are required.",
+            message: "Target email, user ID, and email are required.",
         });
     }
+
     try {
+        // Convert Clerk ID to internal user ID
+        const internalUserId = await userService.getOrCreateUser({
+            id: clerkUserId,
+            emailAddresses: [{ emailAddress: userEmail }],
+            firstName: req.query.firstName || "",
+            lastName: req.query.lastName || "",
+            phoneNumbers: req.query.phoneNumber
+                ? [{ phoneNumber: req.query.phoneNumber }]
+                : [],
+        });
+
         const targetUserRes = await pool.query(
             "SELECT id FROM users WHERE email = $1",
             [targetUserEmail]
         );
+
         if (targetUserRes.rows.length === 0) {
-            return res
-                .status(404)
-                .json({ success: false, message: "Target user not found." });
+            return res.status(404).json({
+                success: false,
+                message: "Target user not found.",
+            });
         }
+
         const targetUserId = targetUserRes.rows[0].id;
-
         const { query: baseQuery, queryParams: baseParams } =
-            getVisibleProvidersBaseQuery(currentUserId);
-        const targetUserIdParamIndex = baseParams.length + 1;
+            getVisibleProvidersBaseQuery(internalUserId);
 
+        const targetUserIdParamIndex = baseParams.length + 1;
         const finalQuery = `
-      SELECT * FROM (
-        ${baseQuery}
-      ) AS VisibleProvidersCTE
-      WHERE VisibleProvidersCTE.recommender_user_id = $${targetUserIdParamIndex}
-      ORDER BY VisibleProvidersCTE.date_of_recommendation DESC;
-    `;
+            SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
+            WHERE VisibleProvidersCTE.recommender_user_id = $${targetUserIdParamIndex}
+            ORDER BY VisibleProvidersCTE.date_of_recommendation DESC;
+        `;
+
         const result = await pool.query(finalQuery, [
             ...baseParams,
             targetUserId,
@@ -209,11 +257,12 @@ const getRecommendationsByTargetUser = async (req, res) => {
     } catch (error) {
         console.error(
             "Database error in getRecommendationsByTargetUser:",
-            error.message
+            error
         );
         res.status(500).json({
             success: false,
-            message: `Failed to fetch user recommendations: ${error.message}`,
+            message: "Failed to fetch user recommendations",
+            error: error.message,
         });
     }
 };
