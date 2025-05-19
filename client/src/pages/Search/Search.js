@@ -4,8 +4,8 @@ import { FaStar, FaPhone, FaEnvelope, FaBullhorn, FaPaperPlane, FaEye } from 're
 import QuoteModal from '../../components/QuoteModal/QuoteModal';
 import './Search.css';
 
-// const API_URL = 'https://api.seanag-recommendations.org:8080';
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = 'http://localhost:3000';
 
 const StarRatingDisplay = ({ rating }) => {
   const numRating = parseFloat(rating) || 0;
