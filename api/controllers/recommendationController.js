@@ -251,117 +251,244 @@ const getRecommendationById = async (req, res) => {
 };
 
 const updateRecommendation = async (req, res) => {
+  const serviceProviderId = req.params.id;
+  const clerkIdFromQuery = req.query.user_id; // This is the Clerk string ID, e.g., "user_..."
+  const userEmailFromQuery = req.query.email; // Email of the user making the request
+
   const {
     business_name,
-    description,          
-    category, 
-    subcategory, 
-    email,
     phone_number,
-    tags, // These tags will update service_providers.tags directly
-    price_range,
-    service_scope,
-    city,
-    state,
-    zip_code,
+    tags,
+    rating,
     website,
-    provider_message,
     provider_contact_name,
-    recommender_message,
-    visibility 
+    publish_scope,
+    trust_circle_ids,
+    recommender_message
   } = req.body;
+
+  if (!clerkIdFromQuery || !userEmailFromQuery) {
+    return res.status(401).json({ success: false, message: "User authentication details (ID and email) required." });
+  }
 
   let client;
   try {
     client = await pool.connect();
     await client.query('BEGIN');
 
-    let actualCategoryIdToUpdate = null;
-    if (category) {
-        const categoryResult = await client.query('SELECT service_id FROM service_categories WHERE name = $1', [category]);
-        if (categoryResult.rows.length === 0) {
-            await client.query('ROLLBACK');
-            return res.status(400).json({ success: false, message: `Category '${category}' not found for update.`});
-        }
-        actualCategoryIdToUpdate = categoryResult.rows[0].service_id; 
+    // Step 1: Look up the internal UUID for the user making the edit.
+    // We'll use userEmailFromQuery as it's consistent with createRecommendation's user lookup.
+    // Ensure your 'users' table has an 'email' column and an 'id' (UUID) column.
+    const userLookupResult = await client.query('SELECT id FROM users WHERE email = $1', [userEmailFromQuery]);
+
+    if (userLookupResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      // It's possible the user is authenticated with Clerk but doesn't have a corresponding entry in your local 'users' table.
+      // Or, the email passed doesn't match any user.
+      return res.status(404).json({ success: false, message: "Authenticated user profile not found in the local system." });
+    }
+    const editorUserUuid = userLookupResult.rows[0].id; // This is the internal UUID of the editor
+
+    // Step 2: Check if the recommendation (service_provider) exists
+    const providerCheck = await client.query('SELECT id FROM service_providers WHERE id = $1', [serviceProviderId]);
+    if (providerCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Recommendation not found.' });
     }
 
-    let actualServiceIdToUpdate = null;
-    if (subcategory && actualCategoryIdToUpdate) {
-        const serviceResult = await client.query('SELECT service_id FROM services WHERE name = $1 AND category_id = $2', [subcategory, actualCategoryIdToUpdate]);
-        if (serviceResult.rows.length === 0) {
-            await client.query('ROLLBACK');
-            return res.status(400).json({ success: false, message: `Service '${subcategory}' in category '${category}' not found for update.`});
-        }
-        actualServiceIdToUpdate = serviceResult.rows[0].service_id;
+    let visibility_status_to_update;
+    if (typeof publish_scope === 'string') {
+        if (publish_scope === 'Public') visibility_status_to_update = 'public';
+        else if (publish_scope === 'Full Trust Circle' || publish_scope === 'Specific Trust Circles') visibility_status_to_update = 'connections';
+        else visibility_status_to_update = undefined;
+    } else {
+        visibility_status_to_update = undefined;
     }
 
-    const updateSQL = `
+    const serviceProviderUpdateQuery = `
       UPDATE service_providers
       SET
         business_name        = COALESCE($1, business_name),
-        description           = COALESCE($2, description),
-        category_id           = COALESCE($3, category_id), 
-        service_id            = COALESCE($4, service_id), 
-        email                 = COALESCE($5, email),
-        phone_number          = COALESCE($6, phone_number),
-        tags                  = COALESCE($7, tags), 
-        price_range           = COALESCE($8, price_range),
-        service_scope         = COALESCE($9, service_scope),
-        city                  = COALESCE($10, city),
-        state                 = COALESCE($11, state),
-        zip_code              = COALESCE($12, zip_code),
-        website               = COALESCE($13, website),
-        provider_message      = COALESCE($14, provider_message),
-        business_contact      = COALESCE($15, business_contact), 
-        recommender_message   = COALESCE($16, recommender_message),
-        visibility            = COALESCE($17, visibility),
-        updated_at            = CURRENT_TIMESTAMP,
-        submitted_category_name = CASE WHEN $3 IS NOT NULL AND $4 IS NOT NULL THEN NULL ELSE submitted_category_name END, 
-        submitted_service_name  = CASE WHEN $3 IS NOT NULL AND $4 IS NOT NULL THEN NULL ELSE submitted_service_name END
-      WHERE id = $18
+        phone_number         = COALESCE($2, phone_number),
+        tags                 = COALESCE($3, tags),
+        website              = COALESCE($4, website),
+        business_contact     = COALESCE($5, business_contact),
+        recommender_message  = COALESCE($6, recommender_message),
+        visibility           = COALESCE($7, visibility),
+        updated_at           = NOW()
+      WHERE id = $8
       RETURNING *;
     `;
-
-    const values = [
-      business_name,
-      toNull(description),
-      actualCategoryIdToUpdate, 
-      actualServiceIdToUpdate,  
-      toNull(email),
-      toNull(phone_number),
-      tags || [], // Directly update service_providers.tags
-      toNull(price_range),
-      toNull(service_scope),
-      toNull(city),
-      toNull(state),
-      toNull(zip_code),
-      toNull(website),
-      toNull(provider_message),
-      toNull(provider_contact_name), 
-      toNull(recommender_message),
-      toNull(visibility),
-      req.params.id
+    const spValues = [
+      toNull(business_name), toNull(phone_number), tags, toNull(website),
+      toNull(provider_contact_name), toNull(recommender_message),
+      visibility_status_to_update, serviceProviderId
     ];
+    const { rows: spRows } = await client.query(serviceProviderUpdateQuery, spValues);
+    const updatedServiceProvider = spRows[0];
 
-    const { rows } = await client.query(updateSQL, values);
-    if (rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Recommendation not found for update' });
+    let updatedReview;
+    // Step 3: Use editorUserUuid (the UUID) when updating/fetching reviews
+    if (rating !== undefined || (recommender_message !== undefined && recommender_message !== null)) {
+        const reviewUpdateQuery = `
+            UPDATE reviews SET rating = COALESCE($1, rating), content = COALESCE($2, content), updated_at = NOW()
+            WHERE provider_id = $3 AND user_id = $4 RETURNING *;
+        `;
+        // Use editorUserUuid as $4 for reviews.user_id
+        const { rows: reviewRows } = await client.query(reviewUpdateQuery, [rating, recommender_message, serviceProviderId, editorUserUuid]);
+        if (reviewRows.length > 0) updatedReview = reviewRows[0];
     }
+
+    if (!updatedReview) {
+        // Use editorUserUuid as $2 for reviews.user_id
+        const reviewFetch = await client.query('SELECT * FROM reviews WHERE provider_id = $1 AND user_id = $2', [serviceProviderId, editorUserUuid]);
+        if (reviewFetch.rows.length > 0) updatedReview = reviewFetch.rows[0];
+        else {
+             await client.query('ROLLBACK');
+             return res.status(404).json({ success: false, message: 'Associated review by the current editor not found for this recommendation. An editor must have an existing review for the provider to update it.' });
+        }
+    }
+
+    // Step 4: Use editorUserUuid (the UUID) for community shares
+    if (typeof publish_scope === 'string') {
+        await client.query('DELETE FROM community_shares WHERE service_provider_id = $1', [serviceProviderId]);
+        if (publish_scope === 'Specific Trust Circles' && trust_circle_ids && trust_circle_ids.length > 0) {
+            for (const communityId of trust_circle_ids) {
+                await client.query(
+                    'INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, created_at) VALUES ($1, $2, $3, $4, NOW())',
+                    // Use editorUserUuid as $4 for community_shares.shared_by_user_id
+                    [uuidv4(), serviceProviderId, communityId, editorUserUuid]
+                );
+            }
+        }
+    }
+
     await client.query('COMMIT');
-    res.json(rows[0]);
+    res.json({ success: true, updatedServiceProvider, updatedReview });
+
   } catch (err) {
     if (client) await client.query('ROLLBACK');
-    console.error('🛑 updateRecommendation error:', err);
-    res.status(500).json({
-      error:  'Server error updating recommendation',
-      detail: err.message
-    });
+    console.error('🛑 updateRecommendation error:', err.message, err.stack);
+    // Check if the error is the UUID syntax error to give a more specific hint if it persists
+    if (err.message && err.message.includes("invalid input syntax for type uuid")) {
+        console.error("Hint: A non-UUID value (likely a Clerk ID string) might still be incorrectly used where a database UUID is expected.");
+    }
+    res.status(500).json({ success: false, error: 'Server error updating recommendation', detail: err.message });
   } finally {
     if (client) client.release();
   }
 };
+
+// const updateRecommendation = async (req, res) => {
+//   const serviceProviderId = req.params.id;
+//   const clerkUserId = req.query.user_id;
+
+//   const {
+//     business_name, 
+//     phone_number, 
+//     tags, 
+//     rating, 
+//     website,
+//     provider_contact_name, 
+//     publish_scope, 
+//     trust_circle_ids,
+//     recommender_message
+//   } = req.body;
+
+//   if (!clerkUserId) {
+//     return res.status(401).json({ success: false, message: "User authentication required." });
+//   }
+
+//   let client;
+//   try {
+//     client = await pool.connect();
+//     await client.query('BEGIN');
+
+//     const providerCheck = await client.query('SELECT recommended_by FROM service_providers WHERE id = $1', [serviceProviderId]);
+//     if (providerCheck.rows.length === 0) {
+//       await client.query('ROLLBACK');
+//       return res.status(404).json({ success: false, message: 'Recommendation not found.' });
+//     }
+//     const originalRecommenderId = providerCheck.rows[0].recommended_by;
+//     if (originalRecommenderId !== clerkUserId) {
+//       await client.query('ROLLBACK');
+//       return res.status(403).json({ success: false, message: 'You are not authorized to update this recommendation.' });
+//     }
+
+//     let visibility_status_to_update;
+//     if (typeof publish_scope === 'string') {
+//         if (publish_scope === 'Public') visibility_status_to_update = 'public';
+//         else if (publish_scope === 'Full Trust Circle' || publish_scope === 'Specific Trust Circles') visibility_status_to_update = 'connections';
+//         else visibility_status_to_update = undefined;
+//     } else {
+//         visibility_status_to_update = undefined;
+//     }
+
+
+//     const serviceProviderUpdateQuery = `
+//       UPDATE service_providers
+//       SET
+//         business_name        = COALESCE($1, business_name),
+//         phone_number         = COALESCE($2, phone_number),
+//         tags                 = COALESCE($3, tags),
+//         website              = COALESCE($4, website),
+//         business_contact     = COALESCE($5, business_contact),
+//         recommender_message  = COALESCE($6, recommender_message),
+//         visibility           = COALESCE($7, visibility),
+//         updated_at           = NOW()
+//       WHERE id = $8
+//       RETURNING *;
+//     `;
+//     const spValues = [
+//       toNull(business_name), toNull(phone_number), tags, toNull(website),
+//       toNull(provider_contact_name), toNull(recommender_message),
+//       visibility_status_to_update, serviceProviderId
+//     ];
+//     const { rows: spRows } = await client.query(serviceProviderUpdateQuery, spValues);
+//     const updatedServiceProvider = spRows[0];
+
+//     let updatedReview;
+//     if (rating !== undefined || (recommender_message !== undefined && recommender_message !== null)) {
+//         const reviewUpdateQuery = `
+//             UPDATE reviews SET rating = COALESCE($1, rating), content = COALESCE($2, content), updated_at = NOW()
+//             WHERE provider_id = $3 AND user_id = $4 RETURNING *;
+//         `;
+//         const { rows: reviewRows } = await client.query(reviewUpdateQuery, [rating, recommender_message, serviceProviderId, clerkUserId]);
+//         if (reviewRows.length > 0) updatedReview = reviewRows[0];
+//     }
+//     if (!updatedReview) {
+//         const reviewFetch = await client.query('SELECT * FROM reviews WHERE provider_id = $1 AND user_id = $2', [serviceProviderId, clerkUserId]);
+//         if (reviewFetch.rows.length > 0) updatedReview = reviewFetch.rows[0];
+//         else {
+//              await client.query('ROLLBACK');
+//              return res.status(404).json({ success: false, message: 'Associated review not found for this recommendation.' });
+//         }
+//     }
+
+
+//     if (typeof publish_scope === 'string') {
+//         await client.query('DELETE FROM community_shares WHERE service_provider_id = $1', [serviceProviderId]);
+//         if (publish_scope === 'Specific Trust Circles' && trust_circle_ids && trust_circle_ids.length > 0) {
+//             for (const communityId of trust_circle_ids) {
+//                 await client.query(
+//                     'INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, created_at) VALUES ($1, $2, $3, $4, NOW())',
+//                     [uuidv4(), serviceProviderId, communityId, clerkUserId]
+//                 );
+//             }
+//         }
+//     }
+
+//     await client.query('COMMIT');
+//     res.json({ success: true, updatedServiceProvider, updatedReview });
+
+//   } catch (err) {
+//     if (client) await client.query('ROLLBACK');
+//     console.error('🛑 updateRecommendation error:', err.message, err.stack);
+//     res.status(500).json({ success: false, error: 'Server error updating recommendation', detail: err.message });
+//   } finally {
+//     if (client) client.release();
+//   }
+// };
 
 const deleteRecommendation = async (req, res) => {
   try {
