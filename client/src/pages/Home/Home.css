@@ -336,15 +336,19 @@ body {
   .hero-container {
     padding: 12vh 1rem 6vh;
   }
-  .location-input-wrapper {
-    padding: 0 0.5rem; /* Reduce padding a bit on mobile */
-    font-size: 0.8rem;
-  }
   .main-search-input {
     font-size: 0.9rem;
+    min-width: 0;
+  }
+  .location-input-wrapper {
+    padding: 0 0.5rem; 
+    font-size: 0.8rem;
+    flex-shrink: 1;
+    min-width: 0;
+    white-space: normal;
   }
   .search-submit-button {
-    padding: 0 1rem; /* Adjust padding for search text/icon */
+    padding: 0 1rem; 
     font-size: 0.9rem;
   }
 
@@ -380,18 +384,18 @@ body {
 }
 
 @media (max-width: 480px) {
+ .main-search-input {
+    padding: 0 0.75rem;
+  }
  .location-input-wrapper {
     font-size: 0.75rem; 
     padding: 0 0.3rem;
   }
   .location-icon, .location-lock-icon {
-    display: none; /* Hide icons on very small screens to save space */
+    display: none; 
   }
   .location-text {
-    margin-right: 0; /* No margin if icons are hidden */
-  }
-  .main-search-input {
-    padding: 0 0.75rem;
+    margin-right: 0; 
   }
   .search-submit-button {
     padding: 0 0.75rem;
