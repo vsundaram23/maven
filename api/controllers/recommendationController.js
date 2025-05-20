@@ -311,8 +311,8 @@ const updateRecommendation = async (req, res) => {
         business_name        = COALESCE($1, business_name),
         phone_number         = COALESCE($2, phone_number),
         tags                 = COALESCE($3, tags),
-        website              = COALESCE($4, website),
-        business_contact     = COALESCE($5, business_contact),
+        website              = COALESCE($4, website),          -- Updates the 'website' column
+        business_contact     = COALESCE($5, business_contact), -- Updates the 'business_contact' column
         recommender_message  = COALESCE($6, recommender_message),
         visibility           = COALESCE($7, visibility),
         updated_at           = NOW()
@@ -320,9 +320,14 @@ const updateRecommendation = async (req, res) => {
       RETURNING *;
     `;
     const spValues = [
-      toNull(business_name), toNull(phone_number), tags, toNull(website),
-      toNull(provider_contact_name), toNull(recommender_message),
-      visibility_status_to_update, serviceProviderId
+      toNull(business_name),         // $1 for business_name
+      toNull(phone_number),         // $2 for phone_number
+      tags,                         // $3 for tags
+      toNull(website),              // $4 for website (this comes from req.body.website)
+      toNull(provider_contact_name),// $5 for business_contact (this comes from req.body.provider_contact_name)
+      toNull(recommender_message),  // $6 for recommender_message
+      visibility_status_to_update,  // $7 for visibility
+      serviceProviderId             // $8 for id
     ];
     const { rows: spRows } = await client.query(serviceProviderUpdateQuery, spValues);
     const updatedServiceProvider = spRows[0];

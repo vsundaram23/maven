@@ -54,7 +54,7 @@ const getCurrentUserRecommendations = async (req, res) => {
             `
             SELECT
                 sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
-                sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.recommender_message,
+                sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.website, sp.business_contact, sp.recommender_message,
                 s.name as service_type, c.name as category_name
             FROM service_providers sp
             LEFT JOIN services s ON sp.service_id = s.service_id

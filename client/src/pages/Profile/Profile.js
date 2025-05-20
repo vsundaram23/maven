@@ -182,8 +182,7 @@ const EditRecommendationModal = ({
                             <div className="profile-edit-modal-form-group span-2 rating-group"><label>Your Rating *</label><div className="profile-edit-modal-star-rating">{[1, 2, 3, 4, 5].map((n) => <EditModalStarDisplay key={n} active={n <= (hoverRating || rating)} onClick={() => handleStarClick(n)} onMouseEnter={() => setHoverRating(n)} onMouseLeave={() => setHoverRating(0)}/>)}</div></div>
                         </div>
                     </section>
-                    <div className={`profile-edit-modal-optional-section-wrapper ${requiredFieldsComplete ? "visible" : ""}`}>
-                        {requiredFieldsComplete && <div className="profile-edit-modal-optional-intro"><SparklesIcon className="intro-icon mini" /> Keep refining... (Optional)</div>}
+                    <div className="profile-edit-modal-optional-section-wrapper visible">
                         <section className="profile-edit-modal-form-section">
                             <h3 className="profile-edit-modal-section-title"><span className="profile-edit-modal-section-number">2</span>Additional Info</h3>
                             <div className="profile-edit-modal-form-grid">
