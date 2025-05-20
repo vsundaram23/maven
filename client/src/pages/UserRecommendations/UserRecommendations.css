@@ -556,6 +556,47 @@ body {
   }
 }
 
+.like-button {
+  background-color: transparent;
+  border: 1px solid #ccc;
+  color: #555;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+.like-button:hover {
+  background-color: #e9e9e9;
+  color: #333;
+}
+
+.like-button.liked {
+  color: #1A365D;
+}
+
+.like-button.liked .fa-thumbs-up {
+  color: #1A365D;
+}
+
+.like-button .fa-thumbs-up {
+  font-size: 1em;
+}
+
+.like-count {
+  font-weight: normal;
+  font-size: 0.9em;
+}
+
+.like-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 /* .user-recommendations-container {
     padding: 120px 1rem 2rem;
     max-width: 960px;

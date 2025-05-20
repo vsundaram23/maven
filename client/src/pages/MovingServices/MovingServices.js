@@ -6,13 +6,13 @@ import {
     FaEnvelope,
     FaUsers,
     FaPlusCircle,
+    FaThumbsUp,
 } from "react-icons/fa";
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import { useUser } from "@clerk/clerk-react";
 import "./MovingServices.css";
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = "http://localhost:5000";
 
 const StarRating = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;
@@ -25,7 +25,7 @@ const StarRating = ({ rating }) => {
             {[...Array(fullStars)].map((_, i) => (
                 <FaStar key={`full-${i}`} className="filled" />
             ))}
-            {hasHalf && <FaStar key="half-star" className="half" />}
+            {hasHalf && <FaStar key={`half-${Date.now()}-sr`} className="half" />}
             {[...Array(emptyStars)].map((_, i) => (
                 <FaStar key={`empty-${i}`} className="empty" />
             ))}
@@ -168,13 +168,13 @@ const ProviderProfileModal = ({
 
     const formattedDate = provider.date_of_recommendation
         ? new Date(provider.date_of_recommendation).toLocaleDateString(
-              "en-US",
-              {
-                  year: "2-digit",
-                  month: "numeric",
-                  day: "numeric",
-              }
-          )
+            "en-US",
+            {
+                year: "2-digit",
+                month: "numeric",
+                day: "numeric",
+            }
+        )
         : "Not provided";
 
     const recommenders = new Set();
@@ -256,6 +256,7 @@ const ProviderProfileModal = ({
                                     onClick={() => {
                                         setSelectedProvider(provider);
                                         setIsReviewModalOpen(true);
+                                        onClose();
                                     }}
                                 >
                                     +
@@ -308,7 +309,10 @@ const ProviderProfileModal = ({
 
 const MovingServices = () => {
     const { isLoaded, isSignedIn, user } = useUser();
+    const navigate = useNavigate();
+
     const [providers, setProviders] = useState([]);
+    const [rawProviders, setRawProviders] = useState([]);
     const [reviewMap, setReviewMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -318,11 +322,18 @@ const MovingServices = () => {
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
     const [sortOption, setSortOption] = useState("recommended");
     const [currentUserId, setCurrentUserId] = useState(null);
+    const [currentUserEmail, setCurrentUserEmail] = useState(null);
     const [clickedRecommender, setClickedRecommender] = useState(null);
     const [showFeatureComingModal, setShowFeatureComingModal] = useState(false);
     const [dropdownOpenForId, setDropdownOpenForId] = useState(null);
     const [showLinkCopied, setShowLinkCopied] = useState(false);
-    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isLoaded && isSignedIn && user) {
+            setCurrentUserId(user.id);
+            setCurrentUserEmail(user.primaryEmailAddress?.emailAddress);
+        }
+    }, [isLoaded, isSignedIn, user]);
 
     useEffect(() => {
         if (!isLoaded) return;
@@ -331,6 +342,7 @@ const MovingServices = () => {
             setError("Please sign in to view moving service providers.");
             setLoading(false);
             setProviders([]);
+            setRawProviders([]);
             return;
         }
 
@@ -367,13 +379,14 @@ const MovingServices = () => {
                 if (!data.success) {
                     throw new Error(
                         data.message ||
-                            "Failed to fetch moving providers successfully"
+                        "Failed to fetch moving providers successfully"
                     );
                 }
 
                 let fetchedProviders = data.providers || [];
                 const statsMap = {};
                 const allReviewsMap = {};
+                const userLikesMap = {};
 
                 if (fetchedProviders.length > 0) {
                     await Promise.all(
@@ -386,14 +399,9 @@ const MovingServices = () => {
                                     const statsData = await statsRes.json();
                                     statsMap[provider.id] = {
                                         average_rating:
-                                            parseFloat(
-                                                statsData.average_rating
-                                            ) || 0,
+                                            parseFloat(statsData.average_rating) || 0,
                                         total_reviews:
-                                            parseInt(
-                                                statsData.total_reviews,
-                                                10
-                                            ) || 0,
+                                            parseInt(statsData.total_reviews, 10) || 0,
                                     };
                                 } else {
                                     statsMap[provider.id] = {
@@ -402,6 +410,7 @@ const MovingServices = () => {
                                     };
                                 }
                             } catch (err) {
+                                console.error(`Error fetching stats for provider ${provider.id}:`, err);
                                 statsMap[provider.id] = {
                                     average_rating: 0,
                                     total_reviews: 0,
@@ -412,13 +421,27 @@ const MovingServices = () => {
                                     `${API_URL}/api/reviews/${provider.id}`
                                 );
                                 if (reviewsRes.ok) {
-                                    allReviewsMap[provider.id] =
-                                        await reviewsRes.json();
+                                    allReviewsMap[provider.id] = await reviewsRes.json();
                                 } else {
                                     allReviewsMap[provider.id] = [];
                                 }
                             } catch (err) {
+                                console.error(`Error fetching reviews for provider ${provider.id}:`, err);
                                 allReviewsMap[provider.id] = [];
+                            }
+                            if (currentUserId) {
+                                try {
+                                    const likeStatusRes = await fetch(`${API_URL}/api/providers/${provider.id}/like-status?userId=${currentUserId}`);
+                                    if (likeStatusRes.ok) {
+                                        const likeStatusData = await likeStatusRes.json();
+                                        userLikesMap[provider.id] = likeStatusData.liked;
+                                    } else {
+                                        userLikesMap[provider.id] = false;
+                                    }
+                                } catch (err) {
+                                    console.error(`Error fetching like status for provider ${provider.id}:`, err);
+                                    userLikesMap[provider.id] = false;
+                                }
                             }
                         })
                     );
@@ -428,11 +451,12 @@ const MovingServices = () => {
                 const enrichedProviders = fetchedProviders.map((p, idx) => ({
                     ...p,
                     originalIndex: idx,
-                    average_rating:
-                        statsMap[p.id]?.average_rating || p.average_rating || 0,
-                    total_reviews:
-                        statsMap[p.id]?.total_reviews || p.total_reviews || 0,
+                    average_rating: statsMap[p.id]?.average_rating || p.average_rating || 0,
+                    total_reviews: statsMap[p.id]?.total_reviews || p.total_reviews || 0,
+                    currentUserLiked: userLikesMap[p.id] || false,
+                    num_likes: p.num_likes || 0,
                 }));
+                setRawProviders(enrichedProviders);
 
                 const getBand = (rating) => {
                     if (rating >= 4) return 0;
@@ -449,9 +473,7 @@ const MovingServices = () => {
                         .sort((a, b) => {
                             if (b.average_rating !== a.average_rating)
                                 return b.average_rating - a.average_rating;
-                            return (
-                                (b.total_reviews || 0) - (a.total_reviews || 0)
-                            );
+                            return (b.total_reviews || 0) - (a.total_reviews || 0);
                         });
                 } else {
                     sortedProviders = [...enrichedProviders].sort((a, b) => {
@@ -459,18 +481,14 @@ const MovingServices = () => {
                         const bandB = getBand(b.average_rating);
                         if (bandA !== bandB) return bandA - bandB;
 
-                        const scoreA =
-                            (a.average_rating || 0) * (a.total_reviews || 0);
-                        const scoreB =
-                            (b.average_rating || 0) * (b.total_reviews || 0);
+                        const scoreA = (a.average_rating || 0) * (a.total_reviews || 0);
+                        const scoreB = (b.average_rating || 0) * (b.total_reviews || 0);
                         if (scoreB !== scoreA) return scoreB - scoreA;
 
                         if (b.average_rating !== a.average_rating)
                             return b.average_rating - a.average_rating;
                         if ((b.total_reviews || 0) !== (a.total_reviews || 0))
-                            return (
-                                (b.total_reviews || 0) - (a.total_reviews || 0)
-                            );
+                            return (b.total_reviews || 0) - (a.total_reviews || 0);
 
                         return (a.originalIndex || 0) - (b.originalIndex || 0);
                     });
@@ -479,16 +497,24 @@ const MovingServices = () => {
             } catch (err) {
                 setError(err.message || "Failed to fetch providers");
                 setProviders([]);
+                setRawProviders([]);
             } finally {
                 setLoading(false);
             }
         };
 
-        getProviders();
-    }, [sortOption, isLoaded, isSignedIn, user]);
+        if (currentUserId) {
+            getProviders();
+        } else if (isLoaded && !isSignedIn) {
+            setError("Please sign in to view moving service providers.");
+            setLoading(false);
+            setProviders([]);
+            setRawProviders([]);
+        }
+    }, [sortOption, isLoaded, isSignedIn, user, currentUserId, currentUserEmail]);
 
     const handleReviewSubmit = async (reviewData) => {
-        if (!isSignedIn || !selectedProvider) {
+        if (!isSignedIn || !selectedProvider || !currentUserId || !currentUserEmail) {
             alert("Please sign in to submit a review");
             return;
         }
@@ -500,7 +526,8 @@ const MovingServices = () => {
                 body: JSON.stringify({
                     provider_id: selectedProvider.id,
                     provider_email: selectedProvider.email || "",
-                    email: user.primaryEmailAddress?.emailAddress,
+                    user_id: currentUserId,
+                    email: currentUserEmail,
                     rating: reviewData.rating,
                     content: reviewData.review,
                     tags: reviewData.tags,
@@ -519,8 +546,102 @@ const MovingServices = () => {
         }
     };
 
-    if (loading) return <div className="loading-spinner">Loading...</div>;
-    if (error && providers.length === 0)
+    const handleLike = async (providerId) => {
+        if (!currentUserId || !currentUserEmail) {
+            alert("Please log in to like a recommendation.");
+            return;
+        }
+
+        const providerToUpdate = providers.find(p => p.id === providerId);
+        if (!providerToUpdate) return;
+
+        const isAlreadyLiked = providerToUpdate.currentUserLiked;
+
+        setProviders(prevProviders =>
+            prevProviders.map(provider =>
+                provider.id === providerId
+                    ? {
+                        ...provider,
+                        num_likes: isAlreadyLiked ? (provider.num_likes || 1) - 1 : (provider.num_likes || 0) + 1,
+                        currentUserLiked: !isAlreadyLiked
+                    }
+                    : provider
+            )
+        );
+
+        setRawProviders(prevRawProviders =>
+            prevRawProviders.map(provider =>
+                provider.id === providerId
+                    ? {
+                        ...provider,
+                        num_likes: isAlreadyLiked ? (provider.num_likes || 1) - 1 : (provider.num_likes || 0) + 1,
+                        currentUserLiked: !isAlreadyLiked
+                    }
+                    : provider
+            )
+        );
+
+        try {
+            const response = await fetch(`${API_URL}/api/providers/${providerId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId: currentUserId, userEmail: currentUserEmail })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: "Server error during like action." }));
+                throw new Error(errorData.message || `Failed to like recommendation. Status: ${response.status}`);
+            }
+            const result = await response.json();
+
+            setProviders(prevProviders =>
+                prevProviders.map(provider =>
+                    provider.id === providerId
+                        ? { ...provider, num_likes: result.num_likes, currentUserLiked: result.currentUserLiked }
+                        : provider
+                )
+            );
+            setRawProviders(prevRawProviders =>
+                prevRawProviders.map(provider =>
+                    provider.id === providerId
+                        ? { ...provider, num_likes: result.num_likes, currentUserLiked: result.currentUserLiked }
+                        : provider
+                )
+            );
+
+        } catch (error) {
+            console.error("Error liking recommendation:", error.message);
+            setProviders(prevProviders =>
+                prevProviders.map(provider => {
+                    if (provider.id === providerId) {
+                        return {
+                            ...provider,
+                            num_likes: providerToUpdate.num_likes,
+                            currentUserLiked: isAlreadyLiked
+                        };
+                    }
+                    return provider;
+                })
+            );
+            setRawProviders(prevRawProviders =>
+                prevRawProviders.map(provider => {
+                    if (provider.id === providerId) {
+                        return {
+                            ...provider,
+                            num_likes: providerToUpdate.num_likes,
+                            currentUserLiked: isAlreadyLiked
+                        };
+                    }
+                    return provider;
+                })
+            );
+        }
+    };
+
+    if (loading && providers.length === 0) return <div className="loading-spinner">Loading...</div>;
+    if (error && providers.length === 0 && !loading)
         return <div className="error-message full-width-error">{error}</div>;
 
     return (
@@ -544,8 +665,23 @@ const MovingServices = () => {
                     <h2>No Moving Services Found In Your Network</h2>
                     <p>
                         We couldn't find any moving service recommendations
-                        visible to you right now.
+                        visible to you right now. This might be because:
                     </p>
+                    <ul>
+                        <li>
+                            No public moving recommendations are currently
+                            available.
+                        </li>
+                        <li>
+                            None of your direct connections have shared moving
+                            recommendations with 'connections' visibility.
+                        </li>
+                        <li>
+                            No moving recommendations have been shared into
+                            communities you're a member of.
+                        </li>
+                    </ul>
+                    <p>Try expanding your Trust Circle or check back later!</p>
                     <div className="no-providers-actions">
                         <button
                             onClick={() => navigate("/trustcircles")}
@@ -568,14 +704,12 @@ const MovingServices = () => {
             {providers.length > 0 && (
                 <ul className="provider-list">
                     {providers.map((provider) => {
-                        const currentProviderStats = {
-                            average_rating: provider.average_rating || 0,
-                            total_reviews: provider.total_reviews || 0,
-                        };
                         const currentReviews = reviewMap[provider.id] || [];
                         const displayAvgRating = (
-                            parseFloat(currentProviderStats.average_rating) || 0
+                            parseFloat(provider.average_rating) || 0
                         ).toFixed(1);
+                        const displayTotalReviews =
+                            parseInt(provider.total_reviews, 10) || 0;
 
                         return (
                             <li key={provider.id} className="provider-card">
@@ -585,7 +719,7 @@ const MovingServices = () => {
                                             to={`/provider/${provider.id}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="provider-name-link"
+                                            className="provider-name-link clickable"
                                             onClick={() =>
                                                 localStorage.setItem(
                                                     "selectedProvider",
@@ -598,58 +732,46 @@ const MovingServices = () => {
                                     </h2>
                                     <div className="badge-wrapper-with-menu">
                                         <div className="badge-group">
-                                            {(parseFloat(
-                                                currentProviderStats.average_rating
-                                            ) || 0) >= 4.5 && (
+                                            {(parseFloat(provider.average_rating) || 0) >= 4.5 && (
                                                 <span className="top-rated-badge">
                                                     Top Rated
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="dropdown-wrapper">
-                                            <button
-                                                className="three-dots-button"
-                                                onClick={() =>
-                                                    setDropdownOpenForId(
-                                                        dropdownOpenForId ===
-                                                            provider.id
-                                                            ? null
-                                                            : provider.id
-                                                    )
-                                                }
-                                                title="Options"
-                                            >
-                                                ⋮
-                                            </button>
-                                            {dropdownOpenForId ===
-                                                provider.id && (
-                                                <div className="dropdown-menu">
-                                                    <button
-                                                        className="dropdown-item"
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(
-                                                                `${window.location.origin}/provider/${provider.id}`
-                                                            );
-                                                            setDropdownOpenForId(
-                                                                null
-                                                            );
-                                                            setShowLinkCopied(
-                                                                true
-                                                            );
-                                                            setTimeout(
-                                                                () =>
-                                                                    setShowLinkCopied(
-                                                                        false
-                                                                    ),
-                                                                2000
-                                                            );
-                                                        }}
-                                                    >
-                                                        Share this Rec
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {showLinkCopied && (
+                                        <div className="right-actions">
+                                            <div className="dropdown-wrapper">
+                                                <button
+                                                    className="three-dots-button"
+                                                    onClick={() =>
+                                                        setDropdownOpenForId(
+                                                            dropdownOpenForId === provider.id
+                                                                ? null
+                                                                : provider.id
+                                                        )
+                                                    }
+                                                    title="Options"
+                                                >
+                                                    ⋮
+                                                </button>
+                                                {dropdownOpenForId === provider.id && (
+                                                    <div className="dropdown-menu">
+                                                        <button
+                                                            className="dropdown-item"
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(
+                                                                    `${window.location.origin}/provider/${provider.id}`
+                                                                );
+                                                                setDropdownOpenForId(null);
+                                                                setShowLinkCopied(true);
+                                                                setTimeout(() => setShowLinkCopied(false), 2000);
+                                                            }}
+                                                        >
+                                                            Share this Rec
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {showLinkCopied && dropdownOpenForId !== provider.id &&(
                                                 <div className="toast">
                                                     Link copied!
                                                 </div>
@@ -659,18 +781,9 @@ const MovingServices = () => {
                                 </div>
 
                                 <div className="review-summary">
-                                    <StarRating
-                                        rating={
-                                            parseFloat(
-                                                currentProviderStats.average_rating
-                                            ) || 0
-                                        }
-                                    />
-                                    <span className="review-score">
-                                        {displayAvgRating} (
-                                        {currentProviderStats.total_reviews ||
-                                            0}
-                                        )
+                                    <span className="stars-and-score">
+                                        <StarRating rating={parseFloat(provider.average_rating) || 0} />
+                                        {displayAvgRating} ({displayTotalReviews})
                                     </span>
                                     <button
                                         className="see-all-button"
@@ -681,37 +794,42 @@ const MovingServices = () => {
                                     >
                                         Write a Review
                                     </button>
+                                    <button
+                                        className={`like-button ${provider.currentUserLiked ? 'liked' : ''}`}
+                                        onClick={() => handleLike(provider.id)}
+                                        title={provider.currentUserLiked ? "You liked this" : "Like this recommendation"}
+                                    >
+                                        <FaThumbsUp />
+                                        <span className="like-count">{provider.num_likes || 0}</span>
+                                    </button>
                                 </div>
 
                                 <p className="card-description">
-                                    {provider.description ||
-                                        "No description available"}
+                                    {provider.description || "No description available"}
                                 </p>
 
-                                {Array.isArray(provider.tags) &&
-                                    provider.tags.length > 0 && (
-                                        <div className="tag-container">
-                                            {provider.tags.map((tag, idx) => (
-                                                <span
-                                                    key={`${idx}-${provider.id}`}
-                                                    className="tag-badge"
-                                                >
-                                                    {tag}
-                                                </span>
-                                            ))}
-                                            <button
-                                                className="add-tag-button"
-                                                onClick={() => {
-                                                    setSelectedProvider(
-                                                        provider
-                                                    );
-                                                    setIsReviewModalOpen(true);
-                                                }}
+                                {Array.isArray(provider.tags) && provider.tags.length > 0 && (
+                                    <div className="tag-container">
+                                        {provider.tags.map((tag, idx) => (
+                                            <span
+                                                key={`${idx}-${provider.id}`}
+                                                className="tag-badge"
                                             >
-                                                +
-                                            </button>
-                                        </div>
-                                    )}
+                                                {tag}
+                                            </span>
+                                        ))}
+                                        <button
+                                            className="add-tag-button"
+                                            onClick={() => {
+                                                setSelectedProvider(provider);
+                                                setIsReviewModalOpen(true);
+                                            }}
+                                            aria-label="Add a tag"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                )}
 
                                 {provider.recommender_name && (
                                     <>
@@ -742,17 +860,14 @@ const MovingServices = () => {
                                             )}
                                             {provider.date_of_recommendation && (
                                                 <span className="recommendation-date">
-                                                    {"("}
+                                                    {" ("}
                                                     {new Date(
                                                         provider.date_of_recommendation
-                                                    ).toLocaleDateString(
-                                                        "en-US",
-                                                        {
-                                                            year: "2-digit",
-                                                            month: "numeric",
-                                                            day: "numeric",
-                                                        }
-                                                    )}
+                                                    ).toLocaleDateString("en-US", {
+                                                        year: "2-digit",
+                                                        month: "numeric",
+                                                        day: "numeric",
+                                                    })}
                                                     {")"}
                                                 </span>
                                             )}
@@ -762,15 +877,13 @@ const MovingServices = () => {
                                             [
                                                 ...new Set(
                                                     currentReviews
-                                                        .map((r) => r.user_name)
-                                                        .filter(
-                                                            (name) =>
-                                                                name &&
-                                                                name !==
-                                                                    provider.recommender_name
-                                                        )
+                                                        .map(r => r.user_name)
+                                                        .filter(name => (
+                                                            name &&
+                                                            name !== provider.recommender_name
+                                                        ))
                                                 ),
-                                            ].length > 0 && (
+                                            ].filter(name => name).length > 0 && (
                                                 <div className="recommended-row">
                                                     <span className="recommended-label">
                                                         Also used by:
@@ -779,21 +892,13 @@ const MovingServices = () => {
                                                         {[
                                                             ...new Set(
                                                                 currentReviews
-                                                                    .map(
-                                                                        (r) =>
-                                                                            r.user_name
-                                                                    )
-                                                                    .filter(
-                                                                        (
-                                                                            name
-                                                                        ) =>
-                                                                            name &&
-                                                                            name !==
-                                                                                provider.recommender_name
-                                                                    )
+                                                                    .map(r => r.user_name)
+                                                                    .filter(name => (
+                                                                        name &&
+                                                                        name !== provider.recommender_name
+                                                                    ))
                                                             ),
-                                                        ].join(", ") ||
-                                                            "No additional users yet"}
+                                                        ].filter(name => name).join(", ")}
                                                     </span>
                                                 </div>
                                             )}
@@ -814,14 +919,10 @@ const MovingServices = () => {
                                         onClick={() => {
                                             if (provider.recommender_phone) {
                                                 window.location.href = `sms:${provider.recommender_phone}`;
-                                            } else if (
-                                                provider.recommender_email
-                                            ) {
+                                            } else if (provider.recommender_email) {
                                                 window.location.href = `mailto:${provider.recommender_email}`;
                                             } else {
-                                                alert(
-                                                    "Sorry, contact info for the recommender is not available."
-                                                );
+                                                alert("Sorry, contact info for the recommender is not available.");
                                             }
                                         }}
                                         disabled={
