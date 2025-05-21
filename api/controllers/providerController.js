@@ -1,3 +1,4 @@
+// pseudo working 5/20 [parts of liking are working]
 const pool = require("../config/db.config");
 const userService = require("../services/userService");
 
