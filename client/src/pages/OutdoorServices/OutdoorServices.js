@@ -6,11 +6,12 @@ import {
     FaStar,
     FaUsers,
     FaThumbsUp,
+    FaEye, // Added FaEye
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
-import "./OutdoorServices.css";
+import "./OutdoorServices.css"; // Ensure you have styles for .like-button.liked here
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
 
@@ -222,11 +223,11 @@ const ProviderProfileModal = ({
                 <div className="profile-section">
                     <p>
                         <strong>Description:</strong>{" "}
-                        {provider.description || "N/A"}
+                        {provider.description || provider.recommender_message || "N/A"}
                     </p>
                     <p>
                         <strong>Service Type:</strong>{" "}
-                        {provider.service_type || "N/A"}
+                        {provider.service_type || provider.category || "N/A"}
                     </p>
                     <p>
                         <strong>Date of Recommendation:</strong> {formattedDate}
@@ -254,8 +255,10 @@ const ProviderProfileModal = ({
                                 <button
                                     className="add-tag-button"
                                     onClick={() => {
-                                        setSelectedProvider(provider);
-                                        setIsReviewModalOpen(true);
+                                        if (setSelectedProvider && setIsReviewModalOpen) {
+                                            setSelectedProvider(provider);
+                                            setIsReviewModalOpen(true);
+                                        }
                                         onClose();
                                     }}
                                 >
@@ -398,11 +401,10 @@ const OutdoorServices = () => {
                                         total_reviews: parseInt(statsData.total_reviews, 10) || 0,
                                     };
                                 } else {
-                                    statsMap[provider.id] = { average_rating: 0, total_reviews: 0 };
+                                    statsMap[provider.id] = { average_rating: provider.average_rating || 0, total_reviews: provider.total_reviews || 0 };
                                 }
                             } catch (err) {
-                                console.error(`Error fetching stats for provider ${provider.id}:`, err);
-                                statsMap[provider.id] = { average_rating: 0, total_reviews: 0 };
+                                statsMap[provider.id] = { average_rating: provider.average_rating || 0, total_reviews: provider.total_reviews || 0 };
                             }
                             try {
                                 const reviewsRes = await fetch(`${API_URL}/api/reviews/${provider.id}`);
@@ -412,7 +414,6 @@ const OutdoorServices = () => {
                                     allReviewsMap[provider.id] = [];
                                 }
                             } catch (err) {
-                                console.error(`Error fetching reviews for provider ${provider.id}:`, err);
                                 allReviewsMap[provider.id] = [];
                             }
                         })
@@ -428,6 +429,15 @@ const OutdoorServices = () => {
                     currentUserLiked: p.currentUserLiked || false,
                     num_likes: parseInt(p.num_likes, 10) || 0,
                 }));
+
+                const newInitialUserLikes = new Set();
+                enrichedProviders.forEach(p => {
+                    if (p.currentUserLiked) {
+                        newInitialUserLikes.add(p.id);
+                    }
+                });
+                setLikedRecommendations(newInitialUserLikes);
+                
                 setRawProviders(enrichedProviders);
 
                 const getBand = (rating) => {
@@ -438,9 +448,9 @@ const OutdoorServices = () => {
                     return 4;
                 };
 
-                let sortedProviders;
+                let sortedProvidersList;
                 if (sortOption === "topRated") {
-                    sortedProviders = [...enrichedProviders]
+                    sortedProvidersList = [...enrichedProviders]
                         .filter((p) => p.average_rating >= 4.5)
                         .sort((a, b) => {
                             if (b.average_rating !== a.average_rating)
@@ -448,7 +458,7 @@ const OutdoorServices = () => {
                             return (b.total_reviews || 0) - (a.total_reviews || 0);
                         });
                 } else {
-                    sortedProviders = [...enrichedProviders].sort((a, b) => {
+                    sortedProvidersList = [...enrichedProviders].sort((a, b) => {
                         const bandA = getBand(a.average_rating);
                         const bandB = getBand(b.average_rating);
                         if (bandA !== bandB) return bandA - bandB;
@@ -462,7 +472,7 @@ const OutdoorServices = () => {
                         return (a.originalIndex || 0) - (b.originalIndex || 0);
                     });
                 }
-                setProviders(sortedProviders);
+                setProviders(sortedProvidersList);
             } catch (err) {
                 setError(err.message || "Failed to fetch providers");
                 setProviders([]);
@@ -515,22 +525,18 @@ const OutdoorServices = () => {
 
     const handleLike = async (providerId) => {
         if (!currentUserId || !currentUserEmail) {
-            alert("Please log in to like a recommendation.");
+            alert("Please log in to like/unlike a recommendation.");
             return;
         }
+
         const providerToUpdate = rawProviders.find(p => p.id === providerId);
-        if (!providerToUpdate) return;
-
-        const isAlreadyLikedByClient = likedRecommendations.has(providerId);
-
-        if (isAlreadyLikedByClient && providerToUpdate.currentUserLiked) {
-        } else if (isAlreadyLikedByClient && !providerToUpdate.currentUserLiked) {
-        } else if (!isAlreadyLikedByClient && providerToUpdate.currentUserLiked) {
-            setLikedRecommendations(prevLiked => new Set(prevLiked).add(providerId));
+        if (!providerToUpdate) {
+            console.error("Provider not found for like action:", providerId);
+            return;
         }
 
-        const originalProviders = [...providers];
-        const originalRawProviders = [...rawProviders];
+        const originalRawProviders = JSON.parse(JSON.stringify(rawProviders));
+        const originalProviders = JSON.parse(JSON.stringify(providers));
         const originalLikedRecommendations = new Set(likedRecommendations);
 
         const newCurrentUserLikedState = !providerToUpdate.currentUserLiked;
@@ -545,8 +551,8 @@ const OutdoorServices = () => {
                     : p
             );
 
-        setProviders(optimisticUpdate(providers));
         setRawProviders(optimisticUpdate(rawProviders));
+        setProviders(optimisticUpdate(providers));
 
         if (newCurrentUserLikedState) {
             setLikedRecommendations(prevLiked => new Set(prevLiked).add(providerId));
@@ -566,8 +572,8 @@ const OutdoorServices = () => {
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: "Server error during like action." }));
-                throw new Error(errorData.message || `Failed to like recommendation. Status: ${response.status}`);
+                const errorData = await response.json().catch(() => ({ message: "Server error during like/unlike action." }));
+                throw new Error(errorData.message || `Failed to update like status. Status: ${response.status}`);
             }
             const result = await response.json();
 
@@ -577,9 +583,9 @@ const OutdoorServices = () => {
                         ? { ...p, num_likes: parseInt(result.num_likes, 10) || 0, currentUserLiked: result.currentUserLiked }
                         : p
                 );
-            
-            setProviders(finalUpdate(originalProviders.map(p => p.id === providerId ? {...p, ...result} : p)));
-            setRawProviders(finalUpdate(originalRawProviders.map(p => p.id === providerId ? {...p, ...result} : p)));
+
+            setRawProviders(prevRaw => finalUpdate(prevRaw));
+            setProviders(prevSorted => finalUpdate(prevSorted));
             
             if (result.currentUserLiked) {
                 setLikedRecommendations(prev => new Set(prev).add(providerId));
@@ -592,24 +598,32 @@ const OutdoorServices = () => {
             }
 
         } catch (error) {
-            console.error("Error liking recommendation:", error.message);
-            setProviders(originalProviders);
+            console.error("Error updating like status:", error.message);
             setRawProviders(originalRawProviders);
+            setProviders(originalProviders);
             setLikedRecommendations(originalLikedRecommendations);
-            alert(`Failed to update like: ${error.message}`);
+            alert(`Failed to update like status: ${error.message}`);
         }
     };
 
-    if (!isLoaded) return <div className="loading-spinner">Loading...</div>;
-    if (!isSignedIn && isLoaded)
-        return (
-            <div className="error-message full-width-error">
-                Please sign in to view outdoor service providers.
-            </div>
-        );
-    if (loading && providers.length === 0) return <div className="loading-spinner">Loading...</div>;
-    if (error && providers.length === 0 && !loading)
-        return <div className="error-message full-width-error">{error}</div>;
+    const conditionalLoadingJsx = () => {
+        if (!isLoaded) return <div className="loading-spinner">Loading...</div>;
+        if (!isSignedIn && isLoaded) {
+            return (
+                <div className="error-message full-width-error">
+                    Please sign in to view outdoor service providers.
+                </div>
+            );
+        }
+        if (loading && providers.length === 0) return <div className="loading-spinner">Loading...</div>;
+        if (error && providers.length === 0 && !loading) {
+            return <div className="error-message full-width-error">{error}</div>;
+        }
+        return null;
+    }
+
+    const loadingOrErrorDisplay = conditionalLoadingJsx();
+    if (loadingOrErrorDisplay) return loadingOrErrorDisplay;
 
     return (
         <div className="outdoor-services-container">
@@ -683,16 +697,13 @@ const OutdoorServices = () => {
                                 <div className="card-header">
                                     <h2 className="card-title">
                                         <Link
-                                            to={`/provider/${provider.id}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                            to="#" // Placeholder, will be handled by opening profile modal
                                             className="provider-name-link clickable"
-                                            onClick={() =>
-                                                localStorage.setItem(
-                                                    "selectedProvider",
-                                                    JSON.stringify(provider)
-                                                )
-                                            }
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setSelectedProvider(provider);
+                                                setIsProfileModalOpen(true);
+                                            }}
                                         >
                                             {provider.business_name}
                                         </Link>
@@ -764,7 +775,7 @@ const OutdoorServices = () => {
                                     <button
                                         className={`like-button ${provider.currentUserLiked ? 'liked' : ''}`}
                                         onClick={() => handleLike(provider.id)}
-                                        title={provider.currentUserLiked ? "You liked this" : "Like this recommendation"}
+                                        title={provider.currentUserLiked ? "Unlike this recommendation" : "Like this recommendation"}
                                     >
                                         <FaThumbsUp />
                                         <span className="like-count">{provider.num_likes || 0}</span>
@@ -982,7 +993,7 @@ const OutdoorServices = () => {
                         >
                             ×
                         </button>
-                        <p>We're about to launch this feature. Stay tuned 👁️</p>
+                        <p>We're about to launch this feature. Stay tuned <FaEye style={{ marginLeft: '5px' }} /></p>
                         <div className="modal-buttons">
                             <button
                                 className="primary-button"
