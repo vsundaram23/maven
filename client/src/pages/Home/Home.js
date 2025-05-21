@@ -14,6 +14,7 @@ import "./Home.css";
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
 // const API_URL = "http://localhost:5000";
+// const API_URL = "http://localhost:3000";
 
 const BRAND_PHRASE = "Tried & Trusted.";
 const LOCKED_LOCATION = "Greater Seattle Area";
@@ -297,24 +298,26 @@ const Home = () => {
                     transition={{ delay: 1.2, duration: 0.6 }}
                 >
                     {isSignedIn ? (
-                        <>
-                            Add more recommendations to get a ranking on our
-                            leaderboard!
-                        </>
+                        providerCount > 0 ? (
+                            <span
+                                className="auth-link"
+                                onClick={() => navigate("/trustcircles?tab=myRecommendations")}
+                            >
+                                View the recommendations shared with you! →
+                            </span>
+                        ) : (
+                            <>
+                                Add your first recommendation to unlock your Trust Circle rank!
+                            </>
+                        )
                     ) : (
                         <>
                             Unlock trusted recommendations.&nbsp;
-                            <span
-                                onClick={triggerSignUpModal}
-                                className="auth-link"
-                            >
+                            <span onClick={triggerSignUpModal} className="auth-link">
                                 Sign Up
                             </span>
                             &nbsp;or&nbsp;
-                            <span
-                                onClick={triggerLoginModal}
-                                className="auth-link"
-                            >
+                            <span onClick={triggerLoginModal} className="auth-link">
                                 Log In
                             </span>
                             .
