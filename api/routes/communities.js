@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/db.config');
+const pool = require('../config/db.config'); // Keep if some routes still use pool directly
 
 const {
   createCommunity,
@@ -10,12 +10,12 @@ const {
   requestToJoinCommunity,
   getJoinRequests,
   approveMembership,
-  getCommunityMembers,
-  getCommunityRecommendations
-} = require('../controllers/communityController');
+  getCommunityMembers,         // New import
+  getCommunityRecommendations  // New import
+} = require('../controllers/communityController'); // Assuming your controller file is communityController.js
 
 router.post('/create', async (req, res) => {
-  const { name, description, created_by_clerk_id } = req.body;
+  const { name, description, created_by_clerk_id } = req.body; // Expect Clerk ID
   if (!name || !created_by_clerk_id) {
     return res.status(400).json({ error: 'Name and creator Clerk ID are required' });
   }
@@ -28,18 +28,17 @@ router.post('/create', async (req, res) => {
 });
 
 router.get('/all', async (req, res) => {
-  const { user_id: internalUserIdFromQuery } = req.query; 
+  const { user_id: clerkUserId } = req.query; 
   try {
-    const communities = await getAllCommunities(internalUserIdFromQuery || null);
+    const communities = await getAllCommunities(clerkUserId || null);
     res.json(communities);
   } catch (error) {
-    console.error('Route error fetching all communities:', error.message, error.stack);
     res.status(500).json({ error: error.message || 'Server error fetching communities' });
   }
 });
 
 router.post('/request', async (req, res) => {
-  const { user_id: clerkUserId, community_id } = req.body;
+  const { user_id: clerkUserId, community_id } = req.body; // Expect Clerk ID for user_id
   if (!clerkUserId || !community_id) {
     return res.status(400).json({ error: 'Clerk User ID and community ID are required' });
   }
@@ -56,7 +55,7 @@ router.post('/request', async (req, res) => {
 
 router.get('/:communityId/requests', async (req, res) => {
   const { communityId } = req.params;
-  const { user_id: clerkCreatorId } = req.query;
+  const { user_id: clerkCreatorId } = req.query; // Expect Clerk ID for creator
   if (!clerkCreatorId) {
     return res.status(400).json({ error: 'Missing creator Clerk ID' });
   }
@@ -72,7 +71,7 @@ router.get('/:communityId/requests', async (req, res) => {
 });
 
 router.post('/approve', async (req, res) => {
-  const { community_id, user_id: clerkNewUserId, approver_id: clerkApproverId } = req.body;
+  const { community_id, user_id: clerkNewUserId, approver_id: clerkApproverId } = req.body; // Expect Clerk IDs
   if (!community_id || !clerkNewUserId || !clerkApproverId) {
     return res.status(400).json({ error: 'Community ID, target Clerk User ID, and approver Clerk ID are required' });
   }
@@ -98,23 +97,15 @@ router.get('/user/email/:email', async (req, res) => {
   }
 });
 
-router.get('/user/:email/communities', async (req, res) => {
-  const { email } = req.params;
-  try {
-    const userResult = await pool.query('SELECT clerk_id FROM users WHERE email = $1', [email]);
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found for the given email to fetch communities.' });
+router.get('/user/:clerkUserId/communities', async (req, res) => { // Changed :email to :clerkUserId for consistency
+    const { clerkUserId } = req.params;
+    try {
+      const communities = await getUserCommunities(clerkUserId);
+      res.json(communities);
+    } catch (err) {
+      if (err.message === 'User not found') return res.status(404).json({ error: err.message });
+      res.status(500).json({ error: err.message || 'Server error fetching user communities' });
     }
-    const clerkUserId = userResult.rows[0].clerk_id;
-    if (!clerkUserId) {
-      return res.status(404).json({ error: 'Clerk ID not associated with this user email.' });
-    }
-    const communities = await getUserCommunities(clerkUserId);
-    res.json(communities);
-  } catch (err) {
-    console.error('Route error fetching user communities for email:', email, err.message, err.stack);
-    res.status(500).json({ error: err.message || 'Server error fetching user communities' });
-  }
 });
 
 router.get('/:communityId/details', async (req, res) => {
@@ -143,7 +134,7 @@ router.get('/:communityId/members', async (req, res) => {
 
 router.get('/:communityId/recommendations', async (req, res) => {
     const { communityId } = req.params;
-    const { user_id: clerkUserId } = req.query;
+    const { user_id: clerkUserId } = req.query; // For currentUserLiked status
     try {
         const recommendations = await getCommunityRecommendations(communityId, clerkUserId || null);
         res.json({ success: true, recommendations: recommendations });

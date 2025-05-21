@@ -203,7 +203,7 @@ const TrustCircles = () => {
             if (userData && userData.id) {
                 const ownedIds = myCommData.filter(c => c.created_by === userData.id).map(c => c.id); const reqs = {};
                 for (const commId of ownedIds) {
-                    const rRes = await fetch(`${API_URL}/api/communities/${commId}/requests?user_id=${currentUserId}`);
+                    const rRes = await fetch(`${API_URL}/api/communities/${commId}/requests?user_id=${userData.id}`);
                     reqs[commId] = rRes.ok ? (await rRes.json()) : [];
                 } setJoinRequests(reqs);
             }
