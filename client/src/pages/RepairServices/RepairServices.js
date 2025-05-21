@@ -323,6 +323,7 @@ const RepairServices = () => {
     const [sortOption, setSortOption] = useState("recommended");
     const [currentUserId, setCurrentUserId] = useState(null);
     const [currentUserEmail, setCurrentUserEmail] = useState(null);
+    const [likedRecommendations, setLikedRecommendations] = useState(new Set());
     const [clickedRecommender, setClickedRecommender] = useState(null);
     const [showFeatureComingModal, setShowFeatureComingModal] = useState(false);
     const [dropdownOpenForId, setDropdownOpenForId] = useState(null);
@@ -332,6 +333,9 @@ const RepairServices = () => {
         if (isLoaded && isSignedIn && user) {
             setCurrentUserId(user.id);
             setCurrentUserEmail(user.primaryEmailAddress?.emailAddress);
+        } else if (isLoaded && !isSignedIn) {
+            setCurrentUserId(null);
+            setCurrentUserEmail(null);
         }
     }, [isLoaded, isSignedIn, user]);
 
@@ -339,7 +343,7 @@ const RepairServices = () => {
         if (!isLoaded) return;
 
         if (!isSignedIn) {
-            setError("Please log in to view repair service providers.");
+            setError("Please log in to view renovation service providers.");
             setLoading(false);
             setProviders([]);
             setRawProviders([]);
@@ -369,56 +373,38 @@ const RepairServices = () => {
                     const errData = await response.json().catch(() => ({
                         message: "Failed to fetch providers",
                     }));
-                    throw new Error(
-                        errData.message || `HTTP error ${response.status}`
-                    );
+                    throw new Error(errData.message || `HTTP error ${response.status}`);
                 }
                 const data = await response.json();
 
                 if (!data.success) {
-                    throw new Error(
-                        data.message ||
-                        "Failed to fetch repair providers successfully"
-                    );
+                    throw new Error(data.message || "Failed to fetch renovation providers successfully");
                 }
 
                 let fetchedProviders = data.providers || [];
                 const statsMap = {};
                 const allReviewsMap = {};
-                const userLikesMap = {};
 
                 if (fetchedProviders.length > 0) {
                     await Promise.all(
                         fetchedProviders.map(async (provider) => {
                             try {
-                                const statsRes = await fetch(
-                                    `${API_URL}/api/reviews/stats/${provider.id}`
-                                );
+                                const statsRes = await fetch(`${API_URL}/api/reviews/stats/${provider.id}`);
                                 if (statsRes.ok) {
                                     const statsData = await statsRes.json();
                                     statsMap[provider.id] = {
-                                        average_rating:
-                                            parseFloat(statsData.average_rating) || 0,
-                                        total_reviews:
-                                            parseInt(statsData.total_reviews, 10) || 0,
+                                        average_rating: parseFloat(statsData.average_rating) || 0,
+                                        total_reviews: parseInt(statsData.total_reviews, 10) || 0,
                                     };
                                 } else {
-                                    statsMap[provider.id] = {
-                                        average_rating: 0,
-                                        total_reviews: 0,
-                                    };
+                                    statsMap[provider.id] = { average_rating: 0, total_reviews: 0 };
                                 }
                             } catch (err) {
                                 console.error(`Error fetching stats for provider ${provider.id}:`, err);
-                                statsMap[provider.id] = {
-                                    average_rating: 0,
-                                    total_reviews: 0,
-                                };
+                                statsMap[provider.id] = { average_rating: 0, total_reviews: 0 };
                             }
                             try {
-                                const reviewsRes = await fetch(
-                                    `${API_URL}/api/reviews/${provider.id}`
-                                );
+                                const reviewsRes = await fetch(`${API_URL}/api/reviews/${provider.id}`);
                                 if (reviewsRes.ok) {
                                     allReviewsMap[provider.id] = await reviewsRes.json();
                                 } else {
@@ -427,20 +413,6 @@ const RepairServices = () => {
                             } catch (err) {
                                 console.error(`Error fetching reviews for provider ${provider.id}:`, err);
                                 allReviewsMap[provider.id] = [];
-                            }
-                            if (currentUserId) {
-                                try {
-                                    const likeStatusRes = await fetch(`${API_URL}/api/providers/${provider.id}/like-status?userId=${currentUserId}`);
-                                    if (likeStatusRes.ok) {
-                                        const likeStatusData = await likeStatusRes.json();
-                                        userLikesMap[provider.id] = likeStatusData.liked;
-                                    } else {
-                                        userLikesMap[provider.id] = false;
-                                    }
-                                } catch (err) {
-                                    console.error(`Error fetching like status for provider ${provider.id}:`, err);
-                                    userLikesMap[provider.id] = false;
-                                }
                             }
                         })
                     );
@@ -452,8 +424,8 @@ const RepairServices = () => {
                     originalIndex: idx,
                     average_rating: statsMap[p.id]?.average_rating || p.average_rating || 0,
                     total_reviews: statsMap[p.id]?.total_reviews || p.total_reviews || 0,
-                    currentUserLiked: userLikesMap[p.id] || false,
-                    num_likes: p.num_likes || 0,
+                    currentUserLiked: p.currentUserLiked || false,
+                    num_likes: parseInt(p.num_likes, 10) || 0,
                 }));
                 setRawProviders(enrichedProviders);
 
@@ -479,16 +451,13 @@ const RepairServices = () => {
                         const bandA = getBand(a.average_rating);
                         const bandB = getBand(b.average_rating);
                         if (bandA !== bandB) return bandA - bandB;
-
                         const scoreA = (a.average_rating || 0) * (a.total_reviews || 0);
                         const scoreB = (b.average_rating || 0) * (b.total_reviews || 0);
                         if (scoreB !== scoreA) return scoreB - scoreA;
-
                         if (b.average_rating !== a.average_rating)
                             return b.average_rating - a.average_rating;
                         if ((b.total_reviews || 0) !== (a.total_reviews || 0))
                             return (b.total_reviews || 0) - (a.total_reviews || 0);
-
                         return (a.originalIndex || 0) - (b.originalIndex || 0);
                     });
                 }
@@ -502,10 +471,10 @@ const RepairServices = () => {
             }
         };
 
-        if (currentUserId) {
+        if (currentUserId && currentUserEmail) {
             getProviders();
         } else if (isLoaded && !isSignedIn) {
-            setError("Please log in to view repair service providers.");
+            setError("Please log in to view renovation service providers.");
             setLoading(false);
             setProviders([]);
             setRawProviders([]);
@@ -517,7 +486,6 @@ const RepairServices = () => {
             alert("Please sign in to submit a review");
             return;
         }
-
         try {
             const response = await fetch(`${API_URL}/api/reviews`, {
                 method: "POST",
@@ -536,9 +504,8 @@ const RepairServices = () => {
                 const errText = await response.text();
                 throw new Error(errText || "Failed to submit review");
             }
-
             const currentSort = sortOption;
-            setSortOption("");
+            setSortOption("force-refresh-" + Date.now());
             setTimeout(() => setSortOption(currentSort), 0);
         } catch (err) {
             alert(`Error submitting review: ${err.message}`);
@@ -550,42 +517,50 @@ const RepairServices = () => {
             alert("Please log in to like a recommendation.");
             return;
         }
-
-        const providerToUpdate = providers.find(p => p.id === providerId);
+        const providerToUpdate = rawProviders.find(p => p.id === providerId);
         if (!providerToUpdate) return;
 
-        const isAlreadyLiked = providerToUpdate.currentUserLiked;
+        const isAlreadyLikedByClient = likedRecommendations.has(providerId);
 
-        setProviders(prevProviders =>
-            prevProviders.map(provider =>
-                provider.id === providerId
-                    ? {
-                        ...provider,
-                        num_likes: isAlreadyLiked ? (provider.num_likes || 1) - 1 : (provider.num_likes || 0) + 1,
-                        currentUserLiked: !isAlreadyLiked
-                    }
-                    : provider
-            )
-        );
+        if (isAlreadyLikedByClient && providerToUpdate.currentUserLiked) {
+        } else if (isAlreadyLikedByClient && !providerToUpdate.currentUserLiked) {
+        } else if (!isAlreadyLikedByClient && providerToUpdate.currentUserLiked) {
+            setLikedRecommendations(prevLiked => new Set(prevLiked).add(providerId));
+        }
 
-        setRawProviders(prevRawProviders =>
-            prevRawProviders.map(provider =>
-                provider.id === providerId
-                    ? {
-                        ...provider,
-                        num_likes: isAlreadyLiked ? (provider.num_likes || 1) - 1 : (provider.num_likes || 0) + 1,
-                        currentUserLiked: !isAlreadyLiked
-                    }
-                    : provider
-            )
-        );
+        const originalProviders = [...providers];
+        const originalRawProviders = [...rawProviders];
+        const originalLikedRecommendations = new Set(likedRecommendations);
+
+        const newCurrentUserLikedState = !providerToUpdate.currentUserLiked;
+        const newNumLikes = newCurrentUserLikedState
+            ? (providerToUpdate.num_likes || 0) + 1
+            : Math.max(0, (providerToUpdate.num_likes || 1) - 1);
+
+        const optimisticUpdate = (items) =>
+            items.map(p =>
+                p.id === providerId
+                    ? { ...p, num_likes: newNumLikes, currentUserLiked: newCurrentUserLikedState }
+                    : p
+            );
+
+        setProviders(optimisticUpdate(providers));
+        setRawProviders(optimisticUpdate(rawProviders));
+
+        if (newCurrentUserLikedState) {
+            setLikedRecommendations(prevLiked => new Set(prevLiked).add(providerId));
+        } else {
+            setLikedRecommendations(prevLiked => {
+                const newSet = new Set(prevLiked);
+                newSet.delete(providerId);
+                return newSet;
+            });
+        }
 
         try {
             const response = await fetch(`${API_URL}/api/providers/${providerId}/like`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: currentUserId, userEmail: currentUserEmail })
             });
 
@@ -595,47 +570,32 @@ const RepairServices = () => {
             }
             const result = await response.json();
 
-            setProviders(prevProviders =>
-                prevProviders.map(provider =>
-                    provider.id === providerId
-                        ? { ...provider, num_likes: result.num_likes, currentUserLiked: result.currentUserLiked }
-                        : provider
-                )
-            );
-            setRawProviders(prevRawProviders =>
-                prevRawProviders.map(provider =>
-                    provider.id === providerId
-                        ? { ...provider, num_likes: result.num_likes, currentUserLiked: result.currentUserLiked }
-                        : provider
-                )
-            );
+            const finalUpdate = (items) =>
+                items.map(p =>
+                    p.id === providerId
+                        ? { ...p, num_likes: parseInt(result.num_likes, 10) || 0, currentUserLiked: result.currentUserLiked }
+                        : p
+                );
+            
+            setProviders(finalUpdate(originalProviders.map(p => p.id === providerId ? {...p, ...result} : p)));
+            setRawProviders(finalUpdate(originalRawProviders.map(p => p.id === providerId ? {...p, ...result} : p)));
+            
+            if (result.currentUserLiked) {
+                setLikedRecommendations(prev => new Set(prev).add(providerId));
+            } else {
+                setLikedRecommendations(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(providerId);
+                    return newSet;
+                });
+            }
 
         } catch (error) {
             console.error("Error liking recommendation:", error.message);
-            setProviders(prevProviders =>
-                prevProviders.map(provider => {
-                    if (provider.id === providerId) {
-                        return {
-                            ...provider,
-                            num_likes: providerToUpdate.num_likes,
-                            currentUserLiked: isAlreadyLiked
-                        };
-                    }
-                    return provider;
-                })
-            );
-            setRawProviders(prevRawProviders =>
-                prevRawProviders.map(provider => {
-                    if (provider.id === providerId) {
-                        return {
-                            ...provider,
-                            num_likes: providerToUpdate.num_likes,
-                            currentUserLiked: isAlreadyLiked
-                        };
-                    }
-                    return provider;
-                })
-            );
+            setProviders(originalProviders);
+            setRawProviders(originalRawProviders);
+            setLikedRecommendations(originalLikedRecommendations);
+            alert(`Failed to update like: ${error.message}`);
         }
     };
 
@@ -643,7 +603,7 @@ const RepairServices = () => {
     if (!isSignedIn && isLoaded)
         return (
             <div className="error-message full-width-error">
-                Please sign in to view repair service providers.
+                Please sign in to view renovation service providers.
             </div>
         );
     if (loading && providers.length === 0) return <div className="loading-spinner">Loading...</div>;
@@ -659,7 +619,7 @@ const RepairServices = () => {
                 Sort by:
                 <select
                     className="sort-dropdown"
-                    value={sortOption}
+                    value={sortOption.startsWith("force-refresh-") ? "recommended" : sortOption}
                     onChange={(e) => setSortOption(e.target.value)}
                 >
                     <option value="recommended">Recommended</option>
@@ -670,22 +630,22 @@ const RepairServices = () => {
             {!loading && !error && providers.length === 0 && (
                 <div className="no-providers-message">
                     <FaUsers className="no-providers-icon" />
-                    <h2>No Repair Services Found In Your Network</h2>
+                    <h2>No Renovation Services Found In Your Network</h2>
                     <p>
-                        We couldn't find any repair service recommendations
+                        We couldn't find any renovation service recommendations
                         visible to you right now. This might be because:
                     </p>
                     <ul>
                         <li>
-                            No public repair recommendations are currently
+                            No public renovation recommendations are currently
                             available.
                         </li>
                         <li>
-                            None of your direct connections have shared repair
+                            None of your direct connections have shared renovation
                             recommendations with 'connections' visibility.
                         </li>
                         <li>
-                            No repair recommendations have been shared into
+                            No renovation recommendations have been shared into
                             communities you're a member of.
                         </li>
                     </ul>

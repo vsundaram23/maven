@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from "@clerk/clerk-react";
 import {
     FaStar,
@@ -13,7 +13,6 @@ import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import "./ApplianceServices.css";
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = "http://localhost:3000";
 
 const StarRating = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;
@@ -44,6 +43,17 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
     const [tagInput, setTagInput] = useState("");
     const [error, setError] = useState("");
 
+    useEffect(() => {
+        if (isOpen) {
+            setRating(0);
+            setHover(0);
+            setReview("");
+            setTags([]);
+            setTagInput("");
+            setError("");
+        }
+    }, [isOpen]);
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!rating) {
@@ -51,11 +61,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
             return;
         }
         onSubmit({ rating, review, tags });
-        setRating(0);
-        setReview("");
-        setTags([]);
-        setTagInput("");
-        setError("");
         onClose();
     };
 
@@ -163,7 +168,6 @@ const ApplianceServices = () => {
     const [error, setError] = useState(null);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [selectedProvider, setSelectedProvider] = useState(null);
-    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [sortOption, setSortOption] = useState("recommended");
     const [dropdownOpenForId, setDropdownOpenForId] = useState(null);
     const [showLinkCopied, setShowLinkCopied] = useState(false);
@@ -171,7 +175,6 @@ const ApplianceServices = () => {
     const [currentUserId, setCurrentUserId] = useState(null);
     const [currentUserEmail, setCurrentUserEmail] = useState(null);
     const [likedRecommendations, setLikedRecommendations] = useState(new Set());
-
     const [clickedRecommender, setClickedRecommender] = useState(null);
     const [showFeatureComingModal, setShowFeatureComingModal] = useState(false);
 
@@ -179,6 +182,9 @@ const ApplianceServices = () => {
         if (isLoaded && isSignedIn && user) {
             setCurrentUserId(user.id);
             setCurrentUserEmail(user.primaryEmailAddress?.emailAddress);
+        } else if (isLoaded && !isSignedIn) {
+            setCurrentUserId(null);
+            setCurrentUserEmail(null);
         }
     }, [isLoaded, isSignedIn, user]);
 
@@ -189,6 +195,7 @@ const ApplianceServices = () => {
             setError("Please log in to view appliance service providers.");
             setLoading(false);
             setProviders([]);
+            setRawProviders([]);
             return;
         }
 
@@ -214,85 +221,47 @@ const ApplianceServices = () => {
                     const errData = await response.json().catch(() => ({
                         message: "Failed to fetch providers",
                     }));
-                    throw new Error(
-                        errData.message || `HTTP error ${response.status}`
-                    );
+                    throw new Error(errData.message || `HTTP error ${response.status}`);
                 }
 
                 const data = await response.json();
 
                 if (!data.success) {
-                    throw new Error(
-                        data.message ||
-                        "Failed to fetch appliance providers successfully"
-                    );
+                    throw new Error(data.message || "Failed to fetch appliance providers successfully");
                 }
 
                 let fetchedProviders = data.providers || [];
                 const statsMap = {};
                 const allReviewsMap = {};
-                const userLikesMap = {};
 
                 if (fetchedProviders.length > 0) {
                     await Promise.all(
                         fetchedProviders.map(async (provider) => {
                             try {
-                                const statsRes = await fetch(
-                                    `${API_URL}/api/reviews/stats/${provider.id}`
-                                );
+                                const statsRes = await fetch(`${API_URL}/api/reviews/stats/${provider.id}`);
                                 if (statsRes.ok) {
                                     const statsData = await statsRes.json();
                                     statsMap[provider.id] = {
-                                        average_rating:
-                                            parseFloat(
-                                                statsData.average_rating
-                                            ) || 0,
-                                        total_reviews:
-                                            parseInt(
-                                                statsData.total_reviews,
-                                                10
-                                            ) || 0,
+                                        average_rating: parseFloat(statsData.average_rating) || 0,
+                                        total_reviews: parseInt(statsData.total_reviews, 10) || 0,
                                     };
                                 } else {
-                                    statsMap[provider.id] = {
-                                        average_rating: 0,
-                                        total_reviews: 0,
-                                    };
+                                    statsMap[provider.id] = { average_rating: 0, total_reviews: 0 };
                                 }
                             } catch (err) {
                                 console.error(`Error fetching stats for provider ${provider.id}:`, err);
-                                statsMap[provider.id] = {
-                                    average_rating: 0,
-                                    total_reviews: 0,
-                                };
+                                statsMap[provider.id] = { average_rating: 0, total_reviews: 0 };
                             }
                             try {
-                                const reviewsRes = await fetch(
-                                    `${API_URL}/api/reviews/${provider.id}`
-                                );
+                                const reviewsRes = await fetch(`${API_URL}/api/reviews/${provider.id}`);
                                 if (reviewsRes.ok) {
-                                    allReviewsMap[provider.id] =
-                                        await reviewsRes.json();
+                                    allReviewsMap[provider.id] = await reviewsRes.json();
                                 } else {
                                     allReviewsMap[provider.id] = [];
                                 }
                             } catch (err) {
                                 console.error(`Error fetching reviews for provider ${provider.id}:`, err);
                                 allReviewsMap[provider.id] = [];
-                            }
-                            if (currentUserId) {
-                                try {
-                                    const likeStatusRes = await fetch(`${API_URL}/api/providers/${provider.id}/like-status?userId=${currentUserId}`);
-                                    if (likeStatusRes.ok) {
-                                        const likeStatusData = await likeStatusRes.json();
-                                        userLikesMap[provider.id] = likeStatusData.liked;
-                                    } else {
-                                        userLikesMap[provider.id] = false;
-                                    }
-                                } catch (err) {
-                                    console.error(`Error fetching like status for provider ${provider.id}:`, err);
-                                    userLikesMap[provider.id] = false;
-                                }
                             }
                         })
                     );
@@ -304,9 +273,10 @@ const ApplianceServices = () => {
                     originalIndex: idx,
                     average_rating: statsMap[p.id]?.average_rating || 0,
                     total_reviews: statsMap[p.id]?.total_reviews || 0,
-                    currentUserLiked: userLikesMap[p.id] || false,
-                    num_likes: p.num_likes || 0,
+                    currentUserLiked: p.currentUserLiked || false,
+                    num_likes: parseInt(p.num_likes, 10) || 0,
                 }));
+
                 setRawProviders(enrichedProviders);
 
                 const getBand = (rating) => {
@@ -324,29 +294,20 @@ const ApplianceServices = () => {
                         .sort((a, b) => {
                             if (b.average_rating !== a.average_rating)
                                 return b.average_rating - a.average_rating;
-                            return (
-                                (b.total_reviews || 0) - (a.total_reviews || 0)
-                            );
+                            return (b.total_reviews || 0) - (a.total_reviews || 0);
                         });
                 } else {
                     sortedProviders = [...enrichedProviders].sort((a, b) => {
                         const bandA = getBand(a.average_rating);
                         const bandB = getBand(b.average_rating);
                         if (bandA !== bandB) return bandA - bandB;
-
-                        const scoreA =
-                            a.average_rating * (a.total_reviews || 0);
-                        const scoreB =
-                            b.average_rating * (b.total_reviews || 0);
+                        const scoreA = (a.average_rating || 0) * (a.total_reviews || 0);
+                        const scoreB = (b.average_rating || 0) * (b.total_reviews || 0);
                         if (scoreB !== scoreA) return scoreB - scoreA;
-
                         if (b.average_rating !== a.average_rating)
                             return b.average_rating - a.average_rating;
                         if ((b.total_reviews || 0) !== (a.total_reviews || 0))
-                            return (
-                                (b.total_reviews || 0) - (a.total_reviews || 0)
-                            );
-
+                            return (b.total_reviews || 0) - (a.total_reviews || 0);
                         return (a.originalIndex || 0) - (b.originalIndex || 0);
                     });
                 }
@@ -360,7 +321,7 @@ const ApplianceServices = () => {
             }
         };
 
-        if (currentUserId) {
+        if (currentUserId && currentUserEmail) {
             getProviders();
         } else if (isLoaded && !isSignedIn) {
             setError("Please log in to view appliance service providers.");
@@ -368,16 +329,13 @@ const ApplianceServices = () => {
             setProviders([]);
             setRawProviders([]);
         }
-
     }, [sortOption, isLoaded, isSignedIn, user, currentUserId, currentUserEmail]);
 
-
     const handleReviewSubmit = async (reviewData) => {
-        if (!isSignedIn || !selectedProvider) {
+        if (!isSignedIn || !selectedProvider || !currentUserId || !currentUserEmail) {
             alert("Please sign in to submit a review");
             return;
         }
-
         try {
             const response = await fetch(`${API_URL}/api/reviews`, {
                 method: "POST",
@@ -392,14 +350,12 @@ const ApplianceServices = () => {
                     tags: reviewData.tags,
                 }),
             });
-
             if (!response.ok) {
                 const errText = await response.text();
                 throw new Error(errText || "Failed to submit review");
             }
-
             const currentSort = sortOption;
-            setSortOption("");
+            setSortOption("force-refresh-" + Date.now());
             setTimeout(() => setSortOption(currentSort), 0);
         } catch (err) {
             alert(`Error submitting review: ${err.message}`);
@@ -411,43 +367,56 @@ const ApplianceServices = () => {
             alert("Please log in to like a recommendation.");
             return;
         }
-
-        const providerToUpdate = providers.find(p => p.id === providerId);
+        const providerToUpdate = rawProviders.find(p => p.id === providerId);
         if (!providerToUpdate) return;
 
-        const isAlreadyLiked = providerToUpdate.currentUserLiked;
+        const isAlreadyLikedByClient = likedRecommendations.has(providerId);
 
-        setProviders(prevProviders =>
-            prevProviders.map(provider =>
-                provider.id === providerId
-                    ? {
-                        ...provider,
-                        num_likes: isAlreadyLiked ? (provider.num_likes || 1) - 1 : (provider.num_likes || 0) + 1,
-                        currentUserLiked: !isAlreadyLiked
-                    }
-                    : provider
-            )
-        );
+        if (isAlreadyLikedByClient && providerToUpdate.currentUserLiked) {
+             // If client thinks it's liked AND server also thinks it's liked, then this is an unlike action
+        } else if (isAlreadyLikedByClient && !providerToUpdate.currentUserLiked) {
+            // Client thinks liked, server thinks not liked (sync issue, or user unliked elsewhere)
+            // Allow to proceed to sync with server's view or re-like if intended
+        } else if (!isAlreadyLikedByClient && providerToUpdate.currentUserLiked) {
+            // Client thinks not liked, server thinks liked (e.g. liked in another session)
+            // Add to client set and proceed to unlike if that's the user's intent
+            setLikedRecommendations(prevLiked => new Set(prevLiked).add(providerId));
+        }
 
-        setRawProviders(prevRawProviders =>
-            prevRawProviders.map(provider =>
-                provider.id === providerId
-                    ? {
-                        ...provider,
-                        num_likes: isAlreadyLiked ? (provider.num_likes || 1) - 1 : (provider.num_likes || 0) + 1,
-                        currentUserLiked: !isAlreadyLiked
-                    }
-                    : provider
-            )
-        );
 
+        const originalProviders = [...providers];
+        const originalRawProviders = [...rawProviders];
+        const originalLikedRecommendations = new Set(likedRecommendations);
+
+        const newCurrentUserLikedState = !providerToUpdate.currentUserLiked;
+        const newNumLikes = newCurrentUserLikedState
+            ? (providerToUpdate.num_likes || 0) + 1
+            : Math.max(0, (providerToUpdate.num_likes || 1) - 1);
+
+        const optimisticUpdate = (items) =>
+            items.map(p =>
+                p.id === providerId
+                    ? { ...p, num_likes: newNumLikes, currentUserLiked: newCurrentUserLikedState }
+                    : p
+            );
+
+        setProviders(optimisticUpdate(providers));
+        setRawProviders(optimisticUpdate(rawProviders));
+
+        if (newCurrentUserLikedState) {
+            setLikedRecommendations(prevLiked => new Set(prevLiked).add(providerId));
+        } else {
+            setLikedRecommendations(prevLiked => {
+                const newSet = new Set(prevLiked);
+                newSet.delete(providerId);
+                return newSet;
+            });
+        }
 
         try {
             const response = await fetch(`${API_URL}/api/providers/${providerId}/like`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: currentUserId, userEmail: currentUserEmail })
             });
 
@@ -457,55 +426,33 @@ const ApplianceServices = () => {
             }
             const result = await response.json();
 
-            setProviders(prevProviders =>
-                prevProviders.map(provider =>
-                    provider.id === providerId
-                        ? { ...provider, num_likes: result.num_likes, currentUserLiked: result.currentUserLiked }
-                        : provider
-                )
-            );
-            setRawProviders(prevRawProviders =>
-                prevRawProviders.map(provider =>
-                    provider.id === providerId
-                        ? { ...provider, num_likes: result.num_likes, currentUserLiked: result.currentUserLiked }
-                        : provider
-                )
-            );
+            const finalUpdate = (items) =>
+                items.map(p =>
+                    p.id === providerId
+                        ? { ...p, num_likes: parseInt(result.num_likes, 10) || 0, currentUserLiked: result.currentUserLiked }
+                        : p
+                );
+
+            setProviders(finalUpdate(originalProviders.map(p => p.id === providerId ? { ...p, ...result } : p)));
+            setRawProviders(finalUpdate(originalRawProviders.map(p => p.id === providerId ? { ...p, ...result } : p)));
+            
+            if (result.currentUserLiked) {
+                setLikedRecommendations(prev => new Set(prev).add(providerId));
+            } else {
+                setLikedRecommendations(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(providerId);
+                    return newSet;
+                });
+            }
 
         } catch (error) {
             console.error("Error liking recommendation:", error.message);
-            setProviders(prevProviders =>
-                prevProviders.map(provider => {
-                    if (provider.id === providerId) {
-                        return {
-                            ...provider,
-                            num_likes: providerToUpdate.num_likes,
-                            currentUserLiked: isAlreadyLiked
-                        };
-                    }
-                    return provider;
-                }
-                )
-            );
-            setRawProviders(prevRawProviders =>
-                prevRawProviders.map(provider => {
-                    if (provider.id === providerId) {
-                        return {
-                            ...provider,
-                            num_likes: providerToUpdate.num_likes,
-                            currentUserLiked: isAlreadyLiked
-                        };
-                    }
-                    return provider;
-                }
-                )
-            );
+            setProviders(originalProviders);
+            setRawProviders(originalRawProviders);
+            setLikedRecommendations(originalLikedRecommendations);
+            alert(`Failed to update like: ${error.message}`);
         }
-    };
-
-
-    const openProviderProfilePage = (providerId) => {
-        navigate(`/provider/${providerId}`);
     };
 
     if (loading && providers.length === 0)
@@ -520,7 +467,7 @@ const ApplianceServices = () => {
                 Sort by:
                 <select
                     className="sort-dropdown"
-                    value={sortOption}
+                    value={sortOption.startsWith("force-refresh-") ? "recommended" : sortOption}
                     onChange={(e) => setSortOption(e.target.value)}
                 >
                     <option value="recommended">Recommended</option>
@@ -579,7 +526,6 @@ const ApplianceServices = () => {
                         ).toFixed(1);
                         const displayTotalReviews =
                             parseInt(provider.total_reviews, 10) || 0;
-                        const hasUserLiked = provider.currentUserLiked;
 
                         return (
                             <li key={provider.id} className="provider-card">
@@ -602,23 +548,19 @@ const ApplianceServices = () => {
                                     </h2>
                                     <div className="badge-wrapper-with-menu">
                                         <div className="badge-group">
-                                            {(parseFloat(
-                                                provider.average_rating
-                                            ) || 0) >= 4.5 && (
+                                            {(parseFloat(provider.average_rating) || 0) >= 4.5 && (
                                                 <span className="top-rated-badge">
                                                     Top Rated
                                                 </span>
                                             )}
                                         </div>
-
                                         <div className="right-actions">
                                             <div className="dropdown-wrapper">
                                                 <button
                                                     className="three-dots-button"
                                                     onClick={() =>
                                                         setDropdownOpenForId(
-                                                            dropdownOpenForId ===
-                                                                provider.id
+                                                            dropdownOpenForId === provider.id
                                                                 ? null
                                                                 : provider.id
                                                         )
@@ -627,35 +569,23 @@ const ApplianceServices = () => {
                                                 >
                                                     ⋮
                                                 </button>
-
-                                                {dropdownOpenForId ===
-                                                    provider.id && (
-                                                        <div className="dropdown-menu">
-                                                            <button
-                                                                className="dropdown-item"
-                                                                onClick={() => {
-                                                                    navigator.clipboard.writeText(
-                                                                        `https://triedandtrusted.ai/provider/${provider.id}`
-                                                                    );
-                                                                    setDropdownOpenForId(
-                                                                        null
-                                                                    );
-                                                                    setShowLinkCopied(
-                                                                        true
-                                                                    );
-                                                                    setTimeout(
-                                                                        () =>
-                                                                            setShowLinkCopied(
-                                                                                false
-                                                                            ),
-                                                                        2000
-                                                                    );
-                                                                }}
-                                                            >
-                                                                Share this Rec
-                                                            </button>
-                                                        </div>
-                                                    )}
+                                                {dropdownOpenForId === provider.id && (
+                                                    <div className="dropdown-menu">
+                                                        <button
+                                                            className="dropdown-item"
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(
+                                                                    `https://triedandtrusted.ai/provider/${provider.id}`
+                                                                );
+                                                                setDropdownOpenForId(null);
+                                                                setShowLinkCopied(true);
+                                                                setTimeout(() => setShowLinkCopied(false), 2000);
+                                                            }}
+                                                        >
+                                                            Share this Rec
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                             {showLinkCopied && dropdownOpenForId !== provider.id && (
                                                 <div className="toast">
@@ -665,18 +595,10 @@ const ApplianceServices = () => {
                                         </div>
                                     </div>
                                 </div>
-
                                 <div className="review-summary">
                                     <span className="stars-and-score">
-                                        <StarRating
-                                            rating={
-                                                parseFloat(
-                                                    provider.average_rating
-                                                ) || 0
-                                            }
-                                        />
-                                        {displayAvgRating} (
-                                        {displayTotalReviews})
+                                        <StarRating rating={parseFloat(provider.average_rating) || 0} />
+                                        {displayAvgRating} ({displayTotalReviews})
                                     </span>
                                     <button
                                         className="see-all-button"
@@ -688,44 +610,36 @@ const ApplianceServices = () => {
                                         Write a Review
                                     </button>
                                     <button
-                                        className={`like-button ${hasUserLiked ? 'liked' : ''}`}
+                                        className={`like-button ${provider.currentUserLiked ? 'liked' : ''}`}
                                         onClick={() => handleLike(provider.id)}
-                                        title={hasUserLiked ? "You liked this" : "Like this recommendation"}
+                                        title={provider.currentUserLiked ? "You liked this" : "Like this recommendation"}
                                     >
                                         <FaThumbsUp />
                                         <span className="like-count">{provider.num_likes || 0}</span>
                                     </button>
                                 </div>
-
                                 <p className="card-description">
-                                    {provider.description ||
-                                        "No description available"}
+                                    {provider.description || "No description available"}
                                 </p>
-                                {Array.isArray(provider.tags) &&
-                                    provider.tags.length > 0 && (
-                                        <div className="tag-container">
-                                            {provider.tags.map((tag, idx) => (
-                                                <span
-                                                    key={idx}
-                                                    className="tag-badge"
-                                                >
-                                                    {tag}
-                                                </span>
-                                            ))}
-                                            <button
-                                                className="add-tag-button"
-                                                onClick={() => {
-                                                    setSelectedProvider(
-                                                        provider
-                                                    );
-                                                    setIsReviewModalOpen(true);
-                                                }}
-                                                aria-label="Add a tag"
-                                            >
-                                                +
-                                            </button>
-                                        </div>
-                                    )}
+                                {Array.isArray(provider.tags) && provider.tags.length > 0 && (
+                                    <div className="tag-container">
+                                        {provider.tags.map((tag, idx) => (
+                                            <span key={idx} className="tag-badge">
+                                                {tag}
+                                            </span>
+                                        ))}
+                                        <button
+                                            className="add-tag-button"
+                                            onClick={() => {
+                                                setSelectedProvider(provider);
+                                                setIsReviewModalOpen(true);
+                                            }}
+                                            aria-label="Add a tag"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                )}
                                 {provider.recommender_name && (
                                     <>
                                         <div className="recommended-row">
@@ -748,23 +662,18 @@ const ApplianceServices = () => {
                                             )}
                                             {provider.date_of_recommendation && (
                                                 <span className="recommendation-date">
-                                                    {" "}
-                                                    (
+                                                    {" ("}
                                                     {new Date(
                                                         provider.date_of_recommendation
-                                                    ).toLocaleDateString(
-                                                        "en-US",
-                                                        {
-                                                            year: "2-digit",
-                                                            month: "numeric",
-                                                            day: "numeric",
-                                                        }
-                                                    )}
-                                                    )
+                                                    ).toLocaleDateString("en-US", {
+                                                        year: "2-digit",
+                                                        month: "numeric",
+                                                        day: "numeric",
+                                                    })}
+                                                    {")"}
                                                 </span>
                                             )}
                                         </div>
-
                                         {currentReviews.length > 0 &&
                                             [
                                                 ...new Set(
@@ -775,7 +684,7 @@ const ApplianceServices = () => {
                                                             name !== provider.recommender_name
                                                         ))
                                                 ),
-                                            ].filter(name => name).length > 0 && ( // Ensure the resulting array is not empty
+                                            ].filter(name => name).length > 0 && (
                                                 <div className="recommended-row">
                                                     <span className="recommended-label">
                                                         Also used by:
@@ -811,14 +720,10 @@ const ApplianceServices = () => {
                                         onClick={() => {
                                             if (provider.recommender_phone) {
                                                 window.location.href = `sms:${provider.recommender_phone}`;
-                                            } else if (
-                                                provider.recommender_email
-                                            ) {
+                                            } else if (provider.recommender_email) {
                                                 window.location.href = `mailto:${provider.recommender_email}`;
                                             } else {
-                                                alert(
-                                                    "Sorry, contact info not available."
-                                                );
+                                                alert("Sorry, contact info for the recommender is not available.");
                                             }
                                         }}
                                     >
@@ -835,13 +740,10 @@ const ApplianceServices = () => {
                 <ReviewModal
                     isOpen={isReviewModalOpen}
                     onClose={() => setIsReviewModalOpen(false)}
-                    onSubmit={(reviewData) =>
-                        handleReviewSubmit({ ...reviewData })
-                    }
+                    onSubmit={(reviewData) => handleReviewSubmit({ ...reviewData })}
                     provider={selectedProvider}
                 />
             )}
-
             {clickedRecommender && (
                 <div className="modal-overlay">
                     <div className="simple-modal">
@@ -881,7 +783,6 @@ const ApplianceServices = () => {
                     </div>
                 </div>
             )}
-
             {showFeatureComingModal && (
                 <div className="modal-overlay">
                     <div className="modal-content">
@@ -910,7 +811,6 @@ const ApplianceServices = () => {
 };
 
 export default ApplianceServices;
-
 // import { Link, useNavigate } from "react-router-dom";
 // import React, { useState, useEffect } from "react";
 // import { useUser } from "@clerk/clerk-react";

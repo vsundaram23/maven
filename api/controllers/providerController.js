@@ -286,93 +286,95 @@ const searchVisibleProviders = async (req, res) => {
 };
 
 const likeRecommendation = async (req, res) => {
-    const { id: recommendationId } = req.params;
+    const { id: providerId } = req.params; // Assuming :id in the route is providerId
     const { userId: clerkUserId, userEmail } = req.body;
 
     if (!clerkUserId || !userEmail) {
-        return res.status(401).json({ success: false, message: "User ID and Email are required to like a recommendation." });
+        return res.status(401).json({ success: false, message: "User ID and Email are required." });
     }
-    if (!recommendationId) {
-        return res.status(400).json({ success: false, message: "Recommendation ID is required." });
+    if (!providerId) {
+        return res.status(400).json({ success: false, message: "Provider ID is required." });
     }
 
     let internalUserId;
     try {
         internalUserId = await getInternalUserIdByEmail(userEmail, clerkUserId);
         if (!internalUserId) {
-             return res.status(404).json({ success: false, message: "User not found by email and could not be created/retrieved for like action." });
+            return res.status(404).json({ success: false, message: "User not found." });
         }
     } catch (userError) {
         console.error("Error resolving internal user ID for like action:", userError);
-        return res.status(500).json({ success: false, message: "Error processing user information for like action.", error: userError.message });
+        return res.status(500).json({ success: false, message: "Error processing user information.", error: userError.message });
     }
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const alreadyLikedRes = await client.query(
-            `SELECT 1 FROM public.recommendation_likes WHERE user_id = $1 AND recommendation_id = $2`,
-            [internalUserId, recommendationId]
+
+        const likeCheckRes = await client.query(
+            `SELECT id FROM public.recommendation_likes WHERE user_id = $1 AND recommendation_id = $2`,
+            [internalUserId, providerId]
         );
 
+        let currentUserLiked;
         let newNumLikes;
-        let justLikedAction = false;
+        let message;
 
-        if (alreadyLikedRes.rows.length === 0) {
+        if (likeCheckRes.rows.length > 0) {
+            // User has already liked, so unlike
             await client.query(
-                `INSERT INTO public.recommendation_likes (user_id, recommendation_id) VALUES ($1, $2)`,
-                [internalUserId, recommendationId]
+                `DELETE FROM public.recommendation_likes WHERE user_id = $1 AND recommendation_id = $2`,
+                [internalUserId, providerId]
             );
             const updateResult = await client.query(
-                `UPDATE public.service_providers 
-                 SET num_likes = num_likes + 1 
-                 WHERE id = $1 
+                `UPDATE public.service_providers
+                 SET num_likes = GREATEST(0, num_likes - 1)
+                 WHERE id = $1
                  RETURNING num_likes`,
-                [recommendationId]
+                [providerId]
             );
             if (updateResult.rows.length === 0) {
                 await client.query('ROLLBACK');
-                return res.status(404).json({ success: false, message: "Recommendation not found for updating like count."});
+                return res.status(404).json({ success: false, message: "Provider not found for unliking." });
             }
             newNumLikes = updateResult.rows[0].num_likes;
-            justLikedAction = true;
+            currentUserLiked = false;
+            message = "Recommendation unliked successfully.";
+
         } else {
-            const currentLikesRes = await client.query(
-                `SELECT num_likes FROM public.service_providers WHERE id = $1`,
-                [recommendationId]
+            // User has not liked, so like
+            await client.query(
+                `INSERT INTO public.recommendation_likes (user_id, recommendation_id) VALUES ($1, $2)`,
+                [internalUserId, providerId]
             );
-            if (currentLikesRes.rows.length === 0) {
+            const updateResult = await client.query(
+                `UPDATE public.service_providers
+                 SET num_likes = num_likes + 1
+                 WHERE id = $1
+                 RETURNING num_likes`,
+                [providerId]
+            );
+            if (updateResult.rows.length === 0) {
                 await client.query('ROLLBACK');
-                return res.status(404).json({ success: false, message: "Recommendation not found when fetching like count."});
+                return res.status(404).json({ success: false, message: "Provider not found for liking." });
             }
-            newNumLikes = currentLikesRes.rows[0].num_likes;
+            newNumLikes = updateResult.rows[0].num_likes;
+            currentUserLiked = true;
+            message = "Recommendation liked successfully.";
         }
 
         await client.query('COMMIT');
-        res.json({ 
-            success: true, 
-            message: justLikedAction ? "Recommendation liked successfully." : "Recommendation already liked.",
+        res.json({
+            success: true,
+            message: message,
             num_likes: newNumLikes,
-            currentUserLiked: true 
+            currentUserLiked: currentUserLiked
         });
+
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error("Error in likeRecommendation transaction:", error);
-        if (error.code === '23505') { 
-            const currentLikesRes = await client.query(
-                `SELECT num_likes FROM public.service_providers WHERE id = $1`,
-                [recommendationId]
-            );
-            const currentNumLikes = currentLikesRes.rows.length ? currentLikesRes.rows[0].num_likes : 0;
-            return res.status(200).json({ 
-                success: true, 
-                message: "Already liked this recommendation.", 
-                num_likes: currentNumLikes,
-                currentUserLiked: true
-            });
-        } else {
-            res.status(500).json({ success: false, message: "Failed to process like for recommendation.", error: error.message });
-        }
+        console.error("Error in likeRecommendation (toggle) transaction:", error);
+        res.status(500).json({ success: false, message: "Failed to process like/unlike for recommendation.", error: error.message });
     } finally {
         client.release();
     }
