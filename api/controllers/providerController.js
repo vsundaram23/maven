@@ -2,6 +2,17 @@
 const pool = require("../config/db.config");
 const userService = require("../services/userService");
 
+/* Helper function to format a term/phrase for to_tsquery
+ Converts "word1 word2" to "word1 & word2"
+*/
+const prepareTermForTsqueryFormatting = (term) => {
+    if (!term) return "";
+    return term
+        .split(/\s+/) // Split by any whitespace
+        .filter((part) => part.length > 0) // Remove empty parts
+        .join(" & "); // Join with FTS AND operator
+};
+
 const getInternalUserIdByEmail = async (userEmail, clerkUserIdFallback, additionalParams = {}) => {
     if (!userEmail && !clerkUserIdFallback) return null;
 
@@ -251,18 +262,58 @@ const searchVisibleProviders = async (req, res) => {
         }
 
         const { query: baseVisibilityQuery, queryParams: baseVisibilityParams } = getVisibleProvidersBaseQuery(internalUserId);
-        const ftsParamIndex = baseVisibilityParams.length + 1;
-        let ftsQuery = `
-            SELECT *, ts_rank(search_vector, plainto_tsquery('english', $${ftsParamIndex})) as rank
-            FROM (${baseVisibilityQuery}) AS VisibleProvidersCTE
-            WHERE VisibleProvidersCTE.search_vector @@ plainto_tsquery('english', $${ftsParamIndex})
-            ORDER BY rank DESC
-            LIMIT 10;
-        `;
-        let result = await pool.query(ftsQuery, [...baseVisibilityParams, searchQuery]);
+        
+        let ftsInputString = "";
+        const formattedOriginalQuery = prepareTermForTsqueryFormatting(searchQuery);
+        
+        if (formattedOriginalQuery && formattedOriginalQuery.length > 0) {
+            ftsInputString = formattedOriginalQuery; // Default to just the formatted original query
+
+            // Fetch synonyms - assuming 'term' in custom_synonyms is stored in lowercase
+            // and matches the case of 'searchQuery' (which is lowercased here)
+            const synonymRes = await pool.query(
+                "SELECT synonyms FROM custom_synonyms WHERE term = $1",
+                [searchQuery] // searchQuery is already lowercased and trimmed
+            );
+
+            if (synonymRes.rows.length > 0 && synonymRes.rows[0].synonyms) {
+                const fetchedSynonyms = synonymRes.rows[0].synonyms; // e.g., "syn1, syn2 word"
+                const parsedSynonyms = fetchedSynonyms.split(',')
+                    .map(s => s.trim())
+                    .filter(s => s.length > 0);
+
+                if (parsedSynonyms.length > 0) {
+                    // Format the original query and all synonyms, then join with OR
+                    const allTermsToFormat = [searchQuery, ...parsedSynonyms]; // Use original searchQuery for formatting consistency
+                    const allFormattedTerms = allTermsToFormat
+                        .map(prepareTermForTsqueryFormatting) // Format each term/synonym
+                        .filter(preparedTerm => preparedTerm.length > 0); // Ensure no empty strings
+
+                    if (allFormattedTerms.length > 0) {
+                        ftsInputString = allFormattedTerms.join(' | '); // e.g., "original & query | syn1 | syn2 & word"
+                    }
+                }
+            }
+        }
+
+        let result = { rows: [] }; // Initialize result
+
+        if (ftsInputString && ftsInputString.trim().length > 0) {
+            const ftsParamIndex = baseVisibilityParams.length + 1;
+            const ftsQuery = `
+                SELECT *, ts_rank_cd(search_vector, to_tsquery('english', $${ftsParamIndex})) as rank
+                FROM (${baseVisibilityQuery}) AS VisibleProvidersCTE
+                WHERE VisibleProvidersCTE.search_vector @@ to_tsquery('english', $${ftsParamIndex})
+                ORDER BY rank DESC
+                LIMIT 10;
+            `;
+            result = await pool.query(ftsQuery, [...baseVisibilityParams, ftsInputString]);
+        }
 
         if (result.rows.length === 0) {
+            // Fallback to ILIKE if FTS (with synonyms) yields no results or was skipped
             const ilikeParamIndex = baseVisibilityParams.length + 1;
+            // Fallback uses the original (lower-cased, trimmed) search query before any FTS formatting
             const ilikeSearchQuery = `%${searchQuery}%`;
             const fallbackQuery = `
                 SELECT *
@@ -272,7 +323,7 @@ const searchVisibleProviders = async (req, res) => {
                     OR LOWER(COALESCE(VisibleProvidersCTE.category, '')) LIKE $${ilikeParamIndex}
                     OR LOWER(COALESCE(VisibleProvidersCTE.description, '')) LIKE $${ilikeParamIndex}
                     OR EXISTS (
-                        SELECT 1 FROM unnest(VisibleProvidersCTE.tags) AS tag 
+                        SELECT 1 FROM unnest(VisibleProvidersCTE.tags) AS tag
                         WHERE LOWER(tag) LIKE $${ilikeParamIndex}
                     )
                 LIMIT 10;
