@@ -16,7 +16,7 @@ import { StarIcon as OutlineStarIcon } from "@heroicons/react/24/outline";
 
 import "./Profile.css";
 
-const API_URL = "https://api.seanag-recommendations.org:8080";
+const API_URL = 'https://api.seanag-recommendations.org:8080';
 // const API_URL = "http://localhost:3000";
 
 function getCroppedImg(image, crop, fileName) {
@@ -215,7 +215,7 @@ const MyRecommendationCard = ({ rec, onEdit, onLikeRecommendation }) => {
     const handleLikeClick = () => {
         const providerIdToLike = rec.provider_id || rec.id;
         if (providerIdToLike && onLikeRecommendation) {
-            onLikeRecommendation(providerIdToLike, rec.currentUserLiked);
+            onLikeRecommendation(providerIdToLike);
         } else {
             console.warn("Provider ID is missing for like action on recommendation card.", rec);
         }
@@ -242,14 +242,14 @@ const MyRecommendationCard = ({ rec, onEdit, onLikeRecommendation }) => {
                         <span className="profile-my-rec-rating-score-text">0.0 (0 Reviews)</span>
                     </>
                 )}
-                <button
+                {/* <button
                     className={`profile-my-rec-like-button ${rec.currentUserLiked ? 'liked' : ''}`}
                     onClick={handleLikeClick}
-                    title={rec.currentUserLiked ? "You liked this provider" : "Like this provider"}
+                    title={rec.currentUserLiked ? "Unlike this provider" : "Like this provider"}
                 >
                     <FaThumbsUp />
                     <span className="profile-my-rec-like-count">{rec.num_likes || 0}</span>
-                </button>
+                </button> */}
             </div>
             <p className="profile-my-rec-card-description"><ChatBubbleLeftEllipsisIcon className="inline-icon" />{rec.recommender_message || "No detailed message provided."}</p>
             {Array.isArray(rec.tags) && rec.tags.length > 0 && (<div className="profile-my-rec-tag-container">{rec.tags.map((tag, idx) => <span key={idx} className="profile-my-rec-tag-badge">{tag}</span>)}<button className="profile-my-rec-add-tag-button" onClick={() => onEdit(rec)} aria-label="Edit tags">+</button></div>)}
@@ -299,7 +299,7 @@ const Profile = () => {
 
     const fetchProfileData = useCallback(async () => {
         if (!isLoaded || !isSignedIn || !user) return;
-        setLoading(true); setError(null); setEnrichedRecommendations([]);
+        setLoading(true); setError(null);
         try {
             const queryParams = getClerkUserQueryParams(); if (!queryParams) throw new Error("User details not available.");
             const profileResPromise = fetch(`${API_URL}/api/users/me/recommendations?${queryParams}`);
@@ -321,7 +321,7 @@ const Profile = () => {
     useEffect(() => {
         if (baseRecommendations.length > 0 && user?.id) {
             setStatsLoading(true);
-            const enrichRecommendations = async () => {
+            const enrichAndSetRecommendations = async () => {
                 const enriched = await Promise.all(
                     baseRecommendations.map(async (rec) => {
                         let communityStats = { average_rating: 0, total_reviews: 0 };
@@ -336,7 +336,6 @@ const Profile = () => {
                                     communityStats.total_reviews = parseInt(statsData.total_reviews, 10) || 0;
                                 }
                             } catch (err) {
-                                console.error(`Failed to fetch provider stats for ID ${providerIdForData}:`, err);
                             }
                         }
                         return {
@@ -344,95 +343,97 @@ const Profile = () => {
                             average_rating: communityStats.average_rating,
                             total_reviews: communityStats.total_reviews,
                             num_likes: parseInt(rec.num_likes, 10) || 0,
-                            currentUserLiked: rec.currentUserLiked || false,
+                            currentUserLiked: rec.currentUserLiked || false, 
                         };
                     })
                 );
                 setEnrichedRecommendations(enriched);
+
+                const newInitialUserLikes = new Set();
+                enriched.forEach(r => {
+                    const providerId = r.provider_id || r.id; 
+                    if (r.currentUserLiked && providerId) {
+                        newInitialUserLikes.add(providerId);
+                    }
+                });
+                setLikedRecommendations(newInitialUserLikes);
+
                 setStatsLoading(false);
             };
-            enrichRecommendations();
+            enrichAndSetRecommendations();
         } else {
             setEnrichedRecommendations([]);
+            setLikedRecommendations(new Set()); 
             if (!loading) setStatsLoading(false);
         }
     }, [baseRecommendations, loading, user]);
 
-    const handleProviderLikeFromProfile = async (providerId, isCurrentlyLikedByProp) => {
+    const handleProviderLikeFromProfile = async (providerIdToLike) => {
         if (!user?.id || !user.primaryEmailAddress?.emailAddress) {
-            alert("Please sign in to like this provider.");
+            alert("Please sign in to like/unlike this provider.");
             return;
         }
-        if (!providerId) {
+        if (!providerIdToLike) {
             console.error("Provider ID is missing for like action.");
             return;
         }
-
-        const recommendationToUpdate = enrichedRecommendations.find(r => (r.provider_id || r.id) === providerId);
-        if (!recommendationToUpdate) {
-             const baseRecToUpdate = baseRecommendations.find(r => (r.provider_id || r.id) === providerId);
-             if (!baseRecToUpdate) {
-                console.error("Provider/Recommendation not found in state for like action.");
-                return;
-             }
-             // Use data from baseRecommendations if not found in enriched (e.g., during initial optimistic updates)
-             isCurrentlyLikedByProp = baseRecToUpdate.currentUserLiked;
-        } else {
-             isCurrentlyLikedByProp = recommendationToUpdate.currentUserLiked;
-        }
-
-
+    
         const originalEnrichedRecommendations = JSON.parse(JSON.stringify(enrichedRecommendations));
         const originalBaseRecommendations = JSON.parse(JSON.stringify(baseRecommendations));
-        const originalLikedRecommendations = new Set(likedRecommendations);
-
-        const newCurrentUserLikedState = !isCurrentlyLikedByProp;
+        const originalLikedRecommendationsSet = new Set(likedRecommendations);
+    
+        const isCurrentlyLiked = likedRecommendations.has(providerIdToLike);
+        const newCurrentUserLikedState = !isCurrentlyLiked;
         
         const updateItems = (items) =>
             items.map(item => {
                 const itemProviderId = item.provider_id || item.id;
-                if (itemProviderId === providerId) {
+                if (itemProviderId === providerIdToLike) {
+                    const currentItem = originalEnrichedRecommendations.find(r => (r.provider_id || r.id) === providerIdToLike) || 
+                                        originalBaseRecommendations.find(r => (r.provider_id || r.id) === providerIdToLike);
+                    const currentItemNumLikes = currentItem ? (currentItem.num_likes || 0) : 0;
+    
                     return {
                         ...item,
                         currentUserLiked: newCurrentUserLikedState,
                         num_likes: newCurrentUserLikedState
-                            ? (item.num_likes || 0) + 1
-                            : Math.max(0, (item.num_likes || 1) - 1),
+                            ? (parseInt(currentItemNumLikes,10) || 0) + 1
+                            : Math.max(0, (parseInt(currentItemNumLikes,10) || 1) - 1),
                     };
                 }
                 return item;
             });
-
+    
         setEnrichedRecommendations(updateItems(enrichedRecommendations));
-        setBaseRecommendations(updateItems(baseRecommendations));
-
+        setBaseRecommendations(updateItems(baseRecommendations)); 
+    
         if (newCurrentUserLikedState) {
-            setLikedRecommendations(prev => new Set(prev).add(providerId));
+            setLikedRecommendations(prev => new Set(prev).add(providerIdToLike));
         } else {
             setLikedRecommendations(prev => {
                 const newSet = new Set(prev);
-                newSet.delete(providerId);
+                newSet.delete(providerIdToLike);
                 return newSet;
             });
         }
-
+    
         try {
-            const response = await fetch(`${API_URL}/api/providers/${providerId}/like`, {
+            const response = await fetch(`${API_URL}/api/providers/${providerIdToLike}/like`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: user.id, userEmail: user.primaryEmailAddress.emailAddress })
             });
-
+    
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: "Server error during like action." }));
+                const errorData = await response.json().catch(() => ({ message: "Server error during like/unlike action." }));
                 throw new Error(errorData.message || `Failed to update like status. Status: ${response.status}`);
             }
             const result = await response.json();
-
+    
             const finalUpdateItems = (items) =>
                 items.map(item => {
-                     const itemProviderId = item.provider_id || item.id;
-                     if (itemProviderId === providerId) {
+                    const itemProviderId = item.provider_id || item.id;
+                    if (itemProviderId === providerIdToLike) {
                         return {
                             ...item,
                             num_likes: parseInt(result.num_likes, 10) || 0,
@@ -441,26 +442,25 @@ const Profile = () => {
                     }
                     return item;
                 });
-
-            setEnrichedRecommendations(finalUpdateItems(originalEnrichedRecommendations.map(p => (p.provider_id || p.id) === providerId ? {...p, ...result, num_likes: parseInt(result.num_likes,10)||0, currentUserLiked: result.currentUserLiked} : p)));
-            setBaseRecommendations(finalUpdateItems(originalBaseRecommendations.map(p => (p.provider_id || p.id) === providerId ? {...p, ...result, num_likes: parseInt(result.num_likes,10)||0, currentUserLiked: result.currentUserLiked} : p)));
-
-
+    
+            setEnrichedRecommendations(prevEnriched => finalUpdateItems(prevEnriched));
+            setBaseRecommendations(prevBase => finalUpdateItems(prevBase));
+    
             if (result.currentUserLiked) {
-                setLikedRecommendations(prev => new Set(prev).add(providerId));
+                setLikedRecommendations(prev => new Set(prev).add(providerIdToLike));
             } else {
                 setLikedRecommendations(prev => {
                     const newSet = new Set(prev);
-                    newSet.delete(providerId);
+                    newSet.delete(providerIdToLike);
                     return newSet;
                 });
             }
-
+    
         } catch (error) {
             console.error("Error liking provider from profile:", error.message);
             setEnrichedRecommendations(originalEnrichedRecommendations);
             setBaseRecommendations(originalBaseRecommendations);
-            setLikedRecommendations(originalLikedRecommendations);
+            setLikedRecommendations(originalLikedRecommendationsSet);
             alert(`Failed to update like: ${error.message}`);
         }
     };

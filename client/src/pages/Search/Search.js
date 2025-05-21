@@ -327,8 +327,8 @@ const Search = () => {
         return {
             ...p,
             originalIndex: idx,
-            average_rating: parseFloat(stats[p.id]?.average_rating) || 0,
-            total_reviews: parseInt(stats[p.id]?.total_reviews, 10) || 0,
+            average_rating: parseFloat(stats[p.id]?.average_rating) || p.average_rating || 0,
+            total_reviews: parseInt(stats[p.id]?.total_reviews, 10) || p.total_reviews || 0,
         };
     }).filter(p => p !== null);
 
@@ -352,6 +352,7 @@ const Search = () => {
     
     if (!query) {
         setRawProviders([]);
+        setLikedRecommendations(new Set());
         setIsLoading(false);
         initialProvidersRef.current = null; 
         processedInitialProvidersRef.current = false;
@@ -371,6 +372,7 @@ const Search = () => {
         }
         setIsLoading(false);
         setRawProviders([]);
+        setLikedRecommendations(new Set());
         return;
     }
     
@@ -411,6 +413,7 @@ const Search = () => {
       } catch (err) {
         setError(err.message || 'Failed to fetch search results.');
         setRawProviders([]);
+        setLikedRecommendations(new Set());
       } finally {
         setIsLoading(false);
       }
@@ -476,7 +479,7 @@ const Search = () => {
         const errText = await response.text();
         throw new Error(errText || "Failed to submit review");
       }
-      const currentRawProviders = [...rawProviders]; 
+      const currentRawProviders = JSON.parse(JSON.stringify(rawProviders));
       await processAndSetProviders(currentRawProviders); 
     } catch (err) {
       alert(`Error submitting review: ${err.message}`);
@@ -485,27 +488,41 @@ const Search = () => {
 
   const handleLike = async (recommendationId) => {
     if (!currentUserId || !currentUserEmail) {
-        alert("Please log in to like a recommendation.");
+        alert("Please log in to like/unlike a recommendation.");
         return;
     }
     
     const providerToUpdate = rawProviders.find(p => p.id === recommendationId);
-    if (!providerToUpdate) return;
-
-    const isAlreadyLikedByClient = likedRecommendations.has(recommendationId);
-
-    if (isAlreadyLikedByClient) {
-      return; 
+    if (!providerToUpdate) {
+        console.error("Provider not found for like action:", recommendationId);
+        return;
     }
+
+    const originalRawProviders = JSON.parse(JSON.stringify(rawProviders));
+    const originalLikedRecommendations = new Set(likedRecommendations);
+
+    const newCurrentUserLikedState = !providerToUpdate.currentUserLiked;
+    const newNumLikes = newCurrentUserLikedState
+        ? (providerToUpdate.num_likes || 0) + 1
+        : Math.max(0, (providerToUpdate.num_likes || 1) - 1);
 
     setRawProviders(prevProviders =>
         prevProviders.map(provider =>
             provider.id === recommendationId
-                ? { ...provider, num_likes: (provider.num_likes || 0) + 1, currentUserLiked: true }
+                ? { ...provider, num_likes: newNumLikes, currentUserLiked: newCurrentUserLikedState }
                 : provider
         )
     );
-    setLikedRecommendations(prevLiked => new Set(prevLiked).add(recommendationId));
+
+    if (newCurrentUserLikedState) {
+        setLikedRecommendations(prevLiked => new Set(prevLiked).add(recommendationId));
+    } else {
+        setLikedRecommendations(prevLiked => {
+            const newSet = new Set(prevLiked);
+            newSet.delete(recommendationId);
+            return newSet;
+        });
+    }
 
     try {
       const response = await fetch(`${API_URL}/api/providers/${recommendationId}/like`, {
@@ -517,15 +534,15 @@ const Search = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: "Server error during like action." }));
-        throw new Error(errorData.message || `Failed to like recommendation. Status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({ message: "Server error during like/unlike action." }));
+        throw new Error(errorData.message || `Failed to update like status. Status: ${response.status}`);
       }
       const result = await response.json(); 
       
       setRawProviders(prevProviders =>
         prevProviders.map(provider =>
             provider.id === recommendationId
-                ? { ...provider, num_likes: result.num_likes, currentUserLiked: result.currentUserLiked }
+                ? { ...provider, num_likes: parseInt(result.num_likes, 10) || 0, currentUserLiked: result.currentUserLiked }
                 : provider
         )
       );
@@ -540,27 +557,10 @@ const Search = () => {
         });
       }
     } catch (error) {
-      console.error("Error liking recommendation:", error.message);
-      setRawProviders(prevProviders =>
-          prevProviders.map(provider => {
-              if (provider.id === recommendationId) {
-                  return { 
-                    ...provider, 
-                    num_likes: (providerToUpdate.num_likes || 0), // Revert to original num_likes before optimistic update
-                    currentUserLiked: isAlreadyLikedByClient // Revert to original client liked state
-                  };
-              }
-              return provider;
-            }
-          )
-      );
-      setLikedRecommendations(prevLiked => {
-          const newLiked = new Set(prevLiked);
-          if (!isAlreadyLikedByClient) { // Only remove if we optimistically added it
-            newLiked.delete(recommendationId);
-          }
-          return newLiked;
-      });
+      console.error("Error updating like status:", error.message);
+      setRawProviders(originalRawProviders);
+      setLikedRecommendations(originalLikedRecommendations);
+      alert(`Failed to update like status: ${error.message}`);
     }
   };
 
@@ -568,7 +568,7 @@ const Search = () => {
     setShowBumpNetworkModal(true);
   };
   
-  if (isLoading && !rawProviders.length) {
+  if (isLoading && rawProviders.length === 0 && query) {
     return (
         <div className="search-results-container">
             <div className="loading-spinner">
@@ -656,7 +656,7 @@ const Search = () => {
         </select>
       </div>
       
-      {isLoading && <div className="loading-spinner" style={{paddingTop: '1rem'}}>Updating results...</div>}
+      {isLoading && query && <div className="loading-spinner" style={{paddingTop: '1rem'}}>Updating results...</div>}
 
       {!isLoading && sortedProviders.length > 0 && (
         <ul className="provider-list">
@@ -735,8 +735,7 @@ const Search = () => {
                   <button
                     className={`like-button ${hasUserLiked ? 'liked' : ''}`}
                     onClick={() => handleLike(p.id)}
-                    disabled={hasUserLiked}
-                    title={hasUserLiked ? "You liked this" : "Like this recommendation"}
+                    title={hasUserLiked ? "Unlike this recommendation" : "Like this recommendation"}
                   >
                     <FaThumbsUp />
                     <span className="like-count">{p.num_likes || 0}</span>
