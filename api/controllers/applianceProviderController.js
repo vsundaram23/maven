@@ -25,7 +25,12 @@ const getVisibleProvidersBaseQueryForServicePage = (currentUserId) => {
         s.name AS service_type,
         sp.recommended_by AS recommender_user_id,
         rec_user.name AS recommender_name,
-        rec_user.phone_number AS recommender_phone
+        rec_user.phone_number AS recommender_phone,
+        EXISTS (
+            SELECT 1
+            FROM public.recommendation_likes rl
+            WHERE rl.recommendation_id = sp.id AND rl.user_id = $1
+        ) AS "currentUserLiked"
     FROM
         public.service_providers sp
     LEFT JOIN

@@ -699,6 +699,7 @@ hr.my-4 {
 
 .like-button.liked {
   color: #1A365D;
+  background-color: #95d3fc !important;
 }
 
 .like-button.liked .fa-thumbs-up {
