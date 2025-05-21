@@ -1,4 +1,3 @@
-// routes/recommendations.js
 const express = require('express');
 const router = express.Router();
 const recommendationController = require('../controllers/recommendationController');
@@ -7,11 +6,11 @@ router.post('/', recommendationController.createRecommendation);
 router.get('/', recommendationController.getAllRecommendations);
 router.get('/:id', recommendationController.getRecommendationById);
 router.put('/:id', recommendationController.updateRecommendation);
-router.delete('/:id', recommendationController.deleteRecommendation);
 
 module.exports = router;
 
-// // routes/recommendations.js
+// working 5/21 => pre my recs
+// routes/recommendations.js
 // const express = require('express');
 // const router = express.Router();
 // const recommendationController = require('../controllers/recommendationController');
@@ -20,6 +19,6 @@ module.exports = router;
 // router.get('/', recommendationController.getAllRecommendations);
 // router.get('/:id', recommendationController.getRecommendationById);
 // router.put('/:id', recommendationController.updateRecommendation);
-// router.delete('/:id', recommendationController.deleteRecommendation);
+// // router.delete('/:id', recommendationController.deleteRecommendation);
 
 // module.exports = router;

@@ -64,6 +64,11 @@ body {
   gap: 24px;
 }
 
+.recommendations-grid .card {
+  min-height: 250px;
+}
+
+
 .card {
   background-color: #fff;
   border-radius: 12px;
@@ -91,6 +96,15 @@ body {
   margin-bottom: 8px;
 }
 
+.provider-name-link {
+  text-decoration: none;
+  color: inherit;
+}
+.provider-name-link:hover {
+  text-decoration: underline;
+  color: #0056b3;
+}
+
 .card-subtitle,
 .card-description {
   font-size: 0.9rem;
@@ -102,8 +116,12 @@ body {
 .card-info {
   font-size: 0.85rem;
   color: #495057;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
+.recommendation-by {
+    margin-top: 10px;
+}
+
 
 .status-badge {
   font-size: 0.75rem;
@@ -370,7 +388,27 @@ body {
     fill: #495057;
 }
 
-/* body {
+.tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.tag-badge {
+  background-color: #edf2f7;
+  color: #2b6cb0;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 
+// working 5/21 => pre my recs
+
+body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: #f8f9fa;
   color: #212529;
@@ -724,4 +762,20 @@ body {
 
 .tab-content {
   padding-top: 16px;
+}
+
+.button.status-requested {
+    background-color: #e9ecef;
+    color: #495057;
+    border: 1px solid #ced4da;
+    cursor: default;
+}
+
+.button.status-requested:hover {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.button.status-requested svg {
+    fill: #495057;
 } */
