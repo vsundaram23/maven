@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import ReviewSection from '../../components/ReviewSection/ReviewSection';
 import './ServiceDetails.css';
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = process.env.REACT_APP_API_URL;
 
 const ServiceDetails = () => {
   const { id } = useParams();

@@ -13,8 +13,9 @@ import {
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import "./CleaningServices.css"; // Ensure you have styles for .like-button.liked here
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
 // const API_URL = "http://localhost:3000";
+const API_URL = process.env.REACT_APP_API_URL;
 
 const StarRating = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;

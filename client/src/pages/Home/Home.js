@@ -12,9 +12,10 @@ import {
 } from "@heroicons/react/24/solid";
 import "./Home.css";
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
 // const API_URL = "http://localhost:5000";
 // const API_URL = "http://localhost:3000";
+const API_URL = process.env.REACT_APP_API_URL;
 
 const BRAND_PHRASE = "Tried & Trusted.";
 const LOCKED_LOCATION = "Greater Seattle Area";

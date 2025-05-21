@@ -3,7 +3,8 @@ import { FaStar } from 'react-icons/fa';
 import { fetchUtilitiesProviders } from '../../services/providerService';
 import './UtilitiesServices.css';
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = process.env.REACT_APP_API_URL;
 
 const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   const [rating, setRating] = useState(0);
