@@ -43,81 +43,92 @@ const createCommunity = async (name, description, created_by_clerk_id) => {
   }
 };
 
-const getAllCommunities = async (clerkUserId) => {
+const getUserCommunities = async (clerkUserId) => {
+  if (!clerkUserId) {
+      console.warn('getUserCommunities called without clerkUserId. Returning empty array.');
+      return [];
+  }
   let client;
   try {
     client = await pool.connect();
     let internalUserUuid = null;
-    if (clerkUserId) {
-      const userRes = await client.query('SELECT id FROM users WHERE clerk_id = $1', [clerkUserId]);
-      if (userRes.rows.length > 0) {
-        internalUserUuid = userRes.rows[0].id;
-      }
+    
+    const userRes = await client.query('SELECT id FROM users WHERE clerk_id = $1', [clerkUserId]);
+    if (userRes.rows.length > 0) {
+      internalUserUuid = userRes.rows[0].id;
+    } else {
+      console.warn(`No internal user UUID found for Clerk ID: ${clerkUserId} in getUserCommunities. Returning empty array.`);
+      return []; 
     }
+    
+    const result = await client.query(`
+      SELECT 
+          c.id, c.name, c.description, c.created_by, c.created_at, 
+          creator_u.name as creator_name, 
+          cm.status as user_membership_status,
+          (SELECT COUNT(*) FROM community_memberships cm_count WHERE cm_count.community_id = c.id AND cm_count.status = 'approved') as member_count,
+          (SELECT COUNT(DISTINCT cs.service_provider_id) FROM community_shares cs WHERE cs.community_id = c.id) as recommendation_count 
+      FROM community_memberships cm
+      JOIN communities c ON cm.community_id = c.id
+      JOIN users creator_u ON c.created_by = creator_u.id
+      WHERE cm.user_id = $1 AND cm.status = 'approved'
+      ORDER BY c.name ASC
+    `, [internalUserUuid]);
+    
+    return result.rows.map(r => ({ 
+        ...r, 
+        member_count: parseInt(r.member_count, 10) || 0, 
+        recommendation_count: parseInt(r.recommendation_count, 10) || 0,
+        isOwner: r.created_by === internalUserUuid 
+    }));
+  } catch (err) {
+    console.error('Error in getUserCommunities:', err.message, err.stack);
+    throw err; 
+  } finally {
+      if(client) client.release();
+  }
+};
 
+// Make sure getAllCommunities also correctly handles its userIdFromQuery (which should be an internal UUID)
+const getAllCommunities = async (internalUserIdFromQuery) => {
+  let client;
+  try {
+    client = await pool.connect();
     let queryText = `
-      SELECT
-        c.id, c.name, c.description, c.created_by, c.created_at,
-        u.name as creator_name,
-        (SELECT COUNT(*) FROM community_memberships cm_count WHERE cm_count.community_id = c.id AND cm_count.status = 'approved') as member_count`;
+      SELECT c.id, c.name, c.description, c.created_by, c.created_at, u.name as creator_name,
+             (SELECT COUNT(*) FROM community_memberships cm_count WHERE cm_count.community_id = c.id AND cm_count.status = 'approved') as member_count,
+             (SELECT COUNT(DISTINCT cs.service_provider_id) FROM community_shares cs WHERE cs.community_id = c.id) as recommendation_count`;
     const queryParams = [];
-
-    if (internalUserUuid) {
+  
+    if (internalUserIdFromQuery) {
       queryText += `, cm_user.status as user_membership_status
         FROM communities c
         JOIN users u ON c.created_by = u.id
         LEFT JOIN community_memberships cm_user ON c.id = cm_user.community_id AND cm_user.user_id = $1
-        ORDER BY c.name`;
-      queryParams.push(internalUserUuid);
+        ORDER BY c.name ASC`;
+      queryParams.push(internalUserIdFromQuery);
     } else {
       queryText += `
         FROM communities c
         JOIN users u ON c.created_by = u.id
-        ORDER BY c.name`;
+        ORDER BY c.name ASC`;
     }
     const result = await client.query(queryText, queryParams);
     return result.rows.map(r => ({
         ...r,
         member_count: parseInt(r.member_count, 10) || 0,
-        recommendation_count: 0, 
-        isOwner: internalUserUuid ? r.created_by === internalUserUuid : false,
+        recommendation_count: parseInt(r.recommendation_count, 10) || 0,
+        isOwner: internalUserIdFromQuery ? r.created_by === internalUserIdFromQuery : false,
         user_membership_status: r.user_membership_status || 'none'
     }));
   } catch (error) {
+    console.error('Error in getAllCommunities:', error.message, error.stack);
     throw error;
   } finally {
     if(client) client.release();
   }
-};
+  };
 
-const getUserCommunities = async (clerkUserId) => {
-    let client;
-    try {
-      client = await pool.connect();
-      let internalUserUuid = null;
-      const userRes = await client.query('SELECT id FROM users WHERE clerk_id = $1', [clerkUserId]);
-      if (userRes.rows.length > 0) {
-        internalUserUuid = userRes.rows[0].id;
-      } else {
-        return []; 
-      }
-      const result = await client.query(`
-        SELECT c.id, c.name, c.description, c.created_by, c.created_at, creator_u.name as creator_name,
-               cm.status as user_membership_status,
-               (SELECT COUNT(*) FROM community_memberships cm_count WHERE cm_count.community_id = c.id AND cm_count.status = 'approved') as member_count
-        FROM community_memberships cm
-        JOIN communities c ON cm.community_id = c.id
-        JOIN users creator_u ON c.created_by = creator_u.id
-        WHERE cm.user_id = $1 AND cm.status = 'approved'
-        ORDER BY c.name
-      `, [internalUserUuid]);
-      return result.rows.map(r => ({ ...r, member_count: parseInt(r.member_count, 10) || 0, recommendation_count: 0, isOwner: r.created_by === internalUserUuid }));
-    } catch (err) {
-      throw err;
-    } finally {
-        if(client) client.release();
-    }
-};
 
 const getCommunityDetails = async (communityId, clerkUserId) => {
   let client;
