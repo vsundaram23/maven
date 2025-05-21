@@ -2,9 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './QuoteModal.css';
 
-// const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = 'https://api.seanag-recommendations.org:8080';
 // const API_URL = 'http://localhost:3000';
-const API_URL = process.env.REACT_APP_API_URL;
 
 const QuoteModal = ({
   providerName,

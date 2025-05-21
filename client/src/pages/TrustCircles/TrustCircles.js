@@ -5,9 +5,8 @@ import { FaStar, FaPhone, FaEnvelope, FaUsers, FaPlusCircle, FaThumbsUp, FaEye }
 import QuoteModal from "../../components/QuoteModal/QuoteModal"; 
 import "./TrustCircles.css";
 
-// const API_URL = "https://api.seanag-recommendations.org:8080";
+const API_URL = "https://api.seanag-recommendations.org:8080";
 // const API_URL = "http://localhost:3000";
-const API_URL = process.env.REACT_APP_API_URL;
 
 const PersonAddIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style={{ marginRight: "8px" }}>

@@ -14,8 +14,7 @@ import { useUser } from "@clerk/clerk-react";
 import "./FinancialServices.css"; // Ensure you have styles for .like-button.liked here
 
 // const API_URL = "http://localhost:3000";
-// const API_URL = 'https://api.seanag-recommendations.org:8080';
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = 'https://api.seanag-recommendations.org:8080';
 
 const StarRating = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;

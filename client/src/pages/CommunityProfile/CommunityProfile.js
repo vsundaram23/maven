@@ -5,9 +5,8 @@ import { FaUserTie, FaCalendarAlt, FaUsers, FaStar, FaEdit, FaSignInAlt, FaUserP
 import QuoteModal from "../../components/QuoteModal/QuoteModal"; 
 import "./CommunityProfile.css";
 
-// const API_URL = "https://api.seanag-recommendations.org:8080";
+const API_URL = "https://api.seanag-recommendations.org:8080";
 // const API_URL = "http://localhost:3000";
-const API_URL = process.env.REACT_APP_API_URL;
 
 const IconText = ({ icon, text, className = "" }) => (
   <div className={`icon-text-item ${className}`}> {icon} <span>{text}</span> </div>
