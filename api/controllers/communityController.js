@@ -337,9 +337,8 @@ const getCommunityRecommendations = async (communityId, clerkUserId) => {
           }
       }
 
-      // Define these if you are using them to filter out pending recommendations
-      const PENDING_SERVICE_PK_ID_val = 'e2c2b91a-c577-448b-8bd1-3e0c17b20e46'; // Example
-      const PENDING_CATEGORY_PK_ID_val = '93859f52-830f-4b72-92fc-9316db28fb7e'; // Example
+      const PENDING_SERVICE_PK_ID_val = 'e2c2b91a-c577-448b-8bd1-3e0c17b20e46';
+      const PENDING_CATEGORY_PK_ID_val = '93859f52-830f-4b72-92fc-9316db28fb7e';
 
       const query = `
           SELECT
@@ -348,7 +347,7 @@ const getCommunityRecommendations = async (communityId, clerkUserId) => {
               sp.business_contact, sp.provider_message, sp.recommender_message,
               sp.visibility, sp.date_of_recommendation, sp.created_at,
               sp.submitted_category_name, sp.submitted_service_name,
-              cat.name AS category_name, 
+              cat.name AS category_name,
               ser.name AS service_type,
               rec_user.id AS recommender_user_id,
               rec_user.clerk_id AS recommender_clerk_id,
@@ -358,23 +357,31 @@ const getCommunityRecommendations = async (communityId, clerkUserId) => {
               rec_user.phone_number AS recommender_phone,
               COALESCE(sp.num_likes, 0) AS num_likes,
               EXISTS (SELECT 1 FROM recommendation_likes rl WHERE rl.recommendation_id = sp.id AND rl.user_id = $1) AS "currentUserLiked"
-              -- Ensure recommendation_likes has recommendation_id (FK to service_providers.id) and user_id (FK to users.id)
           FROM service_providers sp
           JOIN community_shares cs ON sp.id = cs.service_provider_id
           JOIN users rec_user ON sp.recommended_by = rec_user.id
           LEFT JOIN services ser ON sp.service_id = ser.service_id AND ser.service_id != $2
           LEFT JOIN service_categories cat ON ser.category_id = cat.service_id AND cat.service_id != $3
           WHERE cs.community_id = $4
-            AND sp.service_id != $2 
+            -- AND sp.service_id != $2  -- This line is removed to include pending items
             AND (sp.visibility = 'public' OR sp.visibility = 'connections')
           ORDER BY sp.created_at DESC;
       `;
       
+      // Parameters are still needed for $1 (currentUserLiked), $2 & $3 (LEFT JOIN conditions), and $4 (communityId)
       const params = [internalUserUuid, PENDING_SERVICE_PK_ID_val, PENDING_CATEGORY_PK_ID_val, communityId];
+      
+      // console.log('--- DEBUG getCommunityRecommendations ---');
+      // console.log('Query String:', query);
+      // console.log('Parameters being passed:', params);
+      // console.log('Number of parameters provided:', params.length);
+      // console.log('--- END DEBUG ---');
+
       const { rows } = await client.query(query, params);
       return rows;
   } catch (error) {
-      console.error('Database error fetching community recommendations:', error); // Log the full error
+      console.error('Database error fetching community recommendations:', error.message);
+      // console.error('Full error object in getCommunityRecommendations:', error); 
       throw new Error('Database error fetching community recommendations: ' + error.message);
   } finally {
       if (client) client.release();

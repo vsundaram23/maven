@@ -142,14 +142,15 @@ router.get('/:communityId/members', async (req, res) => {
 });
 
 router.get('/:communityId/recommendations', async (req, res) => {
-    const { communityId } = req.params;
-    const { user_id: clerkUserId } = req.query;
-    try {
-        const recommendations = await getCommunityRecommendations(communityId, clerkUserId || null);
-        res.json({ success: true, recommendations: recommendations });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message || 'Server error fetching community recommendations' });
-    }
+  const { communityId } = req.params;
+  const { user_id: clerkUserId } = req.query; // clerkUserId might be null if user not logged in
+  try {
+      const recommendations = await getCommunityRecommendations(communityId, clerkUserId || null);
+      res.json({ success: true, recommendations: recommendations });
+  } catch (error) {
+      console.error('Error in GET /:communityId/recommendations route:', error.message);
+      res.status(500).json({ success: false, message: error.message || 'Server error fetching community recommendations' });
+  }
 });
 
 module.exports = router;
