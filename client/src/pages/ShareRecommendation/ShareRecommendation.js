@@ -858,8 +858,7 @@ export default function ShareRecommendation() {
             <DocumentTextIcon className="csv-icon" />{" "}
             <h2>Import Recommendations via CSV</h2>{" "}
             <p>
-                This feature is coming soon! Prepare your CSV file with columns
-                like:{" "}
+                Prepare your CSV file with columns following the exact naming schema below:{" "}
             </p>{" "}
             <code>
                 Business Name, Your Experience, Rating (1-5), Provider Contact
