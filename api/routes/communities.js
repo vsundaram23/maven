@@ -11,7 +11,8 @@ const {
   getJoinRequests,
   approveMembership,
   getCommunityMembers,
-  getCommunityRecommendations
+  getCommunityRecommendations,
+  getCommunityServiceCategories
 } = require('../controllers/communityController');
 
 router.post('/create', async (req, res) => {
@@ -150,6 +151,17 @@ router.get('/:communityId/recommendations', async (req, res) => {
   } catch (error) {
       console.error('Error in GET /:communityId/recommendations route:', error.message);
       res.status(500).json({ success: false, message: error.message || 'Server error fetching community recommendations' });
+  }
+});
+
+router.get('/:communityId/categories', async (req, res) => {
+  const { communityId } = req.params;
+  try {
+    const categories = await getCommunityServiceCategories(communityId);
+    res.json({ success: true, categories: categories });
+  } catch (error) {
+    console.error(`Error in GET /:communityId/categories route for community ${communityId}:`, error.message);
+    res.status(500).json({ success: false, message: error.message || 'Server error fetching community categories' });
   }
 });
 

@@ -166,6 +166,9 @@ const CommunityProfile = () => {
   const [commRecsClickedRecommender, setCommRecsClickedRecommender] = useState(null);
   const [commRecsShowFeatureComingModal, setCommRecsShowFeatureComingModal] = useState(false);
 
+  const [communityServiceCategories, setCommunityServiceCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('all'); // 'all' initially, or a category ID
+
   useEffect(() => {
     if (isLoaded && user) {
       setCurrentUserId(user.id);
@@ -218,16 +221,36 @@ const CommunityProfile = () => {
             }));
         }
         setCommRecsReviewMap(allReviewsMap);
+        
+        let currentCommunityCategories = [];
+        const categoriesResponse = await fetch(`${API_URL}/api/communities/${communityId}/categories`);
+        if (categoriesResponse.ok) {
+            const categoriesData = await categoriesResponse.json();
+            if (categoriesData.success && categoriesData.categories) {
+                currentCommunityCategories = categoriesData.categories;
+                setCommunityServiceCategories(categoriesData.categories);
+            } else {
+                setCommunityServiceCategories([]);
+            }
+        } else {
+            setCommunityServiceCategories([]);
+        }
+
+        const miscellaneousCategory = currentCommunityCategories.find(cat => cat.category_name === 'Miscellaneous');
+        const miscellaneousCategoryId = miscellaneousCategory ? miscellaneousCategory.id : null;
+
         const enriched = fetchedProviders.map((p, idx) => ({
             ...p, originalIndex: idx,
             average_rating: parseFloat(statsMap[p.id]?.average_rating) || parseFloat(p.average_rating) || 0,
             total_reviews: parseInt(statsMap[p.id]?.total_reviews, 10) || parseInt(p.total_reviews, 10) || 0,
             currentUserLiked: p.currentUserLiked || false, num_likes: parseInt(p.num_likes, 10) || 0,
+            community_service_category_id: p.community_service_category_id || miscellaneousCategoryId,
         }));
         const initialLikes = new Map(); enriched.forEach(p => { if (p.currentUserLiked) initialLikes.set(p.id, true);});
         setCommRecsLikedMap(initialLikes);
         setCommRecsRaw(enriched);
-    } catch (err) { setCommRecsError(err.message); setCommRecsRaw([]);
+
+    } catch (err) { setCommRecsError(err.message); setCommRecsRaw([]); setCommunityServiceCategories([]);
     } finally { setLoadingCommRecs(false); }
   }, [communityId, currentUserId, currentUserEmail]);
 
@@ -235,11 +258,19 @@ const CommunityProfile = () => {
   useEffect(() => { if (activeTab === 'members' && communityId) fetchCommunityMembers(); }, [activeTab, communityId, fetchCommunityMembers]);
   useEffect(() => { if (activeTab === 'recommendations' && communityId && currentUserId && currentUserEmail) fetchCommunityRecommendations(); }, [activeTab, communityId, currentUserId, currentUserEmail, fetchCommunityRecommendations]);
 
-  const sortedCommRecs = useMemo(() => {
+  const sortedAndFilteredCommRecs = useMemo(() => {
     if (!commRecsRaw) return [];
-    const getBand = r => { if (r >= 4) return 0; if (r >= 3) return 1; if (r >= 2) return 2; if (r >= 1) return 3; return 4; };
+
     let list = [...commRecsRaw];
-    if (commRecsSortOption === "topRated") return list.filter(p => p.average_rating >= 4.5).sort((a, b) => (b.average_rating !== a.average_rating) ? b.average_rating - a.average_rating : (b.total_reviews || 0) - (a.total_reviews || 0));
+
+    if (communityServiceCategories.length > 0 && selectedCategory !== 'all') {
+      list = list.filter(p => p.community_service_category_id === selectedCategory);
+    }
+
+    const getBand = r => { if (r >= 4) return 0; if (r >= 3) return 1; if (r >= 2) return 2; if (r >= 1) return 3; return 4; };
+    if (commRecsSortOption === "topRated") {
+      return list.filter(p => p.average_rating >= 4.5).sort((a, b) => (b.average_rating !== a.average_rating) ? b.average_rating - a.average_rating : (b.total_reviews || 0) - (a.total_reviews || 0));
+    }
     return list.sort((a, b) => {
         const bA = getBand(a.average_rating); const bB = getBand(b.average_rating); if (bA !== bB) return bA - bB;
         const sA = (a.average_rating || 0) * (a.total_reviews || 0); const sB = (b.average_rating || 0) * (b.total_reviews || 0); if (sB !== sA) return sB - sA;
@@ -247,7 +278,7 @@ const CommunityProfile = () => {
         if ((b.total_reviews || 0) !== (a.total_reviews || 0)) return (b.total_reviews || 0) - (a.total_reviews || 0);
         return (a.originalIndex || 0) - (b.originalIndex || 0);
     });
-  }, [commRecsRaw, commRecsSortOption]);
+  }, [commRecsRaw, commRecsSortOption, selectedCategory, communityServiceCategories]);
 
   const handleCommRecsReviewSubmit = async (reviewData) => {
     if (!isSignedIn || !commRecsSelectedProvider || !currentUserId || !currentUserEmail) { alert("Please sign in to submit a review"); return; }
@@ -271,16 +302,28 @@ const CommunityProfile = () => {
     const newNumLikes = newLikedState ? (originalProviderState.num_likes || 0) + 1 : Math.max(0, (originalProviderState.num_likes || 1) - 1);
 
     setCommRecsRaw(prev => prev.map(p => p.id === providerId ? { ...p, num_likes: newNumLikes, currentUserLiked: newLikedState } : p));
-    setCommRecsLikedMap(prev => new Map(prev).set(providerId, newLikedState));
+    setCommRecsLikedMap(prev => {
+        const newMap = new Map(prev);
+        newMap.set(providerId, newLikedState);
+        return newMap;
+    });
     try {
         const response = await fetch(`${API_URL}/api/providers/${providerId}/like`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: currentUserId, userEmail: currentUserEmail }) });
         if (!response.ok) { const eData = await response.json().catch(() => ({})); throw new Error(eData.message || `Like error ${response.status}`); }
         const result = await response.json();
         setCommRecsRaw(prev => prev.map(p => p.id === providerId ? { ...p, num_likes: parseInt(result.num_likes, 10) || 0, currentUserLiked: result.currentUserLiked } : p ));
-        setCommRecsLikedMap(prev => new Map(prev).set(providerId, result.currentUserLiked));
+        setCommRecsLikedMap(prev => {
+            const newMap = new Map(prev);
+            newMap.set(providerId, result.currentUserLiked);
+            return newMap;
+        });
     } catch (error) {
         setCommRecsRaw(prev => prev.map(p => p.id === providerId ? originalProviderState : p));
-        setCommRecsLikedMap(prev => new Map(prev).set(providerId, originalLikedState));
+        setCommRecsLikedMap(prev => {
+            const newMap = new Map(prev);
+            newMap.set(providerId, originalLikedState);
+            return newMap;
+        });
         alert(`Failed to update like: ${error.message}`);
     }
   };
@@ -344,18 +387,42 @@ const CommunityProfile = () => {
                     <option value="recommended">Recommended</option><option value="topRated">Top Rated</option>
                 </select>
             </div>
+
+            {communityServiceCategories.length > 0 && (
+                <div className="category-filter-bar">
+                    <button
+                        className={`category-button ${selectedCategory === 'all' ? 'active' : ''}`}
+                        onClick={() => setSelectedCategory('all')}
+                    >
+                        All
+                    </button>
+                    {[...communityServiceCategories]
+                        .sort((a, b) => a.category_name.localeCompare(b.category_name))
+                        .map((category) => (
+                        <button
+                            key={category.id}
+                            className={`category-button ${selectedCategory === category.id ? 'active' : ''}`}
+                            onClick={() => setSelectedCategory(category.id)}
+                        >
+                            {category.category_name}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+
             {loadingCommRecs && <div className="loading-spinner">Loading recommendations...</div>}
-            {!loadingCommRecs && commRecsError && sortedCommRecs.length === 0 && <div className="error-message full-width-error">{commRecsError}</div>}
-            {!loadingCommRecs && !commRecsError && sortedCommRecs.length === 0 && (
+            {!loadingCommRecs && commRecsError && sortedAndFilteredCommRecs.length === 0 && <div className="error-message full-width-error">{commRecsError}</div>}
+            {!loadingCommRecs && !commRecsError && sortedAndFilteredCommRecs.length === 0 && (
                 <div className="no-providers-message">
                     <FaTools className="no-providers-icon" /><h2>No Recommendations Yet</h2>
                     <p>This community doesn't have any shared recommendations yet. {isMember ? "Be the first to add one!" : ""}</p>
                     {isMember && <div className="no-providers-actions"><button onClick={() => navigate("/share-recommendation", { state: { communityId: communityId, communityName: name }})} className="primary-button"><FaPlusCircle style={{ marginRight: "8px" }} /> Share a Recommendation</button></div>}
                 </div>
             )}
-            {sortedCommRecs.length > 0 && (
+            {sortedAndFilteredCommRecs.length > 0 && (
                 <ul className="provider-list">
-                    {sortedCommRecs.map((provider) => {
+                    {sortedAndFilteredCommRecs.map((provider) => {
                         const currentReviews = commRecsReviewMap[provider.id] || [];
                         const displayAvgRating = (parseFloat(provider.average_rating) || 0).toFixed(1);
                         const displayTotalReviews = parseInt(provider.total_reviews, 10) || 0;
@@ -432,7 +499,7 @@ const CommunityProfile = () => {
                                 )}
 
                                 <div className="action-buttons">
-                                    {isSignedIn && <button className="primary-button" onClick={() => { setCommRecsSelectedProvider(provider); setCommRecsIsQuoteModalOpen(true);}}>Request a Quote</button>}
+                                    {/* {isSignedIn && <button className="primary-button" onClick={() => { setCommRecsSelectedProvider(provider); setCommRecsIsQuoteModalOpen(true);}}>Request a Quote</button>} */}
                                     {isSignedIn && (provider.recommender_phone || provider.recommender_email) && 
                                         <button className="secondary-button" onClick={() => { 
                                             if (provider.recommender_phone) window.location.href = `sms:${provider.recommender_phone}`; 
@@ -467,15 +534,15 @@ const CommunityProfile = () => {
 
 export default CommunityProfile;
 
-// 5/21 solid, no recs yet
+// working good 5/21, no filtering
 // import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // import { useParams, useNavigate, Link } from 'react-router-dom';
 // import { useUser } from "@clerk/clerk-react";
 // import { FaUserTie, FaCalendarAlt, FaUsers, FaStar, FaEdit, FaSignInAlt, FaUserPlus, FaEye, FaUserCheck, FaHourglassHalf, FaTools, FaThumbsUp, FaPhone, FaEnvelope, FaPlusCircle } from 'react-icons/fa';
-// import QuoteModal from "../../components/QuoteModal/QuoteModal"; 
+// import QuoteModal from "../../components/QuoteModal/QuoteModal";
 // import "./CommunityProfile.css";
 
-// const API_URL = "https://api.seanag-recommendations.org:8080";
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
 // // const API_URL = "http://localhost:3000";
 
 // const IconText = ({ icon, text, className = "" }) => (
@@ -483,19 +550,15 @@ export default CommunityProfile;
 // );
 
 // const MemberCard = ({ member }) => {
-//   const [imageFailed, setImageFailed] = useState(false); // 0: initial, 1: primary tried and failed, 2: fallback also failed
-
-//   // This primarySrc MUST be a URL string if it's not null/undefined
-//   const primarySrc = member.profile_image_url || member.avatarUrl; 
+//   const [imageFailed, setImageFailed] = useState(false);
+//   const primarySrc = member.profile_image_url || member.avatarUrl;
 //   const fallbackUiAvatarSrc = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name || member.email || 'NA')}&background=random&color=fff&size=60&font-size=0.33`;
 
 //   const handleImageError = (e) => {
-//     // If current src is the primary one (or was intended to be) and it failed
 //     if (e.target.src === primarySrc && primarySrc !== fallbackUiAvatarSrc) {
-//       e.target.src = fallbackUiAvatarSrc; // Try ui-avatars
-//     } else { 
-//       // If ui-avatars also failed (or if primarySrc was already fallbackUiAvatarSrc)
-//       setImageFailed(true); // Trigger initials div display
+//       e.target.src = fallbackUiAvatarSrc;
+//     } else {
+//       setImageFailed(true);
 //     }
 //   };
 
@@ -512,7 +575,7 @@ export default CommunityProfile;
 
 //   const cleanAltText = (name, email) => {
 //     const text = name || email || "Community Member";
-//     return text.replace(/(\r\n|\n|\r)/gm, " "); 
+//     return text.replace(/(\r\n|\n|\r)/gm, " ");
 //   };
 
 //   let avatarContent;
@@ -525,8 +588,7 @@ export default CommunityProfile;
 //   } else {
 //     avatarContent = (
 //       <img
-//         // If primarySrc is set (and is a URL from backend), use it. Otherwise, ui-avatars.
-//         src={primarySrc || fallbackUiAvatarSrc} 
+//         src={primarySrc || fallbackUiAvatarSrc}
 //         alt={cleanAltText(member.name, member.email)}
 //         className="member-avatar"
 //         onError={handleImageError}
@@ -621,7 +683,7 @@ export default CommunityProfile;
 //   const [loadingCommunityDetails, setLoadingCommunityDetails] = useState(true);
 //   const [loadingCommunityMembers, setLoadingCommunityMembers] = useState(false);
 //   const [communityError, setCommunityError] = useState('');
-  
+
 //   const [currentUserId, setCurrentUserId] = useState(null);
 //   const [currentUserEmail, setCurrentUserEmail] = useState(null);
 //   const [isRequestingJoin, setIsRequestingJoin] = useState(false);
@@ -702,7 +764,7 @@ export default CommunityProfile;
 //         const initialLikes = new Map(); enriched.forEach(p => { if (p.currentUserLiked) initialLikes.set(p.id, true);});
 //         setCommRecsLikedMap(initialLikes);
 //         setCommRecsRaw(enriched);
-//     } catch (err) { setCommRecsError(err.message); setCommRecsRaw([]); 
+//     } catch (err) { setCommRecsError(err.message); setCommRecsRaw([]);
 //     } finally { setLoadingCommRecs(false); }
 //   }, [communityId, currentUserId, currentUserEmail]);
 
@@ -738,13 +800,13 @@ export default CommunityProfile;
 //   const handleCommRecsLike = async (providerId) => {
 //     if (!currentUserId || !currentUserEmail) { alert("Please log in to like/unlike."); return; }
 //     const provToUpdate = commRecsRaw.find(p => p.id === providerId); if (!provToUpdate) return;
-    
+
 //     const originalProviderState = { ...provToUpdate };
 //     const originalLikedState = commRecsLikedMap.get(providerId) || false;
 
 //     const newLikedState = !originalLikedState;
 //     const newNumLikes = newLikedState ? (originalProviderState.num_likes || 0) + 1 : Math.max(0, (originalProviderState.num_likes || 1) - 1);
-    
+
 //     setCommRecsRaw(prev => prev.map(p => p.id === providerId ? { ...p, num_likes: newNumLikes, currentUserLiked: newLikedState } : p));
 //     setCommRecsLikedMap(prev => new Map(prev).set(providerId, newLikedState));
 //     try {
@@ -754,7 +816,7 @@ export default CommunityProfile;
 //         setCommRecsRaw(prev => prev.map(p => p.id === providerId ? { ...p, num_likes: parseInt(result.num_likes, 10) || 0, currentUserLiked: result.currentUserLiked } : p ));
 //         setCommRecsLikedMap(prev => new Map(prev).set(providerId, result.currentUserLiked));
 //     } catch (error) {
-//         setCommRecsRaw(prev => prev.map(p => p.id === providerId ? originalProviderState : p)); 
+//         setCommRecsRaw(prev => prev.map(p => p.id === providerId ? originalProviderState : p));
 //         setCommRecsLikedMap(prev => new Map(prev).set(providerId, originalLikedState));
 //         alert(`Failed to update like: ${error.message}`);
 //     }
@@ -775,7 +837,7 @@ export default CommunityProfile;
 //   if (communityError && !communityDetails && activeTab !== 'recommendations' && activeTab !== 'members') return <div className="page-error-state">Error: {communityError}</div>;
 //   if (!isLoaded) return <div className="page-loading-state"><div className="profile-spinner"></div></div>;
 //   if (!communityDetails && !loadingCommunityDetails) return <div className="page-empty-state">Community not found or error loading details.</div>;
-  
+
 //   const { name, description, creator_name, created_at, member_count, recommendation_count, isOwner, currentUserStatus } = communityDetails || {};
 //   const canRequestToJoin = isSignedIn && currentUserStatus === 'none';
 //   const isMember = isSignedIn && currentUserStatus === 'approved';
@@ -838,41 +900,88 @@ export default CommunityProfile;
 //                         return (
 //                             <li key={provider.id} className="provider-card">
 //                                 <div className="card-header">
-//                                     <h2 className="card-title"><Link to={`/provider/${provider.id}`} target="_blank" rel="noopener noreferrer" className="clickable provider-name-link" onClick={() => localStorage.setItem("selectedProvider",JSON.stringify(provider))}>{provider.business_name}</Link></h2>
+//                                     <h3 className="card-title">
+//                                         <Link to={`/provider/${provider.id}`} target="_blank" rel="noopener noreferrer" className="clickable provider-name-link" onClick={() => localStorage.setItem("selectedProvider",JSON.stringify(provider))}>
+//                                             {provider.business_name}
+//                                         </Link>
+//                                     </h3>
 //                                     <div className="badge-wrapper-with-menu">
-//                                         <div className="badge-group">{(parseFloat(provider.average_rating) || 0) >= 4.5 && (<span className="top-rated-badge">Top Rated</span>)}</div>
-//                                         <div className="right-actions">
-//                                             <div className="dropdown-wrapper">
-//                                                 <button className="three-dots-button" onClick={() => setCommRecsDropdownOpenForId(commRecsDropdownOpenForId === provider.id ? null : provider.id)} title="Options">⋮</button>
-//                                                 {commRecsDropdownOpenForId === provider.id && (<div className="dropdown-menu"><button className="dropdown-item" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/provider/${provider.id}`); setCommRecsDropdownOpenForId(null); setCommRecsShowLinkCopied(true); setTimeout(() => setCommRecsShowLinkCopied(false), 2000);}}>Share this Rec</button></div>)}
-//                                             </div>
-//                                             {commRecsShowLinkCopied && (<div className="toast">Link copied!</div>)}
+//                                         {(parseFloat(provider.average_rating) || 0) >= 4.5 && (<span className="badge top-rated-badge">Top Rated</span>)}
+//                                         <div className="dropdown-wrapper">
+//                                             <button className="three-dots-button" onClick={() => setCommRecsDropdownOpenForId(commRecsDropdownOpenForId === provider.id ? null : provider.id)} title="Options">⋮</button>
+//                                             {commRecsDropdownOpenForId === provider.id && (
+//                                                 <div className="dropdown-menu">
+//                                                     <button className="dropdown-item" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/provider/${provider.id}`); setCommRecsDropdownOpenForId(null); setCommRecsShowLinkCopied(true); setTimeout(() => setCommRecsShowLinkCopied(false), 2000);}}>Share this Rec</button>
+//                                                 </div>
+//                                             )}
 //                                         </div>
 //                                     </div>
 //                                 </div>
+
 //                                 <div className="review-summary">
-//                                     <span className="stars-and-score"><CommunityRecStarRating rating={parseFloat(provider.average_rating) || 0} /> {displayAvgRating} ({displayTotalReviews})</span>
-//                                     {isSignedIn && <button className="see-all-button" onClick={() => { setCommRecsSelectedProvider(provider); setCommRecsIsReviewModalOpen(true); }}>Write a Review</button>}
-//                                     {isSignedIn && <button className={`like-button ${isLiked ? 'liked' : ''}`} onClick={() => handleCommRecsLike(provider.id)} title={isLiked ? "Unlike" : "Like"}><FaThumbsUp /> <span className="like-count">{provider.num_likes || 0}</span></button>}
+//                                     <CommunityRecStarRating rating={parseFloat(provider.average_rating) || 0} />
+//                                     <span className="review-score">{displayAvgRating}</span>
+//                                     <span className="review-count">({displayTotalReviews} {displayTotalReviews === 1 ? "review" : "reviews"})</span>
+//                                     {isSignedIn && <button className="write-review-link" onClick={() => { setCommRecsSelectedProvider(provider); setCommRecsIsReviewModalOpen(true); }}>Write a Review</button>}
+//                                     <button className={`like-button ${isLiked ? 'liked' : ''}`} onClick={() => handleCommRecsLike(provider.id)} title={isLiked ? "Unlike" : "Like"} disabled={!isSignedIn}>
+//                                         <FaThumbsUp /> <span className="like-count">{provider.num_likes || 0}</span>
+//                                     </button>
 //                                 </div>
+
 //                                 <p className="card-description">{provider.description || provider.recommender_message || "No description available"}</p>
-//                                 {Array.isArray(provider.tags) && provider.tags.length > 0 && (<div className="tag-container">{provider.tags.map((tag, idx) => (<span key={idx} className="tag-badge">{tag}</span>))} {isSignedIn && <button className="add-tag-button" onClick={() => { setCommRecsSelectedProvider(provider); setCommRecsIsReviewModalOpen(true);}} aria-label="Add a tag">+</button>} </div>)}
-//                                 {provider.recommender_name && (<>
+                                
+//                                 <div className="tag-container">
+//                                     {Array.isArray(provider.tags) && provider.tags.map((tag, idx) => (
+//                                         <span key={idx} className="tag-badge">{tag}</span>
+//                                     ))}
+//                                     {isSignedIn && (
+//                                         <button className="add-tag-button" onClick={() => { setCommRecsSelectedProvider(provider); setCommRecsIsReviewModalOpen(true);}} aria-label="Add or edit tags">
+//                                             <FaPlusCircle />
+//                                         </button>
+//                                     )}
+//                                 </div>
+
+//                                 {provider.recommender_name && (
 //                                     <div className="recommended-row">
 //                                         <span className="recommended-label">Recommended by:</span>
-//                                         {provider.recommender_clerk_id ? (<Link to={`/user/${provider.recommender_clerk_id}/recommendations`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{provider.recommender_name}</Link>) : (<span className="recommended-name">{provider.recommender_name}</span>)}
-//                                         {provider.date_of_recommendation && (<span className="recommendation-date"> ({new Date(provider.date_of_recommendation).toLocaleDateString("en-US", {year:"2-digit",month:"numeric",day:"numeric"})})</span>)}
+//                                         {provider.recommender_clerk_id ? (
+//                                             <Link to={`/user/${provider.recommender_clerk_id}/recommendations`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{provider.recommender_name}</Link>
+//                                         ) : (
+//                                             <span className="recommended-name">{provider.recommender_name}</span>
+//                                         )}
+//                                         {provider.date_of_recommendation && (
+//                                             <span className="recommendation-date">({new Date(provider.date_of_recommendation).toLocaleDateString("en-US", {year:"2-digit",month:"numeric",day:"numeric"})})</span>
+//                                         )}
 //                                     </div>
-//                                     {currentReviews.length > 0 && [...new Set(currentReviews.map(r => r.user_name).filter(n => (n && n !== provider.recommender_name)))].filter(n=>n).length > 0 && (<div className="recommended-row"><span className="recommended-label">Also used by:</span><span className="used-by-names">{[...new Set(currentReviews.map(r => r.user_name).filter(n => (n && n !== provider.recommender_name)))].filter(n=>n).join(", ")}</span></div>)}
-//                                 </>)}
+//                                 )}
+                                
+//                                 {currentReviews.length > 0 && 
+//                                     (currentReviews.map(r => r.user_name).filter(n => (n && n.trim() && n !== provider.recommender_name)).filter((v, i, a) => a.indexOf(v) === i)).length > 0 && (
+//                                     <div className="recommended-row also-used-by">
+//                                         <span className="recommended-label">Also used by:</span>
+//                                         <span className="used-by-names">
+//                                             {currentReviews.map(r => r.user_name)
+//                                                 .filter(n => (n && n.trim() && n !== provider.recommender_name)) 
+//                                                 .filter((v, i, a) => a.indexOf(v) === i) 
+//                                                 .join(", ")}
+//                                         </span>
+//                                     </div>
+//                                 )}
+
 //                                 <div className="action-buttons">
 //                                     {isSignedIn && <button className="primary-button" onClick={() => { setCommRecsSelectedProvider(provider); setCommRecsIsQuoteModalOpen(true);}}>Request a Quote</button>}
-//                                     {isSignedIn && (provider.recommender_phone || provider.recommender_email) && <button className="secondary-button" onClick={() => { if (provider.recommender_phone) window.location.href = `sms:${provider.recommender_phone}`; else if (provider.recommender_email) window.location.href = `mailto:${provider.recommender_email}`;}}>Connect with Recommender</button>}
+//                                     {isSignedIn && (provider.recommender_phone || provider.recommender_email) && 
+//                                         <button className="secondary-button" onClick={() => { 
+//                                             if (provider.recommender_phone) window.location.href = `sms:${provider.recommender_phone}`; 
+//                                             else if (provider.recommender_email) window.location.href = `mailto:${provider.recommender_email}`;
+//                                         }}>Connect with Recommender</button>
+//                                     }
 //                                 </div>
 //                             </li>);
 //                     })}
 //                 </ul>
 //             )}
+//             {commRecsShowLinkCopied && (<div className="toast">Link copied!</div>)}
 //           </div>
 //         )}
 

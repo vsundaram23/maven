@@ -325,6 +325,69 @@ const getCommunityMembers = async (communityId) => {
   }
 };
 
+// const getCommunityRecommendations = async (communityId, clerkUserId) => {
+//   let client;
+//   try {
+//       client = await pool.connect();
+//       let internalUserUuid = null;
+//       if (clerkUserId) {
+//           const userRes = await client.query('SELECT id FROM users WHERE clerk_id = $1', [clerkUserId]);
+//           if (userRes.rows.length > 0) {
+//               internalUserUuid = userRes.rows[0].id;
+//           }
+//       }
+
+//       const PENDING_SERVICE_PK_ID_val = 'e2c2b91a-c577-448b-8bd1-3e0c17b20e46';
+//       const PENDING_CATEGORY_PK_ID_val = '93859f52-830f-4b72-92fc-9316db28fb7e';
+
+//       const query = `
+//           SELECT
+//               sp.id, sp.business_name, sp.description, sp.email, sp.phone_number, sp.website,
+//               sp.tags, sp.city, sp.state, sp.zip_code, sp.service_scope, sp.price_range,
+//               sp.business_contact, sp.provider_message, sp.recommender_message,
+//               sp.visibility, sp.date_of_recommendation, sp.created_at,
+//               sp.submitted_category_name, sp.submitted_service_name,
+//               cat.name AS category_name,
+//               ser.name AS service_type,
+//               rec_user.id AS recommender_user_id,
+//               rec_user.clerk_id AS recommender_clerk_id,
+//               COALESCE(rec_user.name, rec_user.email) AS recommender_name,
+//               rec_user.email AS recommender_email,
+//               rec_user.profile_image AS recommender_profile_image_url,
+//               rec_user.phone_number AS recommender_phone,
+//               COALESCE(sp.num_likes, 0) AS num_likes,
+//               EXISTS (SELECT 1 FROM recommendation_likes rl WHERE rl.recommendation_id = sp.id AND rl.user_id = $1) AS "currentUserLiked"
+//           FROM service_providers sp
+//           JOIN community_shares cs ON sp.id = cs.service_provider_id
+//           JOIN users rec_user ON sp.recommended_by = rec_user.id
+//           LEFT JOIN services ser ON sp.service_id = ser.service_id AND ser.service_id != $2
+//           LEFT JOIN service_categories cat ON ser.category_id = cat.service_id AND cat.service_id != $3
+//           WHERE cs.community_id = $4
+//             -- AND sp.service_id != $2  -- This line is removed to include pending items
+//             AND (sp.visibility = 'public' OR sp.visibility = 'connections')
+//           ORDER BY sp.created_at DESC;
+//       `;
+      
+//       // Parameters are still needed for $1 (currentUserLiked), $2 & $3 (LEFT JOIN conditions), and $4 (communityId)
+//       const params = [internalUserUuid, PENDING_SERVICE_PK_ID_val, PENDING_CATEGORY_PK_ID_val, communityId];
+      
+//       // console.log('--- DEBUG getCommunityRecommendations ---');
+//       // console.log('Query String:', query);
+//       // console.log('Parameters being passed:', params);
+//       // console.log('Number of parameters provided:', params.length);
+//       // console.log('--- END DEBUG ---');
+
+//       const { rows } = await client.query(query, params);
+//       return rows;
+//   } catch (error) {
+//       console.error('Database error fetching community recommendations:', error.message);
+//       // console.error('Full error object in getCommunityRecommendations:', error); 
+//       throw new Error('Database error fetching community recommendations: ' + error.message);
+//   } finally {
+//       if (client) client.release();
+//   }
+// };
+
 const getCommunityRecommendations = async (communityId, clerkUserId) => {
   let client;
   try {
@@ -347,6 +410,7 @@ const getCommunityRecommendations = async (communityId, clerkUserId) => {
               sp.business_contact, sp.provider_message, sp.recommender_message,
               sp.visibility, sp.date_of_recommendation, sp.created_at,
               sp.submitted_category_name, sp.submitted_service_name,
+              cs.community_service_category_id, -- <--- THIS IS THE CRUCIAL LINE I ADDED
               cat.name AS category_name,
               ser.name AS service_type,
               rec_user.id AS recommender_user_id,
@@ -363,28 +427,39 @@ const getCommunityRecommendations = async (communityId, clerkUserId) => {
           LEFT JOIN services ser ON sp.service_id = ser.service_id AND ser.service_id != $2
           LEFT JOIN service_categories cat ON ser.category_id = cat.service_id AND cat.service_id != $3
           WHERE cs.community_id = $4
-            -- AND sp.service_id != $2  -- This line is removed to include pending items
             AND (sp.visibility = 'public' OR sp.visibility = 'connections')
           ORDER BY sp.created_at DESC;
       `;
       
-      // Parameters are still needed for $1 (currentUserLiked), $2 & $3 (LEFT JOIN conditions), and $4 (communityId)
       const params = [internalUserUuid, PENDING_SERVICE_PK_ID_val, PENDING_CATEGORY_PK_ID_val, communityId];
       
-      // console.log('--- DEBUG getCommunityRecommendations ---');
-      // console.log('Query String:', query);
-      // console.log('Parameters being passed:', params);
-      // console.log('Number of parameters provided:', params.length);
-      // console.log('--- END DEBUG ---');
-
       const { rows } = await client.query(query, params);
       return rows;
   } catch (error) {
       console.error('Database error fetching community recommendations:', error.message);
-      // console.error('Full error object in getCommunityRecommendations:', error); 
       throw new Error('Database error fetching community recommendations: ' + error.message);
   } finally {
       if (client) client.release();
+  }
+};
+
+const getCommunityServiceCategories = async (communityId) => {
+  let client;
+  try {
+    client = await pool.connect();
+    const result = await client.query(
+      `SELECT id, community_id, category_name, description
+       FROM community_service_categories
+       WHERE community_id = $1
+       ORDER BY category_name ASC`,
+      [communityId]
+    );
+    return result.rows;
+  } catch (error) {
+    console.error(`Database error fetching community service categories for community ${communityId}:`, error.message);
+    throw new Error('Database error fetching community service categories: ' + error.message);
+  } finally {
+    if (client) client.release();
   }
 };
 
@@ -397,7 +472,8 @@ module.exports = {
   getJoinRequests,
   approveMembership,
   getCommunityMembers,
-  getCommunityRecommendations
+  getCommunityRecommendations,
+  getCommunityServiceCategories
 };
 
 // 5/21 working version
