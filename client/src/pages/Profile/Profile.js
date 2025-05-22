@@ -979,7 +979,6 @@ const Profile = () => {
     }, [user]);
 
     const fetchProfileData = useCallback(async () => {
-        console.log("Fetching profile data...");
         if (!isLoaded || !isSignedIn || !user) return;
         setLoading(true);
         setError(null);
