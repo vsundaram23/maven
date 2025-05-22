@@ -63,7 +63,7 @@ const MemberCard = ({ member }) => {
     <div className="member-item-card">
       {avatarContent}
       <span className="member-name">{member.name || member.email}</span>
-      {member.clerk_id && <Link to={`/user/${member.clerk_id}/profile`} className="member-profile-link">View Profile</Link>}
+      {/* {member.clerk_id && <Link to={`/user/${member.clerk_id}/profile`} className="member-profile-link">View Profile</Link>} */}
     </div>
   );
 };
