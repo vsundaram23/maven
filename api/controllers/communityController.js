@@ -175,6 +175,41 @@ const getCommunityDetails = async (communityId, clerkUserId) => {
   }
 };
 
+const requestToJoinCommunityByInternalId = async (internalUserId, communityId) => {
+  const client = await pool.connect();
+  try {
+    // Confirm user exists
+    const userCheck = await client.query('SELECT id FROM users WHERE id = $1', [internalUserId]);
+    if (userCheck.rows.length === 0) {
+      throw new Error('User not found.');
+    }
+
+    // Check if already a member or already requested
+    const existing = await client.query(
+      `SELECT status FROM community_memberships WHERE user_id = $1 AND community_id = $2`,
+      [internalUserId, communityId]
+    );
+    if (existing.rows.length > 0) {
+      throw new Error(`Already ${existing.rows[0].status} this community`);
+    }
+
+    // Insert request
+    const result = await client.query(
+      `INSERT INTO community_memberships (user_id, community_id, status, requested_at)
+       VALUES ($1, $2, 'requested', NOW())
+       RETURNING *`,
+      [internalUserId, communityId]
+    );
+
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(error.message);
+  } finally {
+    client.release();
+  }
+};
+
+
 const requestToJoinCommunity = async (clerkUserId, community_id) => {
   let client;
   try {
@@ -202,6 +237,42 @@ const requestToJoinCommunity = async (clerkUserId, community_id) => {
     throw new Error('Database error requesting to join community: ' + error.message);
   } finally {
     if(client) client.release();
+  }
+};
+
+const getJoinRequestsByInternalId = async (communityId, internalCreatorId) => {
+  let client;
+  try {
+    client = await pool.connect();
+
+    const checkCreator = await client.query(
+      `SELECT 1 FROM communities WHERE id = $1 AND created_by = $2`,
+      [communityId, internalCreatorId]
+    );
+    if (checkCreator.rows.length === 0) {
+      throw new Error('Not authorized to view join requests for this community.');
+    }
+
+    const result = await client.query(
+      `SELECT cm.user_id, cm.community_id, cm.status, cm.requested_at, u.name, u.email, u.clerk_id
+       FROM community_memberships cm
+       JOIN users u ON u.id = cm.user_id
+       WHERE cm.community_id = $1 AND cm.status = 'requested'
+       ORDER BY cm.requested_at ASC`,
+      [communityId]
+    );
+
+    return result.rows;
+  } catch (error) {
+    if (
+      error.message.startsWith('Not authorized') ||
+      error.message === 'Creator user not found.'
+    ) {
+      throw error;
+    }
+    throw new Error('Database error fetching join requests: ' + error.message);
+  } finally {
+    if (client) client.release();
   }
 };
 
@@ -473,7 +544,9 @@ module.exports = {
   approveMembership,
   getCommunityMembers,
   getCommunityRecommendations,
-  getCommunityServiceCategories
+  getCommunityServiceCategories,
+  getJoinRequestsByInternalId,
+  requestToJoinCommunityByInternalId
 };
 
 // 5/21 working version

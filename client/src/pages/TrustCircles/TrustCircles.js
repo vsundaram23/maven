@@ -1,3 +1,4 @@
+// working aside from bug
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
@@ -202,7 +203,7 @@ const TrustCircles = () => {
             if (userData && userData.id) {
                 const ownedIds = myCommData.filter(c => c.created_by === userData.id).map(c => c.id); const reqs = {};
                 for (const commId of ownedIds) {
-                    const rRes = await fetch(`${API_URL}/api/communities/${commId}/requests?user_id=${currentUserId}`);
+                    const rRes = await fetch(`${API_URL}/api/communities/${commId}/requests/internal?user_id=${currentUser.id}`);
                     reqs[commId] = rRes.ok ? (await rRes.json()) : [];
                 } setJoinRequests(reqs);
             }
@@ -341,7 +342,7 @@ const TrustCircles = () => {
     const handleRequestToJoinCommunity = async (commId) => {
         if (!currentUser) return;
         try {
-            const res = await fetch(`${API_URL}/api/communities/request`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ user_id: currentUser.id, community_id: commId }), });
+            const res = await fetch(`${API_URL}/api/communities/request/internal`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ user_id: currentUser.id, community_id: commId }), });
             if (!res.ok) { const eD = await res.json(); throw new Error(eD.error || "Failed to request join."); }
             alert("Request to join sent!"); fetchMyTrustCircleData();
         } catch (err) { alert(`Error: ${err.message}`); }

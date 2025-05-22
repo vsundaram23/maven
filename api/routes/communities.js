@@ -8,11 +8,13 @@ const {
   getUserCommunities,
   getCommunityDetails,
   requestToJoinCommunity,
+  getJoinRequestsByInternalId,
   getJoinRequests,
   approveMembership,
   getCommunityMembers,
   getCommunityRecommendations,
-  getCommunityServiceCategories
+  getCommunityServiceCategories,
+  requestToJoinCommunityByInternalId
 } = require('../controllers/communityController');
 
 router.post('/create', async (req, res) => {
@@ -55,6 +57,22 @@ router.post('/request', async (req, res) => {
   }
 });
 
+router.post('/request/internal', async (req, res) => {
+  const { user_id: internalUserId, community_id } = req.body;
+  if (!internalUserId || !community_id) {
+    return res.status(400).json({ error: 'User ID and community ID are required' });
+  }
+  try {
+    const request = await requestToJoinCommunityByInternalId(internalUserId, community_id);
+    res.status(201).json(request);
+  } catch (error) {
+    if (error.message.startsWith('Already') || error.message === 'User not found.') {
+      return res.status(409).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message || 'Server error requesting to join' });
+  }
+});
+
 router.get('/:communityId/requests', async (req, res) => {
   const { communityId } = req.params;
   const { user_id: clerkCreatorId } = req.query;
@@ -67,6 +85,25 @@ router.get('/:communityId/requests', async (req, res) => {
   } catch (error) {
     if (error.message.startsWith('Not authorized') || error.message === 'Creator user not found.') {
         return res.status(403).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message || 'Server error fetching join requests' });
+  }
+});
+
+router.get('/:communityId/requests/internal', async (req, res) => {
+  const { communityId } = req.params;
+  const { user_id: internalCreatorId } = req.query;
+
+  if (!internalCreatorId) {
+    return res.status(400).json({ error: 'Missing creator internal user ID' });
+  }
+
+  try {
+    const requests = await getJoinRequestsByInternalId(communityId, internalCreatorId);
+    res.json(requests);
+  } catch (error) {
+    if (error.message.startsWith('Not authorized') || error.message === 'Creator user not found.') {
+      return res.status(403).json({ error: error.message });
     }
     res.status(500).json({ error: error.message || 'Server error fetching join requests' });
   }
