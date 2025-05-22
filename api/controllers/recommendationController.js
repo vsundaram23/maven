@@ -1,46 +1,87 @@
-const pool = require('../config/db.config');
-const { v4: uuidv4 } = require('uuid');
+const pool = require("../config/db.config");
+const { v4: uuidv4 } = require("uuid");
 
-const PENDING_SERVICE_PK_ID = 'e2c2b91a-c577-448b-8bd1-3e0c17b20e46';
-const PENDING_CATEGORY_PK_ID = '93859f52-830f-4b72-92fc-9316db28fb7e';
+const PENDING_SERVICE_PK_ID = "e2c2b91a-c577-448b-8bd1-3e0c17b20e46";
+const PENDING_CATEGORY_PK_ID = "93859f52-830f-4b72-92fc-9316db28fb7e";
 
-const toNull = v => (v === undefined || v === '' || (Array.isArray(v) && v.length === 0) ? null : v);
+const toNull = (v) =>
+    v === undefined || v === "" || (Array.isArray(v) && v.length === 0)
+        ? null
+        : v;
 
 const createRecommendation = async (req, res) => {
-  const {
-    business_name, description, category, subcategory, user_email, email, phone_number,
-    tags, rating, website, provider_contact_name, publish_scope, trust_circle_ids,
-    recommender_message, notes, date_of_recommendation, price_range, service_scope,
-    city, state, zip_code, provider_message, price_paid
-  } = req.body;
+    const {
+        business_name,
+        description,
+        category,
+        subcategory,
+        user_email,
+        email,
+        phone_number,
+        tags,
+        rating,
+        website,
+        provider_contact_name,
+        publish_scope,
+        trust_circle_ids,
+        recommender_message,
+        notes,
+        date_of_recommendation,
+        price_range,
+        service_scope,
+        city,
+        state,
+        zip_code,
+        provider_message,
+        price_paid,
+    } = req.body;
 
-  if (!user_email || !business_name || !recommender_message || !rating) {
-    return res.status(400).json({ success: false, message: 'Missing required fields (user_email, business_name, recommender_message, rating, and intended category/subcategory names).' });
-  }
-
-  let client;
-  try {
-    client = await pool.connect();
-    await client.query('BEGIN');
-
-    const userResult = await client.query('SELECT id FROM users WHERE email = $1', [user_email]);
-    if (userResult.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: "Recommending user not found." });
+    if (!user_email || !business_name || !recommender_message || !rating) {
+        return res
+            .status(400)
+            .json({
+                success: false,
+                message:
+                    "Missing required fields (user_email, business_name, recommender_message, rating, and intended category/subcategory names).",
+            });
     }
-    const recommenderUserId = userResult.rows[0].id;
 
-    let visibility_status = 'private';
-    if (publish_scope === 'Public') {
-        visibility_status = 'public';
-    } else if (publish_scope === 'Full Trust Circle' || publish_scope === 'Specific Trust Circles') {
-        visibility_status = 'connections';
-    }
+    let client;
+    try {
+        client = await pool.connect();
+        await client.query("BEGIN");
 
-    const newProviderId = uuidv4();
-    const actualDateOfRecommendation = date_of_recommendation ? new Date(date_of_recommendation) : new Date();
+        const userResult = await client.query(
+            "SELECT id FROM users WHERE email = $1",
+            [user_email]
+        );
+        if (userResult.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res
+                .status(404)
+                .json({
+                    success: false,
+                    message: "Recommending user not found.",
+                });
+        }
+        const recommenderUserId = userResult.rows[0].id;
 
-    const providerInsertQuery = `
+        let visibility_status = "private";
+        if (publish_scope === "Public") {
+            visibility_status = "public";
+        } else if (
+            publish_scope === "Full Trust Circle" ||
+            publish_scope === "Specific Trust Circles"
+        ) {
+            visibility_status = "connections";
+        }
+
+        const newProviderId = uuidv4();
+        const actualDateOfRecommendation = date_of_recommendation
+            ? new Date(date_of_recommendation)
+            : new Date();
+
+        const providerInsertQuery = `
       INSERT INTO service_providers (
         id, business_name, description, category_id, service_id, recommended_by, date_of_recommendation,
         email, phone_number, website, tags, city, state, zip_code, service_scope, price_range,
@@ -51,84 +92,152 @@ const createRecommendation = async (req, res) => {
       ) RETURNING id;
     `;
 
-    const providerValues = [
-      newProviderId, business_name, toNull(description), PENDING_CATEGORY_PK_ID, PENDING_SERVICE_PK_ID,
-      recommenderUserId, actualDateOfRecommendation, toNull(email), toNull(phone_number), toNull(website),
-      tags || [], toNull(city), toNull(state), toNull(zip_code), toNull(service_scope), toNull(price_range),
-      toNull(provider_contact_name), toNull(provider_message), recommender_message, visibility_status,
-      toNull(notes), price_paid != null ? parseFloat(price_paid) : null, category, subcategory,
-      actualDateOfRecommendation, actualDateOfRecommendation
-    ];
+        const providerValues = [
+            newProviderId,
+            business_name,
+            toNull(description),
+            PENDING_CATEGORY_PK_ID,
+            PENDING_SERVICE_PK_ID,
+            recommenderUserId,
+            actualDateOfRecommendation,
+            toNull(email),
+            toNull(phone_number),
+            toNull(website),
+            tags || [],
+            toNull(city),
+            toNull(state),
+            toNull(zip_code),
+            toNull(service_scope),
+            toNull(price_range),
+            toNull(provider_contact_name),
+            toNull(provider_message),
+            recommender_message,
+            visibility_status,
+            toNull(notes),
+            price_paid != null ? parseFloat(price_paid) : null,
+            category,
+            subcategory,
+            actualDateOfRecommendation,
+            actualDateOfRecommendation,
+        ];
 
-    await client.query(providerInsertQuery, providerValues);
+        await client.query(providerInsertQuery, providerValues);
 
-    const reviewInsertQuery = `
+        const reviewInsertQuery = `
       INSERT INTO reviews (id, provider_id, user_id, rating, content, created_at)
       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP);
     `;
-    await client.query(reviewInsertQuery, [uuidv4(), newProviderId, recommenderUserId, rating, recommender_message]);
+        await client.query(reviewInsertQuery, [
+            uuidv4(),
+            newProviderId,
+            recommenderUserId,
+            rating,
+            recommender_message,
+        ]);
 
-    if (publish_scope === 'Specific Trust Circles' && trust_circle_ids && trust_circle_ids.length > 0) {
-        for (const communityId of trust_circle_ids) {
-            await client.query(
-                'INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)',
-                [uuidv4(), newProviderId, communityId, recommenderUserId]
-            );
-        }
-    } else if (publish_scope === 'Full Trust Circle' || publish_scope === 'Public') {
-        const userCommunitiesResult = await client.query(
-            'SELECT community_id FROM community_memberships WHERE user_id = $1 AND status = $2',
-            [recommenderUserId, 'approved']
-        );
-        if (userCommunitiesResult.rows.length > 0) {
-            for (const row of userCommunitiesResult.rows) {
+        if (
+            publish_scope === "Specific Trust Circles" &&
+            trust_circle_ids &&
+            trust_circle_ids.length > 0
+        ) {
+            for (const communityId of trust_circle_ids) {
                 await client.query(
-                    'INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)',
-                    [uuidv4(), newProviderId, row.community_id, recommenderUserId]
+                    "INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)",
+                    [uuidv4(), newProviderId, communityId, recommenderUserId]
                 );
             }
+        } else if (
+            publish_scope === "Full Trust Circle" ||
+            publish_scope === "Public"
+        ) {
+            const userCommunitiesResult = await client.query(
+                "SELECT community_id FROM community_memberships WHERE user_id = $1 AND status = $2",
+                [recommenderUserId, "approved"]
+            );
+            if (userCommunitiesResult.rows.length > 0) {
+                for (const row of userCommunitiesResult.rows) {
+                    await client.query(
+                        "INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)",
+                        [
+                            uuidv4(),
+                            newProviderId,
+                            row.community_id,
+                            recommenderUserId,
+                        ]
+                    );
+                }
+            }
         }
+
+        await client.query("COMMIT");
+        res.status(201).json({
+            success: true,
+            message: "Recommendation submitted for review successfully!",
+            providerId: newProviderId,
+        });
+    } catch (err) {
+        if (client) await client.query("ROLLBACK");
+        res.status(500).json({
+            success: false,
+            error: "Server error creating recommendation",
+            detail: err.message,
+        });
+    } finally {
+        if (client) client.release();
     }
-
-    await client.query('COMMIT');
-    res.status(201).json({ success: true, message: "Recommendation submitted for review successfully!", providerId: newProviderId });
-
-  } catch (err) {
-    if (client) await client.query('ROLLBACK');
-    res.status(500).json({ success: false, error:  'Server error creating recommendation', detail: err.message });
-  } finally {
-    if (client) client.release();
-  }
 };
 
 const addReviewToProvider = async (req, res) => {
-  const { provider_id, email: reviewerEmail, rating, content, tags } = req.body;
+    const {
+        provider_id,
+        email: reviewerEmail,
+        rating,
+        content,
+        tags,
+    } = req.body;
 
-  if (!provider_id || !reviewerEmail || !rating ) {
-    return res.status(400).json({ success: false, message: "Missing required fields for review (provider_id, email, rating)." });
-  }
-
-  let client;
-  try {
-    client = await pool.connect();
-    await client.query('BEGIN');
-
-    const userResult = await client.query('SELECT id FROM users WHERE email = $1', [reviewerEmail]);
-    if (userResult.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: "Reviewing user not found." });
+    if (!provider_id || !reviewerEmail || !rating) {
+        return res
+            .status(400)
+            .json({
+                success: false,
+                message:
+                    "Missing required fields for review (provider_id, email, rating).",
+            });
     }
-    const reviewerUserId = userResult.rows[0].id;
 
-    const reviewInsertQuery = `
+    let client;
+    try {
+        client = await pool.connect();
+        await client.query("BEGIN");
+
+        const userResult = await client.query(
+            "SELECT id FROM users WHERE email = $1",
+            [reviewerEmail]
+        );
+        if (userResult.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res
+                .status(404)
+                .json({ success: false, message: "Reviewing user not found." });
+        }
+        const reviewerUserId = userResult.rows[0].id;
+
+        const reviewInsertQuery = `
       INSERT INTO reviews (id, provider_id, user_id, rating, content, created_at)
       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP) RETURNING *;
     `;
-    const reviewResult = await client.query(reviewInsertQuery, [uuidv4(), provider_id, reviewerUserId, rating, content || '']);
-    const newReview = reviewResult.rows[0];
+        const reviewResult = await client.query(reviewInsertQuery, [
+            uuidv4(),
+            provider_id,
+            reviewerUserId,
+            rating,
+            content || "",
+        ]);
+        const newReview = reviewResult.rows[0];
 
-    if (tags && tags.length > 0) {
-      const updateTagsQuery = `
+        if (tags && tags.length > 0) {
+            const updateTagsQuery = `
         UPDATE service_providers
         SET tags = (
           SELECT array_agg(DISTINCT unnest_val)
@@ -140,23 +249,29 @@ const addReviewToProvider = async (req, res) => {
         )
         WHERE id = $1;
       `;
-      await client.query(updateTagsQuery, [provider_id, tags]);
+            await client.query(updateTagsQuery, [provider_id, tags]);
+        }
+
+        await client.query("COMMIT");
+        res.status(201).json({
+            success: true,
+            message: "Review added successfully!",
+            review: newReview,
+        });
+    } catch (error) {
+        if (client) await client.query("ROLLBACK");
+        res.status(500).json({
+            success: false,
+            message: error.message || "Failed to add review.",
+        });
+    } finally {
+        if (client) client.release();
     }
-
-    await client.query('COMMIT');
-    res.status(201).json({ success: true, message: "Review added successfully!", review: newReview });
-
-  } catch (error) {
-    if (client) await client.query('ROLLBACK');
-    res.status(500).json({ success: false, message: error.message || "Failed to add review." });
-  } finally {
-    if (client) client.release();
-  }
 };
 
 const getAllRecommendations = async (req, res) => {
-  try {
-    const query = `
+    try {
+        const query = `
       SELECT sp.*, actual_sc.name AS category_name, actual_s.name AS service_type, u.email AS recommender_email
       FROM service_providers sp
       LEFT JOIN services actual_s ON sp.service_id = actual_s.service_id
@@ -165,16 +280,19 @@ const getAllRecommendations = async (req, res) => {
       WHERE sp.service_id != $1
       ORDER BY sp.created_at DESC;
     `;
-    const { rows } = await pool.query(query, [PENDING_SERVICE_PK_ID]);
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Server error fetching recommendations', detail: err.message });
-  }
+        const { rows } = await pool.query(query, [PENDING_SERVICE_PK_ID]);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({
+            error: "Server error fetching recommendations",
+            detail: err.message,
+        });
+    }
 };
 
 const getRecommendationById = async (req, res) => {
-  try {
-    const query = `
+    try {
+        const query = `
       SELECT sp.*, actual_sc.name AS category_name, actual_s.name AS service_type, u.email AS recommender_email
       FROM service_providers sp
       LEFT JOIN services actual_s ON sp.service_id = actual_s.service_id
@@ -182,56 +300,92 @@ const getRecommendationById = async (req, res) => {
       LEFT JOIN users u ON sp.recommended_by = u.id
       WHERE sp.id = $1;
     `;
-    const { rows } = await pool.query(query, [req.params.id]);
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Recommendation not found' });
+        const { rows } = await pool.query(query, [req.params.id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Recommendation not found" });
+        }
+        res.json(rows[0]);
+    } catch (err) {
+        res.status(500).json({
+            error: "Server error fetching recommendation",
+            detail: err.message,
+        });
     }
-    res.json(rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: 'Server error fetching recommendation', detail: err.message });
-  }
 };
 
-
 const updateRecommendation = async (req, res) => {
-  const serviceProviderId = req.params.id;
-  const clerkIdFromQuery = req.query.user_id;
-  const userEmailFromQuery = req.query.email;
+    const serviceProviderId = req.params.id;
+    const clerkIdFromQuery = req.query.user_id;
+    const userEmailFromQuery = req.query.email;
 
-  const { business_name, phone_number, tags, rating, website, provider_contact_name, publish_scope, trust_circle_ids, recommender_message } = req.body;
+    const {
+        business_name,
+        phone_number,
+        tags,
+        rating,
+        website,
+        provider_contact_name,
+        publish_scope,
+        trust_circle_ids,
+        recommender_message,
+    } = req.body;
 
-  if (!clerkIdFromQuery || !userEmailFromQuery) {
-    return res.status(401).json({ success: false, message: "User authentication details (ID and email) required." });
-  }
-
-  let client;
-  try {
-    client = await pool.connect();
-    await client.query('BEGIN');
-
-    const userLookupResult = await client.query('SELECT id FROM users WHERE email = $1 OR clerk_id = $2', [userEmailFromQuery, clerkIdFromQuery]);
-    if (userLookupResult.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: "Authenticated user profile not found in the local system." });
-    }
-    const editorUserUuid = userLookupResult.rows[0].id;
-
-    const providerCheck = await client.query('SELECT id FROM service_providers WHERE id = $1', [serviceProviderId]);
-    if (providerCheck.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: 'Recommendation not found.' });
+    if (!clerkIdFromQuery || !userEmailFromQuery) {
+        return res
+            .status(401)
+            .json({
+                success: false,
+                message: "User authentication details (ID and email) required.",
+            });
     }
 
-    let visibility_status_to_update;
-    if (typeof publish_scope === 'string') {
-        if (publish_scope === 'Public') visibility_status_to_update = 'public';
-        else if (publish_scope === 'Full Trust Circle' || publish_scope === 'Specific Trust Circles') visibility_status_to_update = 'connections';
-        else visibility_status_to_update = undefined;
-    } else {
-        visibility_status_to_update = undefined;
-    }
+    let client;
+    try {
+        client = await pool.connect();
+        await client.query("BEGIN");
 
-    const serviceProviderUpdateQuery = `
+        const userLookupResult = await client.query(
+            "SELECT id FROM users WHERE email = $1 OR clerk_id = $2",
+            [userEmailFromQuery, clerkIdFromQuery]
+        );
+        if (userLookupResult.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res
+                .status(404)
+                .json({
+                    success: false,
+                    message:
+                        "Authenticated user profile not found in the local system.",
+                });
+        }
+        const editorUserUuid = userLookupResult.rows[0].id;
+
+        const providerCheck = await client.query(
+            "SELECT id FROM service_providers WHERE id = $1",
+            [serviceProviderId]
+        );
+        if (providerCheck.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res
+                .status(404)
+                .json({ success: false, message: "Recommendation not found." });
+        }
+
+        let visibility_status_to_update;
+        if (typeof publish_scope === "string") {
+            if (publish_scope === "Public")
+                visibility_status_to_update = "public";
+            else if (
+                publish_scope === "Full Trust Circle" ||
+                publish_scope === "Specific Trust Circles"
+            )
+                visibility_status_to_update = "connections";
+            else visibility_status_to_update = undefined;
+        } else {
+            visibility_status_to_update = undefined;
+        }
+
+        const serviceProviderUpdateQuery = `
       UPDATE service_providers SET
         business_name = COALESCE($1, business_name), phone_number = COALESCE($2, phone_number),
         tags = COALESCE($3, tags), website = COALESCE($4, website),
@@ -239,81 +393,141 @@ const updateRecommendation = async (req, res) => {
         visibility = COALESCE($7, visibility), updated_at = NOW()
       WHERE id = $8 RETURNING *;
     `;
-    const spValues = [
-      toNull(business_name), toNull(phone_number), tags, toNull(website),
-      toNull(provider_contact_name), toNull(recommender_message), visibility_status_to_update, serviceProviderId
-    ];
-    const { rows: spRows } = await client.query(serviceProviderUpdateQuery, spValues);
-    const updatedServiceProvider = spRows[0];
+        const spValues = [
+            toNull(business_name),
+            toNull(phone_number),
+            tags,
+            toNull(website),
+            toNull(provider_contact_name),
+            toNull(recommender_message),
+            visibility_status_to_update,
+            serviceProviderId,
+        ];
+        const { rows: spRows } = await client.query(
+            serviceProviderUpdateQuery,
+            spValues
+        );
+        const updatedServiceProvider = spRows[0];
 
-    let updatedReview;
-    if (rating !== undefined || (recommender_message !== undefined && recommender_message !== null)) {
-        const reviewUpdateQuery = `
+        let updatedReview;
+        if (
+            rating !== undefined ||
+            (recommender_message !== undefined && recommender_message !== null)
+        ) {
+            const reviewUpdateQuery = `
             UPDATE reviews SET rating = COALESCE($1, rating), content = COALESCE($2, content), updated_at = NOW()
             WHERE provider_id = $3 AND user_id = $4 RETURNING *;
         `;
-        const { rows: reviewRows } = await client.query(reviewUpdateQuery, [rating, recommender_message, serviceProviderId, editorUserUuid]);
-        if (reviewRows.length > 0) updatedReview = reviewRows[0];
-    }
-
-    if (!updatedReview) {
-        const reviewFetch = await client.query('SELECT * FROM reviews WHERE provider_id = $1 AND user_id = $2', [serviceProviderId, editorUserUuid]);
-        if (reviewFetch.rows.length > 0) updatedReview = reviewFetch.rows[0];
-        else {
-             await client.query('ROLLBACK');
-             return res.status(404).json({ success: false, message: 'Associated review by the current editor not found for this recommendation.' });
+            const { rows: reviewRows } = await client.query(reviewUpdateQuery, [
+                rating,
+                recommender_message,
+                serviceProviderId,
+                editorUserUuid,
+            ]);
+            if (reviewRows.length > 0) updatedReview = reviewRows[0];
         }
-    }
 
-    if (typeof publish_scope === 'string') {
-        await client.query('DELETE FROM community_shares WHERE service_provider_id = $1', [serviceProviderId]);
-        if (publish_scope === 'Specific Trust Circles' && trust_circle_ids && trust_circle_ids.length > 0) {
-            for (const communityId of trust_circle_ids) {
-                await client.query(
-                    'INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at) VALUES ($1, $2, $3, $4, NOW())',
-                    [uuidv4(), serviceProviderId, communityId, editorUserUuid]
-                );
-            }
-        } else if (publish_scope === 'Full Trust Circle' || publish_scope === 'Public') {
-            const userCommunitiesResult = await client.query(
-                'SELECT community_id FROM community_memberships WHERE user_id = $1 AND status = $2',
-                [editorUserUuid, 'approved']
+        if (!updatedReview) {
+            const reviewFetch = await client.query(
+                "SELECT * FROM reviews WHERE provider_id = $1 AND user_id = $2",
+                [serviceProviderId, editorUserUuid]
             );
-            if (userCommunitiesResult.rows.length > 0) {
-                for (const row of userCommunitiesResult.rows) {
+            if (reviewFetch.rows.length > 0)
+                updatedReview = reviewFetch.rows[0];
+            else {
+                await client.query("ROLLBACK");
+                return res
+                    .status(404)
+                    .json({
+                        success: false,
+                        message:
+                            "Associated review by the current editor not found for this recommendation.",
+                    });
+            }
+        }
+
+        if (typeof publish_scope === "string") {
+            await client.query(
+                "DELETE FROM community_shares WHERE service_provider_id = $1",
+                [serviceProviderId]
+            );
+            if (
+                publish_scope === "Specific Trust Circles" &&
+                trust_circle_ids &&
+                trust_circle_ids.length > 0
+            ) {
+                for (const communityId of trust_circle_ids) {
                     await client.query(
-                        'INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at) VALUES ($1, $2, $3, $4, NOW())',
-                        [uuidv4(), serviceProviderId, row.community_id, editorUserUuid]
+                        "INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at) VALUES ($1, $2, $3, $4, NOW())",
+                        [
+                            uuidv4(),
+                            serviceProviderId,
+                            communityId,
+                            editorUserUuid,
+                        ]
                     );
+                }
+            } else if (
+                publish_scope === "Full Trust Circle" ||
+                publish_scope === "Public"
+            ) {
+                const userCommunitiesResult = await client.query(
+                    "SELECT community_id FROM community_memberships WHERE user_id = $1 AND status = $2",
+                    [editorUserUuid, "approved"]
+                );
+                if (userCommunitiesResult.rows.length > 0) {
+                    for (const row of userCommunitiesResult.rows) {
+                        await client.query(
+                            "INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at) VALUES ($1, $2, $3, $4, NOW())",
+                            [
+                                uuidv4(),
+                                serviceProviderId,
+                                row.community_id,
+                                editorUserUuid,
+                            ]
+                        );
+                    }
                 }
             }
         }
+
+        await client.query("COMMIT");
+        res.json({ success: true, updatedServiceProvider, updatedReview });
+    } catch (err) {
+        if (client) await client.query("ROLLBACK");
+        res.status(500).json({
+            success: false,
+            error: "Server error updating recommendation",
+            detail: err.message,
+        });
+    } finally {
+        if (client) client.release();
     }
-
-    await client.query('COMMIT');
-    res.json({ success: true, updatedServiceProvider, updatedReview });
-
-  } catch (err) {
-    if (client) await client.query('ROLLBACK');
-    res.status(500).json({ success: false, error: 'Server error updating recommendation', detail: err.message });
-  } finally {
-    if (client) client.release();
-  }
 };
 
 const getVisibleRecommendationsForUser = async (req, res) => {
     const { user_id: clerkUserId, email: userEmail } = req.query;
 
     if (!clerkUserId || !userEmail) {
-        return res.status(400).json({ success: false, message: "User ID (Clerk) and email are required." });
+        return res
+            .status(400)
+            .json({
+                success: false,
+                message: "User ID (Clerk) and email are required.",
+            });
     }
 
     let client;
     try {
         client = await pool.connect();
-        const userResult = await client.query('SELECT id FROM users WHERE clerk_id = $1 OR email = $2', [clerkUserId, userEmail]);
+        const userResult = await client.query(
+            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
+            [clerkUserId, userEmail]
+        );
         if (userResult.rows.length === 0) {
-            return res.status(404).json({ success: false, message: "User not found." });
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found." });
         }
         const internalUserId = userResult.rows[0].id;
 
@@ -354,11 +568,18 @@ const getVisibleRecommendationsForUser = async (req, res) => {
                 )
             ORDER BY sp.created_at DESC;
         `;
-        const { rows } = await client.query(query, [internalUserId, PENDING_SERVICE_PK_ID, PENDING_CATEGORY_PK_ID]);
+        const { rows } = await client.query(query, [
+            internalUserId,
+            PENDING_SERVICE_PK_ID,
+            PENDING_CATEGORY_PK_ID,
+        ]);
         res.json({ success: true, providers: rows });
-
     } catch (err) {
-        res.status(500).json({ success: false, error: 'Server error fetching visible recommendations', detail: err.message });
+        res.status(500).json({
+            success: false,
+            error: "Server error fetching visible recommendations",
+            detail: err.message,
+        });
     } finally {
         if (client) client.release();
     }
@@ -368,18 +589,30 @@ const searchProviders = async (req, res) => {
     const { q, user_id: clerkUserId, email: userEmail } = req.query;
 
     if (!clerkUserId || !userEmail) {
-        return res.status(400).json({ success: false, message: "User ID (Clerk) and email are required for search." });
+        return res
+            .status(400)
+            .json({
+                success: false,
+                message: "User ID (Clerk) and email are required for search.",
+            });
     }
-     if (!q) {
-        return res.status(400).json({ success: false, message: "Search query 'q' is required." });
+    if (!q) {
+        return res
+            .status(400)
+            .json({ success: false, message: "Search query 'q' is required." });
     }
 
     let client;
     try {
         client = await pool.connect();
-        const userResult = await client.query('SELECT id FROM users WHERE clerk_id = $1 OR email = $2', [clerkUserId, userEmail]);
+        const userResult = await client.query(
+            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
+            [clerkUserId, userEmail]
+        );
         if (userResult.rows.length === 0) {
-            return res.status(404).json({ success: false, message: "User not found." });
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found." });
         }
         const internalUserId = userResult.rows[0].id;
         const searchTerm = `%${q.toLowerCase()}%`;
@@ -433,11 +666,19 @@ const searchProviders = async (req, res) => {
                 )
             ORDER BY sp.created_at DESC;
         `;
-        const { rows } = await client.query(searchQuery, [internalUserId, searchTerm, PENDING_SERVICE_PK_ID, PENDING_CATEGORY_PK_ID]);
+        const { rows } = await client.query(searchQuery, [
+            internalUserId,
+            searchTerm,
+            PENDING_SERVICE_PK_ID,
+            PENDING_CATEGORY_PK_ID,
+        ]);
         res.json({ success: true, providers: rows });
-
     } catch (err) {
-        res.status(500).json({ success: false, error: 'Server error during search.', detail: err.message });
+        res.status(500).json({
+            success: false,
+            error: "Server error during search.",
+            detail: err.message,
+        });
     } finally {
         if (client) client.release();
     }
@@ -448,42 +689,72 @@ const likeProvider = async (req, res) => {
     const { userId: clerkUserId, userEmail } = req.body;
 
     if (!clerkUserId || !userEmail) {
-        return res.status(400).json({ success: false, message: "User identifier required." });
+        return res
+            .status(400)
+            .json({ success: false, message: "User identifier required." });
     }
 
     let client;
     try {
         client = await pool.connect();
-        await client.query('BEGIN');
+        await client.query("BEGIN");
 
-        const userResult = await client.query('SELECT id FROM users WHERE clerk_id = $1 OR email = $2', [clerkUserId, userEmail]);
+        const userResult = await client.query(
+            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
+            [clerkUserId, userEmail]
+        );
         if (userResult.rows.length === 0) {
-            await client.query('ROLLBACK');
-            return res.status(404).json({ success: false, message: "User not found." });
+            await client.query("ROLLBACK");
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found." });
         }
         const internalUserId = userResult.rows[0].id;
 
-        const likeCheck = await client.query('SELECT id FROM user_likes WHERE provider_id = $1 AND user_id = $2', [providerId, internalUserId]);
+        const likeCheck = await client.query(
+            "SELECT id FROM user_likes WHERE provider_id = $1 AND user_id = $2",
+            [providerId, internalUserId]
+        );
         let currentUserLiked;
 
         if (likeCheck.rows.length > 0) {
-            await client.query('DELETE FROM user_likes WHERE provider_id = $1 AND user_id = $2', [providerId, internalUserId]);
+            await client.query(
+                "DELETE FROM user_likes WHERE provider_id = $1 AND user_id = $2",
+                [providerId, internalUserId]
+            );
             currentUserLiked = false;
         } else {
-            await client.query('INSERT INTO user_likes (id, provider_id, user_id, created_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)', [uuidv4(), providerId, internalUserId]);
+            await client.query(
+                "INSERT INTO user_likes (id, provider_id, user_id, created_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)",
+                [uuidv4(), providerId, internalUserId]
+            );
             currentUserLiked = true;
         }
 
-        const likesCountResult = await client.query('SELECT COUNT(*) AS count FROM user_likes WHERE provider_id = $1', [providerId]);
+        const likesCountResult = await client.query(
+            "SELECT COUNT(*) AS count FROM user_likes WHERE provider_id = $1",
+            [providerId]
+        );
         const num_likes = parseInt(likesCountResult.rows[0].count, 10);
-        await client.query('UPDATE service_providers SET num_likes = $1, updated_at = NOW() WHERE id = $2', [num_likes, providerId]);
+        await client.query(
+            "UPDATE service_providers SET num_likes = $1, updated_at = NOW() WHERE id = $2",
+            [num_likes, providerId]
+        );
 
-        await client.query('COMMIT');
-        res.json({ success: true, message: "Like status updated.", num_likes, currentUserLiked });
-
+        await client.query("COMMIT");
+        res.json({
+            success: true,
+            message: "Like status updated.",
+            num_likes,
+            currentUserLiked,
+        });
     } catch (err) {
-        if (client) await client.query('ROLLBACK');
-        res.status(500).json({ success: false, error: 'Server error updating like status.', detail: err.message });
+        if (client) await client.query("ROLLBACK");
+        res.status(500).json({
+            success: false,
+            error: "Server error updating like status.",
+            detail: err.message,
+        });
     } finally {
         if (client) client.release();
     }
@@ -507,7 +778,10 @@ const getReviewStats = async (req, res) => {
             res.json({ average_rating: 0, total_reviews: 0 });
         }
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch review stats', detail: err.message });
+        res.status(500).json({
+            error: "Failed to fetch review stats",
+            detail: err.message,
+        });
     } finally {
         if (client) client.release();
     }
@@ -527,24 +801,137 @@ const getReviewsForProvider = async (req, res) => {
         );
         res.json(reviews.rows);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch reviews', detail: err.message });
+        res.status(500).json({
+            error: "Failed to fetch reviews",
+            detail: err.message,
+        });
+    } finally {
+        if (client) client.release();
+    }
+};
+
+const deleteRecommendation = async (req, res) => {
+    const recommendationId = req.params.id;
+    const clerkIdFromQuery = req.query.user_id;
+    const userEmailFromQuery = req.query.email;
+
+    if (!clerkIdFromQuery || !userEmailFromQuery) {
+        return res.status(401).json({
+            success: false,
+            message: "User authentication details (ID and email) required.",
+        });
+    }
+
+    let client;
+    try {
+        client = await pool.connect();
+        await client.query("BEGIN");
+
+        // Verify user exists and get internal user ID
+        const userResult = await client.query(
+            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
+            [clerkIdFromQuery, userEmailFromQuery]
+        );
+
+        if (userResult.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res.status(404).json({
+                success: false,
+                message: "User not found.",
+            });
+        }
+        const userId = userResult.rows[0].id;
+
+        // Get recommendation details and verify ownership
+        const recommendation = await client.query(
+            "SELECT * FROM service_providers WHERE id = $1",
+            [recommendationId]
+        );
+
+        if (recommendation.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res.status(404).json({
+                success: false,
+                message: "Recommendation not found.",
+            });
+        }
+
+        if (recommendation.rows[0].recommended_by !== userId) {
+            await client.query("ROLLBACK");
+            return res.status(403).json({
+                success: false,
+                message:
+                    "Only the original recommender can delete this recommendation.",
+            });
+        }
+
+        // Delete associated data in correct order
+        await client.query(
+            "DELETE FROM community_shares WHERE service_provider_id = $1",
+            [recommendationId]
+        );
+
+        await client.query("DELETE FROM reviews WHERE provider_id = $1", [
+            recommendationId,
+        ]);
+
+        // Store service_id before deleting the provider
+        const serviceId = recommendation.rows[0].service_id;
+
+        // Delete the service provider first
+        const deletedRecommendation = await client.query(
+            "DELETE FROM service_providers WHERE id = $1 RETURNING *",
+            [recommendationId]
+        );
+
+        // Check if this was the only recommendation using this service
+        const remainingRecommendations = await client.query(
+            "SELECT COUNT(*) FROM service_providers WHERE service_id = $1",
+            [serviceId]
+        );
+
+        if (
+            parseInt(remainingRecommendations.rows[0].count) === 0 &&
+            serviceId !== PENDING_SERVICE_PK_ID
+        ) {
+            // Only delete the service if it's not the pending service and no other providers reference it
+            await client.query("DELETE FROM services WHERE service_id = $1", [
+                serviceId,
+            ]);
+        }
+
+        await client.query("COMMIT");
+        res.json({
+            success: true,
+            message: "Recommendation and associated data deleted successfully",
+            deletedRecommendation: deletedRecommendation.rows[0],
+        });
+    } catch (err) {
+        if (client) await client.query("ROLLBACK");
+        res.status(500).json({
+            success: false,
+            error: "Server error deleting recommendation",
+            detail: err.message,
+        });
     } finally {
         if (client) client.release();
     }
 };
 
 module.exports = {
-  createRecommendation,
-  addReviewToProvider,
-  getAllRecommendations,
-  getRecommendationById,
-  updateRecommendation,
-  getVisibleRecommendationsForUser,
-  searchProviders,
-  likeProvider,
-  getReviewStats,
-  getReviewsForProvider,
+    createRecommendation,
+    addReviewToProvider,
+    getAllRecommendations,
+    getRecommendationById,
+    updateRecommendation,
+    getVisibleRecommendationsForUser,
+    searchProviders,
+    likeProvider,
+    getReviewStats,
+    getReviewsForProvider,
+    deleteRecommendation,
 };
+
 
 // const pool = require('../config/db.config');
 // const { v4: uuidv4 } = require('uuid');
