@@ -32,8 +32,8 @@ import { TrashIcon } from "@heroicons/react/24/outline";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/solid";
 import "./Profile.css";
 
-// const API_URL = 'https://api.seanag-recommendations.org:8080';
-const API_URL = "http://localhost:3000";
+const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = "http://localhost:3000";
 
 function getCroppedImg(image, crop, fileName) {
     const canvas = document.createElement("canvas");
