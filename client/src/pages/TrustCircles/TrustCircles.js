@@ -187,29 +187,74 @@ const TrustCircles = () => {
             const params = new URLSearchParams({ user_id: currentUserId, email: currentUserEmail });
             const userRes = await fetch(`${API_URL}/api/communities/user/email/${currentUserEmail}?${params.toString()}`);
             if (!userRes.ok) throw new Error("Failed to fetch user details for Trust Circle.");
-            const userData = await userRes.json(); setCurrentUser(userData);
+            const userData = await userRes.json();
+            setCurrentUser(userData); // This sets the state, but it's async
+            // console.log("TRACE 1: `userData` from backend user endpoint:", userData);
+            // console.log("TRACE 2: `currentUser` state *after* `setCurrentUser` (might be null):", currentUser); // Still shows null here
+            // console.log("TRACE 3: `currentUserId` state (from Clerk):", currentUserId);
+    
             const conRes = await fetch(`${API_URL}/api/connections/check-connections`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: currentUserEmail }), });
             if (!conRes.ok) throw new Error("Failed to fetch individual connections.");
             const conData = await conRes.json(); setIndividualConnections(Array.from(new Set(conData.map(u => u.email))).map(email => conData.find(u => u.email === email)));
+            
             const myCommRes = await fetch(`${API_URL}/api/communities/user/${currentUserEmail}/communities`);
             if (!myCommRes.ok) throw new Error("Failed to fetch your communities.");
             let myCommData = await myCommRes.json();
             myCommData = Array.isArray(myCommData) ? myCommData.filter(c => c && c.id).reduce((acc,curr) => acc.find(item=>item.id===curr.id)?acc:[...acc,curr],[]) : [];
             setMyCommunities(myCommData.map(c => ({ ...c, recommendations: c.recommendation_count || Math.floor(Math.random() * 25) })));
+            
             const allCommRes = await fetch(`${API_URL}/api/communities/all${userData && userData.id ? `?user_id=${userData.id}` : ""}`);
             if (!allCommRes.ok) throw new Error("Failed to fetch available communities.");
             let allCommData = await allCommRes.json();
             setAvailableCommunities(Array.isArray(allCommData) ? allCommData.map(c => ({ ...c, memberCount: c.member_count || Math.floor(Math.random() * 100) + 5 })) : []);
-            if (userData && userData.id) {
-                const ownedIds = myCommData.filter(c => c.created_by === userData.id).map(c => c.id); const reqs = {};
+            
+            if (userData && userData.id) { // This condition is good, it ensures userData.id is valid
+                const ownedIds = myCommData.filter(c => c.created_by === userData.id).map(c => c.id);
+                // console.log("DEBUG: Owned Community IDs:", ownedIds);
+                
+                const reqs = {};
                 for (const commId of ownedIds) {
-                    const rRes = await fetch(`${API_URL}/api/communities/${commId}/requests/internal?user_id=${currentUser.id}`);
-                    reqs[commId] = rRes.ok ? (await rRes.json()) : [];
-                } setJoinRequests(reqs);
+                    // console.log(`DEBUG: --- Starting fetch for community ID: ${commId} ---`);
+    
+                    // Use userData.id directly, as it's synchronously available after the userRes.json() call
+                    const userIdForRequest = userData.id; 
+                    // console.log("TRACE 6: Using `userIdForRequest` (from `userData.id`):", userIdForRequest); 
+    
+                    if (!userIdForRequest) {
+                        console.error(`DEBUG: userIdForRequest is missing for community ${commId}. Skipping request fetch.`);
+                        reqs[commId] = [];
+                        continue; 
+                    }
+                    
+                    const requestUrl = `${API_URL}/api/communities/${commId}/requests/internal?user_id=${userIdForRequest}`; // **FIXED LINE**
+                    // console.log(`DEBUG: Attempting to make API call to: ${requestUrl}`); 
+    
+                    try {
+                        const rRes = await fetch(requestUrl);
+                        // console.log(`DEBUG: Received API response for ${commId}. Status: ${rRes.status}`); 
+                        if (!rRes.ok) { // Simplified error handling to catch non-2xx responses
+                            const errorText = await rRes.text();
+                            throw new Error(`HTTP Error ${rRes.status}: ${errorText}`);
+                        }
+                        const allRequests = await rRes.json();
+                        // console.log(`DEBUG: Raw API Response for requests for ${commId}:`, allRequests); 
+                        
+                        reqs[commId] = allRequests.filter(req => req.status === 'requested'); 
+                        // console.log(`DEBUG: Filtered (pending) requests for ${commId}:`, reqs[commId]); 
+                    } catch (error) {
+                        console.error(`DEBUG: Network or processing error for ${commId}:`, error);
+                        reqs[commId] = [];
+                    }
+                    // console.log(`DEBUG: --- Finished processing community ID: ${commId} ---`); 
+                }
+                setJoinRequests(reqs);
+                // console.log("DEBUG: Final `joinRequests` state before setting:", reqs); 
             }
-        } catch (err) { setTrustCircleError(err.message || "Could not load Trust Circle data.");
+        } catch (err) { 
+            console.error("DEBUG: Trust Circle Data Fetch (Outer) Error:", err); // Catch any errors in the outer block
+            setTrustCircleError(err.message || "Could not load Trust Circle data.");
         } finally { setLoadingTrustCircle(false); }
-    }, [currentUserId, currentUserEmail]);
+    }, [currentUserId, currentUserEmail]); // Removed `currentUser` from dependencies, as it's no longer used synchronously in the loop
 
     const fetchMyVisibleRecommendations = useCallback(async () => {
         if (!currentUserId || !currentUserEmail) {
@@ -391,7 +436,7 @@ const TrustCircles = () => {
                             </div>
                         </div>
                         {myCommunities.length === 0 && !trustCircleError ? <p className="empty-message">Not part of any communities. <a href="#" onClick={(e)=>{e.preventDefault();handleTabChange("discover");}}>Discover</a> or <a href="#" onClick={(e)=>{e.preventDefault();setShowCreateCommunityModal(true);}}>create one</a>.</p> : null}
-                        {myCommunities.length > 0 && <div className="grid-layout">{myCommunities.map(comm => (<div className="card" key={comm.id}><div className="card-content">{comm.created_by === currentUser?.id ? <span className="status-badge status-owner">Owner</span> : <span className="status-badge status-member">Member</span>}<h3 className="card-title">{comm.name}</h3><p className="card-description">{comm.description}</p><p className="card-info">{comm.recommendations} Recs</p></div><div className="card-actions"><button className="button button-outline" onClick={() => navigateToCommunity(comm.id)}>View <LaunchIcon /></button>{comm.created_by === currentUser?.id && joinRequests[comm.id]?.length > 0 && (<div className="pending-requests-section"><h4 className="pending-requests-title">Pending ({joinRequests[comm.id].length}):</h4>{joinRequests[comm.id].slice(0,2).map(req => (<div key={req.user_id} className="request-item"><span>{req.name}</span><button className="button button-success button-small" onClick={() => handleApproveMembership(comm.id, req.user_id)}>Approve</button></div>))}{joinRequests[comm.id].length > 2 && <p>+ {joinRequests[comm.id].length - 2} more...</p>}</div>)}</div></div>))}</div>}
+                        {myCommunities.length > 0 && <div className="grid-layout">{myCommunities.map(comm => (<div className="card" key={comm.id}><div className="card-content">{comm.created_by === currentUser?.id ? <span className="status-badge status-owner">Owner</span> : <span className="status-badge status-member">Member</span>}<h3 className="card-title">{comm.name}</h3><p className="card-description">{comm.description}</p><p className="card-info">{comm.recommendations} Recs</p></div><div className="card-actions"><button className="button button-outline" onClick={() => navigateToCommunity(comm.id)}>View <LaunchIcon /></button>{comm.created_by === currentUser?.id && joinRequests[comm.id]?.length > 0 && (<div className="pending-requests-section"><h4 className="pending-requests-title">Pending ({joinRequests[comm.id].length}):</h4>{joinRequests[comm.id].slice(0,2).map(req => (<div key={req.user_id} className="request-item"><span>{req.email}</span><button className="button button-success button-small" onClick={() => handleApproveMembership(comm.id, req.user_id)}>Approve</button></div>))}{joinRequests[comm.id].length > 2 && <p>+ {joinRequests[comm.id].length - 2} more...</p>}</div>)}</div></div>))}</div>}
                     </section>
                 </div>
             )}
