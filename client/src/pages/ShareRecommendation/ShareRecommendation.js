@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import Papa from "papaparse";
+import ReactCrop from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 import {
     StarIcon as OutlineStarIcon,
     TagIcon,
@@ -15,6 +17,8 @@ import {
     XCircleIcon,
     ChevronDownIcon,
     ArrowPathIcon,
+    PhotoIcon,
+    XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
 import "./ShareRecommendation.css";
@@ -76,6 +80,37 @@ const StarDisplay = ({ active, onClick, onMouseEnter, onMouseLeave }) => {
     );
 };
 
+const getCroppedImage = (image, crop) => {
+    const canvas = document.createElement("canvas");
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    canvas.width = crop.width * scaleX;
+    canvas.height = crop.height * scaleY;
+    const ctx = canvas.getContext("2d");
+
+    ctx.drawImage(
+        image,
+        crop.x * scaleX,
+        crop.y * scaleY,
+        crop.width * scaleX,
+        crop.height * scaleY,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    return new Promise((resolve) => {
+        canvas.toBlob(
+            (blob) => {
+                resolve(blob);
+            },
+            "image/jpeg",
+            0.95
+        );
+    });
+};
+
 export default function ShareRecommendation() {
     const navigate = useNavigate();
     const { isLoaded, isSignedIn, user } = useUser();
@@ -120,6 +155,12 @@ export default function ShareRecommendation() {
         failed: 0,
         errors: [],
     });
+
+    const [images, setImages] = useState([]);
+    const [currentCropImage, setCurrentCropImage] = useState(null);
+    const [crop, setCrop] = useState();
+    const [completedCrop, setCompletedCrop] = useState(null);
+    const imgRef = useRef(null);
 
     useEffect(() => {
         if (!isLoaded) return;
@@ -269,6 +310,67 @@ export default function ShareRecommendation() {
         );
     };
 
+    const handleImageSelect = (event) => {
+        const files = Array.from(event.target.files);
+
+        if (images.length + files.length > 5) {
+            setMessage("error:Maximum 5 images allowed");
+            return;
+        }
+
+        const file = files[0];
+        if (file.size > 5 * 1024 * 1024) {
+            setMessage("error:Images must be under 5MB");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setCurrentCropImage({
+                src: reader.result,
+                file,
+            });
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleCropComplete = async () => {
+        if (!currentCropImage || !completedCrop || !imgRef.current) return;
+
+        try {
+            const croppedBlob = await getCroppedImage(
+                imgRef.current,
+                completedCrop
+            );
+            const reader = new FileReader();
+            reader.readAsDataURL(croppedBlob);
+            reader.onloadend = () => {
+                setImages((prev) => [
+                    ...prev,
+                    {
+                        id: Date.now(),
+                        preview: reader.result,
+                        file: new File(
+                            [croppedBlob],
+                            currentCropImage.file.name,
+                            {
+                                type: "image/jpeg",
+                            }
+                        ),
+                    },
+                ]);
+                setCurrentCropImage(null);
+                setCompletedCrop(null);
+            };
+        } catch (error) {
+            setMessage("error:Failed to process image");
+        }
+    };
+
+    const removeImage = (imageId) => {
+        setImages((prev) => prev.filter((img) => img.id !== imageId));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
@@ -279,6 +381,7 @@ export default function ShareRecommendation() {
             );
             return;
         }
+
         if (
             publishScope === "Specific Trust Circles" &&
             selectedTrustCircles.length === 0
@@ -288,10 +391,14 @@ export default function ShareRecommendation() {
             );
             return;
         }
+
         setIsSubmitting(true);
         setMessage("");
 
-        const payload = {
+        const formData = new FormData();
+
+        // Add all JSON data as a single stringified field
+        const jsonData = {
             user_email: user.primaryEmailAddress?.emailAddress,
             business_name: businessName.trim(),
             provider_contact_name: providerContactName.trim() || null,
@@ -308,12 +415,20 @@ export default function ShareRecommendation() {
                 trust_circle_ids: selectedTrustCircles,
             }),
         };
+
+        formData.append("data", JSON.stringify(jsonData));
+
+        // Append images if they exist
+        images.forEach((image) => {
+            formData.append("images", image.file);
+        });
+
         try {
             const res = await fetch(`${API_URL}/api/recommendations`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
+                body: formData, // Don't set Content-Type header, let browser handle it for multipart/form-data
             });
+
             if (!res.ok) {
                 const errorData = await res
                     .json()
@@ -463,9 +578,14 @@ export default function ShareRecommendation() {
                 website: row["Website (Optional)"]?.trim() || null,
                 phone_number: row["Phone (Optional)"]?.trim() || null,
                 tags: processTags(row["Tags (comma-separated, Optional)"]),
-                publish_scope: row["Publish Scope (Public/Specific Trust Circles/Entire Trust Circle, Optional)"] || "Full Trust Circle",
+                publish_scope:
+                    row[
+                        "Publish Scope (Public/Specific Trust Circles/Entire Trust Circle, Optional)"
+                    ] || "Full Trust Circle",
                 trust_circle_ids:
-                    row["Trust Circle IDs (comma-separated if Specific Trust Circles, Optional)"]
+                    row[
+                        "Trust Circle IDs (comma-separated if Specific Trust Circles, Optional)"
+                    ]
                         ?.split(",")
                         .map((id) => id.trim())
                         .filter((id) => id) || [],
@@ -717,9 +837,119 @@ export default function ShareRecommendation() {
                             </div>
                         </div>
                     </section>
+                    <section className="form-section optional-section">
+                        <h2 className="section-title">
+                            <span className="section-number">3</span>Upload
+                            Images
+                        </h2>
+                        <div className="image-upload-section">
+                            <div
+                                className="image-dropzone"
+                                onClick={() =>
+                                    document
+                                        .getElementById("image-upload")
+                                        .click()
+                                }
+                            >
+                                <div className="image-dropzone-content">
+                                    <PhotoIcon className="image-dropzone-icon" />
+                                    <span className="image-dropzone-text">
+                                        Click to upload images (up to 5)
+                                    </span>
+                                    <span className="image-dropzone-text secondary">
+                                        JPG, PNG or WebP (max. 5MB each)
+                                    </span>
+                                </div>
+                                <input
+                                    type="file"
+                                    id="image-upload"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    onChange={handleImageSelect}
+                                    multiple
+                                    style={{ display: "none" }}
+                                />
+                            </div>
+
+                            {images.length > 0 && (
+                                <div className="image-preview-grid">
+                                    {images.map((image) => (
+                                        <div
+                                            key={image.id}
+                                            className="image-preview-item"
+                                        >
+                                            <img
+                                                src={image.preview}
+                                                alt="Upload preview"
+                                            />
+                                            <button
+                                                className="image-preview-remove"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    removeImage(image.id);
+                                                }}
+                                                type="button"
+                                            >
+                                                <XMarkIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {images.length > 0 && (
+                                <p className="upload-limit-text">
+                                    {5 - images.length} more image
+                                    {5 - images.length !== 1 ? "s" : ""} allowed
+                                </p>
+                            )}
+
+                            {currentCropImage && (
+                                <div className="crop-modal-overlay">
+                                    <div className="crop-modal">
+                                        <h3>Crop Image</h3>
+                                        <ReactCrop
+                                            crop={crop}
+                                            onChange={(_, percentCrop) =>
+                                                setCrop(percentCrop)
+                                            }
+                                            onComplete={(c) =>
+                                                setCompletedCrop(c)
+                                            }
+                                            aspect={16 / 9}
+                                        >
+                                            <img
+                                                ref={imgRef}
+                                                src={currentCropImage.src}
+                                                alt="Crop preview"
+                                                style={{ maxHeight: "70vh" }}
+                                            />
+                                        </ReactCrop>
+                                        <div className="crop-actions">
+                                            <button
+                                                type="button"
+                                                className="btn btn-secondary"
+                                                onClick={() =>
+                                                    setCurrentCropImage(null)
+                                                }
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn btn-primary"
+                                                onClick={handleCropComplete}
+                                            >
+                                                Apply Crop
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </section>
                     <section className="form-section publish-section">
                         <h2 className="section-title">
-                            <span className="section-number">3</span>Share With
+                            <span className="section-number">4</span>Share With
                         </h2>
                         <div className="publish-options-grid">
                             {PUBLISH_OPTIONS.map((option) => (
@@ -858,7 +1088,8 @@ export default function ShareRecommendation() {
             <DocumentTextIcon className="csv-icon" />{" "}
             <h2>Import Recommendations via CSV</h2>{" "}
             <p>
-                Prepare your CSV file with columns following the exact naming schema below:{" "}
+                Prepare your CSV file with columns following the exact naming
+                schema below:{" "}
             </p>{" "}
             <code>
                 Business Name, Your Experience, Rating (1-5), Provider Contact
