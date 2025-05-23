@@ -23,8 +23,8 @@ import {
 import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
 import "./ShareRecommendation.css";
 
-// const API_URL = 'https://api.seanag-recommendations.org:8080';
-const API_URL = "http://localhost:3000";
+const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = "http://localhost:3000";
 
 const INTRO_TEXT =
     "Share trusted recommendations with your circle. Let's add one now...";
