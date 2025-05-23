@@ -405,6 +405,310 @@ body {
   white-space: nowrap;
 }
 
+@media (max-width: 768px) {
+  .trust-circles-page-container {
+    padding: 20px 16px;
+    /* Ensure there's enough top padding to accommodate the fixed header if one exists,
+       or just to give space to the content below the main header. */
+    padding-top: 80px; /* Increased padding-top to ensure content starts below the header */
+  }
+
+  .trust-circles-main-header {
+    font-size: 1.75rem;
+    margin-bottom: 12px;
+    word-wrap: break-word;
+    white-space: normal;
+    text-align: center;
+    /* Ensure it's not hidden or collapsing */
+    display: block; /* Make sure it's not set to display: none */
+    position: relative; /* Ensure it respects flow */
+    z-index: 1; /* Make sure it's above other elements if there are overlaps */
+    padding-top: 0; /* Remove any potential extra top padding that might push it down */
+  }
+
+  .trust-circles-sub-header {
+    font-size: 1rem;
+    margin-bottom: 32px;
+    text-align: center; /* Ensure it's centered as well */
+  }
+
+  .tabs {
+    flex-direction: column;
+    margin-bottom: 20px;
+    border-bottom: none;
+  }
+
+  .tab-button {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: -1px;
+  }
+
+  .tab-button.active {
+    border-bottom: 2px solid #0056b3;
+  }
+
+  .section-container {
+    padding: 20px;
+    margin-bottom: 32px;
+  }
+
+  .section-title-container {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: 1.4rem;
+    margin-bottom: 12px;
+  }
+
+  .section-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .button {
+    width: 100%;
+    padding: 12px 18px;
+    font-size: 0.9rem;
+  }
+
+  .button-small {
+    padding: 10px 16px;
+  }
+
+  .grid-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .card-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .appliance-services-container.my-recommendations-tab-content {
+    padding: 0;
+  }
+
+  .section-heading {
+    font-size: 1.75rem;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .sort-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 16px 20px;
+  }
+
+  .sort-dropdown {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    font-size: 0.95rem;
+  }
+
+  .provider-list {
+    padding: 0;
+  }
+
+  .provider-card {
+    margin-bottom: 20px;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .card-title {
+    font-size: 1.25rem;
+    margin-bottom: 8px;
+  }
+
+  .badge-wrapper-with-menu {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  .right-actions {
+    margin-left: 0;
+  }
+
+  .review-summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+
+  .see-all-button {
+    margin-left: 0;
+    margin-top: 5px;
+    width: 100%;
+  }
+
+  .like-button {
+    align-self: flex-start;
+    margin-top: 5px;
+  }
+
+  .card-description {
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+  }
+
+  .recommended-row {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .recommended-label {
+    margin-right: 0;
+    margin-bottom: 4px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .modal-content {
+    width: 95%;
+    padding: 24px;
+    border-radius: 8px;
+  }
+
+  .modal-header {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .modal-actions .button {
+    width: 100%;
+  }
+
+  .simple-modal {
+    width: 90%;
+    padding: 20px;
+  }
+
+  .modal-buttons-vertical .secondary-button {
+    width: 100%;
+  }
+
+  .review-modal-content {
+    padding: 24px;
+  }
+
+  .review-modal-content h2 {
+    font-size: 1.3rem;
+  }
+
+  .rating-container label,
+  .review-input label,
+  .tag-input-group label {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+
+  .rating-container .stars .star {
+    font-size: 1.8rem;
+  }
+
+  .review-input textarea,
+  .tag-input-group input[type="text"] {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+
+  .tag-container.modal-tag-container {
+    margin-top: 10px;
+  }
+
+  .modal-buttons .cancel-button,
+  .modal-buttons .submit-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .trust-circles-page-container {
+    padding: 15px 12px;
+    padding-top: 70px; /* Slightly less padding for very small screens */
+  }
+
+  .trust-circles-main-header {
+    font-size: 1.5rem;
+  }
+
+  .trust-circles-sub-header {
+    font-size: 0.9rem;
+    margin-bottom: 25px;
+  }
+
+  .section-container {
+    padding: 15px;
+  }
+
+  .section-title {
+    font-size: 1.2rem;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+  }
+
+  .status-badge {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+
+  .button {
+    padding: 10px 15px;
+    font-size: 0.85rem;
+  }
+
+  .form-input,
+  .form-textarea {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+
+  .modal-content {
+    padding: 20px;
+  }
+
+  .modal-header {
+    font-size: 1.1rem;
+  }
+
+  .star-rating .filled, .star-rating .half, .star-rating .empty {
+    font-size: 1rem;
+  }
+}
+
 /* 
 // working 5/21 => pre my recs
 
