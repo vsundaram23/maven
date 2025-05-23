@@ -786,7 +786,7 @@ const FinancialServices = () => {
                                 </div>
 
                                 <p className="card-description">
-                                    {provider.description || "No description available"}
+                                    {provider.recommender_message || "No description available"}
                                 </p>
 
                                 {Array.isArray(provider.tags) && provider.tags.length > 0 && (
