@@ -696,17 +696,20 @@ const MovingServices = () => {
                             <li key={provider.id} className="provider-card">
                                 <div className="card-header">
                                     <h2 className="card-title">
-                                        <Link
-                                            to="#" // Placeholder, will be handled by opening profile modal
-                                            className="provider-name-link clickable"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                setSelectedProvider(provider);
-                                                setIsProfileModalOpen(true);
-                                            }}
-                                        >
-                                            {provider.business_name}
-                                        </Link>
+                                    <Link
+                                             to={`/provider/${provider.id}`}
+                                             target="_blank"
+                                             rel="noopener noreferrer"
+                                             className="clickable provider-name-link"
+                                             onClick={() =>
+                                                 localStorage.setItem(
+                                                     "selectedProvider",
+                                                     JSON.stringify(provider)
+                                                 )
+                                             }
+                                         >
+                                             {provider.business_name}
+                                         </Link>
                                     </h2>
                                     <div className="badge-wrapper-with-menu">
                                         <div className="badge-group">
