@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/db.config');
+const UserService = require('../services/userService');
 
 const {
   createCommunity,
@@ -16,6 +17,32 @@ const {
   getCommunityServiceCategories,
   requestToJoinCommunityByInternalId
 } = require('../controllers/communityController');
+
+const resolveClerkIdToInternalId = async (clerkId, userEmail, userDetails = {}) => {
+  if (!clerkId) {
+      return null;
+  }
+  const clerkUserObj = {
+      id: clerkId,
+      emailAddresses: userEmail ? [{ emailAddress: userEmail }] : [],
+      firstName: userDetails.firstName || null,
+      lastName: userDetails.lastName || null,
+      phoneNumbers: userDetails.phoneNumbers || [],
+      emailVerified: userDetails.emailVerified,
+      lastSignInAt: userDetails.lastSignInAt
+  };
+  try {
+      const internalId = await UserService.getOrCreateUser(clerkUserObj); // <--- HERE IT IS! UserService.getOrCreateUser is called
+      if (!internalId) {
+          console.error(`UserService.getOrCreateUser returned null for clerkId: ${clerkId}`);
+          return null;
+      }
+      return internalId;
+  } catch (error) {
+      console.error(`Error resolving Clerk ID ${clerkId} to internal ID:`, error);
+      throw new Error('Server error resolving user ID.');
+  }
+};
 
 router.post('/create', async (req, res) => {
   const { name, description, created_by_clerk_id } = req.body;
@@ -125,14 +152,51 @@ router.post('/approve', async (req, res) => {
   }
 });
 
+// router.get('/user/email/:email', async (req, res) => {
+//   const { email } = req.params;
+//   try {
+//     const result = await pool.query('SELECT id, clerk_id, name, email FROM users WHERE email = $1', [email]);
+//     if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+//     res.json(result.rows[0]);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Server error fetching user by email' });
+//   }
+// });
+
 router.get('/user/email/:email', async (req, res) => {
   const { email } = req.params;
+  // Assume frontend also sends clerk_id in query if logged in
+  const clerkId = req.query.user_id;
+
+  if (!email) {
+      return res.status(400).json({ error: 'Email is required.' });
+  }
+
   try {
-    const result = await pool.query('SELECT id, clerk_id, name, email FROM users WHERE email = $1', [email]);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-    res.json(result.rows[0]);
+      // Use getOrCreateUser directly here to ensure the user exists in your DB
+      const internalUserId = await resolveClerkIdToInternalId(clerkId, email, {
+          firstName: req.query.firstName, // Assuming frontend might send these
+          lastName: req.query.lastName,
+          phoneNumber: req.query.phoneNumber ? [{ phoneNumber: req.query.phoneNumber }] : [],
+          // emailVerified, lastSignInAt if available from Clerk webhook/session data
+      });
+
+      if (!internalUserId) {
+          // This case should ideally not happen if Clerk ID or email are valid
+          return res.status(500).json({ error: 'Could not resolve or create user.' });
+      }
+
+      // Now that we're sure the user exists, fetch their full details (including clerk_id)
+      const result = await pool.query('SELECT id, clerk_id, name, email FROM users WHERE id = $1', [internalUserId]);
+
+      if (result.rows.length === 0) {
+          // This should theoretically not happen if getOrCreateUser worked, but as a safeguard
+          return res.status(404).json({ error: 'User not found after creation/resolution.' });
+      }
+      res.json(result.rows[0]); // Return the user's internal DB ID, Clerk ID, name, email
   } catch (error) {
-    res.status(500).json({ error: 'Server error fetching user by email' });
+      console.error("Server error fetching or creating user by email:", error);
+      res.status(500).json({ error: 'Server error fetching or creating user by email' });
   }
 });
 
