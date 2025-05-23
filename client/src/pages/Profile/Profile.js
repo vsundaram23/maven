@@ -28,7 +28,12 @@ import {
 } from "@heroicons/react/24/solid";
 import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
 import { StarIcon as OutlineStarIcon } from "@heroicons/react/24/outline";
-import { TrashIcon } from "@heroicons/react/24/outline";
+import {
+    TrashIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/solid";
 import "./Profile.css";
 
@@ -662,6 +667,152 @@ const EditRecommendationModal = ({
     );
 };
 
+const ImageCarousel = ({ images, onImageClick }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    if (!images || !Array.isArray(images) || images.length === 0) return null;
+
+    const getImageSrc = (image) => {
+        if (!image) return "";
+
+        // Handle nested data structure
+        const imageData = image.data?.data || image.data;
+        if (!imageData) return "";
+
+        try {
+            // Handle array buffer data
+            if (Array.isArray(imageData)) {
+                const bytes = new Uint8Array(imageData);
+                const binary = bytes.reduce(
+                    (acc, byte) => acc + String.fromCharCode(byte),
+                    ""
+                );
+                const base64String = window.btoa(binary);
+                return `data:${image.contentType};base64,${base64String}`;
+            }
+
+            // Handle string data
+            if (typeof imageData === "string") {
+                return `data:${image.contentType};base64,${imageData}`;
+            }
+
+            console.error("Unsupported image data format:", imageData);
+            return "";
+        } catch (error) {
+            console.error("Error converting image data:", error);
+            return "";
+        }
+    };
+
+    return (
+        <div className="profile-image-carousel">
+            <div className="profile-image-carousel-container">
+                <img
+                    src={getImageSrc(images[currentIndex])}
+                    alt={`Provider image ${currentIndex + 1}`}
+                    className="profile-carousel-image"
+                    onClick={() => onImageClick?.(images[currentIndex])}
+                />
+                {images.length > 1 && (
+                    <>
+                        <button
+                            onClick={() =>
+                                setCurrentIndex(
+                                    (prev) =>
+                                        (prev - 1 + images.length) %
+                                        images.length
+                                )
+                            }
+                            className="profile-carousel-btn prev"
+                        >
+                            <ChevronLeftIcon />
+                        </button>
+                        <button
+                            onClick={() =>
+                                setCurrentIndex(
+                                    (prev) => (prev + 1) % images.length
+                                )
+                            }
+                            className="profile-carousel-btn next"
+                        >
+                            <ChevronRightIcon />
+                        </button>
+                    </>
+                )}
+            </div>
+            {images.length > 1 && (
+                <div className="profile-carousel-dots">
+                    {images.map((_, idx) => (
+                        <button
+                            key={idx}
+                            className={`profile-carousel-dot ${
+                                idx === currentIndex ? "active" : ""
+                            }`}
+                            onClick={() => setCurrentIndex(idx)}
+                        />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const ImageModal = ({ image, onClose }) => {
+    const getImageSrc = (img) => {
+        if (!img) return "";
+
+        // Handle nested data structure
+        const imageData = img.data?.data || img.data;
+        if (!imageData) return "";
+
+        try {
+            // Handle array buffer data
+            if (Array.isArray(imageData)) {
+                const bytes = new Uint8Array(imageData);
+                const binary = bytes.reduce(
+                    (acc, byte) => acc + String.fromCharCode(byte),
+                    ""
+                );
+                const base64String = window.btoa(binary);
+                return `data:${img.contentType};base64,${base64String}`;
+            }
+
+            // Handle string data
+            if (typeof imageData === "string") {
+                return `data:${img.contentType};base64,${imageData}`;
+            }
+
+            console.error("Unsupported image data format:", imageData);
+            return "";
+        } catch (error) {
+            console.error("Error converting image data:", error);
+            return "";
+        }
+    };
+
+    return (
+        <div className="profile-image-modal-overlay" onClick={onClose}>
+            <div
+                className="profile-image-modal-content"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <button className="profile-image-modal-close" onClick={onClose}>
+                    <XMarkIcon />
+                </button>
+                <img
+                    src={getImageSrc(image)}
+                    alt="Full size provider image"
+                    className="profile-image-modal-img"
+                    onError={(e) => {
+                        console.error("Modal image load error:", e);
+                        e.target.style.display = "none";
+                    }}
+                />
+            </div>
+        </div>
+    );
+};
+
 const MyRecommendationCard = ({
     rec,
     onEdit,
@@ -673,6 +824,7 @@ const MyRecommendationCard = ({
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState(null);
+    const [selectedImage, setSelectedImage] = useState(null);
     const cardRef = useRef(null);
     const formatDate = (dateString) =>
         !dateString
@@ -709,7 +861,8 @@ const MyRecommendationCard = ({
         setShowDeleteModal(true);
     };
 
-    const handleDelete = async () => {
+    const handleDelete = async (e) => {
+        e.preventDefault();
         setIsDeleting(true);
         setDeleteError(null);
 
@@ -737,6 +890,18 @@ const MyRecommendationCard = ({
             setIsDeleting(false);
         }
     };
+
+    // Parse images if they're stored as a string
+    const parsedImages = React.useMemo(() => {
+        if (!rec.images) return [];
+        if (Array.isArray(rec.images)) return rec.images;
+        try {
+            return JSON.parse(rec.images);
+        } catch (e) {
+            console.error("Error parsing images:", e);
+            return [];
+        }
+    }, [rec.images]);
 
     return (
         <li className="profile-my-rec-card">
@@ -830,6 +995,14 @@ const MyRecommendationCard = ({
                 <ChatBubbleLeftEllipsisIcon className="inline-icon" />
                 {rec.recommender_message || "No detailed message provided."}
             </p>
+            {parsedImages.length > 0 && (
+                <div className="profile-my-rec-images">
+                    <ImageCarousel
+                        images={parsedImages}
+                        onImageClick={(image) => setSelectedImage(image)}
+                    />
+                </div>
+            )}
             {Array.isArray(rec.tags) && rec.tags.length > 0 && (
                 <div className="profile-my-rec-tag-container">
                     {rec.tags.map((tag, idx) => (
@@ -875,6 +1048,12 @@ const MyRecommendationCard = ({
                     </button>
                 </div>
             </div>
+            {selectedImage && (
+                <ImageModal
+                    image={selectedImage}
+                    onClose={() => setSelectedImage(null)}
+                />
+            )}
             {showDeleteModal && (
                 <div className="profile-edit-modal-overlay">
                     <div className="profile-edit-modal-content">
