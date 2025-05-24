@@ -471,7 +471,7 @@ const CommunityProfile = () => {
                                     )}
                                 </div>
 
-                                {provider.recommender_name && (
+                                {/* {provider.recommender_name && (
                                     <div className="recommended-row">
                                         <span className="recommended-label">Recommended by:</span>
                                         {provider.recommender_clerk_id ? (
@@ -479,6 +479,16 @@ const CommunityProfile = () => {
                                         ) : (
                                             <span className="recommended-name">{provider.recommender_name}</span>
                                         )}
+                                        {provider.date_of_recommendation && (
+                                            <span className="recommendation-date">({new Date(provider.date_of_recommendation).toLocaleDateString("en-US", {year:"2-digit",month:"numeric",day:"numeric"})})</span>
+                                        )}
+                                    </div>
+                                )} */}
+                                {provider.recommender_name && (
+                                    <div className="recommended-row">
+                                        <span className="recommended-label">Recommended by:</span>
+                                        {/* The Link component is replaced with a span */}
+                                        <span className="recommended-name">{provider.recommender_name}</span>
                                         {provider.date_of_recommendation && (
                                             <span className="recommendation-date">({new Date(provider.date_of_recommendation).toLocaleDateString("en-US", {year:"2-digit",month:"numeric",day:"numeric"})})</span>
                                         )}
