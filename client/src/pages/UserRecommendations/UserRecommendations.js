@@ -410,8 +410,8 @@ const UserRecommendations = () => {
                 </button>
               </div>
 
-              <p className="card-description">{provider.description || 'No description available'}</p>
-              <p className="card-service-type">Service: {provider.service_type} ({provider.category_name || 'N/A'})</p>
+              <p className="card-description">{provider.recommender_message || 'No description available'}</p>
+              {/* <p className="card-service-type">Service: {provider.service_type} ({provider.category_name || 'N/A'})</p> */}
 
               {Array.isArray(provider.tags) && provider.tags.length > 0 && (
                 <div className="tag-container">
