@@ -422,13 +422,6 @@ const TrustCircles = () => {
                 <div className="tab-content">
                     {trustCircleError && <div className="empty-message error-text">{trustCircleError}</div>}
                     <section className="section-container">
-                        <div className="section-title-container"><h2 className="section-title">Individual Connections</h2>
-                            <div className="section-actions"><button className="button button-primary button-small icon-button" onClick={() => setShowAddPersonModal(true)}><PersonAddIcon /> Add Connection</button></div>
-                        </div>
-                        {individualConnections.length === 0 && !trustCircleError? <p className="empty-message">No individual connections yet. <a href="#" onClick={(e) => { e.preventDefault(); setShowAddPersonModal(true); }}>Add one</a>.</p> : null}
-                        {individualConnections.length > 0 && <div className="grid-layout">{individualConnections.map(cu => (<div className="card" key={cu.email}><div className="card-content"><span className="status-badge status-connected">Connected</span><h3 className="card-title">{cu.name}</h3><p className="card-subtitle">{cu.email}</p></div></div>))}</div>}
-                    </section>
-                    <section className="section-container">
                         <div className="section-title-container"><h2 className="section-title">My Communities</h2>
                             <div className="section-actions">
                                 <button className="button button-success button-small icon-button" onClick={() => setShowCreateCommunityModal(true)}><GroupAddIcon /> Create Community</button>
@@ -437,6 +430,13 @@ const TrustCircles = () => {
                         </div>
                         {myCommunities.length === 0 && !trustCircleError ? <p className="empty-message">Not part of any communities. <a href="#" onClick={(e)=>{e.preventDefault();handleTabChange("discover");}}>Discover</a> or <a href="#" onClick={(e)=>{e.preventDefault();setShowCreateCommunityModal(true);}}>create one</a>.</p> : null}
                         {myCommunities.length > 0 && <div className="grid-layout">{myCommunities.map(comm => (<div className="card" key={comm.id}><div className="card-content">{comm.created_by === currentUser?.id ? <span className="status-badge status-owner">Owner</span> : <span className="status-badge status-member">Member</span>}<h3 className="card-title">{comm.name}</h3><p className="card-description">{comm.description}</p><p className="card-info">{comm.recommendations} Recs</p></div><div className="card-actions"><button className="button button-outline" onClick={() => navigateToCommunity(comm.id)}>View <LaunchIcon /></button>{comm.created_by === currentUser?.id && joinRequests[comm.id]?.length > 0 && (<div className="pending-requests-section"><h4 className="pending-requests-title">Pending ({joinRequests[comm.id].length}):</h4>{joinRequests[comm.id].slice(0,2).map(req => (<div key={req.user_id} className="request-item"><span>{req.email}</span><button className="button button-success button-small" onClick={() => handleApproveMembership(comm.id, req.user_id)}>Approve</button></div>))}{joinRequests[comm.id].length > 2 && <p>+ {joinRequests[comm.id].length - 2} more...</p>}</div>)}</div></div>))}</div>}
+                    </section>
+                    <section className="section-container">
+                        <div className="section-title-container"><h2 className="section-title">Individual Connections</h2>
+                            <div className="section-actions"><button className="button button-primary button-small icon-button" onClick={() => setShowAddPersonModal(true)}><PersonAddIcon /> Add Connection</button></div>
+                        </div>
+                        {individualConnections.length === 0 && !trustCircleError? <p className="empty-message">No individual connections yet. <a href="#" onClick={(e) => { e.preventDefault(); setShowAddPersonModal(true); }}>Add one</a>.</p> : null}
+                        {individualConnections.length > 0 && <div className="grid-layout">{individualConnections.map(cu => (<div className="card" key={cu.email}><div className="card-content"><span className="status-badge status-connected">Connected</span><h3 className="card-title">{cu.name}</h3><p className="card-subtitle">{cu.email}</p></div></div>))}</div>}
                     </section>
                 </div>
             )}

@@ -303,12 +303,12 @@ const Header = () => {
                             className="add-recommendation-button styled-button"
                             onClick={handleNavLinkClick}
                         >
-                            Share Recommendation
+                            Add Recommendation
                         </Link>
                     ) : (
                         <SignInButton mode="modal">
                             <button className="add-recommendation-button styled-button">
-                                Share Recommendation
+                                Aadd Recommendation
                             </button>
                         </SignInButton>
                     )}
