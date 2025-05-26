@@ -308,7 +308,7 @@ const Header = () => {
                     ) : (
                         <SignInButton mode="modal">
                             <button className="add-recommendation-button styled-button">
-                                Aadd Recommendation
+                                Add Recommendation
                             </button>
                         </SignInButton>
                     )}
