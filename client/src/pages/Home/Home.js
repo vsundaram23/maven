@@ -13,8 +13,6 @@ import {
 import "./Home.css";
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = "http://localhost:5000";
-// const API_URL = "http://localhost:3000";
 
 const BRAND_PHRASE = "Tried & Trusted.";
 const LOCKED_LOCATION = "Greater Seattle Area";
@@ -22,7 +20,7 @@ const LOCKED_LOCATION = "Greater Seattle Area";
 const Home = () => {
     const { isLoaded, isSignedIn, user } = useUser();
     const { openSignIn, openSignUp } = useClerk();
-    const navigate = useNavigate(); // Already imported, great!
+    const navigate = useNavigate();
     const location = useLocation();
     const isMobile = useMediaQuery({ maxWidth: 768 });
 
@@ -77,7 +75,6 @@ const Home = () => {
                 return;
             }
 
-            // Fetch provider count
             try {
                 const params = new URLSearchParams({
                     user_id: user.id,
@@ -100,7 +97,6 @@ const Home = () => {
                 setProviderCount(0);
             }
 
-            // Fetch connection count
             if (user.primaryEmailAddress?.emailAddress) {
                 try {
                     const connectionsResponse = await fetch(
@@ -291,52 +287,17 @@ const Home = () => {
                         </button>
                     </div>
                 </form>
-                <motion.div
-                    className="recommender-banner"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.2, duration: 0.6 }}
-                >
-                    {isSignedIn ? (
-                        providerCount > 0 ? (
-                            <span
-                                className="auth-link"
-                                onClick={() => navigate("/trustcircles?tab=myRecommendations")}
-                            >
-                                View the recommendations shared with you! →
-                            </span>
-                        ) : (
-                            <>
-                                Add your first recommendation to unlock your Trust Circle rank!
-                            </>
-                        )
-                    ) : (
-                        <>
-                            Unlock trusted recommendations.&nbsp;
-                            <span onClick={triggerSignUpModal} className="auth-link">
-                                Sign Up
-                            </span>
-                            &nbsp;or&nbsp;
-                            <span onClick={triggerLoginModal} className="auth-link">
-                                Log In
-                            </span>
-                            .
-                        </>
-                    )}
-                </motion.div>
             </div>
             <div className="yc-stats">
-                {/* MODIFICATION START: Make this stat block clickable */}
                 <div
-                    className="stat clickable-stat" // Added a class for potential styling
+                    className="stat clickable-stat"
                     onClick={() => {
-                        if (isSignedIn) { // Optional: only navigate if signed in
+                        if (isSignedIn) {
                             navigate("/trustcircles?tab=myRecommendations");
                         } else {
-                            openSignIn(); // Or prompt to sign in
+                            openSignIn();
                         }
                     }}
-                    style={{ cursor: "pointer" }} // Added inline style for cursor
                 >
                     <p className="number">
                         <CountUp
@@ -351,28 +312,15 @@ const Home = () => {
                         shared with you
                     </p>
                 </div>
-                {/* MODIFICATION END */}
-
-                {/* <div className="stat">
-                    <p className="number">{recommenderRankDisplay}</p>
-                    <p className="label">
-                        Your Recommender
-                        <br />
-                        Rank
-                    </p>
-                </div> */}
-
-                {/* MODIFICATION START: Make this stat block clickable */}
                 <div
-                    className="stat clickable-stat" // Added a class for potential styling
+                    className="stat clickable-stat"
                     onClick={() => {
-                        if (isSignedIn) { // Optional: only navigate if signed in
+                        if (isSignedIn) {
                              navigate("/trustcircles?tab=myTrust");
                         } else {
-                            openSignIn(); // Or prompt to sign in
+                            openSignIn();
                         }
                     }}
-                    style={{ cursor: "pointer" }} // Added inline style for cursor
                 >
                     <p className="number">
                         <CountUp end={connectionCount || 0} duration={2} />
@@ -383,9 +331,8 @@ const Home = () => {
                         Trust Circle
                     </p>
                 </div>
-                {/* MODIFICATION END */}
             </div>
-            {isSignedIn && (
+            {/* {isSignedIn && (
                 <motion.div
                     className="network-cta"
                     initial={{ opacity: 0, y: 20 }}
@@ -402,6 +349,22 @@ const Home = () => {
                     >
                         Grow Your Trust Circle
                     </button>
+                </motion.div>
+            )} */}
+            {isSignedIn && (
+                <motion.div
+                    className="network-cta"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 2.2, duration: 0.6 }}
+                >
+                    <p>
+                        Want more recommendations?{' '}
+                        <span className="cta-link" onClick={() => navigate('/trustcircles')}>
+                            Invite friends
+                        </span>{' '}
+                        to grow your Trust Circle.
+                    </p>
                 </motion.div>
             )}
 
@@ -432,6 +395,7 @@ const Home = () => {
 
 export default Home;
 
+// good 5/26
 // import React, { useEffect, useState, useMemo } from "react";
 // import { useUser, useClerk } from "@clerk/clerk-react";
 // import { useNavigate, useLocation } from "react-router-dom";
@@ -456,7 +420,7 @@ export default Home;
 // const Home = () => {
 //     const { isLoaded, isSignedIn, user } = useUser();
 //     const { openSignIn, openSignUp } = useClerk();
-//     const navigate = useNavigate();
+//     const navigate = useNavigate(); // Already imported, great!
 //     const location = useLocation();
 //     const isMobile = useMediaQuery({ maxWidth: 768 });
 
@@ -760,7 +724,18 @@ export default Home;
 //                 </motion.div>
 //             </div>
 //             <div className="yc-stats">
-//                 <div className="stat">
+//                 {/* MODIFICATION START: Make this stat block clickable */}
+//                 <div
+//                     className="stat clickable-stat" // Added a class for potential styling
+//                     onClick={() => {
+//                         if (isSignedIn) { // Optional: only navigate if signed in
+//                             navigate("/trustcircles?tab=myRecommendations");
+//                         } else {
+//                             openSignIn(); // Or prompt to sign in
+//                         }
+//                     }}
+//                     style={{ cursor: "pointer" }} // Added inline style for cursor
+//                 >
 //                     <p className="number">
 //                         <CountUp
 //                             end={providerCount || 0}
@@ -774,6 +749,8 @@ export default Home;
 //                         shared with you
 //                     </p>
 //                 </div>
+//                 {/* MODIFICATION END */}
+
 //                 {/* <div className="stat">
 //                     <p className="number">{recommenderRankDisplay}</p>
 //                     <p className="label">
@@ -782,7 +759,19 @@ export default Home;
 //                         Rank
 //                     </p>
 //                 </div> */}
-//                 <div className="stat">
+
+//                 {/* MODIFICATION START: Make this stat block clickable */}
+//                 <div
+//                     className="stat clickable-stat" // Added a class for potential styling
+//                     onClick={() => {
+//                         if (isSignedIn) { // Optional: only navigate if signed in
+//                              navigate("/trustcircles?tab=myTrust");
+//                         } else {
+//                             openSignIn(); // Or prompt to sign in
+//                         }
+//                     }}
+//                     style={{ cursor: "pointer" }} // Added inline style for cursor
+//                 >
 //                     <p className="number">
 //                         <CountUp end={connectionCount || 0} duration={2} />
 //                     </p>
@@ -792,6 +781,7 @@ export default Home;
 //                         Trust Circle
 //                     </p>
 //                 </div>
+//                 {/* MODIFICATION END */}
 //             </div>
 //             {isSignedIn && (
 //                 <motion.div

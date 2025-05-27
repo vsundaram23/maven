@@ -16,7 +16,7 @@ body {
   width: 100%;
   max-width: 1024px;
   margin: 0 auto;
-  padding: 18vh 2rem 8vh;
+  padding: 18vh 2rem 2vh;
   text-align: center;
 }
 
@@ -178,7 +178,7 @@ body {
   cursor: wait;
 }
 
-.recommender-banner {
+/* .recommender-banner {
   max-width: 600px;
   margin: 1.5rem auto 1.5rem;
   background: #e7f5ff;
@@ -192,7 +192,37 @@ body {
 }
 .recommender-banner strong {
   color: #1971c2;
+} */
+
+.recommender-banner {
+  max-width: 600px;
+  margin: 1.5rem auto 1.5rem;
+  background: #1A365D;
+  border: 1px solid #1A365D;
+  color: #fff;
+  padding: 0.85rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 500;
+  text-align: center;
+  font-size: 0.95rem;
+  transition: background-color 0.2s ease-in-out;
 }
+
+.recommender-banner:hover {
+  background: #12264a; 
+}
+
+.recommender-banner .auth-link {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.recommender-banner .auth-link:hover {
+  color: #dee2e6;
+}
+
 .auth-link {
   color: #1971c2;
   font-weight: 600;
@@ -231,25 +261,46 @@ body {
   line-height: 1.4;
 }
 
-.network-cta {
-  max-width: 600px;
-  margin: 3rem auto 0;
-  background: #f1f9ff;
-  border-left: 5px solid #1A365D;
-  padding: 1.5rem 2rem;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.clickable-stat {
+  padding: 1rem;
+  border-radius: 12px; 
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  cursor: pointer; 
 }
 
-.network-cta p {
-  margin: 0 0 1rem;
-  color: #1A365D;
-  font-weight: 500;
-  font-size: 1.05rem;
-  line-height: 1.5;
-  text-align: center;
+.clickable-stat:hover {
+  transform: translateY(-4px);
+  background-color: #f8f9fa; 
+  box-shadow: 0 6px 20px rgba(26, 54, 93, 0.1);
+}
+
+.network-cta { 
+  max-width: 600px; 
+  margin: 3rem auto 0; 
+  padding: 1rem; 
+  text-align: center; 
+  font-size: 1rem; 
+  color: #fff;
+  font-weight: 500; 
+  border-radius: 8px; 
+  background: linear-gradient(to right, #1A365D, #29528A);
+  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.2);
+}
+
+.network-cta p { 
+  margin-bottom: 0;
+}
+
+.cta-link { color: #f0f8ff; 
+  font-weight: 600; 
+  text-decoration: underline; 
+  text-underline-offset: 3px; 
+  cursor: pointer; 
+  transition: color 0.2s ease; 
+}
+
+.cta-link:hover { 
+  color: #ffffff;  
 }
 
 .primary-button {
@@ -334,7 +385,7 @@ body {
 
 @media (max-width: 768px) {
   .hero-container {
-    padding: 12vh 1rem 6vh;
+    padding: 12vh 1rem 2vh;
   }
   .main-search-input {
     font-size: 0.9rem;
