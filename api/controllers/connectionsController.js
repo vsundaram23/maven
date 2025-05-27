@@ -14,6 +14,7 @@ const getConnectionsByEmail = async (email) => {
       SELECT 
         u.name,
         u.email,
+        u.phone_number,
         uc.connected_at
       FROM user_id main
       JOIN user_connections uc 
