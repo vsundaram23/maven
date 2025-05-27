@@ -20,6 +20,7 @@ import ProviderProfile from './pages/ServiceDetails/ProviderProfile';
 import ShareRecommendation from './pages/ShareRecommendation/ShareRecommendation';
 import UserRecommendations from './pages/UserRecommendations/UserRecommendations';
 import CommunityProfile from './pages/CommunityProfile/CommunityProfile';
+import PublicProfile from './pages/PublicProfile/PublicProfile';
 import './styles/global.css';
 import './App.css';
 
@@ -67,6 +68,7 @@ const AppWrapper = () => {
           <Route path="/share-recommendation" element={<ProtectedRoute><ShareRecommendation /></ProtectedRoute>} />
           <Route path="/user/:id/recommendations" element={<ProtectedRoute><UserRecommendations /></ProtectedRoute>} />
           <Route path="/community/:communityId" element={<ProtectedRoute><CommunityProfile /></ProtectedRoute>} />
+          <Route path="/profile/:userId" element={<PublicProfile />} />
         </Routes>
       </main>
     </div>
