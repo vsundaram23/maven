@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useUser } from "@clerk/clerk-react";
-import { FaUserTie, FaCalendarAlt, FaUsers, FaStar, FaEdit, FaSignInAlt, FaUserPlus, FaEye, FaUserCheck, FaHourglassHalf, FaTools, FaThumbsUp, FaPhone, FaEnvelope, FaPlusCircle } from 'react-icons/fa';
+import { FaUserTie, FaCalendarAlt, FaUsers, FaStar, FaEdit, FaSignInAlt, FaUserPlus, FaEye, FaUserCheck, FaHourglassHalf, FaTools, FaThumbsUp, FaPhone, FaEnvelope, FaSms, FaPlusCircle } from 'react-icons/fa';
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import "./CommunityProfile.css";
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = "http://localhost:3000";
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = "http://localhost:3000";
 
 const IconText = ({ icon, text, className = "" }) => (
   <div className={`icon-text-item ${className}`}> {icon} <span>{text}</span> </div>
@@ -59,11 +59,38 @@ const MemberCard = ({ member }) => {
     );
   }
 
+  const displayName = member.name || member.email || "";
+  let nameParts = [];
+  if (member.name) {
+      nameParts = member.name.split(' ').filter(n => n);
+  }
+
   return (
     <div className="member-item-card">
       {avatarContent}
-      <span className="member-name">{member.name || member.email}</span>
-      {/* {member.clerk_id && <Link to={`/user/${member.clerk_id}/profile`} className="member-profile-link">View Profile</Link>} */}
+      <div className="member-name-container">
+        {nameParts.length > 1 ? (
+          <>
+            {nameParts.slice(0, -1).join(' ')}
+            {' '}
+            <span className="member-last-name">{nameParts.slice(-1)[0]}</span>
+          </>
+        ) : (
+          displayName
+        )}
+      </div>
+      <div className="member-actions">
+        {member.phone_number && (
+          <a href={`sms:${member.phone_number.replace(/\D/g, '')}`} className="member-action-icon" title="Send SMS">
+            <FaSms />
+          </a>
+        )}
+        {member.email && (
+          <a href={`mailto:${member.email}`} className="member-action-icon" title="Send Email">
+            <FaEnvelope />
+          </a>
+        )}
+      </div>
     </div>
   );
 };
