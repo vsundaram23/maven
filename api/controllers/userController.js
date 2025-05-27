@@ -144,6 +144,66 @@ const updateCurrentUserProfile = async (req, res) => {
     }
 };
 
+const getPublicUserProfile = async (req, res) => {
+    const { userId } = req.params; // This is the ID of the profile being viewed
+
+    if (!userId) {
+        return res.status(400).json({
+            success: false,
+            message: "User ID is required.",
+        });
+    }
+
+    try {
+        // Fetch basic user data
+        const userQuery = `SELECT id, name, email, bio FROM users WHERE id = $1`;
+        const userResult = await pool.query(userQuery, [userId]);
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
+        const userData = userResult.rows[0];
+
+        // Fetch user's recommendations
+        const recommendationsQuery = `
+            SELECT
+                sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
+                sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.website, sp.business_contact, 
+                sp.recommender_message, sp.images,
+                s.name as service_type, c.name as category_name
+            FROM service_providers sp
+            LEFT JOIN services s ON sp.service_id = s.service_id
+            LEFT JOIN service_categories c ON s.category_id = c.service_id
+            WHERE sp.recommended_by = $1
+            ORDER BY sp.date_of_recommendation DESC, sp.created_at DESC
+        `;
+        const recommendationsResult = await pool.query(recommendationsQuery, [userId]);
+
+        // Construct profile image URL (to be fetched separately by the client if needed, or direct path)
+        const profileImage = `/api/users/${userId}/profile/image`; // Path for frontend to request
+
+        res.json({
+            success: true,
+            userId: userData.id, // Return the ID for consistency
+            userName: userData.name,
+            userBio: userData.bio,
+            userEmail: userData.email, // Assuming email is public or you'll handle privacy
+            profileImage: profileImage, // Path to the image
+            recommendations: recommendationsResult.rows,
+            // Note: 'connections' count is NOT included here
+        });
+
+    } catch (err) {
+        console.error("Error fetching public user profile:", err.message, err.stack);
+        res.status(500).json({
+            success: false,
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+};
+
+
 const serveCurrentUserProfileImage = async (req, res) => {
     const clerkUserId = req.query.user_id;
     const userEmail = req.query.email;
@@ -456,6 +516,7 @@ module.exports = {
     getCurrentUserRecommendations,
     getRecommendationsByUserId,
     updateUserProfileById,
+    getPublicUserProfile,
     serveUserProfileImageById,
     uploadProfileImageMiddleware,
     updateCurrentUserProfile,

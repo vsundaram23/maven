@@ -499,6 +499,20 @@ const CommunityProfile = () => {
                                 </div>
 
                                 {provider.recommender_name && (
+                                  <div className="recommended-row">
+                                      <span className="recommended-label">Recommended by:</span>
+                                      {provider.recommender_clerk_id ? (
+                                          <Link to={`/profile/${provider.recommender_user_id}`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{provider.recommender_name}</Link>
+                                      ) : (
+                                          <span className="recommended-name">{provider.recommender_name}</span>
+                                      )}
+                                      {provider.date_of_recommendation && (
+                                          <span className="recommendation-date">({new Date(provider.date_of_recommendation).toLocaleDateString("en-US", {year:"2-digit",month:"numeric",day:"numeric"})})</span>
+                                      )}
+                                  </div>
+                                )}
+
+                                {/* {provider.recommender_name && (
                                     <div className="recommended-row">
                                         <span className="recommended-label">Recommended by:</span>
                                         {provider.recommender_clerk_id ? (
@@ -510,7 +524,7 @@ const CommunityProfile = () => {
                                             <span className="recommendation-date">({new Date(provider.date_of_recommendation).toLocaleDateString("en-US", {year:"2-digit",month:"numeric",day:"numeric"})})</span>
                                         )}
                                     </div>
-                                )}
+                                )} */}
                                 {/* {provider.recommender_name && (
                                     <div className="recommended-row">
                                         <span className="recommended-label">Recommended by:</span>

@@ -9,7 +9,8 @@ const {
     uploadProfileImageMiddleware,
     updateCurrentUserProfile,
     serveCurrentUserProfileImage,
-    getCurrentUserProfileData
+    getCurrentUserProfileData,
+    getPublicUserProfile
 } = require("../controllers/userController");
 
 router.get(
@@ -31,6 +32,11 @@ router.put(
 router.get(
     "/me/profile/image",
     serveCurrentUserProfileImage
+);
+
+router.get(
+    "/public-profile/:userId",
+    getPublicUserProfile
 );
 
 router.get(
