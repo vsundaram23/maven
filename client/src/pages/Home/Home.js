@@ -323,14 +323,14 @@ const Home = () => {
                         }
                     }}
                 >
-                    <p className="number">
+                    {/* <p className="number">
                         <CountUp end={connectionCount || 0} duration={2} />
                     </p>
                     <p className="label">
                         People in Your
                         <br />
                         Trust Circle
-                    </p>
+                    </p> */}
                 </div>
             </div>
             {/* {isSignedIn && (
