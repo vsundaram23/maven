@@ -183,7 +183,7 @@
   margin: 0 auto;
 }
 
-.community-profile-page-wrapper .sort-bar {
+/* .community-profile-page-wrapper .sort-bar {
   display: flex;
   align-items: center;
   margin-bottom: 24px;
@@ -196,7 +196,7 @@
   border-radius: 6px;
   border: 1px solid #ccc;
   font-size: 15px;
-}
+} */
 
 .community-profile-page-wrapper .category-filter-bar {
   display: flex;
@@ -910,6 +910,58 @@
   text-transform: uppercase;
   margin-bottom: 0.75rem;
 }
+
+.community-profile-page-wrapper .sort-city-container {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 0 0 16px 0;
+  flex-wrap: wrap;
+}
+
+/* Styling for each individual filter group */
+.community-profile-page-wrapper .sort-bar,
+.community-profile-page-wrapper .city-filter-bar {
+  display: flex;
+  align-items: baseline;
+  margin-right: 8px !important;
+  /* gap: 8px; */ /* ✨ REMOVED: Switched to margin on the label for a more robust fix */
+}
+
+/* Labels: Applying margin directly for consistent spacing */
+.community-profile-page-wrapper .sort-bar label,
+.community-profile-page-wrapper .city-filter-bar label {
+  font-weight: 600;
+  color: #333;
+  margin: 0 8px 0 0; /* ✨ CHANGED: Sets an 8px margin to the right of the label */
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+/* Dropdowns: (This part remains the same) */
+.community-profile-page-wrapper .sort-bar select,
+.community-profile-page-wrapper .city-filter-bar select {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  font-size: 14px;
+  padding: 6px 30px 6px 12px;
+  line-height: 1.2;
+  cursor: pointer;
+  font-family: inherit;
+  margin: 0;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.community-profile-page-wrapper .sort-bar select:focus,
+.community-profile-page-wrapper .city-filter-bar select:focus {
+  outline: none;
+  border-color: #1a365d;
+  box-shadow: 0 0 0 2px rgba(26, 54, 93, 0.2);
+}
+
 
 /* .community-profile-page-wrapper {
   padding: 100px 1rem 2rem;
