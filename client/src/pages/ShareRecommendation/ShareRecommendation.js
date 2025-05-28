@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import Papa from "papaparse";
-import ReactCrop from "react-image-crop";
-import "react-image-crop/dist/ReactCrop.css";
 import {
     StarIcon as OutlineStarIcon,
     TagIcon,
@@ -23,7 +21,7 @@ import {
 import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
 import "./ShareRecommendation.css";
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = "https://api.seanag-recommendations.org:8080";
 // const API_URL = "http://localhost:3000";
 
 const INTRO_TEXT =
@@ -80,37 +78,6 @@ const StarDisplay = ({ active, onClick, onMouseEnter, onMouseLeave }) => {
     );
 };
 
-const getCroppedImage = (image, crop) => {
-    const canvas = document.createElement("canvas");
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    canvas.width = crop.width * scaleX;
-    canvas.height = crop.height * scaleY;
-    const ctx = canvas.getContext("2d");
-
-    ctx.drawImage(
-        image,
-        crop.x * scaleX,
-        crop.y * scaleY,
-        crop.width * scaleX,
-        crop.height * scaleY,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
-
-    return new Promise((resolve) => {
-        canvas.toBlob(
-            (blob) => {
-                resolve(blob);
-            },
-            "image/jpeg",
-            0.95
-        );
-    });
-};
-
 export default function ShareRecommendation() {
     const navigate = useNavigate();
     const { isLoaded, isSignedIn, user } = useUser();
@@ -157,10 +124,6 @@ export default function ShareRecommendation() {
     });
 
     const [images, setImages] = useState([]);
-    const [currentCropImage, setCurrentCropImage] = useState(null);
-    const [crop, setCrop] = useState();
-    const [completedCrop, setCompletedCrop] = useState(null);
-    const imgRef = useRef(null);
 
     useEffect(() => {
         if (!isLoaded) return;
@@ -318,53 +281,25 @@ export default function ShareRecommendation() {
             return;
         }
 
-        const file = files[0];
-        if (file.size > 5 * 1024 * 1024) {
-            setMessage("error:Images must be under 5MB");
-            return;
-        }
+        files.forEach((file) => {
+            if (file.size > 5 * 1024 * 1024) {
+                setMessage("error:Images must be under 5MB");
+                return;
+            }
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setCurrentCropImage({
-                src: reader.result,
-                file,
-            });
-        };
-        reader.readAsDataURL(file);
-    };
-
-    const handleCropComplete = async () => {
-        if (!currentCropImage || !completedCrop || !imgRef.current) return;
-
-        try {
-            const croppedBlob = await getCroppedImage(
-                imgRef.current,
-                completedCrop
-            );
             const reader = new FileReader();
-            reader.readAsDataURL(croppedBlob);
             reader.onloadend = () => {
                 setImages((prev) => [
                     ...prev,
                     {
-                        id: Date.now(),
+                        id: Date.now() + Math.random(),
                         preview: reader.result,
-                        file: new File(
-                            [croppedBlob],
-                            currentCropImage.file.name,
-                            {
-                                type: "image/jpeg",
-                            }
-                        ),
+                        file: file,
                     },
                 ]);
-                setCurrentCropImage(null);
-                setCompletedCrop(null);
             };
-        } catch (error) {
-            setMessage("error:Failed to process image");
-        }
+            reader.readAsDataURL(file);
+        });
     };
 
     const removeImage = (imageId) => {
@@ -901,49 +836,6 @@ export default function ShareRecommendation() {
                                     {5 - images.length} more image
                                     {5 - images.length !== 1 ? "s" : ""} allowed
                                 </p>
-                            )}
-
-                            {currentCropImage && (
-                                <div className="crop-modal-overlay">
-                                    <div className="crop-modal">
-                                        <h3>Crop Image</h3>
-                                        <ReactCrop
-                                            crop={crop}
-                                            onChange={(_, percentCrop) =>
-                                                setCrop(percentCrop)
-                                            }
-                                            onComplete={(c) =>
-                                                setCompletedCrop(c)
-                                            }
-                                            aspect={16 / 9}
-                                        >
-                                            <img
-                                                ref={imgRef}
-                                                src={currentCropImage.src}
-                                                alt="Crop preview"
-                                                style={{ maxHeight: "70vh" }}
-                                            />
-                                        </ReactCrop>
-                                        <div className="crop-actions">
-                                            <button
-                                                type="button"
-                                                className="btn btn-secondary"
-                                                onClick={() =>
-                                                    setCurrentCropImage(null)
-                                                }
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="btn btn-primary"
-                                                onClick={handleCropComplete}
-                                            >
-                                                Apply Crop
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
                             )}
                         </div>
                     </section>
