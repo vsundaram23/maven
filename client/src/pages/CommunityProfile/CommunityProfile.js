@@ -362,6 +362,43 @@ const availableCities = useMemo(() => {
   return Array.from(new Set(cities)).sort((a, b) => a.localeCompare(b));
 }, [commRecsRaw]);
 
+const categoryCounts = useMemo(() => {
+  return commRecsRaw.reduce((acc, rec) => {
+      const categoryId = rec.community_service_category_id;
+      if (categoryId) {
+          acc[categoryId] = (acc[categoryId] || 0) + 1;
+      }
+      return acc;
+  }, {});
+}, [commRecsRaw]);
+
+// const sortedAndFilteredCommRecs = useMemo(() => {
+//   if (!commRecsRaw) return [];
+
+//   let list = [...commRecsRaw];
+
+//   if (communityServiceCategories.length > 0 && selectedCategory !== 'all') {
+//     list = list.filter(p => p.community_service_category_id === selectedCategory);
+//   }
+
+//   if (selectedCity !== 'all') {
+//     list = list.filter(p => (p.city || "Other") === selectedCity);
+//   }
+
+//   const getBand = r => { if (r >= 4) return 0; if (r >= 3) return 1; if (r >= 2) return 2; if (r >= 1) return 3; return 4; };
+//   if (commRecsSortOption === "topRated") {
+//     return list.filter(p => p.average_rating >= 4.5).sort((a, b) => (b.average_rating !== a.average_rating) ? b.average_rating - a.average_rating : (b.total_reviews || 0) - (a.total_reviews || 0));
+//   }
+//   return list.sort((a, b) => {
+//     const bA = getBand(a.average_rating); const bB = getBand(b.average_rating); if (bA !== bB) return bA - bB;
+//     const sA = (a.average_rating || 0) * (a.total_reviews || 0); const sB = (b.average_rating || 0) * (b.total_reviews || 0); if (sB !== sA) return sB - sA;
+//     if (b.average_rating !== a.average_rating) return b.average_rating - a.average_rating;
+//     if ((b.total_reviews || 0) !== (a.total_reviews || 0)) return (b.total_reviews || 0) - (a.total_reviews || 0);
+//     return (a.originalIndex || 0) - (b.originalIndex || 0);
+//   });
+// }, [commRecsRaw, commRecsSortOption, selectedCategory, selectedCity, communityServiceCategories]);
+
+
 const sortedAndFilteredCommRecs = useMemo(() => {
   if (!commRecsRaw) return [];
 
@@ -375,15 +412,17 @@ const sortedAndFilteredCommRecs = useMemo(() => {
     list = list.filter(p => (p.city || "Other") === selectedCity);
   }
 
-  const getBand = r => { if (r >= 4) return 0; if (r >= 3) return 1; if (r >= 2) return 2; if (r >= 1) return 3; return 4; };
   if (commRecsSortOption === "topRated") {
     return list.filter(p => p.average_rating >= 4.5).sort((a, b) => (b.average_rating !== a.average_rating) ? b.average_rating - a.average_rating : (b.total_reviews || 0) - (a.total_reviews || 0));
   }
+  
   return list.sort((a, b) => {
-    const bA = getBand(a.average_rating); const bB = getBand(b.average_rating); if (bA !== bB) return bA - bB;
-    const sA = (a.average_rating || 0) * (a.total_reviews || 0); const sB = (b.average_rating || 0) * (b.total_reviews || 0); if (sB !== sA) return sB - sA;
-    if (b.average_rating !== a.average_rating) return b.average_rating - a.average_rating;
-    if ((b.total_reviews || 0) !== (a.total_reviews || 0)) return (b.total_reviews || 0) - (a.total_reviews || 0);
+    const dateA = a.date_of_recommendation;
+    const dateB = b.date_of_recommendation;
+
+    if (dateA && dateB) return new Date(dateB) - new Date(dateA);
+    if (dateA && !dateB) return -1;
+    if (!dateA && dateB) return 1;
     return (a.originalIndex || 0) - (b.originalIndex || 0);
   });
 }, [commRecsRaw, commRecsSortOption, selectedCategory, selectedCity, communityServiceCategories]);
@@ -513,7 +552,7 @@ const sortedAndFilteredCommRecs = useMemo(() => {
               )}
             </div>
             </div>
-            {communityServiceCategories.length > 0 && (
+            {/* {communityServiceCategories.length > 0 && (
                 <div className="category-filter-bar">
                     <button
                         className={`category-button ${selectedCategory === 'all' ? 'active' : ''}`}
@@ -530,6 +569,27 @@ const sortedAndFilteredCommRecs = useMemo(() => {
                             onClick={() => setSelectedCategory(category.id)}
                         >
                             {category.category_name}
+                        </button>
+                    ))}
+                </div>
+            )} */}
+            {communityServiceCategories.length > 0 && (
+                <div className="category-filter-bar">
+                    <button
+                        className={`category-button ${selectedCategory === 'all' ? 'active' : ''}`}
+                        onClick={() => setSelectedCategory('all')}
+                    >
+                        All ({commRecsRaw.length})
+                    </button>
+                    {[...communityServiceCategories]
+                        .sort((a, b) => (categoryCounts[b.id] || 0) - (categoryCounts[a.id] || 0))
+                        .map((category) => (
+                        <button
+                            key={category.id}
+                            className={`category-button ${selectedCategory === category.id ? 'active' : ''}`}
+                            onClick={() => setSelectedCategory(category.id)}
+                        >
+                            {category.category_name} ({categoryCounts[category.id] || 0})
                         </button>
                     ))}
                 </div>
