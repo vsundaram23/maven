@@ -235,8 +235,6 @@ const PublicProfile = () => {
             }
 
             const baseRecs = data.recommendations || [];
-
-            // *** THIS IS THE RESTORED ENRICHMENT STEP ***
             const enrichedRecs = await Promise.all(
                 baseRecs.map(async (rec) => {
                     const providerId = rec.provider_id || rec.id;
@@ -260,7 +258,6 @@ const PublicProfile = () => {
                     };
                 })
             );
-            // *** END OF RESTORED STEP ***
 
             setRecommendations(enrichedRecs);
 

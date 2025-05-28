@@ -1173,8 +1173,8 @@ const Profile = () => {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        email: user.primaryEmailAddress?.emailAddress,
-                        user_id: user.id,
+                        email: user.primaryEmailAddress?.emailAddress
+                        // user_id: user.id,
                     }),
                 }
             );
