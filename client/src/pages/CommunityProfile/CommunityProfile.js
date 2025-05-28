@@ -512,7 +512,7 @@ const sortedAndFilteredCommRecs = useMemo(() => {
 
       <div className="community-content-area">
         <div className="tabs">
-          <button className={`tab-button ${activeTab === 'recommendations' ? 'active' : ''}`} onClick={() => setActiveTab('recommendations')}>Recommendations</button>
+          <button className={`tab-button ${activeTab === 'recommendations' ? 'active' : ''}`} onClick={() => setActiveTab('recommendations')}>Recommendations ({commRecsRaw.length})</button>
           <button className={`tab-button ${activeTab === 'members' ? 'active' : ''}`} onClick={() => setActiveTab('members')}>Members ({(activeTab === 'members' && communityMembers.length > 0) ? communityMembers.length : (communityDetails?.member_count || 0)})</button>
         </div>
 
