@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getConnectionsByEmail,
+  getConnectionsByUserId,
   sendConnectionRequest,
   getTrustCircleUsers
 } = require('../controllers/connectionsController');
@@ -9,12 +10,20 @@ const pool = require('../config/db.config');
 
 // Get accepted connections for a user by email
 router.post('/check-connections', async (req, res) => {
-  const { email } = req.body;
-
+  const { email, user_id } = req.body;
   try {
-    const connections = await getConnectionsByEmail(email);
+    let connections;
+    if (user_id) {
+      connections = await getConnectionsByUserId(user_id);
+    } else if (email) {
+      connections = await getConnectionsByEmail(email);
+    } else {
+      return res.status(400).json({ error: 'Request body must contain either a user_id or an email.' });
+    }
     res.json(connections);
+
   } catch (error) {
+    console.error("Failed to fetch connections:", error); 
     res.status(500).json({ error: 'Server error fetching connections' });
   }
 });

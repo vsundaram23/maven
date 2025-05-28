@@ -32,6 +32,37 @@ const getConnectionsByEmail = async (email) => {
   }
 };
 
+const getConnectionsByUserId = async (userId) => {
+  try {
+    console.log('Attempting to fetch connections for user ID:', userId);
+
+    const result = await pool.query(`
+      WITH user_info AS (
+        SELECT id
+        FROM users
+        WHERE id = $1       -- The only change is here
+      )
+      SELECT
+        u.name,
+        u.email,
+        u.phone_number,
+        uc.connected_at
+      FROM user_info main
+      JOIN user_connections uc
+        ON main.id = uc.user_id AND uc.status = 'accepted'
+      JOIN users u
+        ON uc.connected_user_id = u.id
+      ORDER BY uc.connected_at DESC
+    `, [userId]); // And here
+
+    console.log('Query rows:', result.rows);
+    return result.rows;
+  } catch (error) {
+    console.error('Error fetching connections by ID:', error.message);
+    throw new Error('Database error fetching connections by ID');
+  }
+};
+
 // Send or accept a connection request (still uses userIds from localStorage)
 const sendConnectionRequest = async (fromUserId, toUserId) => {
   try {
@@ -118,7 +149,8 @@ const getTrustCircleUsers = async (email) => {
 module.exports = {
   getConnectionsByEmail,
   sendConnectionRequest,
-  getTrustCircleUsers
+  getTrustCircleUsers,
+  getConnectionsByUserId
 };
 
 

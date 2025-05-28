@@ -7,7 +7,8 @@ const {
   getRecommendationsByTargetUser,
   searchVisibleProviders,
   getProviderCount,
-  likeRecommendation
+  likeRecommendation,
+  simpleLikeRecommendation
 } = require('../controllers/providerController');
 
 router.get('/visible', getAllVisibleProviders);
@@ -16,6 +17,7 @@ router.get('/count', getProviderCount);
 router.get('/user-recommendations', getRecommendationsByTargetUser);
 router.get('/:id', getProviderById);
 router.post('/:id/like', likeRecommendation);
+router.post('/:id/like-simple', simpleLikeRecommendation);
 
 module.exports = router;
 

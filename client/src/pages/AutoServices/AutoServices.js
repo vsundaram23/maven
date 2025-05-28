@@ -815,14 +815,7 @@ const AutoServices = () => {
                                                 Recommended by:
                                             </span>
                                             {provider.recommender_user_id ? (
-                                                <Link
-                                                    to={`/user/${provider.recommender_user_id}/recommendations`}
-                                                    className="recommended-name clickable"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                >
-                                                    {provider.recommender_name}
-                                                </Link>
+                                                <Link to={`/profile/${provider.recommender_user_id}`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{provider.recommender_name}</Link>
                                             ) : (
                                                 <span
                                                     className="recommended-name clickable"

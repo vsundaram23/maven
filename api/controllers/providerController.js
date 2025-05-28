@@ -432,13 +432,84 @@ const likeRecommendation = async (req, res) => {
     }
 };
 
+const simpleLikeRecommendation = async (req, res) => {
+    // Get the provider ID from the URL parameters
+    const { id: providerId } = req.params;
+    // Get the internal database user ID directly from the request body
+    const { userId } = req.body;
+
+    // Simplified validation
+    if (!userId) {
+        return res.status(401).json({ success: false, message: "User ID is required." });
+    }
+    if (!providerId) {
+        return res.status(400).json({ success: false, message: "Provider ID is required." });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // Check if the user has already liked this recommendation
+        const likeCheckRes = await client.query(
+            `SELECT id FROM public.recommendation_likes WHERE user_id = $1 AND recommendation_id = $2`,
+            [userId, providerId] // Use userId from req.body directly
+        );
+
+        let currentUserLiked;
+        let newNumLikes;
+
+        if (likeCheckRes.rows.length > 0) {
+            // User has liked, so UNLIKE
+            await client.query(
+                `DELETE FROM public.recommendation_likes WHERE user_id = $1 AND recommendation_id = $2`,
+                [userId, providerId]
+            );
+            const updateResult = await client.query(
+                `UPDATE public.service_providers SET num_likes = GREATEST(0, num_likes - 1) WHERE id = $1 RETURNING num_likes`,
+                [providerId]
+            );
+            newNumLikes = updateResult.rows[0].num_likes;
+            currentUserLiked = false;
+        } else {
+            // User has not liked, so LIKE
+            await client.query(
+                `INSERT INTO public.recommendation_likes (user_id, recommendation_id) VALUES ($1, $2)`,
+                [userId, providerId]
+            );
+            const updateResult = await client.query(
+                `UPDATE public.service_providers SET num_likes = num_likes + 1 WHERE id = $1 RETURNING num_likes`,
+                [providerId]
+            );
+            newNumLikes = updateResult.rows[0].num_likes;
+            currentUserLiked = true;
+        }
+
+        await client.query('COMMIT');
+        res.json({
+            success: true,
+            message: "Like status toggled successfully.",
+            num_likes: newNumLikes,
+            currentUserLiked: currentUserLiked
+        });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Error in simpleLikeRecommendation transaction:", error);
+        res.status(500).json({ success: false, message: "Failed to process like/unlike.", error: error.message });
+    } finally {
+        client.release();
+    }
+};
+
 module.exports = {
     getAllVisibleProviders,
     getProviderById,
     getRecommendationsByTargetUser,
     searchVisibleProviders,
     getProviderCount,
-    likeRecommendation
+    likeRecommendation,
+    simpleLikeRecommendation
 };
 
 // working 5/20

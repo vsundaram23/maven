@@ -1,0 +1,213 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+.public-profile-scope .modal-overlay.profile-edit-modal-overlay .modal-content.review-modal-content {
+    max-width: 550px;
+}
+
+.public-profile-scope .modal-content.review-modal-content h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--profile-primary-color);
+    margin-bottom: 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid var(--profile-border-color);
+    padding-bottom: 1rem;
+}
+
+.public-profile-scope .modal-content.review-modal-content form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.public-profile-scope .rating-container.profile-edit-modal-form-group label,
+.public-profile-scope .review-input.profile-edit-modal-form-group label,
+.public-profile-scope .tag-input-group.profile-edit-modal-form-group label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--profile-text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.public-profile-scope .rating-container.profile-edit-modal-form-group label .required {
+    color: var(--profile-danger-color);
+    margin-left: 0.25rem;
+}
+
+.public-profile-scope .stars.profile-edit-modal-star-rating {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+}
+
+.public-profile-scope .profile-edit-modal-star-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    color: var(--profile-border-color);
+    cursor: pointer;
+    transition: color 0.2s ease-in-out, transform 0.1s ease-in-out;
+}
+
+.public-profile-scope .profile-edit-modal-star-icon:hover {
+    transform: scale(1.1);
+}
+
+.public-profile-scope .profile-edit-modal-star-icon.filled {
+    color: var(--profile-accent-yellow);
+}
+
+.public-profile-scope .error-message.profile-edit-modal-message.error {
+    font-size: 0.85rem;
+    padding: 0.5rem 0;
+    text-align: center;
+}
+
+.public-profile-scope .review-input.profile-edit-modal-form-group textarea,
+.public-profile-scope .tag-input-group.profile-edit-modal-form-group input[type="text"] {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--profile-border-color);
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--profile-text-primary);
+    background-color: var(--profile-bg-white);
+}
+
+.public-profile-scope .review-input.profile-edit-modal-form-group textarea:focus,
+.public-profile-scope .tag-input-group.profile-edit-modal-form-group input[type="text"]:focus {
+    outline: none;
+    border-color: var(--profile-secondary-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.public-profile-scope .tag-container.profile-edit-modal-tag-container.modal-tag-container {
+    margin-top: 0.75rem;
+    min-height: 30px;
+}
+
+.public-profile-scope .tag-badge.profile-edit-modal-tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.7rem;
+    background: #dbeafe;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #1e40af;
+}
+
+.public-profile-scope .tag-badge.profile-edit-modal-tag-pill .remove-tag {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+.public-profile-scope .tag-badge.profile-edit-modal-tag-pill .remove-tag:hover {
+    opacity: 1;
+}
+
+.public-profile-scope .modal-buttons.profile-edit-modal-button-row {
+    margin-top: 1rem;
+}
+
+.public-profile-scope .provider-name-link,
+.provider-name-link {
+    text-decoration: none;
+    color: var(--profile-primary-color);
+}
+
+.public-profile-scope .provider-name-link:hover,
+.provider-name-link:hover {
+    text-decoration: underline;
+    color: var(--profile-secondary-color);
+}
+
+.public-profile-scope .profile-my-rec-secondary-action-button,
+.profile-my-rec-secondary-action-button {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: background-color 0.2s ease;
+    text-decoration: none;
+}
+
+.public-profile-scope .profile-my-rec-secondary-action-button:hover,
+.profile-my-rec-secondary-action-button:hover {
+    background-color: #5a6268;
+}
+
+.public-profile-scope .profile-my-rec-review-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap; 
+    gap: 0.75rem; 
+    margin-top: 0.5rem; 
+    margin-bottom: 0.75rem; 
+}
+
+.public-profile-scope .profile-card-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem; 
+}
+
+.public-profile-scope .write-review-link {
+    background: none;
+    border: none;
+    color: #2b6cb0;
+    cursor: pointer;
+    text-decoration: none; 
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: underline;
+    padding: 0 0.25rem; 
+}
+.public-profile-scope .write-review-link:hover {
+    color: var(--profile-primary-color-dark);
+    text-decoration: underline;
+}
+
+.profile-avatar-initials-fallback {
+    width: 128px; 
+    height: 128px;
+    border-radius: 50%;
+    background-color: #64748b; 
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px; 
+    font-weight: 600;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  
+  .profile-avatar-initials-fallback span {
+    transform: translateY(-2px);
+  }
+
+.public-profile-scope .profile-my-rec-like-button {
+    padding: 4px 10px; 
+}
+
+@media (min-width: 480px) {
+    .public-profile-scope .profile-my-rec-review-summary {
+        gap: 0.75rem;
+    }
+    .public-profile-scope .profile-my-rec-like-button {
+        font-size: 0.85rem;
+    }
+    .public-profile-scope .write-review-link {
+        font-size: 0.9rem;
+    }
+}

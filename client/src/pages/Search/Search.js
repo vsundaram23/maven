@@ -766,14 +766,7 @@ const Search = () => {
                   <div className="recommended-row">
                     <span className="recommended-label">Recommended by:</span>
                     {p.recommender_user_id ? (
-                          <Link
-                              to={`/user/${p.recommender_user_id}/recommendations`}
-                              className="recommended-name clickable"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                          >
-                              {p.recommender_name}
-                          </Link>
+                          <Link to={`/profile/${p.recommender_user_id}`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{p.recommender_name}</Link>
                       ) : (
                           <span
                               className="recommended-name clickable"

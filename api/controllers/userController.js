@@ -158,6 +158,7 @@ const getPublicUserProfile = async (req, res) => {
         // Fetch basic user data
         const userQuery = `SELECT id, name, email, bio FROM users WHERE id = $1`;
         const userResult = await pool.query(userQuery, [userId]);
+        const loggedInUserId = req.auth ? req.auth.userId : null;
 
         if (userResult.rows.length === 0) {
             return res.status(404).json({ success: false, message: "User not found." });
@@ -168,16 +169,24 @@ const getPublicUserProfile = async (req, res) => {
         const recommendationsQuery = `
             SELECT
                 sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
-                sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.website, sp.business_contact, 
+                sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.num_likes, sp.website, sp.business_contact, 
                 sp.recommender_message, sp.images,
-                s.name as service_type, c.name as category_name
+                s.name as service_type, c.name as category_name,
+                u.phone_number AS recommender_phone,
+                u.email AS recommender_email,
+                u.name AS recommender_name,
+                sp.recommended_by AS recommender_user_id,
+                CASE WHEN l.user_id IS NOT NULL THEN true ELSE false END AS "currentUserLiked"
             FROM service_providers sp
             LEFT JOIN services s ON sp.service_id = s.service_id
             LEFT JOIN service_categories c ON s.category_id = c.service_id
+            LEFT JOIN users u ON sp.recommended_by = u.id
+            LEFT JOIN recommendation_likes l ON l.recommendation_id = sp.id AND l.user_id = $2
             WHERE sp.recommended_by = $1
             ORDER BY sp.date_of_recommendation DESC, sp.created_at DESC
         `;
-        const recommendationsResult = await pool.query(recommendationsQuery, [userId]);
+        // THIS IS THE CORRECT CODE YOU NEED
+        const recommendationsResult = await pool.query(recommendationsQuery, [userId, loggedInUserId]);
 
         // Construct profile image URL (to be fetched separately by the client if needed, or direct path)
         const profileImage = `/api/users/${userId}/profile/image`; // Path for frontend to request

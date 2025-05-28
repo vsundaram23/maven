@@ -639,7 +639,8 @@ const TrustCircles = () => {
                                         <>
                                             <div className="recommended-row">
                                                 <span className="recommended-label">Recommended by:</span>
-                                                {provider.recommender_user_id ? (<Link to={`/user/${provider.recommender_clerk_id || provider.recommender_user_id}/recommendations`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{provider.recommender_name}</Link>) : (<span className="recommended-name">{provider.recommender_name}</span>)}
+                                                {/* {provider.recommender_user_id ? (<Link to={`/user/${provider.recommender_clerk_id || provider.recommender_user_id}/recommendations`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{provider.recommender_name}</Link>) : (<span className="recommended-name">{provider.recommender_name}</span>)} */}
+                                                {provider.recommender_user_id ? (<Link to={`/profile/${provider.recommender_user_id}`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{provider.recommender_name}</Link>) : (<span className="recommended-name">{provider.recommender_name}</span>)}
                                                 {provider.date_of_recommendation && (<span className="recommendation-date"> ({new Date(provider.date_of_recommendation).toLocaleDateString("en-US", {year:"2-digit",month:"numeric",day:"numeric"})})</span>)}
                                             </div>
                                             {currentReviews.length > 0 && [...new Set(currentReviews.map(r => r.user_name).filter(name => (name && name !== provider.recommender_name)))].filter(name => name).length > 0 && (
