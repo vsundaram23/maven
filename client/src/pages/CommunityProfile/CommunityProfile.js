@@ -502,7 +502,7 @@ const sortedAndFilteredCommRecs = useMemo(() => {
           <div className="info-card-header"> <h1 className="community-title">{name}</h1> <div className="info-card-actions">{renderActionButtons()}</div></div>
           <p className="community-description-card">{description || 'No description provided.'}</p>
           <div className="community-stats-grid">
-            <IconText icon={<FaUserTie size={18} />} text={`Created by ${creator_name || 'N/A'}`} />
+            <IconText icon={<FaUserTie size={18} />} text={`Managed by ${creator_name || 'N/A'}`} />
             <IconText icon={<FaCalendarAlt size={16} />} text={`Since ${created_at ? new Date(created_at).toLocaleDateString() : 'N/A'}`} />
             <IconText icon={<FaUsers size={18} />} text={`${member_count || 0} Members`} />
             <IconText icon={<FaStar size={18} />} text={`${recommendation_count || 0} Shared Recommendations`} />
