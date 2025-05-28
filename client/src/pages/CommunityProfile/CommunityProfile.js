@@ -220,6 +220,17 @@ const CommunityProfile = () => {
     } finally { setLoadingCommunityDetails(false); }
   }, [communityId, currentUserId]);
 
+  const handleCommRecsReviewSubmit = async (reviewData) => {
+    if (!isSignedIn || !commRecsSelectedProvider || !currentUserId || !currentUserEmail) { alert("Please sign in to submit a review"); return; }
+    try {
+        const response = await fetch(`${API_URL}/api/reviews`, { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ provider_id: commRecsSelectedProvider.id, provider_email: commRecsSelectedProvider.email || "", user_id: currentUserId, email: currentUserEmail, rating: reviewData.rating, content: reviewData.review, tags: reviewData.tags, }),
+        });
+        if (!response.ok) { const errTxt = await response.text(); throw new Error(errTxt || "Failed to submit review"); }
+        fetchCommunityRecommendations(); setCommRecsIsReviewModalOpen(false);
+    } catch (err) { alert(`Error submitting review: ${err.message}`); }
+  };
+
   const fetchCommunityMembers = useCallback(async () => {
     setLoadingCommunityMembers(true); setCommunityError('');
     try {
