@@ -30,6 +30,56 @@ body {
   margin-right: auto;
 }
 
+.trust-circle-explanation {
+  background-color: #f0f4f8;
+  border-left: 4px solid #0056b3;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #333;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.trust-circle-explanation p {
+  margin-bottom: 10px;
+  line-height: 1.6;
+  font-size: 0.98rem;
+  color: #444;
+}
+
+.trust-circle-explanation p:last-child {
+  margin-bottom: 0;
+}
+
+.trust-circle-explanation strong {
+  color: #0056b3;
+}
+
+.trust-circle-explanation ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+.trust-circle-explanation li {
+  padding-left: 1.5em;
+  position: relative;
+  margin-bottom: 5px;
+}
+
+.trust-circle-explanation li::before {
+  content: "•";
+  color: #0056b3;
+  font-weight: bold;
+  display: inline-block;
+  width: 1em;
+  margin-left: -1.5em;
+  position: absolute;
+  left: 0.25em;
+}
+
 .section-container {
   margin-bottom: 48px;
   background-color: #ffffff;
@@ -474,7 +524,7 @@ body {
 }
 
 .members-list-pending {
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Smaller cards for pending */
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
 }
 
 .more-requests-text {
@@ -487,21 +537,21 @@ body {
 
 .member-actions {
   display: flex;
-  justify-content: center; 
+  justify-content: center;
   gap: 15px;
-  margin-top: 10px; 
+  margin-top: 10px;
 }
 
 .member-action-icon {
-  color: #0056b3; 
-  font-size: 1.1rem; 
+  color: #0056b3;
+  font-size: 1.1rem;
   text-decoration: none;
   transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
 }
 
 .member-action-icon:hover {
-  color: #003366; 
-  transform: scale(1.1); 
+  color: #003366;
+  transform: scale(1.1);
 }
 
 .member-name-container {
@@ -586,7 +636,7 @@ body {
   .grid-layout {
     grid-template-columns: 1fr;
   }
-  
+
   .members-list {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
@@ -815,9 +865,7 @@ body {
 }
 
 /* 
-
-working 5/26 - pre profile photos
-
+working 5/29
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: #f8f9fa;
@@ -888,7 +936,6 @@ body {
   min-height: 250px;
 }
 
-
 .card {
   background-color: #fff;
   border-radius: 12px;
@@ -941,7 +988,6 @@ body {
 .recommendation-by {
     margin-top: 10px;
 }
-
 
 .status-badge {
   font-size: 0.75rem;
@@ -1225,10 +1271,116 @@ body {
   white-space: nowrap;
 }
 
+.members-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.member-item-card {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.member-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin-bottom: 0.75rem;
+  object-fit: cover;
+  background-color: #e9ecef;
+}
+
+.member-name {
+  font-weight: 500;
+  color: #333;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+  word-break: break-all;
+}
+
+.member-avatar-initials-fallback {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #0056b3;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.request-item-card-like {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.request-item-card-like .member-item-card {
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  background-color: transparent;
+}
+
+.members-list-pending {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.more-requests-text {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-top: 8px;
+  text-align: center;
+  width: 100%;
+}
+
+.member-actions {
+  display: flex;
+  justify-content: center; 
+  gap: 15px;
+  margin-top: 10px; 
+}
+
+.member-action-icon {
+  color: #0056b3; 
+  font-size: 1.1rem; 
+  text-decoration: none;
+  transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.member-action-icon:hover {
+  color: #003366; 
+  transform: scale(1.1); 
+}
+
+.member-name-container {
+  margin-bottom: 5px;
+}
+
+
 @media (max-width: 768px) {
   .trust-circles-page-container {
     padding: 20px 16px;
-    padding-top: 80px; 
+    padding-top: 80px;
   }
 
   .trust-circles-main-header {
@@ -1239,7 +1391,7 @@ body {
     text-align: center;
     display: block;
     position: relative;
-    z-index: 1; 
+    z-index: 1;
     padding-top: 0;
   }
 
@@ -1301,6 +1453,10 @@ body {
 
   .grid-layout {
     grid-template-columns: 1fr;
+  }
+  
+  .members-list {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 
   .card {

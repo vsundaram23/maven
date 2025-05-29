@@ -34,83 +34,11 @@ const HourglassTopIcon = () => (
     </svg>
 );
 
-// const MemberCard = ({ member }) => {
-//   const [imageFailed, setImageFailed] = useState(false);
-//   const primarySrc = member.profile_image_url || member.avatarUrl;
-//   const fallbackUiAvatarSrc = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name || member.email || 'NA')}&background=random&color=fff&size=60&font-size=0.33`;
-
-//   const handleImageError = (e) => {
-//     if (e.target.src === primarySrc && primarySrc !== fallbackUiAvatarSrc) {
-//       e.target.src = fallbackUiAvatarSrc;
-//     } else {
-//       setImageFailed(true);
-//     }
-//   };
-
-//   const getInitials = (name, email) => {
-//     if (name) {
-//       const names = name.split(' ').filter(n => n);
-//       if (names.length > 1) { return (names[0][0] + names[names.length - 1][0]).toUpperCase(); }
-//       else if (names.length === 1 && names[0].length > 1) { return names[0].substring(0, 2).toUpperCase(); }
-//       else if (names.length === 1 && names[0].length) { return names[0][0].toUpperCase(); }
-//     }
-//     if (email && email.length > 0) return email[0].toUpperCase();
-//     return "U";
-//   };
-
-//   const cleanAltText = (name, email) => {
-//     const text = name || email || "Community Member";
-//     return text.replace(/(\r\n|\n|\r)/gm, " ");
-//   };
-
-//   let avatarContent;
-//   if (imageFailed) {
-//     avatarContent = (
-//       <div className="member-avatar member-avatar-initials-fallback">
-//         <span>{getInitials(member.name, member.email)}</span>
-//       </div>
-//     );
-//   } else {
-//     avatarContent = (
-//       <img
-//         src={primarySrc || fallbackUiAvatarSrc}
-//         alt={cleanAltText(member.name, member.email)}
-//         className="member-avatar"
-//         onError={handleImageError}
-//       />
-//     );
-//   }
-
-//   const displayName = member.name || member.email || "";
-//   let nameParts = [];
-//   if (member.name) {
-//       nameParts = member.name.split(' ').filter(n => n);
-//   }
-
-//   return (
-//     <div className="member-item-card">
-//       {avatarContent}
-//       <div className="member-name-container">
-//         {nameParts.length > 1 ? (
-//           <>
-//             {nameParts.slice(0, -1).join(' ')}
-//             {' '} {/* This adds the crucial space */}
-//             <span className="member-last-name">{nameParts.slice(-1)[0]}</span>
-//           </>
-//         ) : (
-//           displayName // This will be a single name or an email
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
-
 const MemberCard = ({ member }) => {
     const [imageFailed, setImageFailed] = useState(false);
-    // Assuming member object can have: profile_image_url, avatarUrl, name, email, phone_number
     const primarySrc = member.profile_image_url || member.avatarUrl;
     const fallbackUiAvatarSrc = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name || member.email || 'NA')}&background=random&color=fff&size=60&font-size=0.33`;
-  
+
     const handleImageError = (e) => {
       if (e.target.src === primarySrc && primarySrc !== fallbackUiAvatarSrc) {
         e.target.src = fallbackUiAvatarSrc;
@@ -118,7 +46,7 @@ const MemberCard = ({ member }) => {
         setImageFailed(true);
       }
     };
-  
+
     const getInitials = (name, email) => {
       if (name) {
         const names = name.split(' ').filter(n => n);
@@ -129,12 +57,12 @@ const MemberCard = ({ member }) => {
       if (email && email.length > 0) return email[0].toUpperCase();
       return "U";
     };
-  
+
     const cleanAltText = (name, email) => {
       const text = name || email || "Community Member";
       return text.replace(/(\r\n|\n|\r)/gm, " ");
     };
-  
+
     let avatarContent;
     if (imageFailed) {
       avatarContent = (
@@ -152,13 +80,13 @@ const MemberCard = ({ member }) => {
         />
       );
     }
-  
+
     const displayName = member.name || member.email || "";
     let nameParts = [];
     if (member.name) {
         nameParts = member.name.split(' ').filter(n => n);
     }
-  
+
     return (
       <div className="member-item-card">
         {avatarContent}
@@ -173,7 +101,6 @@ const MemberCard = ({ member }) => {
             displayName
           )}
         </div>
-        {/* NEW: Communication Icons Section */}
         <div className="member-actions">
           {member.phone_number && (
             <a href={`sms:${member.phone_number.replace(/\D/g, '')}`} className="member-action-icon" title="Send SMS">
@@ -309,7 +236,7 @@ const TrustCircles = () => {
     const [myRecLikedRecommendations, setMyRecLikedRecommendations] = useState(new Set());
     const [myRecClickedRecommender, setMyRecClickedRecommender] = useState(null);
     const [myRecShowFeatureComingModal, setMyRecShowFeatureComingModal] = useState(false);
-    
+
     const [showAddPersonModal, setShowAddPersonModal] = useState(false);
     const [newPersonEmail, setNewPersonEmail] = useState("");
     const [showCreateCommunityModal, setShowCreateCommunityModal] = useState(false);
@@ -344,30 +271,30 @@ const TrustCircles = () => {
             if (!userRes.ok) throw new Error("Failed to fetch user details for Trust Circle.");
             const userData = await userRes.json();
             setCurrentUser(userData);
-    
+
             const conRes = await fetch(`${API_URL}/api/connections/check-connections`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: currentUserEmail }), });
             if (!conRes.ok) throw new Error("Failed to fetch individual connections.");
             const conData = await conRes.json(); setIndividualConnections(Array.from(new Set(conData.map(u => u.email))).map(email => conData.find(u => u.email === email)));
-            
+
             const myCommRes = await fetch(`${API_URL}/api/communities/user/${currentUserEmail}/communities`);
             if (!myCommRes.ok) throw new Error("Failed to fetch your communities.");
             let myCommData = await myCommRes.json();
             myCommData = Array.isArray(myCommData) ? myCommData.filter(c => c && c.id).reduce((acc,curr) => acc.find(item=>item.id===curr.id)?acc:[...acc,curr],[]) : [];
             setMyCommunities(myCommData.map(c => ({ ...c, recommendations: c.recommendation_count || Math.floor(Math.random() * 25) })));
-            
+
             const allCommRes = await fetch(`${API_URL}/api/communities/all${userData && userData.id ? `?user_id=${userData.id}` : ""}`);
             if (!allCommRes.ok) throw new Error("Failed to fetch available communities.");
             let allCommData = await allCommRes.json();
             setAvailableCommunities(Array.isArray(allCommData) ? allCommData.map(c => ({ ...c, memberCount: c.member_count || Math.floor(Math.random() * 100) + 5 })) : []);
-            
+
             if (userData && userData.id) {
                 const ownedIds = myCommData.filter(c => c.created_by === userData.id).map(c => c.id);
                 const reqs = {};
                 for (const commId of ownedIds) {
-                    const userIdForRequest = userData.id; 
+                    const userIdForRequest = userData.id;
                     if (!userIdForRequest) {
                         reqs[commId] = [];
-                        continue; 
+                        continue;
                     }
                     const requestUrl = `${API_URL}/api/communities/${commId}/requests/internal?user_id=${userIdForRequest}`;
                     try {
@@ -377,14 +304,14 @@ const TrustCircles = () => {
                             throw new Error(`HTTP Error ${rRes.status}: ${errorText}`);
                         }
                         const allRequests = await rRes.json();
-                        reqs[commId] = allRequests.filter(req => req.status === 'requested'); 
+                        reqs[commId] = allRequests.filter(req => req.status === 'requested');
                     } catch (error) {
                         reqs[commId] = [];
                     }
                 }
                 setJoinRequests(reqs);
             }
-        } catch (err) { 
+        } catch (err) {
             setTrustCircleError(err.message || "Could not load Trust Circle data.");
         } finally { setLoadingTrustCircle(false); }
     }, [currentUserId, currentUserEmail]);
@@ -435,7 +362,7 @@ const TrustCircles = () => {
             else if (activeTab === "myRecommendations") fetchMyVisibleRecommendations();
         } else if (isLoaded && !isSignedIn) navigate("/");
     }, [fetchMyTrustCircleData, fetchMyVisibleRecommendations, activeTab, isLoaded, isSignedIn, navigate]);
-    
+
     const sortedMyRecProviders = useMemo(() => {
         if (!myRecRawProviders) return [];
         const getBand = r => { if (r >= 4) return 0; if (r >= 3) return 1; if (r >= 2) return 2; if (r >= 1) return 3; return 4; };
@@ -465,7 +392,7 @@ const TrustCircles = () => {
                 }),
             });
             if (!response.ok) { const errTxt = await response.text(); throw new Error(errTxt || "Failed to submit review"); }
-            fetchMyVisibleRecommendations(); 
+            fetchMyVisibleRecommendations();
         } catch (err) { alert(`Error submitting review: ${err.message}`); }
     };
 
@@ -474,10 +401,10 @@ const TrustCircles = () => {
         const provToUpdate = myRecRawProviders.find(p => p.id === providerId); if (!provToUpdate) return;
         const newLikedState = !provToUpdate.currentUserLiked;
         const newNumLikes = newLikedState ? (provToUpdate.num_likes || 0) + 1 : Math.max(0, (provToUpdate.num_likes || 1) - 1);
-        
+
         const optimisticUpdateList = (list) => list.map(p => p.id === providerId ? { ...p, num_likes: newNumLikes, currentUserLiked: newLikedState } : p);
         setMyRecRawProviders(optimisticUpdateList(myRecRawProviders));
-        
+
         const newLikedSet = new Set(myRecLikedRecommendations);
         if (newLikedState) newLikedSet.add(providerId); else newLikedSet.delete(providerId);
         setMyRecLikedRecommendations(newLikedSet);
@@ -489,7 +416,7 @@ const TrustCircles = () => {
             });
             if (!response.ok) { const eData = await response.json().catch(() => ({})); throw new Error(eData.message || `Like error ${response.status}`); }
             const result = await response.json();
-            
+
             const serverUpdateList = (list) => list.map(p => p.id === providerId ? { ...p, num_likes: parseInt(result.num_likes, 10) || 0, currentUserLiked: result.currentUserLiked } : p );
             setMyRecRawProviders(serverUpdateList(myRecRawProviders));
 
@@ -535,7 +462,7 @@ const TrustCircles = () => {
     };
     const navigateToCommunity = (commId) => navigate(`/community/${commId}`);
     const handleTabChange = (tabName) => { setActiveTab(tabName); navigate(`/trustcircles?tab=${tabName}`, { replace: true }); };
-    
+
     if (!isLoaded || (loadingTrustCircle && (activeTab === "myTrust" || activeTab === "discover"))) return <div className="loading-message">Loading your Trust Circle...</div>;
     if (isLoaded && !isSignedIn) { navigate("/"); return null; }
 
@@ -553,6 +480,14 @@ const TrustCircles = () => {
 
             {activeTab === "myTrust" && !loadingTrustCircle && (
                 <div className="tab-content">
+                    {/* <div className="trust-circle-explanation">
+                        <p>Your <strong>Trust Circle</strong> is your personal network for discovering and sharing trusted recommendations. It's formed by:</p>
+                        <ul>
+                            <li>The <strong>Communities</strong> you are a part of (e.g., local groups, alumni associations).</li>
+                            <li>Your direct <strong>Individual Connections</strong> (e.g., friends, family, trusted colleagues).</li>
+                        </ul>
+                        <p>The stronger and more diverse your Trust Circle, the more relevant and reliable the recommendations you'll find and can share.</p>
+                    </div> */}
                     {trustCircleError && <div className="empty-message error-text">{trustCircleError}</div>}
                     <section className="section-container">
                         <div className="section-title-container"><h2 className="section-title">My Communities</h2>
@@ -639,7 +574,6 @@ const TrustCircles = () => {
                                         <>
                                             <div className="recommended-row">
                                                 <span className="recommended-label">Recommended by:</span>
-                                                {/* {provider.recommender_user_id ? (<Link to={`/user/${provider.recommender_clerk_id || provider.recommender_user_id}/recommendations`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{provider.recommender_name}</Link>) : (<span className="recommended-name">{provider.recommender_name}</span>)} */}
                                                 {provider.recommender_user_id ? (<Link to={`/profile/${provider.recommender_user_id}`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{provider.recommender_name}</Link>) : (<span className="recommended-name">{provider.recommender_name}</span>)}
                                                 {provider.date_of_recommendation && (<span className="recommendation-date"> ({new Date(provider.date_of_recommendation).toLocaleDateString("en-US", {year:"2-digit",month:"numeric",day:"numeric"})})</span>)}
                                             </div>
@@ -675,7 +609,7 @@ const TrustCircles = () => {
 
             {showAddPersonModal && (<div className="modal-backdrop" onClick={() => setShowAddPersonModal(false)}><div className="modal-content" onClick={(e) => e.stopPropagation()}><h3 className="modal-header">Add Individual Connection</h3><form onSubmit={handleAddIndividualConnection}><input type="email" className="form-input" placeholder="Enter email" value={newPersonEmail} onChange={(e) => setNewPersonEmail(e.target.value)} required /><div className="modal-actions"><button type="button" className="button button-secondary" onClick={() => setShowAddPersonModal(false)}>Cancel</button><button type="submit" className="button button-primary">Send Request</button></div></form></div></div>)}
             {showCreateCommunityModal && (<div className="modal-backdrop" onClick={() => setShowCreateCommunityModal(false)}><div className="modal-content" onClick={(e) => e.stopPropagation()}><h3 className="modal-header">Create New Community</h3><form onSubmit={handleCreateCommunity}><input type="text" className="form-input" placeholder="Community Name" value={newCommunityName} onChange={(e) => setNewCommunityName(e.target.value)} required /><textarea className="form-textarea" placeholder="Description (optional)" value={newCommunityDescription} onChange={(e) => setNewCommunityDescription(e.target.value)} /><div className="modal-actions"><button type="button" className="button button-secondary" onClick={() => setShowCreateCommunityModal(false)}>Cancel</button><button type="submit" className="button button-success">Create Community</button></div></form></div></div>)}
-        
+
             {myRecIsReviewModalOpen && myRecSelectedProvider && <MyRecReviewModal isOpen={myRecIsReviewModalOpen} onClose={() => setMyRecIsReviewModalOpen(false)} onSubmit={handleMyRecReviewSubmit} provider={myRecSelectedProvider} />}
             {myRecClickedRecommender && (<div className="modal-overlay"><div className="simple-modal"><button className="modal-close-x" onClick={() => setMyRecClickedRecommender(null)}>×</button><h3 className="modal-title">Want to connect with <span className="highlight">{myRecClickedRecommender}</span>?</h3><div className="modal-buttons-vertical"><button className="secondary-button" onClick={() => { setMyRecClickedRecommender(null); setMyRecShowFeatureComingModal(true); }}>Thank {myRecClickedRecommender}</button><button className="secondary-button" onClick={() => { setMyRecClickedRecommender(null); setMyRecShowFeatureComingModal(true); }}>Ask {myRecClickedRecommender} a question</button></div></div></div>)}
             {myRecShowFeatureComingModal && (<div className="modal-overlay"><div className="modal-content review-modal-content"><button className="modal-close-x" onClick={() => setMyRecShowFeatureComingModal(false)}>×</button><p>Feature coming soon! <FaEye style={{ marginLeft: '5px' }} /></p><div className="modal-buttons"><button className="primary-button" onClick={() => setMyRecShowFeatureComingModal(false)}>OK</button></div></div></div>)}
@@ -686,12 +620,12 @@ const TrustCircles = () => {
 
 export default TrustCircles;
 
-// working on 5/26 (before profile image switch)
+// working 5/29
 // import React, { useEffect, useState, useCallback, useMemo } from "react";
 // import { useUser } from "@clerk/clerk-react";
 // import { useNavigate, useLocation, Link } from "react-router-dom";
-// import { FaStar, FaPhone, FaEnvelope, FaUsers, FaPlusCircle, FaThumbsUp, FaEye } from "react-icons/fa";
-// import QuoteModal from "../../components/QuoteModal/QuoteModal"; 
+// import { FaStar, FaUsers, FaPlusCircle, FaThumbsUp, FaEye, FaPhoneAlt, FaEnvelope, FaSms} from "react-icons/fa";
+// import QuoteModal from "../../components/QuoteModal/QuoteModal";
 // import "./TrustCircles.css";
 
 // const API_URL = "https://api.seanag-recommendations.org:8080";
@@ -722,6 +656,162 @@ export default TrustCircles;
 //         <path d="M6 2v6h.01L6 8.01 10 12l-4 4 .01.01H6V22h12v-5.99h-.01L18 16.01l-4-4 4-3.99-.01-.01H18V2H6zm10 14.5V20H8v-3.5l4-4 4 4zM8 4h8v3.5l-4 4-4-4V4z" />
 //     </svg>
 // );
+
+// // const MemberCard = ({ member }) => {
+// //   const [imageFailed, setImageFailed] = useState(false);
+// //   const primarySrc = member.profile_image_url || member.avatarUrl;
+// //   const fallbackUiAvatarSrc = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name || member.email || 'NA')}&background=random&color=fff&size=60&font-size=0.33`;
+
+// //   const handleImageError = (e) => {
+// //     if (e.target.src === primarySrc && primarySrc !== fallbackUiAvatarSrc) {
+// //       e.target.src = fallbackUiAvatarSrc;
+// //     } else {
+// //       setImageFailed(true);
+// //     }
+// //   };
+
+// //   const getInitials = (name, email) => {
+// //     if (name) {
+// //       const names = name.split(' ').filter(n => n);
+// //       if (names.length > 1) { return (names[0][0] + names[names.length - 1][0]).toUpperCase(); }
+// //       else if (names.length === 1 && names[0].length > 1) { return names[0].substring(0, 2).toUpperCase(); }
+// //       else if (names.length === 1 && names[0].length) { return names[0][0].toUpperCase(); }
+// //     }
+// //     if (email && email.length > 0) return email[0].toUpperCase();
+// //     return "U";
+// //   };
+
+// //   const cleanAltText = (name, email) => {
+// //     const text = name || email || "Community Member";
+// //     return text.replace(/(\r\n|\n|\r)/gm, " ");
+// //   };
+
+// //   let avatarContent;
+// //   if (imageFailed) {
+// //     avatarContent = (
+// //       <div className="member-avatar member-avatar-initials-fallback">
+// //         <span>{getInitials(member.name, member.email)}</span>
+// //       </div>
+// //     );
+// //   } else {
+// //     avatarContent = (
+// //       <img
+// //         src={primarySrc || fallbackUiAvatarSrc}
+// //         alt={cleanAltText(member.name, member.email)}
+// //         className="member-avatar"
+// //         onError={handleImageError}
+// //       />
+// //     );
+// //   }
+
+// //   const displayName = member.name || member.email || "";
+// //   let nameParts = [];
+// //   if (member.name) {
+// //       nameParts = member.name.split(' ').filter(n => n);
+// //   }
+
+// //   return (
+// //     <div className="member-item-card">
+// //       {avatarContent}
+// //       <div className="member-name-container">
+// //         {nameParts.length > 1 ? (
+// //           <>
+// //             {nameParts.slice(0, -1).join(' ')}
+// //             {' '} {/* This adds the crucial space */}
+// //             <span className="member-last-name">{nameParts.slice(-1)[0]}</span>
+// //           </>
+// //         ) : (
+// //           displayName // This will be a single name or an email
+// //         )}
+// //       </div>
+// //     </div>
+// //   );
+// // };
+
+// const MemberCard = ({ member }) => {
+//     const [imageFailed, setImageFailed] = useState(false);
+//     // Assuming member object can have: profile_image_url, avatarUrl, name, email, phone_number
+//     const primarySrc = member.profile_image_url || member.avatarUrl;
+//     const fallbackUiAvatarSrc = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name || member.email || 'NA')}&background=random&color=fff&size=60&font-size=0.33`;
+  
+//     const handleImageError = (e) => {
+//       if (e.target.src === primarySrc && primarySrc !== fallbackUiAvatarSrc) {
+//         e.target.src = fallbackUiAvatarSrc;
+//       } else {
+//         setImageFailed(true);
+//       }
+//     };
+  
+//     const getInitials = (name, email) => {
+//       if (name) {
+//         const names = name.split(' ').filter(n => n);
+//         if (names.length > 1) { return (names[0][0] + names[names.length - 1][0]).toUpperCase(); }
+//         else if (names.length === 1 && names[0].length > 1) { return names[0].substring(0, 2).toUpperCase(); }
+//         else if (names.length === 1 && names[0].length) { return names[0][0].toUpperCase(); }
+//       }
+//       if (email && email.length > 0) return email[0].toUpperCase();
+//       return "U";
+//     };
+  
+//     const cleanAltText = (name, email) => {
+//       const text = name || email || "Community Member";
+//       return text.replace(/(\r\n|\n|\r)/gm, " ");
+//     };
+  
+//     let avatarContent;
+//     if (imageFailed) {
+//       avatarContent = (
+//         <div className="member-avatar member-avatar-initials-fallback">
+//           <span>{getInitials(member.name, member.email)}</span>
+//         </div>
+//       );
+//     } else {
+//       avatarContent = (
+//         <img
+//           src={primarySrc || fallbackUiAvatarSrc}
+//           alt={cleanAltText(member.name, member.email)}
+//           className="member-avatar"
+//           onError={handleImageError}
+//         />
+//       );
+//     }
+  
+//     const displayName = member.name || member.email || "";
+//     let nameParts = [];
+//     if (member.name) {
+//         nameParts = member.name.split(' ').filter(n => n);
+//     }
+  
+//     return (
+//       <div className="member-item-card">
+//         {avatarContent}
+//         <div className="member-name-container">
+//           {nameParts.length > 1 ? (
+//             <>
+//               {nameParts.slice(0, -1).join(' ')}
+//               {' '}
+//               <span className="member-last-name">{nameParts.slice(-1)[0]}</span>
+//             </>
+//           ) : (
+//             displayName
+//           )}
+//         </div>
+//         {/* NEW: Communication Icons Section */}
+//         <div className="member-actions">
+//           {member.phone_number && (
+//             <a href={`sms:${member.phone_number.replace(/\D/g, '')}`} className="member-action-icon" title="Send SMS">
+//               <FaSms />
+//             </a>
+//           )}
+//           {member.email && (
+//             <a href={`mailto:${member.email}`} className="member-action-icon" title="Send Email">
+//               <FaEnvelope />
+//             </a>
+//           )}
+//         </div>
+//       </div>
+//     );
+//   };
 
 // const MyRecStarRating = ({ rating }) => {
 //     const numRating = parseFloat(rating) || 0;
@@ -876,10 +966,7 @@ export default TrustCircles;
 //             const userRes = await fetch(`${API_URL}/api/communities/user/email/${currentUserEmail}?${params.toString()}`);
 //             if (!userRes.ok) throw new Error("Failed to fetch user details for Trust Circle.");
 //             const userData = await userRes.json();
-//             setCurrentUser(userData); // This sets the state, but it's async
-//             // console.log("TRACE 1: `userData` from backend user endpoint:", userData);
-//             // console.log("TRACE 2: `currentUser` state *after* `setCurrentUser` (might be null):", currentUser); // Still shows null here
-//             // console.log("TRACE 3: `currentUserId` state (from Clerk):", currentUserId);
+//             setCurrentUser(userData);
     
 //             const conRes = await fetch(`${API_URL}/api/connections/check-connections`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: currentUserEmail }), });
 //             if (!conRes.ok) throw new Error("Failed to fetch individual connections.");
@@ -896,53 +983,34 @@ export default TrustCircles;
 //             let allCommData = await allCommRes.json();
 //             setAvailableCommunities(Array.isArray(allCommData) ? allCommData.map(c => ({ ...c, memberCount: c.member_count || Math.floor(Math.random() * 100) + 5 })) : []);
             
-//             if (userData && userData.id) { // This condition is good, it ensures userData.id is valid
+//             if (userData && userData.id) {
 //                 const ownedIds = myCommData.filter(c => c.created_by === userData.id).map(c => c.id);
-//                 // console.log("DEBUG: Owned Community IDs:", ownedIds);
-                
 //                 const reqs = {};
 //                 for (const commId of ownedIds) {
-//                     // console.log(`DEBUG: --- Starting fetch for community ID: ${commId} ---`);
-    
-//                     // Use userData.id directly, as it's synchronously available after the userRes.json() call
 //                     const userIdForRequest = userData.id; 
-//                     // console.log("TRACE 6: Using `userIdForRequest` (from `userData.id`):", userIdForRequest); 
-    
 //                     if (!userIdForRequest) {
-//                         console.error(`DEBUG: userIdForRequest is missing for community ${commId}. Skipping request fetch.`);
 //                         reqs[commId] = [];
 //                         continue; 
 //                     }
-                    
-//                     const requestUrl = `${API_URL}/api/communities/${commId}/requests/internal?user_id=${userIdForRequest}`; // **FIXED LINE**
-//                     // console.log(`DEBUG: Attempting to make API call to: ${requestUrl}`); 
-    
+//                     const requestUrl = `${API_URL}/api/communities/${commId}/requests/internal?user_id=${userIdForRequest}`;
 //                     try {
 //                         const rRes = await fetch(requestUrl);
-//                         // console.log(`DEBUG: Received API response for ${commId}. Status: ${rRes.status}`); 
-//                         if (!rRes.ok) { // Simplified error handling to catch non-2xx responses
+//                         if (!rRes.ok) {
 //                             const errorText = await rRes.text();
 //                             throw new Error(`HTTP Error ${rRes.status}: ${errorText}`);
 //                         }
 //                         const allRequests = await rRes.json();
-//                         // console.log(`DEBUG: Raw API Response for requests for ${commId}:`, allRequests); 
-                        
 //                         reqs[commId] = allRequests.filter(req => req.status === 'requested'); 
-//                         // console.log(`DEBUG: Filtered (pending) requests for ${commId}:`, reqs[commId]); 
 //                     } catch (error) {
-//                         console.error(`DEBUG: Network or processing error for ${commId}:`, error);
 //                         reqs[commId] = [];
 //                     }
-//                     // console.log(`DEBUG: --- Finished processing community ID: ${commId} ---`); 
 //                 }
 //                 setJoinRequests(reqs);
-//                 // console.log("DEBUG: Final `joinRequests` state before setting:", reqs); 
 //             }
 //         } catch (err) { 
-//             console.error("DEBUG: Trust Circle Data Fetch (Outer) Error:", err); // Catch any errors in the outer block
 //             setTrustCircleError(err.message || "Could not load Trust Circle data.");
 //         } finally { setLoadingTrustCircle(false); }
-//     }, [currentUserId, currentUserEmail]); // Removed `currentUser` from dependencies, as it's no longer used synchronously in the loop
+//     }, [currentUserId, currentUserEmail]);
 
 //     const fetchMyVisibleRecommendations = useCallback(async () => {
 //         if (!currentUserId || !currentUserEmail) {
@@ -1053,8 +1121,8 @@ export default TrustCircles;
 //             setMyRecLikedRecommendations(finalLikedSet);
 
 //         } catch (error) {
-//             setMyRecRawProviders(prev => prev.map(p => p.id === providerId ? provToUpdate : p)); // Revert optimistic update on error
-//             setMyRecLikedRecommendations(prev => { // Revert liked set
+//             setMyRecRawProviders(prev => prev.map(p => p.id === providerId ? provToUpdate : p));
+//             setMyRecLikedRecommendations(prev => {
 //                 const revertedSet = new Set(prev);
 //                 if (provToUpdate.currentUserLiked) revertedSet.add(providerId); else revertedSet.delete(providerId);
 //                 return revertedSet;
@@ -1117,14 +1185,14 @@ export default TrustCircles;
 //                             </div>
 //                         </div>
 //                         {myCommunities.length === 0 && !trustCircleError ? <p className="empty-message">Not part of any communities. <a href="#" onClick={(e)=>{e.preventDefault();handleTabChange("discover");}}>Discover</a> or <a href="#" onClick={(e)=>{e.preventDefault();setShowCreateCommunityModal(true);}}>create one</a>.</p> : null}
-//                         {myCommunities.length > 0 && <div className="grid-layout">{myCommunities.map(comm => (<div className="card" key={comm.id}><div className="card-content">{comm.created_by === currentUser?.id ? <span className="status-badge status-owner">Owner</span> : <span className="status-badge status-member">Member</span>}<h3 className="card-title">{comm.name}</h3><p className="card-description">{comm.description}</p><p className="card-info">{comm.recommendations} Recs</p></div><div className="card-actions"><button className="button button-outline" onClick={() => navigateToCommunity(comm.id)}>View <LaunchIcon /></button>{comm.created_by === currentUser?.id && joinRequests[comm.id]?.length > 0 && (<div className="pending-requests-section"><h4 className="pending-requests-title">Pending ({joinRequests[comm.id].length}):</h4>{joinRequests[comm.id].slice(0,2).map(req => (<div key={req.user_id} className="request-item"><span>{req.email}</span><button className="button button-success button-small" onClick={() => handleApproveMembership(comm.id, req.user_id)}>Approve</button></div>))}{joinRequests[comm.id].length > 2 && <p>+ {joinRequests[comm.id].length - 2} more...</p>}</div>)}</div></div>))}</div>}
+//                         {myCommunities.length > 0 && <div className="grid-layout">{myCommunities.map(comm => (<div className="card" key={comm.id}><div className="card-content">{comm.created_by === currentUser?.id ? <span className="status-badge status-owner">Owner</span> : <span className="status-badge status-member">Member</span>}<h3 className="card-title">{comm.name}</h3><p className="card-description">{comm.description}</p><p className="card-info">{comm.recommendations} Recs</p></div><div className="card-actions"><button className="button button-outline" onClick={() => navigateToCommunity(comm.id)}>View <LaunchIcon /></button>{comm.created_by === currentUser?.id && joinRequests[comm.id]?.length > 0 && (<div className="pending-requests-section"><h4 className="pending-requests-title">Pending ({joinRequests[comm.id].length}):</h4><div className="members-list members-list-pending">{joinRequests[comm.id].slice(0,2).map(req => (<div key={req.user_id} className="request-item-card-like"><MemberCard member={req} /><button className="button button-success button-small" onClick={() => handleApproveMembership(comm.id, req.user_id)}>Approve</button></div>))}{joinRequests[comm.id].length > 2 && <p className="more-requests-text">+ {joinRequests[comm.id].length - 2} more...</p>}</div></div>)}</div></div>))}</div>}
 //                     </section>
 //                     <section className="section-container">
 //                         <div className="section-title-container"><h2 className="section-title">Individual Connections</h2>
 //                             <div className="section-actions"><button className="button button-primary button-small icon-button" onClick={() => setShowAddPersonModal(true)}><PersonAddIcon /> Add Connection</button></div>
 //                         </div>
 //                         {individualConnections.length === 0 && !trustCircleError? <p className="empty-message">No individual connections yet. <a href="#" onClick={(e) => { e.preventDefault(); setShowAddPersonModal(true); }}>Add one</a>.</p> : null}
-//                         {individualConnections.length > 0 && <div className="grid-layout">{individualConnections.map(cu => (<div className="card" key={cu.email}><div className="card-content"><span className="status-badge status-connected">Connected</span><h3 className="card-title">{cu.name}</h3><p className="card-subtitle">{cu.email}</p></div></div>))}</div>}
+//                         {individualConnections.length > 0 && <div className="members-list">{individualConnections.map(conn => (<MemberCard key={conn.email} member={conn} />))}</div>}
 //                     </section>
 //                 </div>
 //             )}
@@ -1194,7 +1262,8 @@ export default TrustCircles;
 //                                         <>
 //                                             <div className="recommended-row">
 //                                                 <span className="recommended-label">Recommended by:</span>
-//                                                 {provider.recommender_user_id ? (<Link to={`/user/${provider.recommender_clerk_id || provider.recommender_user_id}/recommendations`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{provider.recommender_name}</Link>) : (<span className="recommended-name">{provider.recommender_name}</span>)}
+//                                                 {/* {provider.recommender_user_id ? (<Link to={`/user/${provider.recommender_clerk_id || provider.recommender_user_id}/recommendations`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{provider.recommender_name}</Link>) : (<span className="recommended-name">{provider.recommender_name}</span>)} */}
+//                                                 {provider.recommender_user_id ? (<Link to={`/profile/${provider.recommender_user_id}`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{provider.recommender_name}</Link>) : (<span className="recommended-name">{provider.recommender_name}</span>)}
 //                                                 {provider.date_of_recommendation && (<span className="recommendation-date"> ({new Date(provider.date_of_recommendation).toLocaleDateString("en-US", {year:"2-digit",month:"numeric",day:"numeric"})})</span>)}
 //                                             </div>
 //                                             {currentReviews.length > 0 && [...new Set(currentReviews.map(r => r.user_name).filter(name => (name && name !== provider.recommender_name)))].filter(name => name).length > 0 && (

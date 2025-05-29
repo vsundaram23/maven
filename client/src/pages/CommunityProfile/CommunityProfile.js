@@ -520,7 +520,7 @@ const sortedAndFilteredCommRecs = useMemo(() => {
           <div className="recommendations-section appliance-services-container">
           <div className="sort-city-container">
             <div className="sort-bar">
-              <label htmlFor="sortDropdown">Sort by:</label>
+              <label htmlFor="sortDropdown">Filter by:</label>
               <select
                 id="sortDropdown"
                 className="sort-dropdown"
