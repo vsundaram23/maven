@@ -709,16 +709,16 @@ const EditRecommendationModal = ({
                             </span>
                             Images
                         </h3>
-                        <div className="image-upload-section">
+                        <div className="profile-edit-modal-image-upload-section">
                             <div
-                                className="image-dropzone"
+                                className="profile-edit-modal-image-dropzone"
                                 onClick={() =>
                                     document
                                         .getElementById("edit-image-upload")
                                         .click()
                                 }
                             >
-                                <PhotoIcon className="image-dropzone-icon" />
+                                <PhotoIcon className="profile-edit-modal-image-dropzone-icon" />
                                 <span>Click to upload images (up to 5)</span>
                                 <input
                                     type="file"
@@ -732,11 +732,11 @@ const EditRecommendationModal = ({
 
                             {(existingImages.length > 0 ||
                                 images.length > 0) && (
-                                <div className="image-preview-grid">
+                                <div className="profile-edit-modal-image-preview-grid">
                                     {existingImages.map((image) => (
                                         <div
                                             key={image.id}
-                                            className="image-preview-item"
+                                            className="profile-edit-modal-image-preview-item"
                                         >
                                             <img
                                                 src={getImageSrc(image)}
@@ -744,7 +744,7 @@ const EditRecommendationModal = ({
                                             />
                                             <button
                                                 type="button"
-                                                className="image-preview-remove"
+                                                className="profile-edit-modal-image-preview-remove"
                                                 onClick={() =>
                                                     removeImage(image.id, true)
                                                 }
@@ -756,7 +756,7 @@ const EditRecommendationModal = ({
                                     {images.map((image) => (
                                         <div
                                             key={image.id}
-                                            className="image-preview-item"
+                                            className="profile-edit-modal-image-preview-item"
                                         >
                                             <img
                                                 src={image.preview}
@@ -764,7 +764,7 @@ const EditRecommendationModal = ({
                                             />
                                             <button
                                                 type="button"
-                                                className="image-preview-remove"
+                                                className="profile-edit-modal-image-preview-remove"
                                                 onClick={() =>
                                                     removeImage(image.id)
                                                 }
@@ -776,7 +776,7 @@ const EditRecommendationModal = ({
                                 </div>
                             )}
 
-                            <p className="upload-limit-text">
+                            <p className="profile-edit-modal-upload-limit-text">
                                 {5 - (existingImages.length + images.length)}{" "}
                                 more images allowed
                             </p>
