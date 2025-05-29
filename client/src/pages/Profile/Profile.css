@@ -735,13 +735,20 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 200px;
+    min-height: calc(
+        100vh - var(--global-header-height)
+    ); /* Adjust for header height */
+    padding-top: var(
+        --global-header-height
+    ); /* Add padding to account for fixed header */
     color: var(--profile-text-secondary);
 }
+
 .profile-loading-container.small-spinner {
     min-height: 100px;
     height: auto;
     padding: 2rem;
+    padding-top: 0; /* Reset padding for small spinner */
     flex-direction: row;
     gap: 1rem;
     justify-content: flex-start;
@@ -1489,7 +1496,7 @@
 }
 
 .profile-carousel-btn svg {
-    width: 1.25rem; 
+    width: 1.25rem;
     height: 1.25rem;
 }
 
@@ -1567,4 +1574,3 @@
     width: 1.5rem;
     height: 1.5rem;
 }
-
