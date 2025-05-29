@@ -25,6 +25,7 @@ import {
     SparklesIcon,
     ArrowPathIcon,
     PhoneIcon,
+    PhotoIcon,
 } from "@heroicons/react/24/solid";
 import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
 import { StarIcon as OutlineStarIcon } from "@heroicons/react/24/outline";
@@ -186,6 +187,36 @@ const EditRecommendationModal = ({
         useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState("");
+    const [images, setImages] = useState([]);
+    const [existingImages, setExistingImages] = useState([]);
+
+    // Add getImageSrc function
+    const getImageSrc = (image) => {
+        if (!image) return "";
+        const imageData = image.data?.data || image.data;
+        if (!imageData) return "";
+
+        try {
+            if (Array.isArray(imageData)) {
+                const bytes = new Uint8Array(imageData);
+                const binary = bytes.reduce(
+                    (acc, byte) => acc + String.fromCharCode(byte),
+                    ""
+                );
+                const base64String = window.btoa(binary);
+                return `data:${image.contentType};base64,${base64String}`;
+            }
+
+            if (typeof imageData === "string") {
+                return `data:${image.contentType};base64,${imageData}`;
+            }
+
+            return "";
+        } catch (error) {
+            console.error("Error converting image data:", error);
+            return "";
+        }
+    };
 
     useEffect(() => {
         if (recommendationToEdit) {
@@ -220,6 +251,7 @@ const EditRecommendationModal = ({
             setMessage("");
             setHoverRating(0);
             setTagInput("");
+            setExistingImages(recommendationToEdit.images || []);
         }
     }, [recommendationToEdit]);
 
@@ -285,6 +317,45 @@ const EditRecommendationModal = ({
                 : [...prev, circleId]
         );
 
+    const handleImageSelect = (event) => {
+        const files = Array.from(event.target.files);
+
+        if (existingImages.length + files.length > 5) {
+            setMessage("error:Maximum 5 images allowed");
+            return;
+        }
+
+        files.forEach((file) => {
+            if (file.size > 5 * 1024 * 1024) {
+                setMessage("error:Images must be under 5MB");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImages((prev) => [
+                    ...prev,
+                    {
+                        id: Date.now() + Math.random(),
+                        preview: reader.result,
+                        file: file,
+                    },
+                ]);
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const removeImage = (imageId, isExisting = false) => {
+        if (isExisting) {
+            setExistingImages((prev) =>
+                prev.filter((img) => img.id !== imageId)
+            );
+        } else {
+            setImages((prev) => prev.filter((img) => img.id !== imageId));
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
@@ -307,7 +378,9 @@ const EditRecommendationModal = ({
         }
         setIsSubmitting(true);
         setMessage("");
-        const payload = {
+        const formData = new FormData();
+
+        const jsonData = {
             business_name: businessName.trim(),
             recommender_message: recommenderMessage.trim(),
             rating: rating,
@@ -319,18 +392,22 @@ const EditRecommendationModal = ({
             ...(publishScope === "Specific Trust Circles" && {
                 trust_circle_ids: selectedTrustCircles,
             }),
+            existingImages: existingImages,
         };
+
+        formData.append("data", JSON.stringify(jsonData));
+
+        // Append new images
+        images.forEach((image) => {
+            formData.append("images", image.file);
+        });
+
         try {
-            const queryParams = new URLSearchParams({
-                user_id: clerkUserId,
-                email: userEmail,
-            }).toString();
             const res = await fetch(
-                `${apiBaseUrl}/api/recommendations/${recommendationToEdit.id}?${queryParams}`,
+                `${apiBaseUrl}/api/recommendations/${recommendationToEdit.id}?user_id=${clerkUserId}&email=${userEmail}`,
                 {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
+                    body: formData,
                 }
             );
             const responseData = await res.json();
@@ -625,6 +702,86 @@ const EditRecommendationModal = ({
                             )}
                         </section>
                     </div>
+                    <section className="profile-edit-modal-form-section">
+                        <h3 className="profile-edit-modal-section-title">
+                            <span className="profile-edit-modal-section-number">
+                                4
+                            </span>
+                            Images
+                        </h3>
+                        <div className="image-upload-section">
+                            <div
+                                className="image-dropzone"
+                                onClick={() =>
+                                    document
+                                        .getElementById("edit-image-upload")
+                                        .click()
+                                }
+                            >
+                                <PhotoIcon className="image-dropzone-icon" />
+                                <span>Click to upload images (up to 5)</span>
+                                <input
+                                    type="file"
+                                    id="edit-image-upload"
+                                    accept="image/*"
+                                    onChange={handleImageSelect}
+                                    multiple
+                                    style={{ display: "none" }}
+                                />
+                            </div>
+
+                            {(existingImages.length > 0 ||
+                                images.length > 0) && (
+                                <div className="image-preview-grid">
+                                    {existingImages.map((image) => (
+                                        <div
+                                            key={image.id}
+                                            className="image-preview-item"
+                                        >
+                                            <img
+                                                src={getImageSrc(image)}
+                                                alt="Preview"
+                                            />
+                                            <button
+                                                type="button"
+                                                className="image-preview-remove"
+                                                onClick={() =>
+                                                    removeImage(image.id, true)
+                                                }
+                                            >
+                                                <XMarkIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {images.map((image) => (
+                                        <div
+                                            key={image.id}
+                                            className="image-preview-item"
+                                        >
+                                            <img
+                                                src={image.preview}
+                                                alt="Preview"
+                                            />
+                                            <button
+                                                type="button"
+                                                className="image-preview-remove"
+                                                onClick={() =>
+                                                    removeImage(image.id)
+                                                }
+                                            >
+                                                <XMarkIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <p className="upload-limit-text">
+                                {5 - (existingImages.length + images.length)}{" "}
+                                more images allowed
+                            </p>
+                        </div>
+                    </section>
                     <div className="profile-edit-modal-button-row">
                         <button
                             type="button"
@@ -1173,7 +1330,7 @@ const Profile = () => {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        email: user.primaryEmailAddress?.emailAddress
+                        email: user.primaryEmailAddress?.emailAddress,
                         // user_id: user.id,
                     }),
                 }

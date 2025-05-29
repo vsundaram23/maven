@@ -4,10 +4,20 @@ const multer = require("multer");
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 5 * 1024 * 1024, 
-        files: 5, 
-        fieldSize: 30 * 1024 * 1024 // 30MB for images and other fields
-    }
+        fileSize: 5 * 1024 * 1024,
+        files: 5,
+        fieldSize: 30 * 1024 * 1024, // 30MB for images and other fields
+    },
+}).array("images", 5);
+
+// Add this near the top with other multer config
+const editUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024,
+        files: 5,
+        fieldSize: 30 * 1024 * 1024,
+    },
 }).array("images", 5);
 
 const PENDING_SERVICE_PK_ID = "e2c2b91a-c577-448b-8bd1-3e0c17b20e46";
@@ -342,189 +352,149 @@ const getRecommendationById = async (req, res) => {
 };
 
 const updateRecommendation = async (req, res) => {
-    const serviceProviderId = req.params.id;
-    const clerkIdFromQuery = req.query.user_id;
-    const userEmailFromQuery = req.query.email;
-
-    const {
-        business_name,
-        phone_number,
-        tags,
-        rating,
-        website,
-        provider_contact_name,
-        publish_scope,
-        trust_circle_ids,
-        recommender_message,
-    } = req.body;
-
-    if (!clerkIdFromQuery || !userEmailFromQuery) {
-        return res.status(401).json({
-            success: false,
-            message: "User authentication details (ID and email) required.",
-        });
-    }
-
     let client;
-    try {
-        client = await pool.connect();
-        await client.query("BEGIN");
-
-        const userLookupResult = await client.query(
-            "SELECT id FROM users WHERE email = $1 OR clerk_id = $2",
-            [userEmailFromQuery, clerkIdFromQuery]
-        );
-        if (userLookupResult.rows.length === 0) {
-            await client.query("ROLLBACK");
-            return res.status(404).json({
+    editUpload(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({
                 success: false,
-                message:
-                    "Authenticated user profile not found in the local system.",
+                message: "Error uploading images",
+                detail: err.message,
             });
         }
-        const editorUserUuid = userLookupResult.rows[0].id;
 
-        const providerCheck = await client.query(
-            "SELECT id FROM service_providers WHERE id = $1",
-            [serviceProviderId]
-        );
-        if (providerCheck.rows.length === 0) {
-            await client.query("ROLLBACK");
-            return res
-                .status(404)
-                .json({ success: false, message: "Recommendation not found." });
-        }
+        try {
+            client = await pool.connect();
+            await client.query("BEGIN");
 
-        let visibility_status_to_update;
-        if (typeof publish_scope === "string") {
-            if (publish_scope === "Public")
-                visibility_status_to_update = "public";
-            else if (
-                publish_scope === "Full Trust Circle" ||
-                publish_scope === "Specific Trust Circles"
-            )
-                visibility_status_to_update = "connections";
-            else visibility_status_to_update = undefined;
-        } else {
-            visibility_status_to_update = undefined;
-        }
+            const serviceProviderId = req.params.id;
+            const clerkIdFromQuery = req.query.user_id;
+            const userEmailFromQuery = req.query.email;
 
-        const serviceProviderUpdateQuery = `
-      UPDATE service_providers SET
-        business_name = COALESCE($1, business_name), phone_number = COALESCE($2, phone_number),
-        tags = COALESCE($3, tags), website = COALESCE($4, website),
-        business_contact = COALESCE($5, business_contact), recommender_message = COALESCE($6, recommender_message),
-        visibility = COALESCE($7, visibility), updated_at = NOW()
-      WHERE id = $8 RETURNING *;
-    `;
-        const spValues = [
-            toNull(business_name),
-            toNull(phone_number),
-            tags,
-            toNull(website),
-            toNull(provider_contact_name),
-            toNull(recommender_message),
-            visibility_status_to_update,
-            serviceProviderId,
-        ];
-        const { rows: spRows } = await client.query(
-            serviceProviderUpdateQuery,
-            spValues
-        );
-        const updatedServiceProvider = spRows[0];
-
-        let updatedReview;
-        if (
-            rating !== undefined ||
-            (recommender_message !== undefined && recommender_message !== null)
-        ) {
-            const reviewUpdateQuery = `
-            UPDATE reviews SET rating = COALESCE($1, rating), content = COALESCE($2, content), updated_at = NOW()
-            WHERE provider_id = $3 AND user_id = $4 RETURNING *;
-        `;
-            const { rows: reviewRows } = await client.query(reviewUpdateQuery, [
-                rating,
-                recommender_message,
-                serviceProviderId,
-                editorUserUuid,
-            ]);
-            if (reviewRows.length > 0) updatedReview = reviewRows[0];
-        }
-
-        if (!updatedReview) {
-            const reviewFetch = await client.query(
-                "SELECT * FROM reviews WHERE provider_id = $1 AND user_id = $2",
-                [serviceProviderId, editorUserUuid]
-            );
-            if (reviewFetch.rows.length > 0)
-                updatedReview = reviewFetch.rows[0];
-            else {
+            let jsonData;
+            try {
+                jsonData = JSON.parse(req.body.data);
+            } catch (error) {
                 await client.query("ROLLBACK");
-                return res.status(404).json({
+                return res.status(400).json({
                     success: false,
-                    message:
-                        "Associated review by the current editor not found for this recommendation.",
+                    message: "Invalid request data format",
+                    detail: error.message,
                 });
             }
-        }
 
-        if (typeof publish_scope === "string") {
-            await client.query(
-                "DELETE FROM community_shares WHERE service_provider_id = $1",
-                [serviceProviderId]
+            const {
+                business_name,
+                phone_number,
+                tags,
+                rating,
+                website,
+                provider_contact_name,
+                publish_scope,
+                trust_circle_ids,
+                recommender_message,
+                existingImages,
+            } = jsonData;
+
+            // Determine visibility status
+            let visibility_status = "private";
+            if (publish_scope === "Public") {
+                visibility_status = "public";
+            } else if (
+                publish_scope === "Full Trust Circle" ||
+                publish_scope === "Specific Trust Circles"
+            ) {
+                visibility_status = "connections";
+            }
+
+            // Process new images
+            const processedNewImages = (req.files || []).map((file) => ({
+                id: uuidv4(),
+                data: file.buffer,
+                contentType: file.mimetype,
+                size: file.size,
+                createdAt: new Date().toISOString(),
+            }));
+
+            // Combine existing and new images
+            const updatedImages = [
+                ...(existingImages || []),
+                ...processedNewImages,
+            ];
+
+            // Update service provider
+            const serviceProviderUpdateQuery = `
+                UPDATE service_providers SET
+                    business_name = COALESCE($1, business_name),
+                    phone_number = COALESCE($2, phone_number),
+                    tags = COALESCE($3, tags),
+                    website = COALESCE($4, website),
+                    business_contact = COALESCE($5, business_contact),
+                    recommender_message = COALESCE($6, recommender_message),
+                    visibility = COALESCE($7, visibility),
+                    images = $8,
+                    updated_at = NOW()
+                WHERE id = $9 RETURNING *;
+            `;
+
+            const spValues = [
+                toNull(business_name),
+                toNull(phone_number),
+                tags,
+                toNull(website),
+                toNull(provider_contact_name),
+                toNull(recommender_message),
+                visibility_status, // Fixed: use visibility_status instead of undefined variable
+                JSON.stringify(updatedImages),
+                serviceProviderId,
+            ];
+
+            const updatedServiceProvider = await client.query(
+                serviceProviderUpdateQuery,
+                spValues
             );
+
+            // Update trust circle shares if needed
             if (
                 publish_scope === "Specific Trust Circles" &&
-                trust_circle_ids &&
-                trust_circle_ids.length > 0
+                Array.isArray(trust_circle_ids)
             ) {
-                for (const communityId of trust_circle_ids) {
+                // First, remove all existing shares
+                await client.query(
+                    "DELETE FROM community_shares WHERE service_provider_id = $1",
+                    [serviceProviderId]
+                );
+
+                // Then add new shares
+                for (const circleId of trust_circle_ids) {
                     await client.query(
-                        "INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at) VALUES ($1, $2, $3, $4, NOW())",
+                        "INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)",
                         [
                             uuidv4(),
                             serviceProviderId,
-                            communityId,
-                            editorUserUuid,
+                            circleId,
+                            updatedServiceProvider.rows[0].recommended_by,
                         ]
                     );
                 }
-            } else if (
-                publish_scope === "Full Trust Circle" ||
-                publish_scope === "Public"
-            ) {
-                const userCommunitiesResult = await client.query(
-                    "SELECT community_id FROM community_memberships WHERE user_id = $1 AND status = $2",
-                    [editorUserUuid, "approved"]
-                );
-                if (userCommunitiesResult.rows.length > 0) {
-                    for (const row of userCommunitiesResult.rows) {
-                        await client.query(
-                            "INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at) VALUES ($1, $2, $3, $4, NOW())",
-                            [
-                                uuidv4(),
-                                serviceProviderId,
-                                row.community_id,
-                                editorUserUuid,
-                            ]
-                        );
-                    }
-                }
             }
-        }
 
-        await client.query("COMMIT");
-        res.json({ success: true, updatedServiceProvider, updatedReview });
-    } catch (err) {
-        if (client) await client.query("ROLLBACK");
-        res.status(500).json({
-            success: false,
-            error: "Server error updating recommendation",
-            detail: err.message,
-        });
-    } finally {
-        if (client) client.release();
-    }
+            await client.query("COMMIT");
+            res.json({
+                success: true,
+                updatedServiceProvider: updatedServiceProvider.rows[0],
+            });
+        } catch (err) {
+            if (client) await client.query("ROLLBACK");
+            console.error("Update error:", err); // Add detailed logging
+            res.status(500).json({
+                success: false,
+                error: "Server error updating recommendation",
+                detail: err.message,
+            });
+        } finally {
+            if (client) client.release();
+        }
+    });
 };
 
 const getVisibleRecommendationsForUser = async (req, res) => {
