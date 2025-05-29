@@ -125,6 +125,12 @@ export default function ShareRecommendation() {
 
     const [images, setImages] = useState([]);
 
+    // Add new state for tracking upload progress
+    const [uploadState, setUploadState] = useState({
+        isUploading: false,
+        progress: 0,
+    });
+
     useEffect(() => {
         if (!isLoaded) return;
         if (!isSignedIn) {
@@ -211,6 +217,7 @@ export default function ShareRecommendation() {
     }, [fetchUserTrustCircles]);
 
     const resetForm = () => {
+        setImages([]);
         setBusinessName("");
         setProviderContactName("");
         setRecommendationBlurb("");
@@ -329,6 +336,8 @@ export default function ShareRecommendation() {
 
         setIsSubmitting(true);
         setMessage("");
+        setUploadState({ isUploading: true, progress: 0 });
+        setShowSuccessModal(true);
 
         const formData = new FormData();
 
@@ -373,9 +382,13 @@ export default function ShareRecommendation() {
                         `Request failed with status ${res.status}`
                 );
             }
-            setShowSuccessModal(true);
+
+            // Just set isUploading to false on success
+            setUploadState((prev) => ({ ...prev, isUploading: false }));
         } catch (error) {
             setMessage(`error:${error.message}`);
+            setShowSuccessModal(false);
+            setUploadState({ isUploading: false, progress: 0 });
         } finally {
             setIsSubmitting(false);
         }
@@ -1170,26 +1183,44 @@ export default function ShareRecommendation() {
             {showSuccessModal && (
                 <div className="success-modal-overlay">
                     <div className="success-modal">
-                        <CheckCircleIcon className="success-modal-icon" />
-                        <h3>Recommendation Submitted!</h3>
-                        <p>Your recommendation has been shared successfully.</p>
-                        <p className="modal-question">
-                            Would you like to submit another one?
-                        </p>
-                        <div className="success-modal-actions">
-                            <button
-                                onClick={handleAddAnother}
-                                className="btn btn-secondary modal-btn"
-                            >
-                                Yes, Add Another
-                            </button>
-                            <button
-                                onClick={handleGoHome}
-                                className="btn btn-primary modal-btn"
-                            >
-                                No
-                            </button>
-                        </div>
+                        {uploadState.isUploading ? (
+                            <>
+                                <div className="loading-spinner">
+                                    <ArrowPathIcon className="animate-spin h-12 w-12" />
+                                </div>
+                                <h3>Uploading Recommendation...</h3>
+                                <p>
+                                    Please wait while we process your
+                                    submission.
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <CheckCircleIcon className="success-modal-icon" />
+                                <h3>Recommendation Submitted!</h3>
+                                <p>
+                                    Your recommendation has been shared
+                                    successfully.
+                                </p>
+                                <p className="modal-question">
+                                    Would you like to submit another one?
+                                </p>
+                                <div className="success-modal-actions">
+                                    <button
+                                        onClick={handleAddAnother}
+                                        className="btn btn-secondary modal-btn"
+                                    >
+                                        Yes, Add Another
+                                    </button>
+                                    <button
+                                        onClick={handleGoHome}
+                                        className="btn btn-primary modal-btn"
+                                    >
+                                        No
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
