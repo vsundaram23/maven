@@ -66,6 +66,7 @@ const getVisibleProvidersBaseQuery = (currentInternalUserId) => {
         sp.business_contact,
         sp.recommender_message,
         sp.visibility,
+        sp.images,
         sc.name AS category,
         sp.recommended_by AS recommender_user_id,
         rec_user.name AS recommender_name,
@@ -180,6 +181,7 @@ const getProviderById = async (req, res) => {
             lastName: req.query.lastName || "",
             phoneNumbers: req.query.phoneNumber ? [{ phoneNumber: req.query.phoneNumber }] : [],
         });
+
         if (!internalUserId) {
             return res.status(404).json({ success: false, message: "User not found or could not be resolved." });
         }

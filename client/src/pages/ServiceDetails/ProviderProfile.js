@@ -1,5 +1,5 @@
 import { useUser } from "@clerk/clerk-react";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import {
     FaStar,
@@ -15,9 +15,14 @@ import {
     FaRegHandshake,
 } from "react-icons/fa";
 import "./ProviderProfile.css";
+import {
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    XMarkIcon,
+} from "@heroicons/react/24/outline";
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = "http://localhost:5000";
+// const API_URL = "https://api.seanag-recommendations.org:8080";
+const API_URL = "http://localhost:3000";
 
 const ProviderProfile = () => {
     const { isLoaded, isSignedIn, user } = useUser();
@@ -36,6 +41,9 @@ const ProviderProfile = () => {
     const [loadingReviews, setLoadingReviews] = useState(true);
     const [loadingStats, setLoadingStats] = useState(true);
     const [error, setError] = useState(null);
+
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [selectedImage, setSelectedImage] = useState(null);
 
     useEffect(() => {
         if (!isLoaded) return;
@@ -503,6 +511,26 @@ const ProviderProfile = () => {
                             </div>
                         )}
 
+                    {/* Add the image carousel here */}
+                    {Array.isArray(provider?.images) &&
+                        provider.images.length > 0 && (
+                            <div className="provider-images-section">
+                                <h3 className="images-header">Photos</h3>
+                                <ImageCarousel
+                                    images={provider.images}
+                                    onImageClick={(image) =>
+                                        setSelectedImage(image)
+                                    }
+                                />
+                            </div>
+                        )}
+                    {selectedImage && (
+                        <ImageModal
+                            image={selectedImage}
+                            onClose={() => setSelectedImage(null)}
+                        />
+                    )}
+
                     <div className="profile-tabs-container">
                         {["Reviews", "Details"].map((tab) => (
                             <button
@@ -637,6 +665,155 @@ const ProviderProfile = () => {
                         )}
                     </div>
                 </div>
+            </div>
+        </div>
+    );
+};
+
+const ImageCarousel = ({ images, onImageClick }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const containerRef = useRef(null);
+
+    if (!images || !Array.isArray(images) || images.length === 0) return null;
+
+    // Add getImageSrc function inside the component
+    const getImageSrc = (image) => {
+        if (!image) return "";
+        const imageData = image.data?.data || image.data;
+        if (!imageData) return "";
+
+        try {
+            if (Array.isArray(imageData)) {
+                const bytes = new Uint8Array(imageData);
+                const binary = bytes.reduce(
+                    (acc, byte) => acc + String.fromCharCode(byte),
+                    ""
+                );
+                const base64String = window.btoa(binary);
+                return `data:${image.contentType};base64,${base64String}`;
+            }
+
+            if (typeof imageData === "string") {
+                return `data:${image.contentType};base64,${imageData}`;
+            }
+
+            return "";
+        } catch (error) {
+            console.error("Error converting image data:", error);
+            return "";
+        }
+    };
+
+    const scrollToIndex = (index) => {
+        if (containerRef.current) {
+            const container = containerRef.current;
+            const imageWidth = container.children[0].offsetWidth;
+            const scrollPosition = index * (imageWidth + 16); // 16px is the gap
+            container.scrollLeft = scrollPosition;
+        }
+    };
+
+    const handleNext = () => {
+        const newIndex = Math.min(currentIndex + 3, images.length - 1);
+        setCurrentIndex(newIndex);
+        scrollToIndex(newIndex);
+    };
+
+    const handlePrev = () => {
+        const newIndex = Math.max(currentIndex - 3, 0);
+        setCurrentIndex(newIndex);
+        scrollToIndex(newIndex);
+    };
+
+    return (
+        <div className="provider-image-carousel">
+            <div
+                className="provider-image-carousel-container"
+                ref={containerRef}
+            >
+                {images.map((image, index) => (
+                    <img
+                        key={image.id || index}
+                        src={getImageSrc(image)}
+                        alt={`Provider image ${index + 1}`}
+                        className="provider-carousel-image"
+                        onClick={() => onImageClick?.(image)}
+                    />
+                ))}
+            </div>
+            {images.length > 3 && (
+                <>
+                    <button
+                        onClick={handlePrev}
+                        className="provider-carousel-btn prev"
+                        disabled={currentIndex === 0}
+                        type="button"
+                    >
+                        <ChevronLeftIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={handleNext}
+                        className="provider-carousel-btn next"
+                        disabled={currentIndex >= images.length - 3}
+                        type="button"
+                    >
+                        <ChevronRightIcon className="w-4 h-4" />
+                    </button>
+                </>
+            )}
+        </div>
+    );
+};
+
+const ImageModal = ({ image, onClose }) => {
+    const getImageSrc = (img) => {
+        if (!img) return "";
+        const imageData = img.data?.data || img.data;
+        if (!imageData) return "";
+
+        try {
+            if (Array.isArray(imageData)) {
+                const bytes = new Uint8Array(imageData);
+                const binary = bytes.reduce(
+                    (acc, byte) => acc + String.fromCharCode(byte),
+                    ""
+                );
+                const base64String = window.btoa(binary);
+                return `data:${img.contentType};base64,${base64String}`;
+            }
+
+            if (typeof imageData === "string") {
+                return `data:${img.contentType};base64,${imageData}`;
+            }
+
+            return "";
+        } catch (error) {
+            console.error("Error converting image data:", error);
+            return "";
+        }
+    };
+
+    return (
+        <div className="provider-image-modal-overlay" onClick={onClose}>
+            <div
+                className="provider-image-modal-content"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <button
+                    className="provider-image-modal-close"
+                    onClick={onClose}
+                >
+                    <XMarkIcon className="w-6 h-6" />
+                </button>
+                <img
+                    src={getImageSrc(image)}
+                    alt="Full size provider image"
+                    className="provider-image-modal-img"
+                    onError={(e) => {
+                        console.error("Modal image load error:", e);
+                        e.target.style.display = "none";
+                    }}
+                />
             </div>
         </div>
     );
