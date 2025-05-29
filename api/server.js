@@ -73,7 +73,8 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.json());
+app.use(express.json({limit: '30mb'}));
+app.use(express.urlencoded({ extended: true, limit: '30mb' }));
 
 // Health check
 app.get("/api/health", (req, res) => {
