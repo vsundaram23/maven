@@ -7,10 +7,12 @@ import {
     XMarkIcon,
     ArrowRightIcon,
     CheckCircleIcon,
+    UsersIcon,
 } from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router-dom";
 
 const OnboardingModal = ({ isOpen, onComplete, user }) => {
-    // Update initial state to handle 4 steps
+    const navigate = useNavigate();
     const [step, setStep] = useState(1);
     const [error, setError] = useState("");
     const [formData, setFormData] = useState({
@@ -21,6 +23,8 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
     });
 
     if (!isOpen) return null;
+
+    const totalSteps = 5;
 
     const validateStep = (currentStep) => {
         setError("");
@@ -80,33 +84,40 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
         setError("");
     };
 
-    const handleSubmit = async (e) => {
+    const handleComplete = async (e) => {
         e.preventDefault();
+        if (validateStep(4)) {
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/users/onboarding",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            userId: user.id,
+                            email: user.primaryEmailAddress?.emailAddress,
+                            ...formData,
+                        }),
+                    }
+                );
 
-        try {
-            const response = await fetch(
-                "http://localhost:3000/api/users/onboarding",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        userId: user.id,
-                        email: user.primaryEmailAddress?.emailAddress,
-                        ...formData,
-                    }),
+                if (!response.ok) {
+                    throw new Error("Failed to save onboarding data");
                 }
-            );
 
-            if (!response.ok) {
-                throw new Error("Failed to save onboarding data");
+                // Move to success step instead of closing
+                setStep(5);
+            } catch (error) {
+                console.error("Onboarding error:", error);
             }
-
-            onComplete();
-        } catch (error) {
-            console.error("Onboarding error:", error);
         }
+    };
+
+    const handleFinish = () => {
+        onComplete();
+        navigate("/trustcircles?tab=discover");
     };
 
     return (
@@ -115,7 +126,7 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
                 <div className="onboarding-progress">
                     <div
                         className="onboarding-progress-bar"
-                        style={{ width: `${(step / 4) * 100}%` }}
+                        style={{ width: `${(step / totalSteps) * 100}%` }}
                     />
                 </div>
 
@@ -300,15 +311,64 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
                                 </button>
                                 <button
                                     className="onboarding-complete-btn"
-                                    onClick={(e) => {
-                                        if (validateStep(4)) {
-                                            handleSubmit(e);
-                                        }
-                                    }}
+                                    onClick={handleComplete}
                                 >
                                     Complete Setup{" "}
                                     <CheckCircleIcon className="w-5 h-5" />
                                 </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 5 && (
+                        <div className="onboarding-step success-step">
+                            <h2>You're all set! 🎊</h2>
+                            <div className="success-content">
+                                <p className="success-message">
+                                    Now you can explore communities to start finding and sharing
+                                    relevant recommendations:
+                                </p>
+                                {/* <UsersIcon className="success-icon" />
+                                
+                                <p className="success-message">
+                                    Based on your interests, we think you'll
+                                    love these communities:
+                                </p>
+                                <div className="suggested-communities">
+                                    <div className="community-preview">
+                                        {formData.interests.includes(
+                                            "Home Renovation"
+                                        ) && (
+                                            <div className="community-item">
+                                                🏠 Home Improvement Enthusiasts
+                                            </div>
+                                        )}
+                                        {formData.interests.includes(
+                                            "Auto Services"
+                                        ) && (
+                                            <div className="community-item">
+                                                🚗 Auto Care Network
+                                            </div>
+                                        )}
+                                        {formData.interests.includes(
+                                            "Dining & Entertainment"
+                                        ) && (
+                                            <div className="community-item">
+                                                🍽️ Local Foodies
+                                            </div>
+                                        )}
+                                    </div>
+                                </div> */}
+                                <div className="onboarding-buttons">
+                                    <button
+                                        className="discover-communities-btn"
+                                        onClick={handleFinish}
+                                    >
+                                        <UsersIcon className="w-5 h-5" />
+                                        Discover Communities{" "}
+                                        
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
