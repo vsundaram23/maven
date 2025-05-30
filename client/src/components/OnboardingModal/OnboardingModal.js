@@ -11,6 +11,10 @@ import {
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 
+const API_URL = "https://api.seanag-recommendations.org:8080";
+// const API_URL = "http://localhost:3000";
+
+
 const OnboardingModal = ({ isOpen, onComplete, user }) => {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
@@ -89,7 +93,7 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
         if (validateStep(4)) {
             try {
                 const response = await fetch(
-                    "http://localhost:3000/api/users/onboarding",
+                    `${API_URL}/api/users/onboarding`,
                     {
                         method: "POST",
                         headers: {
