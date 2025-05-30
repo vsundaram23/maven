@@ -161,7 +161,9 @@ const getPublicUserProfile = async (req, res) => {
         const loggedInUserId = req.auth ? req.auth.userId : null;
 
         if (userResult.rows.length === 0) {
-            return res.status(404).json({ success: false, message: "User not found." });
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found." });
         }
         const userData = userResult.rows[0];
 
@@ -186,7 +188,10 @@ const getPublicUserProfile = async (req, res) => {
             ORDER BY sp.date_of_recommendation DESC, sp.created_at DESC
         `;
         // THIS IS THE CORRECT CODE YOU NEED
-        const recommendationsResult = await pool.query(recommendationsQuery, [userId, loggedInUserId]);
+        const recommendationsResult = await pool.query(recommendationsQuery, [
+            userId,
+            loggedInUserId,
+        ]);
 
         // Construct profile image URL (to be fetched separately by the client if needed, or direct path)
         const profileImage = `/api/users/${userId}/profile/image`; // Path for frontend to request
@@ -201,9 +206,12 @@ const getPublicUserProfile = async (req, res) => {
             recommendations: recommendationsResult.rows,
             // Note: 'connections' count is NOT included here
         });
-
     } catch (err) {
-        console.error("Error fetching public user profile:", err.message, err.stack);
+        console.error(
+            "Error fetching public user profile:",
+            err.message,
+            err.stack
+        );
         res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -211,7 +219,6 @@ const getPublicUserProfile = async (req, res) => {
         });
     }
 };
-
 
 const serveCurrentUserProfileImage = async (req, res) => {
     const clerkUserId = req.query.user_id;
@@ -521,6 +528,111 @@ const serveUserProfileImageById = async (req, res) => {
     }
 };
 
+const getOnboardingStatus = async (req, res) => {
+    const { email } = req.query;
+
+    try {
+        const result = await pool.query(
+            "SELECT has_completed_onboarding FROM users WHERE email = $1",
+            [email]
+        );
+
+        res.json({
+            hasCompletedOnboarding:
+                result.rows[0]?.has_completed_onboarding || false,
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to check onboarding status",
+        });
+    }
+};
+
+const saveOnboardingData = async (req, res) => {
+    const { userId, email, preferredName, phoneNumber, location, interests } =
+        req.body;
+
+    if (!email) {
+        return res.status(400).json({
+            error: "Email is required",
+        });
+    }
+
+    try {
+        // Ensure interests is an array and convert to PostgreSQL array format
+        const interestsArray = Array.isArray(interests) ? interests : [];
+
+        const result = await pool.query(
+            `UPDATE users 
+             SET preferred_name = $1, 
+                 phone_number = $2, 
+                 location = $3, 
+                 interests = $4,
+                 has_completed_onboarding = true,
+                 updated_at = NOW()
+             WHERE email = $5
+             RETURNING *`,
+            [
+                preferredName || null,
+                phoneNumber || null,
+                location || null,
+                interestsArray,
+                email,
+            ]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                error: "User not found with provided email",
+            });
+        }
+
+        res.json({
+            success: true,
+            user: result.rows[0],
+        });
+    } catch (error) {
+        console.error("Error saving onboarding data:", {
+            error: error.message,
+            stack: error.stack,
+            email,
+            preferredName,
+            interests,
+        });
+
+        res.status(500).json({
+            error: "Failed to save onboarding data",
+            details: error.message,
+        });
+    }
+};
+
+const getPreferredName = async (req, res) => {
+    const { email } = req.query;
+
+    if (!email) {
+        return res.status(400).json({
+            error: "Email is required"
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            'SELECT preferred_name FROM users WHERE email = $1',
+            [email]
+        );
+
+        res.json({
+            preferredName: result.rows[0]?.preferred_name || null
+        });
+    } catch (error) {
+        console.error("Error fetching preferred name:", error);
+        res.status(500).json({
+            error: "Failed to fetch preferred name"
+        });
+    }
+};
+
 module.exports = {
     getCurrentUserRecommendations,
     getRecommendationsByUserId,
@@ -531,4 +643,7 @@ module.exports = {
     updateCurrentUserProfile,
     serveCurrentUserProfileImage,
     getCurrentUserProfileData,
+    getOnboardingStatus,
+    saveOnboardingData,
+    getPreferredName
 };

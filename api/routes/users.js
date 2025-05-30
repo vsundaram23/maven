@@ -10,18 +10,15 @@ const {
     updateCurrentUserProfile,
     serveCurrentUserProfileImage,
     getCurrentUserProfileData,
-    getPublicUserProfile
+    getPublicUserProfile,
+    getOnboardingStatus,
+    saveOnboardingData,
+    getPreferredName,
 } = require("../controllers/userController");
 
-router.get(
-    "/me/recommendations",
-    getCurrentUserRecommendations
-);
+router.get("/me/recommendations", getCurrentUserRecommendations);
 
-router.get(
-    "/me/profile",
-    getCurrentUserProfileData
-);
+router.get("/me/profile", getCurrentUserProfileData);
 
 router.put(
     "/me/profile",
@@ -29,31 +26,21 @@ router.put(
     updateCurrentUserProfile
 );
 
-router.get(
-    "/me/profile/image",
-    serveCurrentUserProfileImage
-);
+router.get("/me/profile/image", serveCurrentUserProfileImage);
 
-router.get(
-    "/public-profile/:userId",
-    getPublicUserProfile
-);
+router.get("/public-profile/:userId", getPublicUserProfile);
 
-router.get(
-    "/:id/recommendations",
-    getRecommendationsByUserId
-);
+router.get("/:id/recommendations", getRecommendationsByUserId);
 
-router.put(
-    "/:id/profile",
-    uploadProfileImageMiddleware,
-    updateUserProfileById
-);
+router.put("/:id/profile", uploadProfileImageMiddleware, updateUserProfileById);
 
-router.get(
-    "/:id/profile/image",
-    serveUserProfileImageById
-);
+router.get("/:id/profile/image", serveUserProfileImageById);
+
+router.post("/onboarding", saveOnboardingData);
+
+router.get("/onboarding-status", getOnboardingStatus);
+
+router.get("/preferred-name", getPreferredName);
 
 module.exports = router;
 
