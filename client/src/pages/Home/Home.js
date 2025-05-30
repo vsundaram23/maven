@@ -12,7 +12,7 @@ import {
 } from "@heroicons/react/24/solid";
 import "./Home.css";
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = "https://api.seanag-recommendations.org:8080";
 // const API_URL = "http://localhost:3000";
 
 const BRAND_PHRASE = "Tried & Trusted.";
@@ -29,14 +29,46 @@ const Home = () => {
     const [isSearching, setIsSearching] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [showLocationModal, setShowLocationModal] = useState(false);
+    const [preferredName, setPreferredName] = useState("");
+
+    // Add new useEffect to fetch preferred name
+    useEffect(() => {
+        const fetchPreferredName = async () => {
+            if (
+                !isLoaded ||
+                !isSignedIn ||
+                !user?.primaryEmailAddress?.emailAddress
+            )
+                return;
+
+            try {
+                const response = await fetch(
+                    `${API_URL}/api/users/preferred-name?email=${encodeURIComponent(
+                        user.primaryEmailAddress.emailAddress
+                    )}`
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.preferredName) {
+                        setPreferredName(data.preferredName);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching preferred name:", error);
+            }
+        };
+
+        fetchPreferredName();
+    }, [isLoaded, isSignedIn, user]);
 
     const targetText = useMemo(() => {
         if (!isLoaded) return `Welcome to ${BRAND_PHRASE}`;
         if (!isSignedIn) return `Welcome to ${BRAND_PHRASE}`;
-        return user?.firstName
-            ? `Welcome back, ${user.firstName}.`
+        return preferredName || user?.firstName
+            ? `Welcome back, ${preferredName || user.firstName}.`
             : `Welcome to ${BRAND_PHRASE}`;
-    }, [isLoaded, isSignedIn, user?.firstName]);
+    }, [isLoaded, isSignedIn, preferredName, user?.firstName]);
 
     const [displayText, setDisplayText] = useState("");
     const [isTyping, setIsTyping] = useState(true);
@@ -106,7 +138,7 @@ const Home = () => {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
-                                email: user.primaryEmailAddress.emailAddress
+                                email: user.primaryEmailAddress.emailAddress,
                                 // user_id: user.id,
                             }),
                         }
@@ -317,7 +349,7 @@ const Home = () => {
                     className="stat clickable-stat"
                     onClick={() => {
                         if (isSignedIn) {
-                             navigate("/trustcircles?tab=myTrust");
+                            navigate("/trustcircles?tab=myTrust");
                         } else {
                             openSignIn();
                         }
@@ -360,10 +392,13 @@ const Home = () => {
                     transition={{ delay: 2.2, duration: 0.6 }}
                 >
                     <p>
-                        Want more recommendations?{' '}
-                        <span className="cta-link" onClick={() => navigate('/trustcircles')}>
+                        Want more recommendations?{" "}
+                        <span
+                            className="cta-link"
+                            onClick={() => navigate("/trustcircles")}
+                        >
                             Invite friends
-                        </span>{' '}
+                        </span>{" "}
                         to grow your Trust Circle.
                     </p>
                 </motion.div>
