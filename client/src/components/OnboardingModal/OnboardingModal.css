@@ -55,7 +55,7 @@
 
 .onboarding-progress-bar {
     height: 100%;
-    background: var(--primary-color);
+    background: var(--dark-blue);
     transition: width 0.4s ease;
 }
 
@@ -102,7 +102,7 @@
 
 .onboarding-next-btn,
 .onboarding-complete-btn {
-    background: var(--primary-color);
+    background: var(--dark-blue);
     color: white;
     padding: 0.75rem 1.5rem;
     border-radius: 0.5rem;
@@ -202,7 +202,7 @@
 .success-icon {
     width: 4rem;
     height: 4rem;
-    color: var(--primary-color);
+    color: var(--dark-blue);
     margin-bottom: 1.5rem;
 }
 
@@ -240,7 +240,7 @@
 }
 
 .discover-communities-btn {
-    background: var(--primary-color);
+    background: var(--dark-blue);
     color: white;
     padding: 0.75rem 1.5rem;
     border-radius: 0.5rem;
