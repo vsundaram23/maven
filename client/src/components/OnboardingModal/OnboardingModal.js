@@ -139,7 +139,7 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
 
                     {step === 1 && (
                         <div className="onboarding-step">
-                            <h2>Welcome to Tried & Trusted! 👋</h2>
+                            <h2>Hello from Tried & Trusted! 👋</h2>
                             <p>Let's get to know you better</p>
                             <div className="onboarding-form">
                                 <div className="form-group">
@@ -177,7 +177,7 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
 
                     {step === 2 && (
                         <div className="onboarding-step">
-                            <h2>How can we reach you? 📱</h2>
+                            <h2>How can we stay in touch? 📱</h2>
                             <div className="onboarding-form">
                                 <div className="form-group">
                                     <label>Phone Number *</label>
@@ -329,7 +329,7 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
                             <h2>You're all set! 🎊</h2>
                             <div className="success-content">
                                 <p className="success-message">
-                                    Now you can explore communities to start finding and sharing
+                                    Now you can explore communities to find and share
                                     relevant recommendations:
                                 </p>
                                 {/* <UsersIcon className="success-icon" />
