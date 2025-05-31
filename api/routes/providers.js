@@ -8,13 +8,15 @@ const {
   searchVisibleProviders,
   getProviderCount,
   likeRecommendation,
-  simpleLikeRecommendation
+  simpleLikeRecommendation,
+  getNewestVisibleProviders
 } = require('../controllers/providerController');
 
 router.get('/visible', getAllVisibleProviders);
 router.get('/search', searchVisibleProviders);
 router.get('/count', getProviderCount);
 router.get('/user-recommendations', getRecommendationsByTargetUser);
+router.get("/newest-visible", getNewestVisibleProviders);
 router.get('/:id', getProviderById);
 router.post('/:id/like', likeRecommendation);
 router.post('/:id/like-simple', simpleLikeRecommendation);

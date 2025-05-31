@@ -111,6 +111,42 @@ const getVisibleProvidersBaseQuery = (currentInternalUserId) => {
     return { query, queryParams };
 };
 
+const getNewestVisibleProviders = async (req, res) => {
+    const clerkUserId = req.query.user_id;
+    const userEmail = req.query.email;
+    const limit = parseInt(req.query.limit, 10) || 5;
+    const sortBy = req.query.sortBy || 'date_of_recommendation';
+    const sortOrder = req.query.sortOrder || 'desc';
+
+    if (!clerkUserId || !userEmail) {
+        return res.status(400).json({ success: false, message: "User ID and email are required." });
+    }
+
+    try {
+        const internalUserId = await getInternalUserIdByEmail(userEmail, clerkUserId, {
+            firstName: req.query.firstName || "",
+            lastName: req.query.lastName || "",
+            phoneNumbers: req.query.phoneNumber ? [{ phoneNumber: req.query.phoneNumber }] : [],
+        });
+        if (!internalUserId) {
+            return res.status(404).json({ success: false, message: "User not found or could not be resolved." });
+        }
+
+        const { query: baseQuery, queryParams } = getVisibleProvidersBaseQuery(internalUserId);
+
+        const finalQuery = `
+            SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
+            ORDER BY VisibleProvidersCTE.${sortBy} ${sortOrder.toUpperCase()}
+            LIMIT $${queryParams.length + 1};
+        `;
+        const result = await pool.query(finalQuery, [...queryParams, limit]);
+        res.json({ success: true, providers: result.rows });
+    } catch (err) {
+        console.error("Database error in getNewestVisibleProviders:", err);
+        res.status(500).json({ success: false, message: "Error fetching newest visible providers", error: err.message });
+    }
+};
+
 const getAllVisibleProviders = async (req, res) => {
     const clerkUserId = req.query.user_id;
     const userEmail = req.query.email;
@@ -511,7 +547,8 @@ module.exports = {
     searchVisibleProviders,
     getProviderCount,
     likeRecommendation,
-    simpleLikeRecommendation
+    simpleLikeRecommendation,
+    getNewestVisibleProviders
 };
 
 // working 5/20

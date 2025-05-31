@@ -25,7 +25,7 @@ const API_URL = "https://api.seanag-recommendations.org:8080";
 // const API_URL = "http://localhost:3000";
 
 const INTRO_TEXT =
-    "Share trusted recommendations with your circle. Let's add one now...";
+    "Share recommendations with your Trust Circle. Let's add one now...";
 const TYPEWRITER_SPEED = 40;
 
 const PUBLISH_OPTIONS = [
@@ -642,7 +642,7 @@ export default function ShareRecommendation() {
                 <section className="form-section required-section">
                     <h2 className="section-title">
                         <span className="section-number">1</span>Core
-                        Recommendation
+                        Details
                     </h2>
                     <div className="form-grid">
                         <div className="form-group span-2">
@@ -661,6 +661,20 @@ export default function ShareRecommendation() {
                                 className={businessName ? "has-value" : ""}
                             />
                         </div>
+                        <div className="form-group span-2 rating-group">
+                            <label>Your Rating *</label>
+                            <div className="star-rating">
+                                {[1, 2, 3, 4, 5].map((n) => (
+                                    <StarDisplay
+                                        key={n}
+                                        active={n <= (hoverRating || rating)}
+                                        onClick={() => handleStarClick(n)}
+                                        onMouseEnter={() => setHoverRating(n)}
+                                        onMouseLeave={() => setHoverRating(0)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
                         <div className="form-group span-2">
                             <label htmlFor="recommendationBlurb">
                                 Your Experience *
@@ -678,20 +692,6 @@ export default function ShareRecommendation() {
                                     recommendationBlurb ? "has-value" : ""
                                 }
                             />
-                        </div>
-                        <div className="form-group span-2 rating-group">
-                            <label>Your Rating *</label>
-                            <div className="star-rating">
-                                {[1, 2, 3, 4, 5].map((n) => (
-                                    <StarDisplay
-                                        key={n}
-                                        active={n <= (hoverRating || rating)}
-                                        onClick={() => handleStarClick(n)}
-                                        onMouseEnter={() => setHoverRating(n)}
-                                        onMouseLeave={() => setHoverRating(0)}
-                                    />
-                                ))}
-                            </div>
                         </div>
                     </div>
                 </section>
