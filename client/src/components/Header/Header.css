@@ -72,24 +72,24 @@
 }
 
 
-.nav-link,
-.my-trust-circle-link {
-  color: var(--gray);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
+.nav-link, .my-trust-circle-link {
+  padding: 0.65rem 1.5rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  color: var(--primary-blue);
+  border: 2px solid var(--primary-blue);
+  background-color: var(--white);
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  padding: 0.5rem 0.75rem; /* Added padding for better click area */
-  border-radius: 6px; /* Added for consistency */
+  text-decoration: none;
 }
 
-.nav-link:hover,
-.my-trust-circle-link:hover {
-  color: var(--primary-blue);
-  background-color: var(--light-blue); /* Subtle hover for links */
+.nav-link:hover, .my-trust-circle-link:hover {
+  background-color: var(--primary-blue);
+  color: var(--white);
+  border-color: var(--primary-blue);
 }
-
 .nav-links a:hover .avatar,
 .my-trust-circle-link:hover .avatar {
   transform: scale(1.05);
@@ -427,6 +427,7 @@
   display: flex;
   align-items: center;
   border-radius: 6px;
+  font-size: 1.05rem;
 }
 .btn-explore:hover {
   color: var(--primary-blue);
