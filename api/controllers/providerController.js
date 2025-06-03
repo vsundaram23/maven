@@ -136,6 +136,7 @@ const getNewestVisibleProviders = async (req, res) => {
 
         const finalQuery = `
             SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
+            WHERE VisibleProvidersCTE.date_of_recommendation IS NOT NULL
             ORDER BY VisibleProvidersCTE.${sortBy} ${sortOrder.toUpperCase()}
             LIMIT $${queryParams.length + 1};
         `;
