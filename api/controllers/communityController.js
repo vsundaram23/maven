@@ -651,6 +651,74 @@ const getCommunityServiceCategories = async (communityId) => {
     }
 };
 
+const getUserCommunityCount = async ({ user_id, email }) => {
+  // Check if neither clerkUserId nor email is provided
+  if (!user_id && !email) {
+    console.warn(
+      "getUserCommunityCount called without clerkUserId or email. Returning 0."
+    );
+    return 0;
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    let internalUserUuid = null;
+
+    if (user_id) {
+      // If clerkUserId is provided, fetch internal UUID using it
+      const userRes = await client.query(
+        "SELECT id FROM users WHERE clerk_id = $1",
+        [user_id]
+      );
+      if (userRes.rows.length > 0) {
+        internalUserUuid = userRes.rows[0].id;
+      } else {
+        console.warn(
+          `No internal user UUID found for Clerk ID: ${user_id} in getUserCommunityCount. Returning 0.`
+        );
+        return 0;
+      }
+    } else if (email) {
+      // If email is provided, fetch internal UUID using it
+      const userRes = await client.query(
+        "SELECT id FROM users WHERE email = $1",
+        [email]
+      );
+      if (userRes.rows.length > 0) {
+        internalUserUuid = userRes.rows[0].id;
+      } else {
+        console.warn(
+          `No internal user UUID found for email: ${email} in getUserCommunityCount. Returning 0.`
+        );
+        return 0;
+      }
+    }
+
+    // If for some reason internalUserUuid is still null (shouldn't happen with the above checks)
+    if (!internalUserUuid) {
+      console.warn("Could not determine internal user UUID. Returning 0.");
+      return 0;
+    }
+
+    // Now, use the obtained internalUserUuid to count community memberships
+    const result = await client.query(
+      `
+          SELECT COUNT(*) FROM community_memberships
+          WHERE user_id = $1 AND status = 'approved'
+          `,
+      [internalUserUuid]
+    );
+
+    return parseInt(result.rows[0].count, 10) || 0;
+  } catch (err) {
+    console.error("Error in getUserCommunityCount:", err.message, err.stack);
+    throw err;
+  } finally {
+    if (client) client.release();
+  }
+};
+
 module.exports = {
     createCommunity,
     getAllCommunities,
@@ -664,6 +732,7 @@ module.exports = {
     getCommunityServiceCategories,
     getJoinRequestsByInternalId,
     requestToJoinCommunityByInternalId,
+    getUserCommunityCount
 };
 
 // 5/21 working version

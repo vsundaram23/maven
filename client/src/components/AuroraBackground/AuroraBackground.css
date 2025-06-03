@@ -1,0 +1,111 @@
+/* src/components/AuroraBackground/AuroraBackground.css (or your chosen path) */
+.aurora-background-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  /* z-index: -1; */ /* Comment this out for now */
+  z-index: 1000;  /* Temporarily set a very high z-index */
+  background-color: #ffffff; 
+}
+  
+  .aurora-blob {
+    position: absolute;
+    border-radius: 50%; /* Makes them circular; can be more complex like 30% 70% 70% 30% / 30% 30% 70% 70% for organic shapes */
+    opacity: 0.45; /* Adjust for desired subtlety and blending */
+    filter: blur(120px); /* KEY: Heavy blur for soft edges. Adjust value as needed. */
+    will-change: transform, opacity; /* Hint for browser performance */
+    /* Mix-blend-mode can also be experimented with, e.g., screen or overlay, but start simple */
+  }
+  
+  /* Define individual blobs: size, color, initial position, and animation */
+  /* Use viewport units (vw, vh) for responsiveness in size and positioning where appropriate */
+  
+  .blob-1 {
+    width: 60vmax; /* Vmax uses the larger of vw or vh */
+    height: 60vmax;
+    /* Example: Soft blue from your brand #1A365D, perhaps lightened or mixed */
+    background: radial-gradient(circle, rgba(26, 54, 93, 0.3) 0%, rgba(26, 54, 93, 0) 70%);
+    top: -20%;  /* Initial positions can be partly off-screen */
+    left: -20%;
+    animation: moveBlob1 35s infinite alternate ease-in-out;
+  }
+  
+  .blob-2 {
+    width: 50vmax;
+    height: 50vmax;
+    /* Example: A secondary brand color or a complementary soft color */
+    background: radial-gradient(circle, rgba(43, 108, 176, 0.25) 0%, rgba(43, 108, 176, 0) 70%); /* Example: var(--secondary-blue) lightened */
+    bottom: -15%;
+    right: -15%;
+    animation: moveBlob2 40s infinite alternate ease-in-out 2s; /* Different duration & delay */
+  }
+  
+  .blob-3 {
+    width: 45vmax;
+    height: 45vmax;
+    /* Example: Another color, perhaps a warm accent if it fits your brand */
+    background: radial-gradient(circle, rgba(120, 120, 180, 0.2) 0%, rgba(120, 120, 180, 0) 70%); /* Example: a soft lavender/gray */
+    top: 30%;
+    right: 5%;
+    animation: moveBlob3 30s infinite alternate ease-in-out 1s;
+  }
+  
+  .blob-4 {
+    width: 40vmax;
+    height: 40vmax;
+    background: radial-gradient(circle, rgba(74, 85, 104, 0.2) 0%, rgba(74, 85, 104, 0) 70%); /* Example: var(--gray) lightened */
+    bottom: 25%;
+    left: 5%;
+    animation: moveBlob4 38s infinite alternate ease-in-out 3s;
+  }
+  
+  
+  /* Define animations for each blob for unique movement */
+  @keyframes moveBlob1 {
+    0%   { transform: scale(1) translate(0px, 0px) rotate(0deg); opacity: 0.3; }
+    100% { transform: scale(1.2) translate(10vw, -5vh) rotate(30deg); opacity: 0.5; }
+  }
+  
+  @keyframes moveBlob2 {
+    0%   { transform: scale(1) translate(0px, 0px) rotate(0deg); opacity: 0.35; }
+    100% { transform: scale(1.3) translate(-8vw, 10vh) rotate(-45deg); opacity: 0.55; }
+  }
+  
+  @keyframes moveBlob3 {
+    0%   { transform: scale(1) translate(0px, 0px) rotate(0deg); opacity: 0.25; }
+    100% { transform: scale(1.1) translate(5vw, 8vh) rotate(20deg); opacity: 0.4; }
+  }
+  
+  @keyframes moveBlob4 {
+    0%   { transform: scale(1) translate(0px, 0px) rotate(0deg); opacity: 0.3; }
+    100% { transform: scale(1.25) translate(-5vw, -10vh) rotate(-20deg); opacity: 0.45; }
+  }
+  
+  /* Optional: Media query to reduce motion or complexity on smaller screens if needed */
+  @media (prefers-reduced-motion: reduce) {
+    .aurora-blob {
+      animation-duration: 60s !important; /* Significantly slow down */
+      animation-iteration-count: 1 !important; /* Or even stop after one slow cycle */
+      opacity: 0.2 !important;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .aurora-blob {
+      filter: blur(80px); /* Slightly less blur on mobile if performance is an issue */
+      opacity: 0.35;
+    }
+    .blob-1 { width: 70vmax; height: 70vmax; }
+    .blob-2 { width: 60vmax; height: 60vmax; }
+    .blob-3 { width: 55vmax; height: 55vmax; }
+    .blob-4 { width: 50vmax; height: 50vmax; }
+  
+    @keyframes moveBlob1 { /* Simpler/less movement for mobile if needed */
+      0%   { transform: scale(1) translate(0px, 0px); opacity: 0.25; }
+      100% { transform: scale(1.1) translate(5vw, -2vh); opacity: 0.4; }
+    }
+    /* Consider simplifying other mobile animations too */
+  }

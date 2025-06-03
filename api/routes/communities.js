@@ -15,7 +15,8 @@ const {
   getCommunityMembers,
   getCommunityRecommendations,
   getCommunityServiceCategories,
-  requestToJoinCommunityByInternalId
+  requestToJoinCommunityByInternalId,
+  getUserCommunityCount
 } = require('../controllers/communityController');
 
 const resolveClerkIdToInternalId = async (clerkId, userEmail, userDetails = {}) => {
@@ -43,6 +44,35 @@ const resolveClerkIdToInternalId = async (clerkId, userEmail, userDetails = {}) 
       throw new Error('Server error resolving user ID.');
   }
 };
+
+router.post('/count/communities', async (req, res) => {
+  const { user_id, email } = req.body; // Destructure from req.body
+
+  // Add this console.log for quick debugging to confirm req.body is NOT empty
+  console.log('Received /count/communities request body:', req.body); 
+
+  try {
+    let communityCount;
+
+    // Check if either user_id OR email is provided in the request body
+    if (user_id || email) { // This outer check remains important
+        // Call getUserCommunityCount with an object, ensuring correct property names
+        communityCount = await getUserCommunityCount({ clerkUserId: user_id, email: email });
+        // The getUserCommunityCount function itself will handle which one (clerkId or email) to use internally.
+        // It will effectively ignore the one that is null/undefined if only one is provided.
+
+    } else {
+      // If neither user_id nor email are provided in the request body
+      return res.status(400).json({ success: false, error: 'Request body must contain either a user_id or an email.' });
+    }
+
+    res.status(200).json({ success: true, count: communityCount });
+
+  } catch (error) {
+    console.error("Error fetching user community count:", error);
+    res.status(500).json({ success: false, error: error.message || 'Server error fetching user community count.' });
+  }
+});
 
 router.post('/create', async (req, res) => {
   const { name, description, created_by_clerk_id } = req.body;
