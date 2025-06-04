@@ -350,11 +350,6 @@
   }
   .profile-dropdown-menu{
     padding-left: 0; /* Reset for profile */
-    position: static;  /* Remove absolute positioning on mobile */
-    width: 100%;
-    box-shadow: none;
-    border: none;
-    margin-top: 0.5rem;
   }
 
 
@@ -415,10 +410,6 @@
   padding: 0.5rem 0;
   z-index: 1100; /* Ensure it's above explore panel if both are open */
   min-width: 180px;
-
-  transform: translateX(0);  
-    right: 0;  
-    left: auto; 
 }
 
 
