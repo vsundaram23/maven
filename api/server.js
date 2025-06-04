@@ -19,6 +19,7 @@ const communityRoutes = require("./routes/communities");
 const userRoutes = require("./routes/users");
 const autoProviderRoutes = require("./routes/autoProviders");
 const quoteRoutes = require("./routes/quotes");
+const inviteRoutes = require("./routes/invites");
 
 const app = express();
 
@@ -27,6 +28,7 @@ const corsOptions = {
     origin: function (origin, callback) {
         const allowedOrigins = [
             "http://localhost:3001",
+            "http://localhost:3000",
             "http://34.214.248.192:8080",
             "https://maven-frontend.onrender.com",
             "https://triedandtrusted.ai", // Add your production domain
@@ -103,6 +105,7 @@ app.use("/api/communities", communityRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/autoProviders", autoProviderRoutes);
 app.use("/api/quotes", quoteRoutes);
+app.use("/api/invites", inviteRoutes);
 
 // 500 handler
 app.use((err, req, res, next) => {

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useUser } from "@clerk/clerk-react";
 import { FaUserTie, FaCalendarAlt, FaUsers, FaStar, FaEdit, FaSignInAlt, FaUserPlus, FaEye, FaUserCheck, FaHourglassHalf, FaTools, FaThumbsUp, FaPhone, FaEnvelope, FaSms, FaPlusCircle } from 'react-icons/fa';
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
+import InviteMembersModal from '../../components/InviteModal/InviteModal';
 import "./CommunityProfile.css";
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -198,6 +199,13 @@ const CommunityProfile = () => {
   
   const [selectedCity, setSelectedCity] = useState('all');
 
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [inviteExpiresAt, setInviteExpiresAt] = useState('');
+  const [inviteMaxUses, setInviteMaxUses] = useState('');
+  const [generatedInviteLink, setGeneratedInviteLink] = useState('');
+  const [inviteGenerationError, setInviteGenerationError] = useState('');
+  const [inviteGenerationLoading, setInviteGenerationLoading] = useState(false);
+
   useEffect(() => {
     if (isLoaded && user) {
       setCurrentUserId(user.id);
@@ -242,6 +250,44 @@ const CommunityProfile = () => {
     } catch (err) { setCommunityError(err.message); setCommunityMembers([]);
     } finally { setLoadingCommunityMembers(false); }
   }, [communityId]);
+
+  const handleGenerateInviteLink = async (inviteOptions) => {
+    if (!currentUserId || !communityId) {
+      setInviteGenerationError("User or community information is missing.");
+      return;
+    }
+    setInviteGenerationLoading(true);
+    setInviteGenerationError('');
+    setGeneratedInviteLink('');
+  
+    try {
+      const response = await fetch(`${API_URL}/api/invites/communities/${communityId}/invites`, { // Corrected template literal
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // 'Authorization': `Bearer ${YOUR_CLERK_SESSION_TOKEN_OR_JWT}`,
+      },
+      body: JSON.stringify({
+        actingUserClerkId: currentUserId,
+        expires_at: inviteOptions.expires_at,
+        max_uses: inviteOptions.max_uses,
+      }),
+    });
+  
+      const data = await response.json();
+  
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || `Failed to generate invite link (status: ${response.status})`);
+      }
+  
+      // Ensure the backend returns 'invite_url' or construct it if it returns 'token_string'
+      setGeneratedInviteLink(data.invite_url || `<span class="math-inline">\{window\.location\.origin\}/invite/</span>{data.token_string}`);
+    } catch (err) {
+      setInviteGenerationError(err.message);
+    } finally {
+      setInviteGenerationLoading(false);
+    }
+  };
 
   const fetchCommunityRecommendations = useCallback(async () => {
     if (!communityId || !currentUserId || !currentUserEmail) return;
@@ -297,7 +343,7 @@ const CommunityProfile = () => {
   useEffect(() => { if(communityId && (currentUserId || !isSignedIn)) fetchCommunityDetails(); }, [communityId, currentUserId, isSignedIn, fetchCommunityDetails]);
   useEffect(() => { if (activeTab === 'members' && communityId) fetchCommunityMembers(); }, [activeTab, communityId, fetchCommunityMembers]);
   useEffect(() => { if (activeTab === 'recommendations' && communityId && currentUserId && currentUserEmail) fetchCommunityRecommendations(); }, [activeTab, communityId, currentUserId, currentUserEmail, fetchCommunityRecommendations]);
-
+  
   // const sortedAndFilteredCommRecs = useMemo(() => {
   //   if (!commRecsRaw) return [];
 
@@ -485,15 +531,92 @@ const sortedAndFilteredCommRecs = useMemo(() => {
   const isMember = isSignedIn && currentUserStatus === 'approved';
   const hasRequested = isSignedIn && currentUserStatus === 'requested';
 
-  const renderActionButtons = () => {
-    if (!isLoaded) return null;
-    if (!isSignedIn) return <button className="btn btn-primary-outline" onClick={() => navigate('/sign-in', { state: { from: location } })}> <FaSignInAlt /> Sign in to Interact</button>;
-    if (isOwner) return <button className="btn btn-secondary" onClick={() => navigate(`/community/${communityId}/admin`)}><FaEdit /> Admin Tools</button>;
-    if (isMember) return <span className="status-chip member"><FaUserCheck /> Member</span>;
-    if (hasRequested) return <span className="status-chip pending"><FaHourglassHalf /> Request Pending</span>;
-    if (canRequestToJoin) return <button className="btn btn-primary" onClick={handleRequestToJoin} disabled={isRequestingJoin}><FaUserPlus /> {isRequestingJoin ? 'Sending...' : 'Request to Join'}</button>;
-    return null;
-  };
+  // const renderActionButtons = () => {
+  //   if (!isLoaded) return null;
+  //   if (!isSignedIn) return <button className="btn btn-primary-outline" onClick={() => navigate('/sign-in', { state: { from: location } })}> <FaSignInAlt /> Sign in to Interact</button>;
+  //   if (isOwner) return <button className="btn btn-secondary" onClick={() => navigate(`/community/${communityId}/admin`)}><FaEdit /> Admin Tools</button>;
+  //   if (isMember) return <span className="status-chip member"><FaUserCheck /> Member</span>;
+  //   if (hasRequested) return <span className="status-chip pending"><FaHourglassHalf /> Request Pending</span>;
+  //   if (canRequestToJoin) return <button className="btn btn-primary" onClick={handleRequestToJoin} disabled={isRequestingJoin}><FaUserPlus /> {isRequestingJoin ? 'Sending...' : 'Request to Join'}</button>;
+  //   return null;
+  // };
+  // Inside your CommunityProfile.jsx component
+
+const renderActionButtons = () => {
+  if (!isLoaded) return null; // Clerk authentication state not yet loaded
+
+  if (!isSignedIn) {
+    return (
+      <button
+        className="btn btn-primary-outline"
+        onClick={() => navigate('/sign-in', { state: { from: location } })} // 'location' should be from useLocation() if not already defined
+      >
+        <FaSignInAlt style={{ marginRight: '8px' }} /> Sign in to Interact
+      </button>
+    );
+  }
+
+  // Destructure these from communityDetails or ensure they are correctly defined in your component's scope
+  // const { isOwner, currentUserStatus } = communityDetails || {};
+  // const canRequestToJoin = currentUserStatus === 'none'; // Assuming 'none' means not a member and no pending request
+  // const isMember = currentUserStatus === 'approved';
+  // const hasRequested = currentUserStatus === 'requested';
+  // These are already defined in your provided CommunityProfile component:
+  const { name, description, creator_name, created_at, member_count, recommendation_count, isOwner, currentUserStatus } = communityDetails || {};
+  const canRequestToJoin = isSignedIn && currentUserStatus === 'none';
+  const isMember = isSignedIn && currentUserStatus === 'approved';
+  const hasRequested = isSignedIn && currentUserStatus === 'requested';
+
+
+  if (isOwner) {
+    // If the user is the owner, show Admin Tools AND Invite Members button
+    return (
+      <div className="community-owner-actions"> {/* Optional: A wrapper for layout if needed */}
+        <button
+          className="btn btn-secondary"
+          onClick={() => navigate(`/community/${communityId}/admin`)} // Assuming you have an admin page route
+        >
+          <FaEdit style={{ marginRight: '8px' }} /> Admin Tools
+        </button>
+        <button
+          className="btn btn-primary" // Or your preferred style, e.g., btn-outline-primary
+          onClick={() => {
+            setGeneratedInviteLink('');   // Reset link each time modal is opened
+            setInviteGenerationError(''); // Reset error
+            setInviteExpiresAt('');       // Reset form field in modal if you have it
+            setInviteMaxUses('');         // Reset form field in modal if you have it
+            setIsInviteModalOpen(true);   // Open the modal
+          }}
+          style={{ marginLeft: '10px' }} // Add some space
+        >
+          <FaUserPlus style={{ marginRight: '8px' }} /> Invite Members
+        </button>
+      </div>
+    );
+  }
+
+  if (isMember) {
+    return <span className="status-chip member"><FaUserCheck style={{ marginRight: '5px' }} /> Member</span>;
+  }
+
+  if (hasRequested) {
+    return <span className="status-chip pending"><FaHourglassHalf style={{ marginRight: '5px' }} /> Request Pending</span>;
+  }
+
+  if (canRequestToJoin) {
+    return (
+      <button
+        className="btn btn-primary"
+        onClick={handleRequestToJoin}
+        disabled={isRequestingJoin}
+      >
+        <FaUserPlus style={{ marginRight: '8px' }} /> {isRequestingJoin ? 'Sending Request...' : 'Request to Join'}
+      </button>
+    );
+  }
+
+  return null; // Default if none of the above conditions are met
+};
 
   return (
     <div className="community-profile-page-wrapper">
@@ -717,6 +840,15 @@ const sortedAndFilteredCommRecs = useMemo(() => {
       {commRecsClickedRecommender && (<div className="modal-overlay"><div className="simple-modal"><button className="modal-close-x" onClick={() => setCommRecsClickedRecommender(null)}>×</button><h3 className="modal-title">Want to connect with <span className="highlight">{commRecsClickedRecommender}</span>?</h3><div className="modal-buttons-vertical"><button className="secondary-button" onClick={() => { setCommRecsClickedRecommender(null); setCommRecsShowFeatureComingModal(true); }}>Thank {commRecsClickedRecommender}</button><button className="secondary-button" onClick={() => { setCommRecsClickedRecommender(null); setCommRecsShowFeatureComingModal(true); }}>Ask {commRecsClickedRecommender} a question</button></div></div></div>)}
       {commRecsShowFeatureComingModal && (<div className="modal-overlay"><div className="modal-content review-modal-content"><button className="modal-close-x" onClick={() => setCommRecsShowFeatureComingModal(false)}>×</button><p>Feature coming soon! <FaEye style={{ marginLeft: '5px' }} /></p><div className="modal-buttons"><button className="primary-button" onClick={() => setCommRecsShowFeatureComingModal(false)}>OK</button></div></div></div>)}
       {commRecsIsQuoteModalOpen && commRecsSelectedProvider && <QuoteModal isOpen={commRecsIsQuoteModalOpen} providerName={commRecsSelectedProvider.business_name} providerEmail={commRecsSelectedProvider.email} providerPhotoUrl={commRecsSelectedProvider.profile_image} onClose={() => setCommRecsIsQuoteModalOpen(false)} />}
+      <InviteMembersModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+        onSubmit={handleGenerateInviteLink}
+        communityName={communityDetails?.name || "this community"} // Pass community name
+        generatedLink={generatedInviteLink}
+        error={inviteGenerationError}
+        loading={inviteGenerationLoading}
+      />
     </div>
   );
 };
