@@ -3,8 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useUser, SignInButton } from "@clerk/clerk-react";
 import "./InvitePage.css";
 
-// const API_URL = "https://api.seanag-recommendations.org:8080";
-const API_URL = "http://localhost:3000";
+const API_URL = "https://api.seanag-recommendations.org:8080";
+// const API_URL = "http://localhost:3000";
 
 const InvitePage = () => {
     const { tokenString } = useParams();
