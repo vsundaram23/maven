@@ -60,3 +60,64 @@
 .invite-page.error {
     text-align: center;
 }
+
+.already-member {
+    text-align: center;
+    padding: 2rem;
+}
+
+.already-member h2 {
+    color: var(--dark-blue);
+    margin-bottom: 1.5rem;
+    font-size: 1.75rem;
+}
+
+.community-info {
+    background: var(--background-light);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.view-communities-btn {
+    background: var(--dark-blue);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+}
+
+.view-communities-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.error-state {
+    text-align: center;
+    padding: 2rem;
+}
+
+.error-state h2 {
+    color: var(--error-color);
+    margin-bottom: 1rem;
+}
+
+.return-home-btn {
+    margin-top: 1.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.return-home-btn:hover {
+    background: var(--background-light);
+    transform: translateY(-2px);
+}

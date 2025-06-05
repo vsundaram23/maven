@@ -85,47 +85,73 @@ const InvitePage = () => {
         );
     }
 
-    if (error) {
-        return (
-            <div className="invite-page error">
-                <h2>Error</h2>
-                <p>{error}</p>
-                <button onClick={() => navigate("/")}>Return Home</button>
-            </div>
-        );
-    }
-
+    // Handle error cases
     return (
         <div className="invite-page">
             <div className="invite-card">
-                <h2>Join Community</h2>
-                <p>
-                    You've been invited to join{" "}
-                    <strong>{inviteDetails?.community_name}</strong>
-                </p>
-                {inviteDetails?.community_description && (
-                    <p className="community-description">
-                        {inviteDetails.community_description}
-                    </p>
-                )}
-                <p className="invited-by">
-                    Invited by: {inviteDetails?.invited_by_name}
-                </p>
-
-                {isSignedIn ? (
-                    <button
-                        className="accept-invite-btn"
-                        onClick={handleAcceptInvite}
-                        disabled={loading}
-                    >
-                        Accept Invite
-                    </button>
-                ) : (
-                    <SignInButton mode="modal">
-                        <button className="accept-invite-btn">
-                            Sign in to Accept
+                {error && error.includes("Already a member") ? (
+                    <div className="already-member">
+                        <h2>Already a Member!</h2>
+                        <div className="community-info">
+                            <p>
+                                You're already a member of{" "}
+                                <strong>{inviteDetails?.community_name}</strong>
+                            </p>
+                            {inviteDetails?.community_description && (
+                                <p className="community-description">
+                                    {inviteDetails.community_description}
+                                </p>
+                            )}
+                        </div>
+                        <button
+                            className="view-communities-btn"
+                            onClick={() => navigate("/trustcircles")}
+                        >
+                            View My Communities
                         </button>
-                    </SignInButton>
+                    </div>
+                ) : error ? (
+                    <div className="error-state">
+                        <h2>Error</h2>
+                        <p>{error}</p>
+                        <button
+                            className="return-home-btn"
+                            onClick={() => navigate("/")}
+                        >
+                            Return Home
+                        </button>
+                    </div>
+                ) : (
+                    <div>
+                        <p>
+                            You've been invited to join{" "}
+                            <strong>{inviteDetails?.community_name}</strong>
+                        </p>
+                        {inviteDetails?.community_description && (
+                            <p className="community-description">
+                                {inviteDetails.community_description}
+                            </p>
+                        )}
+                        <p className="invited-by">
+                            Invited by: {inviteDetails?.invited_by_name}
+                        </p>
+
+                        {isSignedIn ? (
+                            <button
+                                className="accept-invite-btn"
+                                onClick={handleAcceptInvite}
+                                disabled={loading}
+                            >
+                                Accept Invite
+                            </button>
+                        ) : (
+                            <SignInButton mode="modal">
+                                <button className="accept-invite-btn">
+                                    Sign in to Accept
+                                </button>
+                            </SignInButton>
+                        )}
+                    </div>
                 )}
             </div>
         </div>
