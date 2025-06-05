@@ -417,23 +417,23 @@ const approveMembership = async (
         if (result.rowCount === 0)
             throw new Error("No pending request found or already approved.");
 
-        const otherUsers = await client.query(
-            `SELECT user_id FROM community_memberships WHERE community_id = $1 AND status = 'approved' AND user_id != $2`,
-            [community_id, internalNewUserUuid]
-        );
-        for (const row of otherUsers.rows) {
-            const existingUserId = row.user_id;
-            const connExists = await client.query(
-                `SELECT 1 FROM user_connections WHERE (user_id = $1 AND connected_user_id = $2) OR (user_id = $2 AND connected_user_id = $1)`,
-                [internalNewUserUuid, existingUserId]
-            );
-            if (connExists.rows.length === 0) {
-                await client.query(
-                    `INSERT INTO user_connections (user_id, connected_user_id, status, connected_at) VALUES ($1, $2, 'accepted', NOW()), ($2, $1, 'accepted', NOW())`,
-                    [internalNewUserUuid, existingUserId]
-                );
-            }
-        }
+        // const otherUsers = await client.query(
+        //     `SELECT user_id FROM community_memberships WHERE community_id = $1 AND status = 'approved' AND user_id != $2`,
+        //     [community_id, internalNewUserUuid]
+        // );
+        // for (const row of otherUsers.rows) {
+        //     const existingUserId = row.user_id;
+        //     const connExists = await client.query(
+        //         `SELECT 1 FROM user_connections WHERE (user_id = $1 AND connected_user_id = $2) OR (user_id = $2 AND connected_user_id = $1)`,
+        //         [internalNewUserUuid, existingUserId]
+        //     );
+        //     if (connExists.rows.length === 0) {
+        //         await client.query(
+        //             `INSERT INTO user_connections (user_id, connected_user_id, status, connected_at) VALUES ($1, $2, 'accepted', NOW()), ($2, $1, 'accepted', NOW())`,
+        //             [internalNewUserUuid, existingUserId]
+        //         );
+        //     }
+        // }
         await client.query("COMMIT");
         return result.rows[0];
     } catch (error) {
