@@ -27,12 +27,12 @@ import UserRecommendations from "./pages/UserRecommendations/UserRecommendations
 import CommunityProfile from "./pages/CommunityProfile/CommunityProfile";
 import PublicProfile from "./pages/PublicProfile/PublicProfile";
 import OnboardingModal from "./components/OnboardingModal/OnboardingModal";
+import InvitePage from "./pages/InvitePage/InvitePage";
 import "./styles/global.css";
 import "./App.css";
 
 const API_URL = "https://api.seanag-recommendations.org:8080";
 // const API_URL = "http://localhost:3000";
-
 
 const ProtectedRoute = ({ children }) => {
     const { isSignedIn } = useUser();
@@ -240,6 +240,10 @@ const AppWrapper = () => {
                     <Route
                         path="/profile/:userId"
                         element={<PublicProfile />}
+                    />
+                    <Route
+                        path="/invite/:tokenString"
+                        element={<InvitePage />}
                     />
                 </Routes>
             </main>
