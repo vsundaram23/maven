@@ -9,7 +9,13 @@ const generateInviteTokenString = () => {
 const generateInviteToken = async (communityId, actingUserClerkId, expires_at, max_uses) => {
   const client = await pool.connect();
   try {
-    const internalAdminUserId = await UserService.getOrCreateUser({ id: actingUserClerkId });
+    const internalAdminUserId = await UserService.getOrCreateUser({
+      id: actingUserClerkId,
+      emailAddresses: [], 
+      firstName: "",
+      lastName: "",
+      phoneNumbers: []
+    });
     if (!internalAdminUserId) {
         throw new Error(`Admin user not found or created for Clerk ID: ${actingUserClerkId}`);
     }

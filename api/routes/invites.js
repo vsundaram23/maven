@@ -18,7 +18,7 @@ const {
 router.post('/communities/:communityId/invites', async (req, res) => {
   const { communityId } = req.params;
   console.log("Received communityId for invite generation:", communityId);
-  const { actingUserClerkId, expires_at, max_uses } = req.body;
+  const { actingUserClerkId, expires_at, max_uses, emailAddresses, firstName, lastName, phoneNumbers } = req.body;
 
   if (!actingUserClerkId) {
     return res.status(401).json({ success: false, error: 'User authentication required (actingUserClerkId missing).' });
@@ -28,7 +28,7 @@ router.post('/communities/:communityId/invites', async (req, res) => {
   }
 
   try {
-    const tokenInfo = await generateInviteToken(communityId, actingUserClerkId, expires_at, max_uses);
+    const tokenInfo = await generateInviteToken(communityId, actingUserClerkId, expires_at, max_uses, emailAddresses, firstName, lastName, phoneNumbers);
     const invite_url = `https://triedandtrusted.ai/invite/${tokenInfo.token_string}`;
     res.status(201).json({ success: true, invite_url: invite_url, token_string: tokenInfo.token_string, expires_at: tokenInfo.expires_at, max_uses: tokenInfo.max_uses });
   } catch (error) {
