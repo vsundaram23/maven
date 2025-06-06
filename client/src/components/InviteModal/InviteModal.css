@@ -1,190 +1,225 @@
+:root {
+    --modal-bg: #FFFFFF;
+    --overlay-bg: rgba(17, 24, 39, 0.6);
+    --brand-action-blue: #2d3748;      /* Dark navy from your button */
+    --brand-action-hover: #4a5568;     /* A slightly lighter shade for hover */
+    --brand-logo-blue: #36558F;        /* The blue from your "Tried & Trusted" logo */
+    --primary-text: #111827;
+    --secondary-text: #6B7280;
+    --border-color: #DDE1E6;
+    --input-bg: #F9FAFB;
+    --primary-button-bg: var(--brand-action-blue);
+    --primary-button-text: #FFFFFF;
+    --secondary-button-text: #374151;
+    --error-color: #EF4444;
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --modal-border-radius: 12px;
+    --button-border-radius: 8px;
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.65);
+    background-color: var(--overlay-bg);
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1050;
-    padding: 15px;
-    box-sizing: border-box;
-  }
-  
-  .invite-members-modal-content {
-    background-color: #ffffff;
-    padding: 20px 25px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    padding: 1rem;
+    font-family: var(--font-family);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.invite-members-modal-content {
+    background-color: var(--modal-bg);
+    padding: 2rem 2.5rem;
+    border-radius: var(--modal-border-radius);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     width: 100%;
-    max-width: 480px;
-    box-sizing: border-box;
-    text-align: left;
-    animation: modal-fade-in 0.3s ease-out;
-  }
-  
-  @keyframes modal-fade-in {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  .invite-members-modal-content h2 {
-    margin-top: 0;
-    margin-bottom: 24px;
-    font-size: 1.6rem;
-    color: #2c3e50;
+    max-width: 460px;
     text-align: center;
+    animation: modal-fade-in 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes modal-fade-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.invite-members-modal-content h2 {
+    margin: 0 0 2rem 0;
+    font-size: 1.5rem;
+    color: var(--brand-logo-blue);
     font-weight: 600;
-  }
-  
-  .form-group {
-    margin-bottom: 18px;
-  }
-  
-  .form-group label {
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+    text-align: left;
+}
+
+.form-group label {
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: 0.5rem;
     font-weight: 500;
-    color: #34495e;
-    font-size: 0.95rem;
-  }
-  
-  .form-group input[type="datetime-local"],
-  .form-group input[type="number"],
-  .form-group input[type="text"] {
+    color: var(--primary-text);
+    font-size: 0.875rem;
+}
+
+.form-group input[type="datetime-local"],
+.form-group input[type="number"] {
     width: 100%;
-    padding: 10px 14px;
-    border: 1px solid #bdc3c7;
-    border-radius: 5px;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--button-border-radius);
     box-sizing: border-box;
     font-size: 1rem;
-    color: #2c3e50;
+    color: var(--primary-text);
+    background-color: var(--modal-bg);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-  
-  .form-group input[type="datetime-local"]:focus,
-  .form-group input[type="number"]:focus,
-  .form-group input[type="text"]:focus {
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+}
+
+.form-group input[type="datetime-local"]:focus,
+.form-group input[type="number"]:focus {
+    border-color: var(--brand-logo-blue);
+    box-shadow: 0 0 0 3px rgba(54, 85, 143, 0.2);
     outline: none;
-  }
-  
-  .generated-link-section {
-    margin-top: 20px;
-    text-align: left;
-  }
-  
-  .generated-link-section p {
-    margin-bottom: 12px;
-    color: #34495e;
-    font-size: 0.95rem;
-  }
-  
-  .invite-link-display {
+}
+
+.generated-link-section {
+    text-align: center;
+}
+
+.generated-link-section p {
+    color: var(--secondary-text);
+    margin: 0 0 1.25rem 0;
+    font-size: 1rem;
+}
+
+.invite-link-display {
     display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    border: 1px solid #bdc3c7;
-    border-radius: 5px;
+    align-items: stretch;
+    border: 1px solid var(--border-color);
+    border-radius: var(--button-border-radius);
     overflow: hidden;
-  }
-  
-  .invite-link-display input[type="text"] {
+    margin-bottom: 2rem;
+    transition: box-shadow 0.2s ease;
+}
+
+.invite-link-display:focus-within {
+    border-color: var(--brand-logo-blue);
+    box-shadow: 0 0 0 3px rgba(54, 85, 143, 0.2);
+}
+
+.invite-link-display input[type="text"] {
     flex-grow: 1;
-    padding: 10px 14px;
+    padding: 0.75rem 1rem;
     border: none;
-    background-color: #ecf0f1;
+    background-color: var(--input-bg);
     font-size: 0.9rem;
-    color: #2c3e50;
-    border-radius: 0;
-  }
-  
-  .invite-link-display input[type="text"]:focus {
-      outline: none;
-      box-shadow: none;
-  }
-  
-  .invite-link-display .copy-button {
-    padding: 10px 18px;
+    color: var(--primary-text);
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    outline: none;
+    min-width: 0;
+}
+
+.invite-link-display .copy-button {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 0.75rem 1.25rem;
     border: none;
-    background-color: #3498db;
-    color: white;
+    border-left: 1px solid var(--border-color);
+    background-color: var(--modal-bg);
+    color: var(--secondary-text);
     cursor: pointer;
     transition: background-color 0.2s ease;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     font-weight: 500;
     white-space: nowrap;
-    border-radius: 0;
-  }
-  
-  .invite-link-display .copy-button:hover {
-    background-color: #2980b9;
-  }
-  
-  .modal-buttons {
+}
+
+.invite-link-display .copy-button:hover {
+    background-color: #f3f4f6;
+}
+
+.modal-buttons {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
-    margin-top: 24px;
-    padding-top: 15px;
-    border-top: 1px solid #ecf0f1;
-  }
-  
-  .modal-buttons .submit-button,
-  .modal-buttons .cancel-button,
-  .modal-close-btn {
-    padding: 10px 22px;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f3f4f6;
+}
+
+.modal-close-btn {
+    display: inline-block;
+    width: auto;
+    padding: 0.75rem 3rem;
     border: none;
-    border-radius: 5px;
+    border-radius: var(--button-border-radius);
+    background-color: var(--primary-button-bg);
+    color: var(--primary-button-text);
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 0.95rem;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-  }
-  
-  .modal-buttons .submit-button:hover,
-  .modal-buttons .cancel-button:hover,
-  .modal-close-btn:hover {
-      transform: translateY(-1px);
-  }
-  
-  .modal-buttons .submit-button,
-  .modal-close-btn.primary-button {
-    background-color: #27ae60;
-    color: white;
-  }
-  .modal-buttons .submit-button:disabled {
-    background-color: #bdc3c7;
-    color: #7f8c8d;
+    transition: transform 0.1s ease, background-color 0.2s ease;
+}
+
+.modal-close-btn:hover {
+    background-color: var(--brand-action-hover);
+    transform: translateY(-1px);
+}
+
+.modal-buttons .submit-button,
+.modal-buttons .cancel-button {
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: var(--button-border-radius);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: transform 0.1s ease, background-color 0.2s ease;
+}
+
+.modal-buttons .submit-button:hover:not(:disabled),
+.modal-buttons .cancel-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.modal-buttons .submit-button {
+    background-color: var(--primary-button-bg);
+    color: var(--primary-button-text);
+}
+
+.modal-buttons .submit-button:hover:not(:disabled) {
+    background-color: var(--brand-action-hover);
+}
+
+.modal-buttons .submit-button:disabled {
+    opacity: 0.5;
     cursor: not-allowed;
-  }
-  .modal-buttons .submit-button:disabled:hover {
-    transform: none;
-  }
-  
-  .modal-buttons .submit-button:hover:not(:disabled),
-  .modal-close-btn.primary-button:hover {
-    background-color: #229954;
-  }
-  
-  .modal-buttons .cancel-button {
-    background-color: #f0f2f5;
-    color: #5f6368;
-    border: 1px solid #dadce0;
-  }
-  
-  .modal-buttons .cancel-button:hover {
-    background-color: #e8eaed;
-    border-color: #caced3;
-  }
-  
-  .error-message {
-    color: #e74c3c;
-    font-size: 0.9rem;
-    margin-top: 12px;
-    text-align: center;
-    width: 100%;
-  }
+}
+
+.modal-buttons .cancel-button {
+    background-color: var(--modal-bg);
+    color: var(--secondary-button-text);
+    border: 1px solid var(--border-color);
+}
+
+.modal-buttons .cancel-button:hover:not(:disabled) {
+    background-color: var(--input-bg);
+}
+
+.error-message {
+    color: var(--error-color);
+    font-size: 0.875rem;
+    margin-top: -0.5rem;
+    margin-bottom: 1rem;
+    text-align: left;
+}

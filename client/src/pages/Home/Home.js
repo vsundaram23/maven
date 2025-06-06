@@ -795,7 +795,7 @@ const Home = () => {
             />
             {isSignedIn && (
                 <motion.div className="network-cta" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: showStatsLine ? 1.0 : 0.8, duration: 0.6 }}>
-                    <p> Can't get enough? Want to see more Recs?{" "} <span className="cta-link" onClick={() => navigate("/trustcircles?tab=myRecommendations")}>Now you can!</span> {" "} </p>
+                    <p> Want to see more Recs?{" "} <span className="cta-link" onClick={() => navigate("/trustcircles?tab=myRecommendations")}>Now you can!</span> {" "} </p>
                 </motion.div>
             )}
             {showLocationModal && (

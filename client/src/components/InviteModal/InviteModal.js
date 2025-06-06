@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './InviteModal.css'; // Import your CSS file for styling
 
 const InviteMembersModal = ({ isOpen, onClose, onSubmit, communityName, generatedLink, error, loading }) => {
     const [expiresAt, setExpiresAt] = useState('');
@@ -38,11 +39,11 @@ const InviteMembersModal = ({ isOpen, onClose, onSubmit, communityName, generate
             <div className="generated-link-section">
               <p>Share this link with people you want to invite:</p>
               <div className="invite-link-display">
-                <input type="text" value={generatedLink} readOnly />
-                <button onClick={handleCopyLink} className="copy-button">
-                  {linkCopied ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
+                    <input type="text" value={generatedLink} readOnly />
+                    <button onClick={handleCopyLink} className="copy-button">
+                    {linkCopied ? 'Copied!' : 'Copy'}
+                    </button>
+                </div>
               <button onClick={onClose} className="primary-button modal-close-btn">Close</button>
             </div>
           ) : (

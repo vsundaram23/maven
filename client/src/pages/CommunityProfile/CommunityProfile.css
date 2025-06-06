@@ -76,7 +76,7 @@
   font-weight: 500;
 }
 .community-profile-page-wrapper .info-card-actions .btn-primary {
-  background-color: #0056b3;
+  background-color: #1a365d;
   color: white;
 }
 .community-profile-page-wrapper .info-card-actions .btn-primary:hover {
@@ -84,18 +84,20 @@
 }
 .community-profile-page-wrapper .info-card-actions .btn-primary-outline {
   background-color: transparent;
-  color: #0056b3;
-  border: 1px solid #0056b3;
+  color: #1a365d;
+  border: 1px solid #1a365d;
 }
 .community-profile-page-wrapper .info-card-actions .btn-primary-outline:hover {
   background-color: #e7f0f7;
 }
 .community-profile-page-wrapper .info-card-actions .btn-secondary {
-  background-color: #6c757d;
-  color: white;
+  background: white;
+  color: #1a365d;
+  border-color: #1a365d;
 }
 .community-profile-page-wrapper .info-card-actions .btn-secondary:hover {
-  background-color: #5a6268;
+  background: #f0f4f8;
+  border-color: #0f2544;
 }
 .community-profile-page-wrapper .info-card-actions .status-chip {
   padding: 0.6rem 1rem;

@@ -1,4 +1,206 @@
-.invite-page {
+:root {
+    --background-color: #f7f7f8;
+    --card-background: #ffffff;
+    --primary-text: #111827;
+    --secondary-text: #6b7280;
+    --action-color: #1f2937;
+    --action-text: #ffffff;
+    --border-color: #e5e7eb;
+    --link-color: #3b82f6;
+}
+
+.invite-page-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 2rem;
+    background-color: var(--background-color);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.invite-page-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    max-width: 960px;
+    width: 100%;
+}
+
+.invite-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.invite-brand {
+    font-weight: 600;
+    color: var(--primary-text);
+    margin-bottom: 2rem;
+}
+
+.invite-title {
+    font-size: 2.5rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--primary-text);
+    margin: 0 0 1.5rem 0;
+}
+
+.invite-title strong {
+    font-weight: 700;
+}
+
+.invite-description {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--secondary-text);
+}
+
+.invite-action-card {
+    background: var(--card-background);
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+}
+
+.action-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-text);
+    margin: 0 0 0.5rem 0;
+}
+
+.action-subtitle {
+    color: var(--secondary-text);
+    margin: 0 0 2rem 0;
+}
+
+.invite-action-button {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    background-color: var(--action-color);
+    color: var(--action-text);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.invite-action-button:hover:not(:disabled) {
+    background-color: #374151;
+}
+
+.invite-action-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.user-display {
+    display: flex;
+    align-items: center;
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.user-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    margin-right: 1rem;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--primary-text);
+}
+
+.user-email {
+    font-size: 0.9rem;
+    color: var(--secondary-text);
+}
+
+.terms-agreement {
+    margin: 1.5rem 0;
+    display: flex;
+    align-items: flex-start;
+    font-size: 0.875rem;
+    color: var(--secondary-text);
+}
+
+.terms-agreement input[type="checkbox"] {
+    margin-top: 3px;
+    margin-right: 0.75rem;
+    accent-color: var(--action-color);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.terms-agreement label a {
+    color: var(--link-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.terms-agreement label a:hover {
+    text-decoration: underline;
+}
+
+.clerk-notice {
+    font-size: 0.8rem;
+    color: var(--secondary-text);
+    text-align: center;
+    margin-top: 1.5rem;
+}
+
+.invite-loader {
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--action-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    grid-column: 1 / -1;
+    margin: 4rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    .invite-page-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    .invite-info {
+        text-align: center;
+    }
+    .invite-title {
+        font-size: 2rem;
+    }
+    .invite-page-container {
+        padding: 1rem;
+    }
+    .invite-action-card {
+        padding: 2rem;
+    }
+}
+
+/* .invite-page {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -120,4 +322,4 @@
 .return-home-btn:hover {
     background: var(--background-light);
     transform: translateY(-2px);
-}
+} */
