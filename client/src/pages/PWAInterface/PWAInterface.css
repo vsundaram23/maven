@@ -1,0 +1,272 @@
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #f0f2f5;
+}
+
+.pwa-container {
+    padding: 1rem;
+    max-width: 28rem;
+    margin-left: auto;
+    margin-right: auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: #ffffff;
+    color: #333;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.pwa-loading-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f7fafc;
+    color: #1A365D;
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.pwa-signin-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1.25rem;
+    text-align: center;
+    background-color: #f7fafc;
+    color: #1A365D;
+}
+
+.pwa-signin-title {
+    font-size: 1.75rem;
+    font-weight: bold;
+    margin-bottom: 1.25rem;
+}
+
+.pwa-signin-message {
+    font-size: 1.125rem;
+    margin-bottom: 1.875rem;
+}
+
+.pwa-signin-button {
+    background-color: #1A365D;
+    color: white;
+    padding: 0.9375rem 1.875rem;
+    border-radius: 0.5rem;
+    font-size: 1.125rem;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.pwa-signin-button:hover {
+    background-color: #152d4b;
+}
+
+.pwa-intro-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: white;
+    color: #1A365D;
+    font-size: 3rem;
+    font-weight: bold;
+    text-align: center;
+    gap: 1rem;
+}
+
+.pwa-intro-hand {
+    font-size: 4rem;
+}
+
+.pwa-chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 28rem;
+    margin: 0 auto;
+    background-color: #f0f2f5;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    padding-top: 56px;
+}
+
+.pwa-chat-header {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 28rem;
+    background-color: #ffffff;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    box-sizing: border-box;
+}
+
+.pwa-chat-header-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #1A365D;
+}
+
+.pwa-chat-header-menu {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+}
+
+.pwa-chat-header-menu-line {
+    width: 100%;
+    height: 3px;
+    background-color: #1A365D;
+    border-radius: 2px;
+}
+
+.pwa-chat-messages {
+    flex-grow: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    scroll-behavior: smooth;
+    padding-bottom: 1rem;
+}
+
+.pwa-message-bubble {
+    padding: 0.75rem 1rem;
+    border-radius: 1.2rem;
+    max-width: 80%;
+    word-wrap: break-word;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.pwa-message-bot {
+    align-self: flex-start;
+    background-color: #e6e6e6;
+    color: #333;
+    border-bottom-left-radius: 0.3rem;
+}
+
+.pwa-message-user {
+    align-self: flex-end;
+    background-color: #1A365D;
+    color: white;
+    border-bottom-right-radius: 0.3rem;
+}
+
+.pwa-chat-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.pwa-chat-option-button {
+    background-color: #1A365D;
+    color: white;
+    padding: 0.6rem 1rem;
+    border-radius: 1.5rem;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease;
+}
+
+.pwa-chat-option-button:hover {
+    background-color: #152d4b;
+}
+
+.pwa-input-area {
+    padding: 1rem;
+    background-color: #ffffff;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    box-sizing: border-box;
+}
+
+.pwa-chat-input-field {
+    flex-grow: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 1.5rem;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.pwa-chat-input-field:focus {
+    border-color: #1A365D;
+}
+
+.pwa-chat-textarea-field {
+    flex-grow: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 1.5rem;
+    font-size: 1rem;
+    outline: none;
+    resize: vertical;
+    min-height: 40px;
+    max-height: 100px;
+    transition: border-color 0.3s ease;
+}
+
+.pwa-chat-textarea-field:focus {
+    border-color: #1A365D;
+}
+
+.pwa-chat-send-button {
+    background-color: #1A365D;
+    color: white;
+    border: none;
+    border-radius: 1.5rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    flex-shrink: 0;
+}
+
+.pwa-chat-send-button:hover:not(:disabled) {
+    background-color: #152d4b;
+}
+
+.pwa-chat-send-button:disabled {
+    background-color: #a0aec0;
+    cursor: not-allowed;
+}
+
+.pwa-share-form-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-grow: 1;
+}

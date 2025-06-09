@@ -28,6 +28,7 @@ import CommunityProfile from "./pages/CommunityProfile/CommunityProfile";
 import PublicProfile from "./pages/PublicProfile/PublicProfile";
 import OnboardingModal from "./components/OnboardingModal/OnboardingModal";
 import InvitePage from "./pages/InvitePage/InvitePage";
+import PWAInterface from './pages/PWAInterface/PWAInterface';
 import "./styles/global.css";
 import "./App.css";
 
@@ -109,6 +110,7 @@ const AppWrapper = () => {
             <main>
                 <Routes>
                     <Route path="/" element={<Home />} />
+                    <Route path="/pwa" element={<PWAInterface />} />
                     <Route
                         path="/providers/:id"
                         element={

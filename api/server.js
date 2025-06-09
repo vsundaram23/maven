@@ -20,6 +20,7 @@ const userRoutes = require("./routes/users");
 const autoProviderRoutes = require("./routes/autoProviders");
 const quoteRoutes = require("./routes/quotes");
 const inviteRoutes = require("./routes/invites");
+const shortcutRoutes = require("./routes/shortcut");
 
 const app = express();
 
@@ -106,6 +107,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/autoProviders", autoProviderRoutes);
 app.use("/api/quotes", quoteRoutes);
 app.use("/api/invites", inviteRoutes);
+app.use("/api/shortcut", shortcutRoutes);
 
 // 500 handler
 app.use((err, req, res, next) => {
