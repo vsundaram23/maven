@@ -170,11 +170,15 @@ const registerWithInvite = async (
         }
 
         await client.query(
-            `INSERT INTO community_memberships (user_id, community_id, status, approved_at, requested_at)
-       VALUES ($1, $2, 'approved', NOW(), NOW())`,
-            [internalNewUserId, token.community_id]
+            `INSERT INTO community_memberships
+             (user_id, community_id, status, requested_at, approved_at)
+             VALUES ($1, $2, 'approved', NOW(), NOW())
+             ON CONFLICT (user_id, community_id)
+             DO UPDATE SET
+                status = 'approved',
+                approved_at = NOW()`,
+            [internalNewUserId, invite.community_id]
         );
-
         const newCurrentUses = token.current_uses + 1;
         let newStatus = token.status; // Should be 'active' at this point
         if (token.max_uses !== null && newCurrentUses >= token.max_uses) {
