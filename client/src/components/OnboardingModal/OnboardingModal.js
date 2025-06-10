@@ -14,8 +14,10 @@ import { useNavigate } from "react-router-dom";
 const API_URL = "https://api.seanag-recommendations.org:8080";
 // const API_URL = "http://localhost:3000";
 
-
 const OnboardingModal = ({ isOpen, onComplete, user }) => {
+    const location = window.location.pathname;
+    const isInvite = location.startsWith("/invite/");
+
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
     const [error, setError] = useState("");
@@ -121,7 +123,9 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
 
     const handleFinish = () => {
         onComplete();
-        navigate("/trustcircles?tab=discover");
+        if (!isInvite) {
+            navigate("/trustcircles?tab=discover");
+        }
     };
 
     return (
@@ -329,48 +333,26 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
                             <h2>You're all set! 🎊</h2>
                             <div className="success-content">
                                 <p className="success-message">
-                                    Now you can explore communities to find and share
-                                    relevant recommendations:
+                                    {isInvite
+                                        ? "Complete setup to join the community."
+                                        : "Now you can explore communities to find and share relevant recommendations:"}
                                 </p>
-                                {/* <UsersIcon className="success-icon" />
-                                
-                                <p className="success-message">
-                                    Based on your interests, we think you'll
-                                    love these communities:
-                                </p>
-                                <div className="suggested-communities">
-                                    <div className="community-preview">
-                                        {formData.interests.includes(
-                                            "Home Renovation"
-                                        ) && (
-                                            <div className="community-item">
-                                                🏠 Home Improvement Enthusiasts
-                                            </div>
-                                        )}
-                                        {formData.interests.includes(
-                                            "Auto Services"
-                                        ) && (
-                                            <div className="community-item">
-                                                🚗 Auto Care Network
-                                            </div>
-                                        )}
-                                        {formData.interests.includes(
-                                            "Dining & Entertainment"
-                                        ) && (
-                                            <div className="community-item">
-                                                🍽️ Local Foodies
-                                            </div>
-                                        )}
-                                    </div>
-                                </div> */}
                                 <div className="onboarding-buttons">
                                     <button
                                         className="discover-communities-btn"
                                         onClick={handleFinish}
                                     >
-                                        <UsersIcon className="w-5 h-5" />
-                                        Discover Communities{" "}
-                                        
+                                        {isInvite ? (
+                                            <>
+                                                <CheckCircleIcon className="w-5 h-5" />
+                                                Finish
+                                            </>
+                                        ) : (
+                                            <>
+                                                <UsersIcon className="w-5 h-5" />
+                                                Discover Communities
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>
