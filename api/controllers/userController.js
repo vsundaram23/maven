@@ -548,6 +548,65 @@ const getOnboardingStatus = async (req, res) => {
     }
 };
 
+// const saveOnboardingData = async (req, res) => {
+//     const { userId, email, preferredName, phoneNumber, location, interests } =
+//         req.body;
+
+//     if (!email) {
+//         return res.status(400).json({
+//             error: "Email is required",
+//         });
+//     }
+
+//     try {
+//         // Ensure interests is an array and convert to PostgreSQL array format
+//         const interestsArray = Array.isArray(interests) ? interests : [];
+
+//         const result = await pool.query(
+//             `UPDATE users 
+//              SET preferred_name = $1, 
+//                  phone_number = $2, 
+//                  location = $3, 
+//                  interests = $4,
+//                  has_completed_onboarding = true,
+//                  updated_at = NOW()
+//              WHERE email = $5
+//              RETURNING *`,
+//             [
+//                 preferredName || null,
+//                 phoneNumber || null,
+//                 location || null,
+//                 interestsArray,
+//                 email,
+//             ]
+//         );
+
+//         if (result.rows.length === 0) {
+//             return res.status(404).json({
+//                 error: "User not found with provided email",
+//             });
+//         }
+
+//         res.json({
+//             success: true,
+//             user: result.rows[0],
+//         });
+//     } catch (error) {
+//         console.error("Error saving onboarding data:", {
+//             error: error.message,
+//             stack: error.stack,
+//             email,
+//             preferredName,
+//             interests,
+//         });
+
+//         res.status(500).json({
+//             error: "Failed to save onboarding data",
+//             details: error.message,
+//         });
+//     }
+// };
+
 const saveOnboardingData = async (req, res) => {
     const { userId, email, preferredName, phoneNumber, location, interests } =
         req.body;
@@ -559,8 +618,18 @@ const saveOnboardingData = async (req, res) => {
     }
 
     try {
-        // Ensure interests is an array and convert to PostgreSQL array format
         const interestsArray = Array.isArray(interests) ? interests : [];
+
+        const clerkData = {
+            id: userId, // This is the Clerk user ID
+            emailAddresses: [{ emailAddress: email }], // Pass email for userService to use
+            // Add other Clerk fields if needed by getOrCreateUser (e.g., firstName, lastName)
+            // firstName: req.body.firstName,
+            // lastName: req.body.lastName,
+        };
+        // This call will create the user in your 'users' table if they don't exist
+        // and return their internal 'id' from your 'users' table.
+        const internalUserId = await getInternalUserIdFromClerk(clerkData);
 
         const result = await pool.query(
             `UPDATE users 
@@ -570,20 +639,22 @@ const saveOnboardingData = async (req, res) => {
                  interests = $4,
                  has_completed_onboarding = true,
                  updated_at = NOW()
-             WHERE email = $5
+             WHERE id = $5
              RETURNING *`,
             [
                 preferredName || null,
                 phoneNumber || null,
                 location || null,
                 interestsArray,
-                email,
+                internalUserId, // Use the internal user ID for the WHERE clause
             ]
         );
 
         if (result.rows.length === 0) {
+            // This case should ideally not be hit if getInternalUserIdFromClerk always creates a user
+            // before this point, but it's good for robustness.
             return res.status(404).json({
-                error: "User not found with provided email",
+                error: "User not found with provided ID (after creation attempt)",
             });
         }
 
@@ -595,9 +666,10 @@ const saveOnboardingData = async (req, res) => {
         console.error("Error saving onboarding data:", {
             error: error.message,
             stack: error.stack,
-            email,
+            email, // Keep email for logging context
             preferredName,
             interests,
+            userId // Log the Clerk userId too for debugging
         });
 
         res.status(500).json({
