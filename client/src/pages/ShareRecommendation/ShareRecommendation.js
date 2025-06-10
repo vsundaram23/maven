@@ -55,14 +55,34 @@ const processTags = (tagString) => {
     return [...new Set(processedTags)];
 };
 
-const StarDisplay = ({ active, onClick, onMouseEnter, onMouseLeave }) => {
+// const StarDisplay = ({ active, onClick, onMouseEnter, onMouseLeave }) => {
+//     if (active) {
+//         return (
+//             <SolidStarIcon
+//                 className="star-icon filled"
+//                 onClick={onClick}
+//                 onMouseEnter={onMouseEnter}
+//                 onMouseLeave={onMouseLeave}
+//                 aria-hidden="true"
+//             />
+//         );
+//     }
+//     return (
+//         <OutlineStarIcon
+//             className="star-icon"
+//             onClick={onClick}
+//             onMouseEnter={onMouseEnter}
+//             onMouseLeave={onMouseLeave}
+//             aria-hidden="true"
+//         />
+//     );
+// };
+const StarDisplay = ({ active, onClick }) => {
     if (active) {
         return (
             <SolidStarIcon
                 className="star-icon filled"
                 onClick={onClick}
-                onMouseEnter={onMouseEnter}
-                onMouseLeave={onMouseLeave}
                 aria-hidden="true"
             />
         );
@@ -71,8 +91,6 @@ const StarDisplay = ({ active, onClick, onMouseEnter, onMouseLeave }) => {
         <OutlineStarIcon
             className="star-icon"
             onClick={onClick}
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
             aria-hidden="true"
         />
     );
@@ -657,11 +675,12 @@ export default function ShareRecommendation() {
                                 onChange={(e) =>
                                     setBusinessName(e.target.value)
                                 }
+                                onBlur={(e) => setBusinessName(e.target.value)}
                                 required
                                 className={businessName ? "has-value" : ""}
                             />
                         </div>
-                        <div className="form-group span-2 rating-group">
+                        {/* <div className="form-group span-2 rating-group">
                             <label>Your Rating *</label>
                             <div className="star-rating">
                                 {[1, 2, 3, 4, 5].map((n) => (
@@ -671,6 +690,21 @@ export default function ShareRecommendation() {
                                         onClick={() => handleStarClick(n)}
                                         onMouseEnter={() => setHoverRating(n)}
                                         onMouseLeave={() => setHoverRating(0)}
+                                    />
+                                ))}
+                            </div>
+                        </div> */}
+                        <div className="form-group span-2 rating-group">
+                            <label>Your Rating *</label>
+                            <div className="star-rating">
+                                {[1, 2, 3, 4, 5].map((n) => (
+                                    <StarDisplay
+                                        key={n}
+                                        // The logic is now much simpler: is the star's number less than or equal to the selected rating?
+                                        active={n <= rating}
+                                        onClick={() => handleStarClick(n)}
+                                        // onMouseEnter={() => setHoverRating(n)} // <--- DELETE THIS
+                                        // onMouseLeave={() => setHoverRating(0)} // <--- DELETE THIS
                                     />
                                 ))}
                             </div>
@@ -686,6 +720,7 @@ export default function ShareRecommendation() {
                                 onChange={(e) =>
                                     setRecommendationBlurb(e.target.value)
                                 }
+                                onBlur={(e) => setBusinessName(e.target.value)}
                                 required
                                 rows={5}
                                 className={
