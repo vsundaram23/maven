@@ -586,9 +586,10 @@ const Home = () => {
             setIsLoadingRecentRecommendations(true);
             setRecentRecommendationsError(null);
             const newLikedSet = new Set();
-
+    
             try {
                 let rawData;
+                // Step 1: Fetch the initial list of recommendations
                 if (isSignedIn && user) {
                     const params = new URLSearchParams({
                         user_id: user.id,
@@ -602,35 +603,78 @@ const Home = () => {
                     const response = await fetch(`${API_URL}/api/providers/newest-visible?${params.toString()}`);
                     if (!response.ok) throw new Error(`API error: ${response.statusText}`);
                     const jsonResponse = await response.json();
-                    if (jsonResponse.success && jsonResponse.providers) {
-                        rawData = jsonResponse.providers;
-                    } else {
-                        rawData = [];
-                    }
+                    rawData = jsonResponse.success && jsonResponse.providers ? jsonResponse.providers : [];
                 } else {
                     rawData = placeholderPublicRecommendations.slice(0, 3);
                 }
-
+    
+                if (rawData.length === 0) {
+                    setRecentRecommendations([]);
+                    setIsLoadingRecentRecommendations(false);
+                    return;
+                }
+    
+                // Step 2: Fetch accurate review stats for each recommendation
+                const statsMap = {};
+                await Promise.all(
+                    rawData.map(async (p) => {
+                        const providerId = p.provider_id || p.id;
+                        try {
+                            const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
+                            if (statsRes.ok) {
+                                statsMap[providerId] = await statsRes.json();
+                            } else {
+                                // Fallback to original data if stats call fails
+                                statsMap[providerId] = {
+                                    average_rating: p.average_rating || 0,
+                                    total_reviews: p.total_reviews || 0,
+                                };
+                            }
+                        } catch (err) {
+                            console.error(`Failed to fetch stats for provider ${providerId}`, err);
+                            statsMap[providerId] = {
+                                average_rating: p.average_rating || 0,
+                                total_reviews: p.total_reviews || 0,
+                            };
+                        }
+                    })
+                );
+                
+                // Step 3: Process and "enrich" the data with the correct review stats
                 const processedData = rawData.map(p => {
                     const providerId = p.provider_id || p.id;
                     if (p.currentUserLiked) {
                         newLikedSet.add(providerId);
                     }
-                    return { ...p, id: providerId };
+                    const stats = statsMap[providerId] || { average_rating: p.average_rating, total_reviews: p.total_reviews };
+    
+                    return {
+                        ...p,
+                        id: providerId, // Ensure a consistent ID field
+                        // Override the potentially incorrect values with the fetched stats
+                        average_rating: stats.average_rating || 0,
+                        total_reviews: stats.total_reviews || 0,
+                    };
                 });
-
+    
                 setRecentRecommendations(processedData);
                 setLikedRecommendations(newLikedSet);
-
+    
             } catch (error) {
                 console.error("Error fetching recent recommendations:", error);
                 setRecentRecommendationsError(error.message);
-                setRecentRecommendations([]);
+                // Use placeholder data as a fallback on error for non-signed-in users
+                if (!isSignedIn) {
+                     setRecentRecommendations(placeholderPublicRecommendations.slice(0,3));
+                } else {
+                     setRecentRecommendations([]);
+                }
                 setLikedRecommendations(new Set());
             } finally {
                 setIsLoadingRecentRecommendations(false);
             }
         };
+    
         fetchRecentRecommendations();
     }, [isLoaded, isSignedIn, user, API_URL]);
 
