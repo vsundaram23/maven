@@ -749,7 +749,7 @@ export default function ShareRecommendation() {
                                 onChange={(e) =>
                                     setRecommendationBlurb(e.target.value)
                                 }
-                                onBlur={(e) => setBusinessName(e.target.value)}
+                                onBlur={(e) => setRecommendationBlurb(e.target.value)}
                                 required
                                 rows={5}
                                 className={
