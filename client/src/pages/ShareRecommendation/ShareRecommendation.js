@@ -77,12 +77,41 @@ const processTags = (tagString) => {
 //         />
 //     );
 // };
+// const StarDisplay = ({ active, onClick }) => {
+//     if (active) {
+//         return (
+//             <SolidStarIcon
+//                 className="star-icon filled"
+//                 onClick={onClick}
+//                 aria-hidden="true"
+//             />
+//         );
+//     }
+//     return (
+//         <OutlineStarIcon
+//             className="star-icon"
+//             onClick={onClick}
+//             aria-hidden="true"
+//         />
+//     );
+// };
 const StarDisplay = ({ active, onClick }) => {
+    // The event handler will be passed in via the 'onClick' prop
+    const eventHandlers = {
+        onClick: onClick,       // For desktop clicks and accessibility
+        onTouchEnd: (e) => {    // For mobile taps
+            // We prevent the default action to avoid a "ghost click"
+            // where BOTH onTouchEnd and onClick fire.
+            e.preventDefault();
+            onClick();
+        },
+    };
+
     if (active) {
         return (
             <SolidStarIcon
                 className="star-icon filled"
-                onClick={onClick}
+                {...eventHandlers} // Spread the handlers onto the icon
                 aria-hidden="true"
             />
         );
@@ -90,7 +119,7 @@ const StarDisplay = ({ active, onClick }) => {
     return (
         <OutlineStarIcon
             className="star-icon"
-            onClick={onClick}
+            {...eventHandlers} // Spread the handlers here too
             aria-hidden="true"
         />
     );
