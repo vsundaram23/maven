@@ -22,10 +22,14 @@ const InvitePage = () => {
                 return;
             }
             try {
-                const response = await fetch(`${API_URL}/api/invites/${tokenString}`);
+                const response = await fetch(
+                    `${API_URL}/api/invites/${tokenString}`
+                );
                 const data = await response.json();
                 if (!response.ok) {
-                    throw new Error(data.error || "Failed to fetch invite details");
+                    throw new Error(
+                        data.error || "Failed to fetch invite details"
+                    );
                 }
                 setInviteDetails(data.details);
             } catch (err) {
@@ -46,16 +50,19 @@ const InvitePage = () => {
 
         try {
             setLoading(true);
-            const response = await fetch(`${API_URL}/api/invites/${tokenString}/accept`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    actingUserClerkId: user.id,
-                    email: user.primaryEmailAddress?.emailAddress,
-                    firstName: user.firstName,
-                    lastName: user.lastName,
-                }),
-            });
+            const response = await fetch(
+                `${API_URL}/api/invites/${tokenString}/accept`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        actingUserClerkId: user.id,
+                        email: user.primaryEmailAddress?.emailAddress,
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                    }),
+                }
+            );
             const data = await response.json();
             if (!response.ok) {
                 throw new Error(data.error || "Failed to accept invite");
@@ -79,11 +86,16 @@ const InvitePage = () => {
                     <div className="invite-info">
                         <h1 className="invite-title">You're already in!</h1>
                         <p className="invite-description">
-                            You are already a member of the <strong>{inviteDetails?.community_name}</strong> community.
+                            You are already a member of the{" "}
+                            <strong>{inviteDetails?.community_name}</strong>{" "}
+                            community.
                         </p>
                     </div>
                     <div className="invite-action-card">
-                        <button className="invite-action-button" onClick={() => navigate("/trustcircles")}>
+                        <button
+                            className="invite-action-button"
+                            onClick={() => navigate("/trustcircles")}
+                        >
                             View My Communities
                         </button>
                     </div>
@@ -99,7 +111,10 @@ const InvitePage = () => {
                         <p className="invite-description">{error}</p>
                     </div>
                     <div className="invite-action-card">
-                        <button className="invite-action-button" onClick={() => navigate("/")}>
+                        <button
+                            className="invite-action-button"
+                            onClick={() => navigate("/")}
+                        >
                             Return Home
                         </button>
                     </div>
@@ -112,19 +127,34 @@ const InvitePage = () => {
                 <div className="invite-info">
                     <p className="invite-brand">Tried & Trusted</p>
                     <h1 className="invite-title">
-                        <strong>{inviteDetails?.invited_by_name}</strong> has invited you to the <strong>{inviteDetails?.community_name}</strong> community.
+                        <strong>{inviteDetails?.invited_by_name}</strong> has
+                        invited you to the{" "}
+                        <strong>{inviteDetails?.community_name}</strong>{" "}
+                        community.
                     </h1>
-                    <p className="invite-description">{inviteDetails?.community_description}</p>
+                    <p className="invite-description">
+                        {inviteDetails?.community_description}
+                    </p>
                 </div>
                 <div className="invite-action-card">
                     {isSignedIn ? (
                         <>
-                            <h2 className="action-title">Accept Your Invitation</h2>
+                            <h2 className="action-title">
+                                Accept Your Invitation
+                            </h2>
                             <div className="user-display">
-                                <img src={user.imageUrl} alt="Your profile" className="user-avatar" />
+                                <img
+                                    src={user.imageUrl}
+                                    alt="Your profile"
+                                    className="user-avatar"
+                                />
                                 <div className="user-details">
-                                    <span className="user-name">{user.fullName}</span>
-                                    <span className="user-email">{user.primaryEmailAddress?.emailAddress}</span>
+                                    <span className="user-name">
+                                        {user.fullName}
+                                    </span>
+                                    <span className="user-email">
+                                        {user.primaryEmailAddress?.emailAddress}
+                                    </span>
                                 </div>
                             </div>
                             <div className="terms-agreement">
@@ -132,24 +162,51 @@ const InvitePage = () => {
                                     type="checkbox"
                                     id="terms"
                                     checked={termsAccepted}
-                                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                                    onChange={(e) =>
+                                        setTermsAccepted(e.target.checked)
+                                    }
                                 />
                                 <label htmlFor="terms">
-                                    I agree to the <a href="/terms" target="_blank">Terms of Service</a> and <a href="/privacy" target="_blank">Privacy Policy</a>.
+                                    I agree to the{" "}
+                                    <a href="/terms" target="_blank">
+                                        Terms of Service
+                                    </a>{" "}
+                                    and{" "}
+                                    <a href="/privacy" target="_blank">
+                                        Privacy Policy
+                                    </a>
+                                    .
                                 </label>
                             </div>
-                            <button className="invite-action-button" onClick={handleAcceptInvite} disabled={loading || !termsAccepted}>
-                                {loading ? 'Joining...' : 'Accept & Join Community'}
+                            <button
+                                className="invite-action-button"
+                                onClick={handleAcceptInvite}
+                                disabled={loading || !termsAccepted}
+                            >
+                                {loading
+                                    ? "Joining..."
+                                    : "Accept & Join Community"}
                             </button>
                         </>
                     ) : (
                         <>
                             <h2 className="action-title">Sign In To Accept</h2>
-                            <p className="action-subtitle">Create an account or sign in to join the community.</p>
-                            <SignInButton mode="modal" afterSignInUrl={window.location.href} afterSignUpUrl={window.location.href}>
-                                <button className="invite-action-button">Sign In / Sign Up</button>
+                            <p className="action-subtitle">
+                                Create an account or sign in to join the
+                                community.
+                            </p>
+                            <SignInButton
+                                mode="modal"
+                                afterSignInUrl={window.location.href}
+                                signUpForceRedirectUrl={window.location.href}
+                            >
+                                <button className="invite-action-button">
+                                    Sign In / Sign Up
+                                </button>
                             </SignInButton>
-                            <div className="clerk-notice">Secure sign-in is handled by our partner, Clerk.</div>
+                            <div className="clerk-notice">
+                                Secure sign-in is handled by our partner, Clerk.
+                            </div>
                         </>
                     )}
                 </div>
@@ -159,9 +216,7 @@ const InvitePage = () => {
 
     return (
         <div className="invite-page-container">
-            <div className="invite-page-grid">
-                {renderContent()}
-            </div>
+            <div className="invite-page-grid">{renderContent()}</div>
         </div>
     );
 };
