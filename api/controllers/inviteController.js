@@ -116,8 +116,12 @@ const registerWithInvite = async (
     newUserClerkId,
     inviteTokenString
 ) => {
+    console.log("--- [1/7] registerWithInvite function initiated ---");
+    console.log(`Attempting registration for email: ${email} with token: ${inviteTokenString}`);
+
     const client = await pool.connect();
     try {
+        console.log("--- [2/7] Database client connected. Beginning transaction. ---");
         await client.query("BEGIN");
 
         const tokenRes = await client.query(
@@ -126,8 +130,12 @@ const registerWithInvite = async (
         );
 
         if (tokenRes.rows.length === 0) {
+            // THIS IS A LIKELY EXIT POINT
+            console.error("!!! EXITING: No invite token found in database.");
             throw new Error("Invalid invite token.");
         }
+        console.log("--- [3/7] Invite token found successfully. ---", tokenRes.rows[0]);
+
         const token = tokenRes.rows[0];
         const now = new Date();
         const isExpired = token.expires_at && new Date(token.expires_at) < now;
@@ -135,16 +143,22 @@ const registerWithInvite = async (
             token.max_uses !== null && token.current_uses >= token.max_uses;
 
         if (token.status !== "active" || isExpired || isMaxedOut) {
+            // THIS IS A LIKELY EXIT POINT
+            console.error("!!! EXITING: Token is not active, expired, or maxed out.", { status: token.status, isExpired, isMaxedOut });
             throw new Error("Invite token is no longer valid.");
         }
+        console.log("--- [4/7] Token status and validity checks passed. ---");
 
         const existingUserByEmail = await client.query(
             "SELECT id FROM users WHERE email = $1",
             [email]
         );
         if (existingUserByEmail.rows.length > 0) {
+            // THIS IS A VERY LIKELY EXIT POINT
+            console.error(`!!! EXITING: Email address '${email}' is already registered.`);
             throw new Error("Email address is already registered.");
         }
+        console.log(`--- [5/7] Email '${email}' confirmed as new. ---`);
 
         let internalNewUserId;
         if (newUserClerkId) {
@@ -155,42 +169,41 @@ const registerWithInvite = async (
                 lastName: name ? name.split(" ").slice(1).join(" ") : "",
             });
             if (!internalNewUserId) {
+                // THIS IS A LIKELY EXIT POINT
+                console.error("!!! EXITING: Failed to get or create user from UserService.");
                 throw new Error(
                     `Failed to get or create user for Clerk ID: ${newUserClerkId}`
                 );
             }
         } else {
-            // This path requires a local user creation strategy (e.g. hashing password)
-            // which depends on how your UserService or direct DB interaction is set up for non-Clerk users.
-            // For now, throwing an error to indicate this needs specific implementation.
-            // If you always expect a newUserClerkId, this 'else' block might not be needed.
+            console.error("!!! EXITING: No Clerk ID provided for new user registration.");
             throw new Error(
                 "User registration via invite without a Clerk ID needs a defined local account creation strategy (including password handling)."
             );
         }
+        console.log(`--- [6/7] User successfully created/retrieved with internal ID: ${internalNewUserId} ---`);
 
+        // This is the target line we're trying to reach
+        console.log(">>> EXECUTING SQL to insert into community_memberships...");
         await client.query(
-            `INSERT INTO community_memberships
-             (user_id, community_id, status, requested_at, approved_at)
-             VALUES ($1, $2, 'approved', NOW(), NOW())
-             ON CONFLICT (user_id, community_id)
-             DO UPDATE SET
-                status = 'approved',
-                approved_at = NOW()`,
-            [internalNewUserId, invite.community_id]
+            `INSERT INTO community_memberships (user_id, community_id, status, requested_at, approved_at) VALUES ($1, $2, 'approved', NOW(), NOW())`,
+            [internalNewUserId, token.community_id]
         );
+        console.log("--- [7/7] Membership created successfully! ---");
+        
+        // ... rest of the function
         const newCurrentUses = token.current_uses + 1;
-        let newStatus = token.status; // Should be 'active' at this point
+        let newStatus = token.status;
         if (token.max_uses !== null && newCurrentUses >= token.max_uses) {
             newStatus = "used";
         }
         await client.query(
-            `UPDATE invite_tokens SET current_uses = $1, status = $2, last_used_at = NOW()
-       WHERE invite_token_id = $3`,
+            `UPDATE invite_tokens SET current_uses = $1, status = $2, last_used_at = NOW() WHERE invite_token_id = $3`,
             [newCurrentUses, newStatus, token.invite_token_id]
         );
 
         await client.query("COMMIT");
+        console.log("--- Transaction committed. ---")
         return {
             user_id: internalNewUserId,
             name: name,
@@ -198,12 +211,111 @@ const registerWithInvite = async (
             community_id: token.community_id,
         };
     } catch (error) {
+        console.error("--- ERROR CAUGHT IN CATCH BLOCK ---:", error.message);
         await client.query("ROLLBACK");
+        console.error("--- Transaction rolled back. ---")
         throw error;
     } finally {
         client.release();
+        console.log("--- Client released. ---")
     }
 };
+
+// const registerWithInvite = async (
+//     name,
+//     email,
+//     password,
+//     newUserClerkId,
+//     inviteTokenString
+// ) => {
+//     const client = await pool.connect();
+//     try {
+//         await client.query("BEGIN");
+
+//         const tokenRes = await client.query(
+//             "SELECT invite_token_id, community_id, status, expires_at, max_uses, current_uses FROM invite_tokens WHERE token_string = $1 FOR UPDATE",
+//             [inviteTokenString]
+//         );
+
+//         if (tokenRes.rows.length === 0) {
+//             throw new Error("Invalid invite token.");
+//         }
+//         const token = tokenRes.rows[0];
+//         const now = new Date();
+//         const isExpired = token.expires_at && new Date(token.expires_at) < now;
+//         const isMaxedOut =
+//             token.max_uses !== null && token.current_uses >= token.max_uses;
+
+//         if (token.status !== "active" || isExpired || isMaxedOut) {
+//             throw new Error("Invite token is no longer valid.");
+//         }
+
+//         const existingUserByEmail = await client.query(
+//             "SELECT id FROM users WHERE email = $1",
+//             [email]
+//         );
+//         if (existingUserByEmail.rows.length > 0) {
+//             throw new Error("Email address is already registered.");
+//         }
+
+//         let internalNewUserId;
+//         if (newUserClerkId) {
+//             internalNewUserId = await UserService.getOrCreateUser({
+//                 id: newUserClerkId,
+//                 emailAddresses: [{ emailAddress: email }],
+//                 firstName: name ? name.split(" ")[0] : "",
+//                 lastName: name ? name.split(" ").slice(1).join(" ") : "",
+//             });
+//             if (!internalNewUserId) {
+//                 throw new Error(
+//                     `Failed to get or create user for Clerk ID: ${newUserClerkId}`
+//                 );
+//             }
+//         } else {
+//             // This path requires a local user creation strategy (e.g. hashing password)
+//             // which depends on how your UserService or direct DB interaction is set up for non-Clerk users.
+//             // For now, throwing an error to indicate this needs specific implementation.
+//             // If you always expect a newUserClerkId, this 'else' block might not be needed.
+//             throw new Error(
+//                 "User registration via invite without a Clerk ID needs a defined local account creation strategy (including password handling)."
+//             );
+//         }
+
+//         await client.query(
+//             `INSERT INTO community_memberships
+//              (user_id, community_id, status, requested_at, approved_at)
+//              VALUES ($1, $2, 'approved', NOW(), NOW())
+//              ON CONFLICT (user_id, community_id)
+//              DO UPDATE SET
+//                 status = 'approved',
+//                 approved_at = NOW()`,
+//             [internalNewUserId, invite.community_id]
+//         );
+//         const newCurrentUses = token.current_uses + 1;
+//         let newStatus = token.status; // Should be 'active' at this point
+//         if (token.max_uses !== null && newCurrentUses >= token.max_uses) {
+//             newStatus = "used";
+//         }
+//         await client.query(
+//             `UPDATE invite_tokens SET current_uses = $1, status = $2, last_used_at = NOW()
+//        WHERE invite_token_id = $3`,
+//             [newCurrentUses, newStatus, token.invite_token_id]
+//         );
+
+//         await client.query("COMMIT");
+//         return {
+//             user_id: internalNewUserId,
+//             name: name,
+//             email: email,
+//             community_id: token.community_id,
+//         };
+//     } catch (error) {
+//         await client.query("ROLLBACK");
+//         throw error;
+//     } finally {
+//         client.release();
+//     }
+// };
 
 const acceptInviteExistingUser = async (tokenString, userInfo) => {
     const client = await pool.connect();
