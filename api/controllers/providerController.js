@@ -301,80 +301,89 @@ const searchVisibleProviders = async (req, res) => {
         }
 
         const { query: baseVisibilityQuery, queryParams: baseVisibilityParams } = getVisibleProvidersBaseQuery(internalUserId);
+
+        const searchTokens = searchQuery.split(/\s+/).filter(token => token.length > 0);
         
-        let ftsInputString = "";
-        const formattedOriginalQuery = prepareTermForTsqueryFormatting(searchQuery);
-        
-        if (formattedOriginalQuery && formattedOriginalQuery.length > 0) {
-            ftsInputString = formattedOriginalQuery; // Default to just the formatted original query
+        let results = [];
 
-            // Fetch synonyms - assuming 'term' in custom_synonyms is stored in lowercase
-            // and matches the case of 'searchQuery' (which is lowercased here)
-            const synonymRes = await pool.query(
-                "SELECT synonyms FROM custom_synonyms WHERE term = $1",
-                [searchQuery] // searchQuery is already lowercased and trimmed
-            );
 
-            if (synonymRes.rows.length > 0 && synonymRes.rows[0].synonyms) {
-                const fetchedSynonyms = synonymRes.rows[0].synonyms; // e.g., "syn1, syn2 word"
-                const parsedSynonyms = fetchedSynonyms.split(',')
-                    .map(s => s.trim())
-                    .filter(s => s.length > 0);
+        // Multistage searching with decreasing restrictiveness to get most relevant results first but also expand the search if needed
 
-                if (parsedSynonyms.length > 0) {
-                    // Format the original query and all synonyms, then join with OR
-                    const allTermsToFormat = [searchQuery, ...parsedSynonyms]; // Use original searchQuery for formatting consistency
-                    const allFormattedTerms = allTermsToFormat
-                        .map(prepareTermForTsqueryFormatting) // Format each term/synonym
-                        .filter(preparedTerm => preparedTerm.length > 0); // Ensure no empty strings
+        // Stage 1: Exact matches
+        if (searchTokens.length > 1) { 
+            const phraseTsQuery = searchTokens.join('<->');
+            results = await executeFtsQuery(baseVisibilityQuery, baseVisibilityParams, phraseTsQuery);
+        }
 
-                    if (allFormattedTerms.length > 0) {
-                        ftsInputString = allFormattedTerms.join(' | '); // e.g., "original & query | syn1 | syn2 & word"
-                    }
+        // Stage 2: All terms search (AND)
+        if (results.length === 0 && searchTokens.length > 0) {
+            const allTermsTsQuery = searchTokens.join(' & ');
+            results = await executeFtsQuery(baseVisibilityQuery, baseVisibilityParams, allTermsTsQuery);
+        }
+
+        // Stage 3: Any term search (OR) with synonyms
+        if (results.length === 0 && searchTokens.length > 0) {
+            const queryParts = [];
+            for (const token of searchTokens) {
+                const tokenAndSynonyms = [token];
+                // Fetch synonyms for each token
+                const synonymRes = await pool.query(
+                    "SELECT synonyms FROM custom_synonyms WHERE term = $1",
+                    [token]
+                );
+                if (synonymRes.rows.length > 0 && synonymRes.rows[0].synonyms) {
+                    const fetchedSynonyms = synonymRes.rows[0].synonyms.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                    tokenAndSynonyms.push(...fetchedSynonyms);
                 }
+                // Group the token and its synonyms with OR
+                queryParts.push(`(${tokenAndSynonyms.join(' | ')})`);
             }
+            const anyTermWithSynonymsTsQuery = queryParts.join(' | ');
+            results = await executeFtsQuery(baseVisibilityQuery, baseVisibilityParams, anyTermWithSynonymsTsQuery);
         }
 
-        let result = { rows: [] }; // Initialize result
-
-        if (ftsInputString && ftsInputString.trim().length > 0) {
-            const ftsParamIndex = baseVisibilityParams.length + 1;
-            const ftsQuery = `
-                SELECT *, ts_rank_cd(search_vector, to_tsquery('english', $${ftsParamIndex})) as rank
-                FROM (${baseVisibilityQuery}) AS VisibleProvidersCTE
-                WHERE VisibleProvidersCTE.search_vector @@ to_tsquery('english', $${ftsParamIndex})
-                ORDER BY rank DESC
-                LIMIT 10;
-            `;
-            result = await pool.query(ftsQuery, [...baseVisibilityParams, ftsInputString]);
-        }
-
-        if (result.rows.length === 0) {
-            // Fallback to ILIKE if FTS (with synonyms) yields no results or was skipped
-            const ilikeParamIndex = baseVisibilityParams.length + 1;
-            // Fallback uses the original (lower-cased, trimmed) search query before any FTS formatting
+        // Stage 4: Fallback to ILIKE 
+        if (results.length === 0) {
             const ilikeSearchQuery = `%${searchQuery}%`;
             const fallbackQuery = `
-                SELECT *
+                SELECT *, 0 as rank -- Add a dummy rank column for consistent response shape
                 FROM (${baseVisibilityQuery}) AS VisibleProvidersCTE
                 WHERE
-                    LOWER(COALESCE(VisibleProvidersCTE.business_name, '')) LIKE $${ilikeParamIndex}
-                    OR LOWER(COALESCE(VisibleProvidersCTE.category, '')) LIKE $${ilikeParamIndex}
-                    OR LOWER(COALESCE(VisibleProvidersCTE.description, '')) LIKE $${ilikeParamIndex}
+                    LOWER(COALESCE(VisibleProvidersCTE.business_name, '')) LIKE $${baseVisibilityParams.length + 1}
+                    OR LOWER(COALESCE(VisibleProvidersCTE.category, '')) LIKE $${baseVisibilityParams.length + 1}
+                    OR LOWER(COALESCE(VisibleProvidersCTE.description, '')) LIKE $${baseVisibilityParams.length + 1}
                     OR EXISTS (
                         SELECT 1 FROM unnest(VisibleProvidersCTE.tags) AS tag
-                        WHERE LOWER(tag) LIKE $${ilikeParamIndex}
+                        WHERE LOWER(tag) LIKE $${baseVisibilityParams.length + 1}
                     )
                 LIMIT 10;
             `;
-            result = await pool.query(fallbackQuery, [...baseVisibilityParams, ilikeSearchQuery]);
+            const fallbackResult = await pool.query(fallbackQuery, [...baseVisibilityParams, ilikeSearchQuery]);
+            results = fallbackResult.rows;
         }
-        res.json({ success: true, providers: result.rows });
+
+        res.json({ success: true, providers: results });
     } catch (error) {
         console.error("Search error:", error);
         res.status(500).json({ success: false, error: "Failed to search providers", message: error.message });
     }
 };
+
+const executeFtsQuery = async (baseQuery, baseParams, ftsInputString) => {
+    if (!ftsInputString || ftsInputString.trim().length === 0) {
+        return [];
+    }
+    const ftsParamIndex = baseParams.length + 1;
+    const ftsQuery = `
+        SELECT *, ts_rank_cd(search_vector, to_tsquery('english', $${ftsParamIndex})) as rank
+        FROM (${baseQuery}) AS VisibleProvidersCTE
+        WHERE VisibleProvidersCTE.search_vector @@ to_tsquery('english', $${ftsParamIndex})
+        ORDER BY rank DESC
+        LIMIT 10;
+    `;
+    const result = await pool.query(ftsQuery, [...baseParams, ftsInputString]);
+    return result.rows;
+}
 
 const likeRecommendation = async (req, res) => {
     const { id: providerId } = req.params; // Assuming :id in the route is providerId
