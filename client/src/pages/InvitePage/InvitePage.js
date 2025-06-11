@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useUser, SignInButton } from "@clerk/clerk-react";
 import "./InvitePage.css";
 
-const API_URL = "https://api.seanag-recommendations.org:8080";
+// const API_URL = "https://api.seanag-recommendations.org:8080";
+const API_URL = "http://localhost:3000";
 
 const InvitePage = () => {
     const { tokenString } = useParams();
@@ -13,6 +14,11 @@ const InvitePage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [termsAccepted, setTermsAccepted] = useState(false);
+    const [currentUrl, setCurrentUrl] = useState("");
+
+    useEffect(() => {
+        setCurrentUrl(window.location.href);
+    }, []);
 
     useEffect(() => {
         const fetchInviteDetails = async () => {
@@ -197,8 +203,8 @@ const InvitePage = () => {
                             </p>
                             <SignInButton
                                 mode="modal"
-                                afterSignInUrl={window.location.href}
-                                signUpForceRedirectUrl={window.location.href}
+                                fallbackRedirectUrl={currentUrl}
+                                signUpFallbackRedirectUrl={currentUrl}
                             >
                                 <button className="invite-action-button">
                                     Sign In / Sign Up
