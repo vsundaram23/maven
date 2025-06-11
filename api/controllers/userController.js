@@ -548,94 +548,35 @@ const getOnboardingStatus = async (req, res) => {
     }
 };
 
-// const saveOnboardingData = async (req, res) => {
-//     const { userId, email, preferredName, phoneNumber, location, interests } =
-//         req.body;
-
-//     if (!email) {
-//         return res.status(400).json({
-//             error: "Email is required",
-//         });
-//     }
-
-//     try {
-//         // Ensure interests is an array and convert to PostgreSQL array format
-//         const interestsArray = Array.isArray(interests) ? interests : [];
-
-//         const result = await pool.query(
-//             `UPDATE users 
-//              SET preferred_name = $1, 
-//                  phone_number = $2, 
-//                  location = $3, 
-//                  interests = $4,
-//                  has_completed_onboarding = true,
-//                  updated_at = NOW()
-//              WHERE email = $5
-//              RETURNING *`,
-//             [
-//                 preferredName || null,
-//                 phoneNumber || null,
-//                 location || null,
-//                 interestsArray,
-//                 email,
-//             ]
-//         );
-
-//         if (result.rows.length === 0) {
-//             return res.status(404).json({
-//                 error: "User not found with provided email",
-//             });
-//         }
-
-//         res.json({
-//             success: true,
-//             user: result.rows[0],
-//         });
-//     } catch (error) {
-//         console.error("Error saving onboarding data:", {
-//             error: error.message,
-//             stack: error.stack,
-//             email,
-//             preferredName,
-//             interests,
-//         });
-
-//         res.status(500).json({
-//             error: "Failed to save onboarding data",
-//             details: error.message,
-//         });
-//     }
-// };
-
 const saveOnboardingData = async (req, res) => {
     const { userId, email, preferredName, phoneNumber, location, interests } =
         req.body;
 
-    if (!email) {
+    if (!email || !userId) {
         return res.status(400).json({
-            error: "Email is required",
+            error: "Email and userId are required",
         });
     }
 
     try {
+        // First ensure the user exists by getting or creating them
+        const internalUserId = await userService.getOrCreateUser({
+            id: userId,
+            emailAddresses: [{ emailAddress: email }],
+            firstName: preferredName || "",
+            lastName: "",
+            phoneNumbers: phoneNumber ? [{ phoneNumber }] : [],
+        });
+
+        // Ensure interests is an array
         const interestsArray = Array.isArray(interests) ? interests : [];
 
-        const clerkData = {
-            id: userId, // This is the Clerk user ID
-            emailAddresses: [{ emailAddress: email }], // Pass email for userService to use
-            // Add other Clerk fields if needed by getOrCreateUser (e.g., firstName, lastName)
-            // firstName: req.body.firstName,
-            // lastName: req.body.lastName,
-        };
-        // This call will create the user in your 'users' table if they don't exist
-        // and return their internal 'id' from your 'users' table.
-        const internalUserId = await getInternalUserIdFromClerk(clerkData);
-
+        // Now update the user with onboarding data
         const result = await pool.query(
-            `UPDATE users 
-             SET preferred_name = $1, 
-                 phone_number = $2, 
-                 location = $3, 
+            `UPDATE users
+             SET preferred_name = $1,
+                 phone_number = $2,
+                 location = $3,
                  interests = $4,
                  has_completed_onboarding = true,
                  updated_at = NOW()
@@ -646,15 +587,15 @@ const saveOnboardingData = async (req, res) => {
                 phoneNumber || null,
                 location || null,
                 interestsArray,
-                internalUserId, // Use the internal user ID for the WHERE clause
+                internalUserId,
             ]
         );
 
         if (result.rows.length === 0) {
-            // This case should ideally not be hit if getInternalUserIdFromClerk always creates a user
+            // This case should ideally not be hit if getOrCreateUser always creates a user
             // before this point, but it's good for robustness.
             return res.status(404).json({
-                error: "User not found with provided ID (after creation attempt)",
+                error: "Failed to update user after creation",
             });
         }
 
@@ -666,10 +607,9 @@ const saveOnboardingData = async (req, res) => {
         console.error("Error saving onboarding data:", {
             error: error.message,
             stack: error.stack,
-            email, // Keep email for logging context
+            email,
+            userId,
             preferredName,
-            interests,
-            userId // Log the Clerk userId too for debugging
         });
 
         res.status(500).json({
@@ -684,23 +624,23 @@ const getPreferredName = async (req, res) => {
 
     if (!email) {
         return res.status(400).json({
-            error: "Email is required"
+            error: "Email is required",
         });
     }
 
     try {
         const result = await pool.query(
-            'SELECT preferred_name FROM users WHERE email = $1',
+            "SELECT preferred_name FROM users WHERE email = $1",
             [email]
         );
 
         res.json({
-            preferredName: result.rows[0]?.preferred_name || null
+            preferredName: result.rows[0]?.preferred_name || null,
         });
     } catch (error) {
         console.error("Error fetching preferred name:", error);
         res.status(500).json({
-            error: "Failed to fetch preferred name"
+            error: "Failed to fetch preferred name",
         });
     }
 };
@@ -717,5 +657,5 @@ module.exports = {
     getCurrentUserProfileData,
     getOnboardingStatus,
     saveOnboardingData,
-    getPreferredName
+    getPreferredName,
 };
