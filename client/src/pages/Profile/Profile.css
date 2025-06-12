@@ -51,8 +51,8 @@
 
 .profile-avatar-container {
     position: relative;
-    width: var(--profile-avatar-size);
-    height: var(--profile-avatar-size);
+    /* width: var(--profile-avatar-size);
+    height: var(--profile-avatar-size); */
     border-radius: 50%;
     background-color: rgba(255, 255, 255, 0.1);
     display: flex;
@@ -66,13 +66,13 @@
 }
 
 .profile-avatar-image {
-    width: 100%;
-    height: 100%;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
-    object-fit: cover;
-    background-color: transparent;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    display: block;
+    object-fit: contain !important;
+    border: 4px solid #ffffff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background-color: #f8f9fa;
 }
 
 .profile-avatar-icon,

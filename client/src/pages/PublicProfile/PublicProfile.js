@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import { FaStar, FaThumbsUp, FaPlusCircle } from "react-icons/fa";
-import { EnvelopeIcon, UsersIcon as UsersIconSolid } from "@heroicons/react/24/solid";
+import { EnvelopeIcon } from "@heroicons/react/24/solid";
+import React, { useCallback, useEffect, useState } from "react";
+import { FaPlusCircle, FaStar, FaThumbsUp } from "react-icons/fa";
+import { Link, useParams } from "react-router-dom";
 import "../Profile/Profile.css";
 import "./PublicProfile.css";
 
@@ -105,6 +105,7 @@ const PublicRecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrent
     };
 
     return (
+        <div className="public-profile-scope">
         <li className="provider-card">
             <div className="card-header">
                 <h3 className="card-title">
@@ -172,6 +173,7 @@ const PublicRecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrent
             </div>
             {linkCopied && (<div className="toast">Link copied!</div>)}
         </li>
+        </div>
     );
 };
 
@@ -179,7 +181,6 @@ const PublicRecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrent
 const PublicProfile = () => {
     const { username } = useParams();
     const { user, isLoaded, isSignedIn } = useUser();
-
     const [currentUserId, setCurrentUserId] = useState(null);
     const [currentUserEmail, setCurrentUserEmail] = useState(null);
     const [profileInfo, setProfileInfo] = useState(null);
@@ -206,16 +207,12 @@ const PublicProfile = () => {
         if (!username || !isLoaded) return;
         setLoading(true);
         setError(null);
-
         const loggedInUserId = user ? user.id : null;
-
         try {
             const profileRes = await fetch(`${API_URL}/api/users/public-profile/${username}?loggedInUserId=${loggedInUserId || ''}`);
-
             if (!profileRes.ok) throw new Error("Failed to fetch profile data");
             const data = await profileRes.json();
             setProfileInfo(data);
-
             const connectionsPromise = fetch(`${API_URL}/api/connections/check-connections`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -228,7 +225,6 @@ const PublicProfile = () => {
             } else {
                 setConnections([]);
             }
-
             const baseRecs = data.recommendations || [];
             const enrichedRecs = await Promise.all(
                 baseRecs.map(async (rec) => {
@@ -253,9 +249,7 @@ const PublicProfile = () => {
                     };
                 })
             );
-
             setRecommendations(enrichedRecs);
-
             const initialLikes = new Map();
             enrichedRecs.forEach(r => {
                 if (r.currentUserLiked) {
@@ -263,7 +257,6 @@ const PublicProfile = () => {
                 }
             });
             setLikedMap(initialLikes);
-
         } catch (err) {
             setError(err.message);
         } finally {
@@ -325,11 +318,9 @@ const PublicProfile = () => {
             alert("Please log in to like recommendations.");
             return;
         }
-
         const originalRecs = JSON.parse(JSON.stringify(recommendations));
         const originalLikedMap = new Map(likedMap);
         const isCurrentlyLiked = likedMap.get(providerId) || false;
-
         setRecommendations(prev => prev.map(rec => {
             const currentRecId = rec.id || rec.provider_id;
             if (currentRecId === providerId) {
@@ -342,23 +333,16 @@ const PublicProfile = () => {
             return rec;
         }));
         setLikedMap(prev => new Map(prev).set(providerId, !isCurrentlyLiked));
-
         try {
             const response = await fetch(`${API_URL}/api/providers/${providerId}/like`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: currentUserId,
-                    userEmail: currentUserEmail
-                })
+                body: JSON.stringify({ userId: currentUserId, userEmail: currentUserEmail })
             });
-
             const result = await response.json();
-
             if (!result.success) {
                 throw new Error(result.message || 'Failed to update like status.');
             }
-
             setRecommendations(prev => prev.map(rec => {
                 const currentRecId = rec.id || rec.provider_id;
                 if (currentRecId === providerId) {
@@ -367,7 +351,6 @@ const PublicProfile = () => {
                 return rec;
             }));
             setLikedMap(prev => new Map(prev).set(providerId, result.currentUserLiked));
-
         } catch (error) {
             alert(`Failed to update like: ${error.message}`);
             setRecommendations(originalRecs);
@@ -388,11 +371,11 @@ const PublicProfile = () => {
     const { userName, userBio, userEmail: profileUserEmail, profileImage } = profileInfo;
 
     return (
-        <div className="public-profile-scope profile-page">
-            <header className="profile-main-header">
-                <div className="profile-avatar-section">
-                    <div className="profile-avatar-display-wrapper profile-avatar-container">
-                        {profileImage && !imageFailed ? (
+        <div className="profile-page-container">
+            <header className="profile-hero-header">
+                <div className="profile-hero-content">
+                    <div className="profile-avatar-wrapper">
+                         {profileImage && !imageFailed ? (
                             <img
                                 src={`${API_URL}${profileImage}`}
                                 alt={userName || profileUserEmail}
@@ -400,58 +383,57 @@ const PublicProfile = () => {
                                 onError={handleImageError}
                             />
                         ) : (
-                            <div className="profile-avatar-initials-fallback">
+                            <div className="profile-avatar-initials">
                                 <span>{getInitials(userName, profileUserEmail)}</span>
                             </div>
                         )}
                     </div>
-                </div>
-                <div className="profile-user-info">
-                    <h1>{userName || "User Profile"}</h1>
-                    {profileUserEmail && (<p><EnvelopeIcon className="inline-icon" />{profileUserEmail}</p>)}
-                    {userBio && <p className="profile-user-bio">{userBio}</p>}
+                    <div className="profile-details-wrapper">
+                        <h1 className="profile-user-name">{userName || "User Profile"}</h1>
+                        {profileUserEmail && (<p className="profile-user-email"><EnvelopeIcon className="inline-icon" />{profileUserEmail}</p>)}
+                         {userBio && (
+                            <blockquote className="profile-user-bio">
+                                <p>{userBio}</p>
+                            </blockquote>
+                        )}
+                    </div>
+                    <div className="profile-stats-wrapper">
+                        <div className="profile-stat-item">
+                            <span className="profile-stat-number">{recommendations.length}</span>
+                            <span className="profile-stat-label">Recommendations</span>
+                        </div>
+                        <div className="profile-stat-item">
+                            <span className="profile-stat-number">{connections.length}</span>
+                            <span className="profile-stat-label">Followers</span>
+                        </div>
+                    </div>
                 </div>
             </header>
 
-            <section className="profile-stats-bar">
-                <div className="stat-item">
-                    <FaStar className="stat-icon" style={{ color: "#ffc107" }} />
-                    <span>{recommendations.length}</span>
-                    <p>Recommendations Made</p>
+            <main className="profile-content-area">
+                <div className="profile-recommendations-header">
+                    <h2>{userName ? `${userName}'s Recommendations` : "Recommendations"}</h2>
                 </div>
-                <div className="stat-item">
-                    <UsersIconSolid className="stat-icon" />
-                    <span>{connections.length}</span>
-                    <p>Followers</p>
-                </div>
-            </section>
-
-            <main className="profile-main-content">
-                <section className="profile-content-section" id="my-recommendations">
-                    <div className="section-header">
-                        <h2>{userName ? `${userName}'s List of Recommendations` : "Recommendations"}</h2>
+                 {recommendations.length > 0 ? (
+                    <ul className="provider-list">
+                        {recommendations.map((rec) => (
+                            <PublicRecommendationCard
+                                key={rec.id || rec.provider_id}
+                                rec={rec}
+                                onWriteReview={handleOpenReviewModal}
+                                onLike={handleLikeToggle}
+                                isLikedByCurrentUser={likedMap.get(rec.id || rec.provider_id) || false}
+                                loggedInUserId={currentUserId}
+                                recommenderName={userName}
+                            />
+                        ))}
+                    </ul>
+                ) : (
+                     <div className="profile-empty-state no-providers-message">
+                        <FaStar className="no-providers-icon" />
+                        <p>{userName ? `${userName} hasn't` : "This user hasn't"} made any recommendations yet.</p>
                     </div>
-                    {recommendations.length > 0 ? (
-                        <ul className="provider-list">
-                            {recommendations.map((rec) => (
-                                <PublicRecommendationCard
-                                    key={rec.id || rec.provider_id}
-                                    rec={rec}
-                                    onWriteReview={handleOpenReviewModal}
-                                    onLike={handleLikeToggle}
-                                    isLikedByCurrentUser={likedMap.get(rec.id || rec.provider_id) || false}
-                                    loggedInUserId={currentUserId}
-                                    recommenderName={userName}
-                                />
-                            ))}
-                        </ul>
-                    ) : (
-                         <div className="profile-empty-state no-providers-message">
-                            <FaStar className="no-providers-icon" />
-                            <p>{userName ? `${userName} hasn't` : "This user hasn't"} made any recommendations yet.</p>
-                        </div>
-                    )}
-                </section>
+                )}
             </main>
 
             {selectedProviderForReview && (
