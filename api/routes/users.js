@@ -29,7 +29,7 @@ router.put(
 
 router.get("/me/profile/image", serveCurrentUserProfileImage);
 
-router.get("/public-profile/:identifier", getPublicUserProfile);
+router.get("/public-profile/:username", getPublicUserProfile);
 
 router.get("/:id/recommendations", getRecommendationsByUserId);
 

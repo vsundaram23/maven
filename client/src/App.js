@@ -240,18 +240,18 @@ const AppWrapper = () => {
                             </ProtectedRoute>
                         }
                     />
-                    <Route
-                        path="/profile/:identifier"
-                        element={<PublicProfile />}
-                    />
+                    <Route 
+                        path="/pro/:username" 
+                        element={<PublicProfile 
+                    />} />
                     <Route
                         path="/invite/:tokenString"
                         element={<InvitePage />}
                     />
-                    <Route
+                    {/* <Route
                         path="/pro/:username"
                         element={<UsernameRedirector />}
-                    />
+                    /> */}
                 </Routes>
             </main>
             <OnboardingModal

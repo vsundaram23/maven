@@ -196,7 +196,7 @@ const PublicRecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrent
             {rec.recommender_name && (
                 <div className="public-recommended-row">
                     <span className="public-recommended-label">Recommended by:</span>
-                    <Link to={`/profile/${rec.recommender_user_id || 'user'}`} className="public-recommended-name">{rec.recommender_name}</Link>
+                    <Link to={`/pro/${rec.recommender_username || 'user'}`} className="public-recommended-name">{rec.recommender_name}</Link>
                     {rec.date_of_recommendation && (
                         <span className="public-recommendation-date">
                             ({new Date(rec.date_of_recommendation).toLocaleDateString("en-US", { year: "2-digit", month: "numeric", day: "numeric" })})

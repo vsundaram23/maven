@@ -24,6 +24,7 @@ const getVisibleProvidersBaseQueryForFinancialPage = (currentUserId) => {
         sc.name AS category_name,
         s.name AS service_type,
         sp.recommended_by AS recommender_user_id,
+        rec_user.username as recommender_username,
         rec_user.name AS recommender_name,
         rec_user.phone_number AS recommender_phone,
         rec_user.email AS recommender_email,

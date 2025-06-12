@@ -616,6 +616,7 @@ const searchProviders = async (req, res) => {
                 cat.name AS category_name,
                 ser.name AS service_type,
                 rec_user.id AS recommender_user_id,
+                rec_user.username as recommender_username,
                 rec_user.clerk_id AS recommender_clerk_id,
                 COALESCE(rec_user.name, rec_user.email) AS recommender_name,
                 rec_user.email AS recommender_email,

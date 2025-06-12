@@ -177,7 +177,7 @@ const PublicRecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrent
 
 
 const PublicProfile = () => {
-    const { identifier } = useParams();
+    const { username } = useParams();
     const { user, isLoaded, isSignedIn } = useUser();
 
     const [currentUserId, setCurrentUserId] = useState(null);
@@ -203,14 +203,14 @@ const PublicProfile = () => {
     }, [isLoaded, isSignedIn, user]);
 
     const fetchPageData = useCallback(async () => {
-        if (!identifier || !isLoaded) return;
+        if (!username || !isLoaded) return;
         setLoading(true);
         setError(null);
 
         const loggedInUserId = user ? user.id : null;
 
         try {
-            const profileRes = await fetch(`${API_URL}/api/users/public-profile/${identifier}?loggedInUserId=${loggedInUserId || ''}`);
+            const profileRes = await fetch(`${API_URL}/api/users/public-profile/${username}?loggedInUserId=${loggedInUserId || ''}`);
 
             if (!profileRes.ok) throw new Error("Failed to fetch profile data");
             const data = await profileRes.json();
@@ -219,7 +219,7 @@ const PublicProfile = () => {
             const connectionsPromise = fetch(`${API_URL}/api/connections/check-connections`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_id: identifier }),
+                body: JSON.stringify({ user_id: data.userId }),
             });
             const connectionsRes = await connectionsPromise;
             if (connectionsRes.ok) {
@@ -269,7 +269,7 @@ const PublicProfile = () => {
         } finally {
             setLoading(false);
         }
-    }, [identifier, isLoaded, user]);
+    }, [username, isLoaded, user]);
 
     useEffect(() => {
         fetchPageData();

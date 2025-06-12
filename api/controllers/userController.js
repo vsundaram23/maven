@@ -146,10 +146,10 @@ const updateCurrentUserProfile = async (req, res) => {
 
 const getPublicUserProfile = async (req, res) => {
     // 1. Get the generic identifier from the route parameter
-    const { identifier } = req.params; 
+    const { username } = req.params; 
     const loggedInUserId = req.auth ? req.auth.userId : null;
 
-    if (!identifier) {
+    if (!username) {
         return res.status(400).json({
             success: false,
             message: "User identifier is required.",
@@ -157,24 +157,25 @@ const getPublicUserProfile = async (req, res) => {
     }
 
     try {
-        function isUUID(str) {
-            const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-            return uuidRegex.test(str);
-        }
+        // function isUUID(str) {
+        //     const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+        //     return uuidRegex.test(str);
+        // }
         
         let userQuery;
-        let queryParams = [identifier];
+        let queryParams = [username];
         
         // 2. Check if the identifier is a UUID or a username.
-        if (isUUID(identifier)) {
-            // It's a user ID (UUID), so query by the 'id' column
-            console.log("Identifier is a UUID. Querying by ID.");
-            userQuery = `SELECT id, name, email, bio FROM users WHERE id = $1`;
-        } else {
-            // It's not a UUID, so assume it's a username.
-            console.log("Identifier is a username. Querying by username.");
-            userQuery = `SELECT id, name, email, bio FROM users WHERE username = $1`;
-        }
+        // if (isUUID(username)) {
+        //     // It's a user ID (UUID), so query by the 'id' column
+        //     console.log("Identifier is a UUID. Querying by ID.");
+        //     userQuery = `SELECT id, name, email, bio FROM users WHERE id = $1`;
+        // } else {
+        //     // It's not a UUID, so assume it's a username.
+        //     console.log("Identifier is a username. Querying by username.");
+        //     userQuery = `SELECT id, name, email, bio FROM users WHERE username = $1`;
+        // }
+        userQuery = `SELECT id, name, email, bio FROM users WHERE username = $1`;
         
         // 3. Execute the appropriate query
         const userResult = await pool.query(userQuery, queryParams);
@@ -780,6 +781,7 @@ const getUserPublicProfileByUsername = async (req, res) => {
                 u.email AS recommender_email,
                 u.name AS recommender_name,
                 sp.recommended_by AS recommender_user_id,
+                rec_user.username as recommender_username,
                 CASE WHEN l.user_id IS NOT NULL THEN true ELSE false END AS "currentUserLiked"
             FROM service_providers sp
             LEFT JOIN services s ON sp.service_id = s.service_id

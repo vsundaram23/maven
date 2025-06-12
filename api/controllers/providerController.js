@@ -69,6 +69,7 @@ const getVisibleProvidersBaseQuery = (currentInternalUserId) => {
         sp.images,
         sc.name AS category,
         sp.recommended_by AS recommender_user_id,
+        rec_user.username as recommender_username,
         rec_user.name AS recommender_name,
         rec_user.phone_number AS recommender_phone,
         ROUND(AVG(r.rating) OVER (PARTITION BY sp.id), 2) AS average_rating,
