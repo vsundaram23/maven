@@ -39,7 +39,7 @@ body {
   width: 100%;
   max-width: 1024px;
   margin: 0 auto;
-  padding: 18vh 2rem 2vh;
+  padding: 18vh 1rem 0;
   text-align: center;
   flex-shrink: 0;
   position: relative;
@@ -972,6 +972,50 @@ body {
   font-size: 0.95rem;
   color: #495057;
   line-height: 1.4;
+}
+
+.public-pitch-section {
+  text-align: center;
+  margin: 2rem auto;
+  max-width: 600px;
+  padding: 0 1rem;
+  color: #333;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.public-pitch-section strong {
+  font-weight: 600;
+  color: #1A365D;
+}
+
+/* .hero-container {
+  margin-bottom: 2rem;
+} */
+
+.subtitle {
+  text-align: center;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.underline-highlight {
+  font-weight: 600;
+  color: #1A365D;
+  text-decoration: none;
+  border-bottom: 2px solid #1A365D;
+}
+
+.home.not-signed-in .main-title {
+  margin-bottom: 3rem;
+}
+
+.home.not-signed-in .search-form-wrapper {
+  margin-bottom: 3rem;
+}
+
+.home.not-signed-in .recommendations-section-wrapper .subtitle {
+  margin-top: 0;
 }
 
 @media (max-width: 768px) {
