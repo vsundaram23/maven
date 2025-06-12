@@ -441,7 +441,7 @@ const PublicProfile = () => {
             <main className="profile-main-content">
                 <section className="profile-content-section" id="my-recommendations">
                     <div className="section-header">
-                        <h2>{userName ? `${userName}'s Recommendations` : "Recommendations"}</h2>
+                        <h2>{userName ? `${userName}'s List of Recommendations` : "Recommendations"}</h2>
                     </div>
                     {recommendations.length > 0 ? (
                         <ul className="provider-list">
