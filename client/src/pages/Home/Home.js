@@ -1,4 +1,4 @@
-import { useClerk, useUser } from "@clerk/clerk-react";
+import { SignUpButton, useClerk, useUser } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import CountUp from "react-countup";
@@ -686,10 +686,18 @@ const Home = () => {
                 </div>
             )}
             <div className="recommendations-section-wrapper">
-                <p className="subtitle">
-                    {isSignedIn ? "Recent recommendations from " : "See what you're missing? "}
-                    <span className="underline-highlight">{isSignedIn ? "your Trust Circle." : "Join to unlock your network's favorites."}</span>
-                </p>
+            <p className="subtitle">
+                {isSignedIn ? "Recent recommendations from " : "See what you're missing? "}
+                {!isSignedIn ? (
+                    <SignUpButton mode="modal">
+                        <span className="underline-highlight" style={{ cursor: 'pointer' }}>
+                            Join to unlock your network's favorites.
+                        </span>
+                    </SignUpButton>
+                ) : (
+                    <span className="underline-highlight">your Trust Circle.</span>
+                )}
+            </p>
                 <div className="recent-recommendations-feed">
                     {isLoadingRecentRecommendations && <div className="feed-message">Loading recommendations...</div>}
                     {recentRecommendationsError && <div className="feed-message feed-error">Could not load recommendations.</div>}
