@@ -249,7 +249,7 @@ const AppWrapper = () => {
                         element={<InvitePage />}
                     />
                     <Route
-                        path="/share/:username"
+                        path="/pro/:username"
                         element={<UsernameRedirector />}
                     />
                 </Routes>
