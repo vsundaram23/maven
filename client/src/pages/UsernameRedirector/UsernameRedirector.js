@@ -25,7 +25,7 @@ const UsernameRedirector = () => {
 
         const findUserAndRedirect = async () => {
             try {
-                const response = await fetch(`${API_URL}/api/users/username/${username}`);
+                const response = await fetch(`${API_URL}/api/users/share/${username}`);
                 if (!response.ok) throw new Error('User not found');
                 
                 const data = await response.json();

@@ -43,7 +43,7 @@ router.get("/onboarding-status", getOnboardingStatus);
 
 router.get("/preferred-name", getPreferredName);
 
-router.get("/username/:username", getUserPublicProfileByUsername);
+router.get("/share/:username", getUserPublicProfileByUsername);
 
 module.exports = router;
 
