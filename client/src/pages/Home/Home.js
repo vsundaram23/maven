@@ -791,7 +791,7 @@ const Home = () => {
                         <CountUp end={connectionCount || 0} duration={2} />
                     </p>
                     <p className="label">
-                        Friends in Your
+                        Followers in Your
                         <br />
                         Trust Circle
                     </p>

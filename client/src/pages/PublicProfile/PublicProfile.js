@@ -2,15 +2,13 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { FaStar, FaThumbsUp, FaPlusCircle } from "react-icons/fa";
-import { EnvelopeIcon, UsersIcon as UsersIconSolid, UserCircleIcon } from "@heroicons/react/24/solid";
+import { EnvelopeIcon, UsersIcon as UsersIconSolid } from "@heroicons/react/24/solid";
 import "../Profile/Profile.css";
 import "./PublicProfile.css";
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
 // const API_URL = "http://localhost:3000";
 
-// --- Helper components (StarRatingDisplay, ReviewModal, PublicRecommendationCard) remain the same ---
-// (No changes needed in these components)
 const StarRatingDisplay = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;
     const fullStars = Math.floor(numRating);
@@ -179,7 +177,7 @@ const PublicRecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrent
 
 
 const PublicProfile = () => {
-    const { userId } = useParams();
+    const { identifier } = useParams();
     const { user, isLoaded, isSignedIn } = useUser();
 
     const [currentUserId, setCurrentUserId] = useState(null);
@@ -192,8 +190,6 @@ const PublicProfile = () => {
     const [error, setError] = useState(null);
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [selectedProviderForReview, setSelectedProviderForReview] = useState(null);
-
-    // ADDED: State to track if the profile image fails to load.
     const [imageFailed, setImageFailed] = useState(false);
 
     useEffect(() => {
@@ -206,16 +202,15 @@ const PublicProfile = () => {
         }
     }, [isLoaded, isSignedIn, user]);
 
-    // ... (fetchPageData and other useEffects remain the same) ...
-        const fetchPageData = useCallback(async () => {
-        if (!userId || !isLoaded) return;
+    const fetchPageData = useCallback(async () => {
+        if (!identifier || !isLoaded) return;
         setLoading(true);
         setError(null);
 
         const loggedInUserId = user ? user.id : null;
 
         try {
-            const profileRes = await fetch(`${API_URL}/api/users/public-profile/${userId}?loggedInUserId=${loggedInUserId || ''}`);
+            const profileRes = await fetch(`${API_URL}/api/users/public-profile/${identifier}?loggedInUserId=${loggedInUserId || ''}`);
 
             if (!profileRes.ok) throw new Error("Failed to fetch profile data");
             const data = await profileRes.json();
@@ -224,7 +219,7 @@ const PublicProfile = () => {
             const connectionsPromise = fetch(`${API_URL}/api/connections/check-connections`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_id: userId }),
+                body: JSON.stringify({ user_id: identifier }),
             });
             const connectionsRes = await connectionsPromise;
             if (connectionsRes.ok) {
@@ -274,15 +269,12 @@ const PublicProfile = () => {
         } finally {
             setLoading(false);
         }
-    }, [userId, isLoaded, user]);
-
+    }, [identifier, isLoaded, user]);
 
     useEffect(() => {
         fetchPageData();
     }, [fetchPageData]);
 
-
-    // ADDED: Helper function to get user initials, adapted from CommunityProfile.js
     const getInitials = (name, email) => {
         if (name) {
             const names = name.split(' ').filter(n => n);
@@ -291,16 +283,14 @@ const PublicProfile = () => {
             else if (names.length === 1 && names[0].length) { return names[0][0].toUpperCase(); }
         }
         if (email && email.length > 0) return email[0].toUpperCase();
-        return "U"; // Ultimate fallback
+        return "U";
     };
 
-    // ADDED: Simple error handler for the image
     const handleImageError = () => {
         setImageFailed(true);
     };
 
-    // ... (handleReviewSubmit and handleLikeToggle remain the same) ...
-        const handleOpenReviewModal = (provider) => {
+    const handleOpenReviewModal = (provider) => {
         setSelectedProviderForReview(provider);
         setReviewModalOpen(true);
     };
@@ -401,7 +391,6 @@ const PublicProfile = () => {
         <div className="public-profile-scope profile-page">
             <header className="profile-main-header">
                 <div className="profile-avatar-section">
-                    {/* CHANGED: This whole block is updated with the new fallback logic */}
                     <div className="profile-avatar-display-wrapper profile-avatar-container">
                         {profileImage && !imageFailed ? (
                             <img
@@ -424,7 +413,6 @@ const PublicProfile = () => {
                 </div>
             </header>
 
-            {/* ... (rest of the component JSX remains the same) ... */}
             <section className="profile-stats-bar">
                 <div className="stat-item">
                     <FaStar className="stat-icon" style={{ color: "#ffc107" }} />
@@ -434,7 +422,7 @@ const PublicProfile = () => {
                 <div className="stat-item">
                     <UsersIconSolid className="stat-icon" />
                     <span>{connections.length}</span>
-                    <p>Connections</p>
+                    <p>Followers</p>
                 </div>
             </section>
 

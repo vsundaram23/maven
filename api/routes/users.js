@@ -14,6 +14,7 @@ const {
     getOnboardingStatus,
     saveOnboardingData,
     getPreferredName,
+    getUserPublicProfileByUsername,
 } = require("../controllers/userController");
 
 router.get("/me/recommendations", getCurrentUserRecommendations);
@@ -28,7 +29,7 @@ router.put(
 
 router.get("/me/profile/image", serveCurrentUserProfileImage);
 
-router.get("/public-profile/:userId", getPublicUserProfile);
+router.get("/public-profile/:identifier", getPublicUserProfile);
 
 router.get("/:id/recommendations", getRecommendationsByUserId);
 
@@ -41,6 +42,8 @@ router.post("/onboarding", saveOnboardingData);
 router.get("/onboarding-status", getOnboardingStatus);
 
 router.get("/preferred-name", getPreferredName);
+
+router.get("/username/:username", getUserPublicProfileByUsername);
 
 module.exports = router;
 

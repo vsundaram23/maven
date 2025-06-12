@@ -29,6 +29,7 @@ import PublicProfile from "./pages/PublicProfile/PublicProfile";
 import OnboardingModal from "./components/OnboardingModal/OnboardingModal";
 import InvitePage from "./pages/InvitePage/InvitePage";
 import PWAInterface from './pages/PWAInterface/PWAInterface';
+import UsernameRedirector from "./pages/UsernameRedirector/UsernameRedirector";
 import "./styles/global.css";
 import "./App.css";
 
@@ -240,12 +241,16 @@ const AppWrapper = () => {
                         }
                     />
                     <Route
-                        path="/profile/:userId"
+                        path="/profile/:identifier"
                         element={<PublicProfile />}
                     />
                     <Route
                         path="/invite/:tokenString"
                         element={<InvitePage />}
+                    />
+                    <Route
+                        path="/username/:username"
+                        element={<UsernameRedirector />}
                     />
                 </Routes>
             </main>

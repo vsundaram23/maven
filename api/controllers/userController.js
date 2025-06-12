@@ -145,29 +145,51 @@ const updateCurrentUserProfile = async (req, res) => {
 };
 
 const getPublicUserProfile = async (req, res) => {
-    const { userId } = req.params; // This is the ID of the profile being viewed
+    // 1. Get the generic identifier from the route parameter
+    const { identifier } = req.params; 
+    const loggedInUserId = req.auth ? req.auth.userId : null;
 
-    if (!userId) {
+    if (!identifier) {
         return res.status(400).json({
             success: false,
-            message: "User ID is required.",
+            message: "User identifier is required.",
         });
     }
 
     try {
-        // Fetch basic user data
-        const userQuery = `SELECT id, name, email, bio FROM users WHERE id = $1`;
-        const userResult = await pool.query(userQuery, [userId]);
-        const loggedInUserId = req.auth ? req.auth.userId : null;
+        function isUUID(str) {
+            const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+            return uuidRegex.test(str);
+        }
+        
+        let userQuery;
+        let queryParams = [identifier];
+        
+        // 2. Check if the identifier is a UUID or a username.
+        if (isUUID(identifier)) {
+            // It's a user ID (UUID), so query by the 'id' column
+            console.log("Identifier is a UUID. Querying by ID.");
+            userQuery = `SELECT id, name, email, bio FROM users WHERE id = $1`;
+        } else {
+            // It's not a UUID, so assume it's a username.
+            console.log("Identifier is a username. Querying by username.");
+            userQuery = `SELECT id, name, email, bio FROM users WHERE username = $1`;
+        }
+        
+        // 3. Execute the appropriate query
+        const userResult = await pool.query(userQuery, queryParams);
 
         if (userResult.rows.length === 0) {
             return res
                 .status(404)
                 .json({ success: false, message: "User not found." });
         }
+        
+        // 4. From here, the rest of the function works perfectly because you now have the user's data.
         const userData = userResult.rows[0];
+        const profileOwnerUserId = userData.id; // Use the actual ID for subsequent queries
 
-        // Fetch user's recommendations
+        // Fetch user's recommendations using the resolved user ID
         const recommendationsQuery = `
             SELECT
                 sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
@@ -187,24 +209,20 @@ const getPublicUserProfile = async (req, res) => {
             WHERE sp.recommended_by = $1
             ORDER BY sp.date_of_recommendation DESC, sp.created_at DESC
         `;
-        // THIS IS THE CORRECT CODE YOU NEED
         const recommendationsResult = await pool.query(recommendationsQuery, [
-            userId,
+            profileOwnerUserId, // Use the ID we found
             loggedInUserId,
         ]);
-
-        // Construct profile image URL (to be fetched separately by the client if needed, or direct path)
-        const profileImage = `/api/users/${userId}/profile/image`; // Path for frontend to request
+        const profileImagePath = `/api/users/${userData.id}/profile/image`;
 
         res.json({
             success: true,
-            userId: userData.id, // Return the ID for consistency
+            userId: userData.id,
             userName: userData.name,
             userBio: userData.bio,
-            userEmail: userData.email, // Assuming email is public or you'll handle privacy
-            profileImage: profileImage, // Path to the image
+            userEmail: userData.email,
+            profileImage: profileImagePath, // Assuming you have a direct URL in the DB
             recommendations: recommendationsResult.rows,
-            // Note: 'connections' count is NOT included here
         });
     } catch (err) {
         console.error(
@@ -219,6 +237,82 @@ const getPublicUserProfile = async (req, res) => {
         });
     }
 };
+
+// const getPublicUserProfile = async (req, res) => {
+//     const { userId } = req.params; // This is the ID of the profile being viewed
+
+//     if (!userId) {
+//         return res.status(400).json({
+//             success: false,
+//             message: "User ID is required.",
+//         });
+//     }
+
+//     try {
+//         // Fetch basic user data
+//         const userQuery = `SELECT id, name, email, bio FROM users WHERE id = $1`;
+//         const userResult = await pool.query(userQuery, [userId]);
+//         const loggedInUserId = req.auth ? req.auth.userId : null;
+
+//         if (userResult.rows.length === 0) {
+//             return res
+//                 .status(404)
+//                 .json({ success: false, message: "User not found." });
+//         }
+//         const userData = userResult.rows[0];
+
+//         // Fetch user's recommendations
+        // const recommendationsQuery = `
+        //     SELECT
+        //         sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
+        //         sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.num_likes, sp.website, sp.business_contact, 
+        //         sp.recommender_message, sp.images,
+        //         s.name as service_type, c.name as category_name,
+        //         u.phone_number AS recommender_phone,
+        //         u.email AS recommender_email,
+        //         u.name AS recommender_name,
+        //         sp.recommended_by AS recommender_user_id,
+        //         CASE WHEN l.user_id IS NOT NULL THEN true ELSE false END AS "currentUserLiked"
+        //     FROM service_providers sp
+        //     LEFT JOIN services s ON sp.service_id = s.service_id
+        //     LEFT JOIN service_categories c ON s.category_id = c.service_id
+        //     LEFT JOIN users u ON sp.recommended_by = u.id
+        //     LEFT JOIN recommendation_likes l ON l.recommendation_id = sp.id AND l.user_id = $2
+        //     WHERE sp.recommended_by = $1
+        //     ORDER BY sp.date_of_recommendation DESC, sp.created_at DESC
+        // `;
+//         // THIS IS THE CORRECT CODE YOU NEED
+//         const recommendationsResult = await pool.query(recommendationsQuery, [
+//             userId,
+//             loggedInUserId,
+//         ]);
+
+//         // Construct profile image URL (to be fetched separately by the client if needed, or direct path)
+//         const profileImage = `/api/users/${userId}/profile/image`; // Path for frontend to request
+
+//         res.json({
+//             success: true,
+//             userId: userData.id, // Return the ID for consistency
+//             userName: userData.name,
+//             userBio: userData.bio,
+//             userEmail: userData.email, // Assuming email is public or you'll handle privacy
+//             profileImage: profileImage, // Path to the image
+//             recommendations: recommendationsResult.rows,
+//             // Note: 'connections' count is NOT included here
+//         });
+//     } catch (err) {
+//         console.error(
+//             "Error fetching public user profile:",
+//             err.message,
+//             err.stack
+//         );
+//         res.status(500).json({
+//             success: false,
+//             error: "Internal server error",
+//             message: err.message,
+//         });
+//     }
+// };
 
 const serveCurrentUserProfileImage = async (req, res) => {
     const clerkUserId = req.query.user_id;
@@ -645,6 +739,87 @@ const getPreferredName = async (req, res) => {
     }
 };
 
+const getUserPublicProfileByUsername = async (req, res) => {
+    // 1. Get the username from the URL parameter
+    const { username } = req.params;
+    
+    // Get the ID of the person viewing the profile, if they are logged in
+    const loggedInUserId = req.auth ? req.auth.userId : null;
+
+    if (!username) {
+        return res.status(400).json({
+            success: false,
+            message: "Username is required.",
+        });
+    }
+
+    try {
+        // 2. Fetch the user's basic data and ID using their username
+        // This requires a 'username' column in your 'users' table.
+        const userQuery = `SELECT id, name, email, bio FROM users WHERE username = $1`;
+        const userResult = await pool.query(userQuery, [username]);
+
+        if (userResult.rows.length === 0) {
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found." });
+        }
+        
+        const userData = userResult.rows[0];
+        // 3. Use the user's actual ID for all subsequent queries
+        const profileOwnerUserId = userData.id;
+
+        // 4. Fetch the user's recommendations using their resolved ID
+        const recommendationsQuery = `
+            SELECT
+                sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
+                sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.num_likes, sp.website, sp.business_contact, 
+                sp.recommender_message, sp.images,
+                s.name as service_type, c.name as category_name,
+                u.phone_number AS recommender_phone,
+                u.email AS recommender_email,
+                u.name AS recommender_name,
+                sp.recommended_by AS recommender_user_id,
+                CASE WHEN l.user_id IS NOT NULL THEN true ELSE false END AS "currentUserLiked"
+            FROM service_providers sp
+            LEFT JOIN services s ON sp.service_id = s.service_id
+            LEFT JOIN service_categories c ON s.category_id = c.service_id
+            LEFT JOIN users u ON sp.recommended_by = u.id
+            LEFT JOIN recommendation_likes l ON l.recommendation_id = sp.id AND l.user_id = $2
+            WHERE sp.recommended_by = $1
+            ORDER BY sp.date_of_recommendation DESC, sp.created_at DESC
+        `;
+        const recommendationsResult = await pool.query(recommendationsQuery, [
+            profileOwnerUserId, // Use the ID we found
+            loggedInUserId,
+        ]);
+        const profileImagePath = `/api/users/${userData.id}/profile/image`;
+
+        // 5. Respond with the complete profile data
+        res.json({
+            success: true,
+            userId: userData.id, // Return the actual ID
+            userName: userData.name,
+            userBio: userData.bio,
+            userEmail: userData.email,
+            profileImage: profileImagePath, // Or construct the path if you prefer
+            recommendations: recommendationsResult.rows,
+        });
+
+    } catch (err) {
+        console.error(
+            "Error fetching public user profile by username:",
+            err.message,
+            err.stack
+        );
+        res.status(500).json({
+            success: false,
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+};
+
 module.exports = {
     getCurrentUserRecommendations,
     getRecommendationsByUserId,
@@ -658,4 +833,5 @@ module.exports = {
     getOnboardingStatus,
     saveOnboardingData,
     getPreferredName,
+    getUserPublicProfileByUsername,
 };
