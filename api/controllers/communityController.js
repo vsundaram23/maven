@@ -456,7 +456,7 @@ const getCommunityMembers = async (communityId) => {
     try {
         client = await pool.connect();
         const result = await client.query(
-            `SELECT u.id, u.clerk_id, u.name, u.email, u.phone_number, u.profile_image 
+            `SELECT u.id, u.clerk_id, u.name, u.username, u.email, u.phone_number, u.profile_image 
        FROM users u
        JOIN community_memberships cm ON u.id = cm.user_id
        WHERE cm.community_id = $1 AND cm.status = 'approved'
@@ -475,6 +475,7 @@ const getCommunityMembers = async (communityId) => {
             return {
                 id: row.id,
                 clerk_id: row.clerk_id,
+                username: row.username,
                 name: row.name,
                 email: row.email,
                 phone_number: row.phone_number,

@@ -801,14 +801,29 @@
 .community-profile-page-wrapper .member-name {
   font-weight: 500;
   color: #333;
-  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: clamp(0.85rem, 2.5vw, 1.1rem);
   margin-bottom: 0.25rem;
+  text-decoration: underline;
 }
 .community-profile-page-wrapper .member-profile-link {
   font-size: 0.8rem;
   color: #0056b3;
   text-decoration: none;
+  border-bottom: 1.5px solid #b0b8c1;
 }
+
+.member-name-container .member-name-link {
+  text-decoration: none;
+  border-bottom: 1px solid #cdd4da;
+  transition: border-color 0.2s ease-in-out;
+}
+
+.member-name-container .member-name-link:hover {
+  border-color: #0056b3;
+}
+
 .community-profile-page-wrapper .member-profile-link:hover {
   text-decoration: underline;
 }

@@ -1,30 +1,29 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    FaUserTie,
     FaCalendarAlt,
-    FaUsers,
-    FaStar,
     FaEdit,
-    FaSignInAlt,
-    FaUserPlus,
-    FaEye,
-    FaUserCheck,
-    FaHourglassHalf,
-    FaTools,
-    FaThumbsUp,
-    FaPhone,
     FaEnvelope,
-    FaSms,
+    FaEye,
+    FaHourglassHalf,
     FaPlusCircle,
+    FaSignInAlt,
+    FaSms,
+    FaStar,
+    FaThumbsUp,
+    FaTools,
+    FaUserCheck,
+    FaUserPlus,
+    FaUsers,
+    FaUserTie
 } from "react-icons/fa";
-import QuoteModal from "../../components/QuoteModal/QuoteModal";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import InviteMembersModal from "../../components/InviteModal/InviteModal";
+import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import "./CommunityProfile.css";
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = "http://localhost:3000";
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = "http://localhost:3000";
 
 const IconText = ({ icon, text, className = "" }) => (
     <div className={`icon-text-item ${className}`}>
@@ -96,15 +95,34 @@ const MemberCard = ({ member }) => {
         <div className="member-item-card">
             {avatarContent}
             <div className="member-name-container">
-                {nameParts.length > 1 ? (
-                    <>
-                        {nameParts.slice(0, -1).join(" ")}{" "}
-                        <span className="member-last-name">
-                            {nameParts.slice(-1)[0]}
-                        </span>
-                    </>
+                {member.username ? (
+                    <Link
+                        to={`/pro/${member.username}`}
+                        className="member-name-link"
+                        style={{ color: "inherit", cursor: "pointer" }}
+                    >
+                        {nameParts.length > 1 ? (
+                            <>
+                                {nameParts.slice(0, -1).join(" ")}{" "}
+                                <span className="member-last-name">
+                                    {nameParts.slice(-1)[0]}
+                                </span>
+                            </>
+                        ) : (
+                            displayName
+                        )}
+                    </Link>
                 ) : (
-                    displayName
+                    nameParts.length > 1 ? (
+                        <>
+                            {nameParts.slice(0, -1).join(" ")}{" "}
+                            <span className="member-last-name">
+                                {nameParts.slice(-1)[0]}
+                            </span>
+                        </>
+                    ) : (
+                        displayName
+                    )
                 )}
             </div>
             <div className="member-actions">
@@ -603,64 +621,6 @@ const CommunityProfile = () => {
         fetchCommunityRecommendations,
     ]);
 
-    // const sortedAndFilteredCommRecs = useMemo(() => {
-    //   if (!commRecsRaw) return [];
-
-    //   let list = [...commRecsRaw];
-
-    //   if (communityServiceCategories.length > 0 && selectedCategory !== 'all') {
-    //     list = list.filter(p => p.community_service_category_id === selectedCategory);
-    //   }
-
-    //   const getBand = r => { if (r >= 4) return 0; if (r >= 3) return 1; if (r >= 2) return 2; if (r >= 1) return 3; return 4; };
-    //   if (commRecsSortOption === "topRated") {
-    //     return list.filter(p => p.average_rating >= 4.5).sort((a, b) => (b.average_rating !== a.average_rating) ? b.average_rating - a.average_rating : (b.total_reviews || 0) - (a.total_reviews || 0));
-    //   }
-    //   return list.sort((a, b) => {
-    //       const bA = getBand(a.average_rating); const bB = getBand(b.average_rating); if (bA !== bB) return bA - bB;
-    //       const sA = (a.average_rating || 0) * (a.total_reviews || 0); const sB = (b.average_rating || 0) * (b.total_reviews || 0); if (sB !== sA) return sB - sA;
-    //       if (b.average_rating !== a.average_rating) return b.average_rating - a.average_rating;
-    //       if ((b.total_reviews || 0) !== (a.total_reviews || 0)) return (b.total_reviews || 0) - (a.total_reviews || 0);
-    //       return (a.originalIndex || 0) - (b.originalIndex || 0);
-    //   });
-    // }, [commRecsRaw, commRecsSortOption, selectedCategory, communityServiceCategories]);
-
-    // const handleCommRecsReviewSubmit = async (reviewData) => {
-    //   if (!isSignedIn || !commRecsSelectedProvider || !currentUserId || !currentUserEmail) { alert("Please sign in to submit a review"); return; }
-    //   try {
-    //       const response = await fetch(`${API_URL}/api/reviews`, { method: "POST", headers: { "Content-Type": "application/json" },
-    //           body: JSON.stringify({ provider_id: commRecsSelectedProvider.id, provider_email: commRecsSelectedProvider.email || "", user_id: currentUserId, email: currentUserEmail, rating: reviewData.rating, content: reviewData.review, tags: reviewData.tags, }),
-    //       });
-    //       if (!response.ok) { const errTxt = await response.text(); throw new Error(errTxt || "Failed to submit review"); }
-    //       fetchCommunityRecommendations(); setCommRecsIsReviewModalOpen(false);
-    //   } catch (err) { alert(`Error submitting review: ${err.message}`); }
-    // };
-    //   const sortedAndFilteredCommRecs = useMemo(() => {
-    //   if (!commRecsRaw) return [];
-
-    //   let list = [...commRecsRaw];
-
-    //   if (communityServiceCategories.length > 0 && selectedCategory !== 'all') {
-    //     list = list.filter(p => p.community_service_category_id === selectedCategory);
-    //   }
-
-    //   if (selectedCity !== 'all') {
-    //     list = list.filter(p => (p.city || "Other") === selectedCity);
-    //   }
-
-    //   const getBand = r => { if (r >= 4) return 0; if (r >= 3) return 1; if (r >= 2) return 2; if (r >= 1) return 3; return 4; };
-    //   if (commRecsSortOption === "topRated") {
-    //     return list.filter(p => p.average_rating >= 4.5).sort((a, b) => (b.average_rating !== a.average_rating) ? b.average_rating - a.average_rating : (b.total_reviews || 0) - (a.total_reviews || 0));
-    //   }
-    //   return list.sort((a, b) => {
-    //     const bA = getBand(a.average_rating); const bB = getBand(b.average_rating); if (bA !== bB) return bA - bB;
-    //     const sA = (a.average_rating || 0) * (a.total_reviews || 0); const sB = (b.average_rating || 0) * (b.total_reviews || 0); if (sB !== sA) return sB - sA;
-    //     if (b.average_rating !== a.average_rating) return b.average_rating - a.average_rating;
-    //     if ((b.total_reviews || 0) !== (a.total_reviews || 0)) return (b.total_reviews || 0) - (a.total_reviews || 0);
-    //     return (a.originalIndex || 0) - (b.originalIndex || 0);
-    //   });
-    // }, [commRecsRaw, commRecsSortOption, selectedCategory, selectedCity, communityServiceCategories]);
-
     const availableCities = useMemo(() => {
         if (!commRecsRaw) return [];
         const cities = commRecsRaw.map((p) => (p.city ? p.city : "Other"));
@@ -676,32 +636,6 @@ const CommunityProfile = () => {
             return acc;
         }, {});
     }, [commRecsRaw]);
-
-    // const sortedAndFilteredCommRecs = useMemo(() => {
-    //   if (!commRecsRaw) return [];
-
-    //   let list = [...commRecsRaw];
-
-    //   if (communityServiceCategories.length > 0 && selectedCategory !== 'all') {
-    //     list = list.filter(p => p.community_service_category_id === selectedCategory);
-    //   }
-
-    //   if (selectedCity !== 'all') {
-    //     list = list.filter(p => (p.city || "Other") === selectedCity);
-    //   }
-
-    //   const getBand = r => { if (r >= 4) return 0; if (r >= 3) return 1; if (r >= 2) return 2; if (r >= 1) return 3; return 4; };
-    //   if (commRecsSortOption === "topRated") {
-    //     return list.filter(p => p.average_rating >= 4.5).sort((a, b) => (b.average_rating !== a.average_rating) ? b.average_rating - a.average_rating : (b.total_reviews || 0) - (a.total_reviews || 0));
-    //   }
-    //   return list.sort((a, b) => {
-    //     const bA = getBand(a.average_rating); const bB = getBand(b.average_rating); if (bA !== bB) return bA - bB;
-    //     const sA = (a.average_rating || 0) * (a.total_reviews || 0); const sB = (b.average_rating || 0) * (b.total_reviews || 0); if (sB !== sA) return sB - sA;
-    //     if (b.average_rating !== a.average_rating) return b.average_rating - a.average_rating;
-    //     if ((b.total_reviews || 0) !== (a.total_reviews || 0)) return (b.total_reviews || 0) - (a.total_reviews || 0);
-    //     return (a.originalIndex || 0) - (b.originalIndex || 0);
-    //   });
-    // }, [commRecsRaw, commRecsSortOption, selectedCategory, selectedCity, communityServiceCategories]);
 
     const sortedAndFilteredCommRecs = useMemo(() => {
         if (!commRecsRaw) return [];
@@ -904,19 +838,8 @@ const CommunityProfile = () => {
     const isMember = isSignedIn && currentUserStatus === "approved";
     const hasRequested = isSignedIn && currentUserStatus === "requested";
 
-    // const renderActionButtons = () => {
-    //   if (!isLoaded) return null;
-    //   if (!isSignedIn) return <button className="btn btn-primary-outline" onClick={() => navigate('/sign-in', { state: { from: location } })}> <FaSignInAlt /> Sign in to Interact</button>;
-    //   if (isOwner) return <button className="btn btn-secondary" onClick={() => navigate(`/community/${communityId}/admin`)}><FaEdit /> Admin Tools</button>;
-    //   if (isMember) return <span className="status-chip member"><FaUserCheck /> Member</span>;
-    //   if (hasRequested) return <span className="status-chip pending"><FaHourglassHalf /> Request Pending</span>;
-    //   if (canRequestToJoin) return <button className="btn btn-primary" onClick={handleRequestToJoin} disabled={isRequestingJoin}><FaUserPlus /> {isRequestingJoin ? 'Sending...' : 'Request to Join'}</button>;
-    //   return null;
-    // };
-    // Inside your CommunityProfile.jsx component
-
     const renderActionButtons = () => {
-        if (!isLoaded) return null; // Clerk authentication state not yet loaded
+        if (!isLoaded) return null;
 
         if (!isSignedIn) {
             return (
@@ -924,7 +847,7 @@ const CommunityProfile = () => {
                     className="btn btn-primary-outline"
                     onClick={() =>
                         navigate("/sign-in", { state: { from: location } })
-                    } // 'location' should be from useLocation() if not already defined
+                    }
                 >
                     <FaSignInAlt style={{ marginRight: "8px" }} /> Sign in to
                     Interact
@@ -932,50 +855,27 @@ const CommunityProfile = () => {
             );
         }
 
-        // Destructure these from communityDetails or ensure they are correctly defined in your component's scope
-        // const { isOwner, currentUserStatus } = communityDetails || {};
-        // const canRequestToJoin = currentUserStatus === 'none'; // Assuming 'none' means not a member and no pending request
-        // const isMember = currentUserStatus === 'approved';
-        // const hasRequested = currentUserStatus === 'requested';
-        // These are already defined in your provided CommunityProfile component:
-        const {
-            name,
-            description,
-            creator_name,
-            created_at,
-            member_count,
-            recommendation_count,
-            isOwner,
-            currentUserStatus,
-        } = communityDetails || {};
-        const canRequestToJoin = isSignedIn && currentUserStatus === "none";
-        const isMember = isSignedIn && currentUserStatus === "approved";
-        const hasRequested = isSignedIn && currentUserStatus === "requested";
-
         if (isOwner) {
-            // If the user is the owner, show Admin Tools AND Invite Members button
             return (
                 <div className="community-owner-actions">
-                    {" "}
-                    {/* Optional: A wrapper for layout if needed */}
                     <button
                         className="btn btn-secondary"
                         onClick={() =>
                             navigate(`/community/${communityId}/admin`)
-                        } // Assuming you have an admin page route
+                        }
                     >
                         <FaEdit style={{ marginRight: "8px" }} /> Admin Tools
                     </button>
                     <button
-                        className="btn btn-primary" // Or your preferred style, e.g., btn-outline-primary
+                        className="btn btn-primary"
                         onClick={() => {
-                            setGeneratedInviteLink(""); // Reset link each time modal is opened
-                            setInviteGenerationError(""); // Reset error
-                            setInviteExpiresAt(""); // Reset form field in modal if you have it
-                            setInviteMaxUses(""); // Reset form field in modal if you have it
-                            setIsInviteModalOpen(true); // Open the modal
+                            setGeneratedInviteLink("");
+                            setInviteGenerationError("");
+                            setInviteExpiresAt("");
+                            setInviteMaxUses("");
+                            setIsInviteModalOpen(true);
                         }}
-                        style={{ marginLeft: "10px" }} // Add some space
+                        style={{ marginLeft: "10px" }}
                     >
                         <FaUserPlus style={{ marginRight: "8px" }} /> Invite
                         Members
@@ -1016,7 +916,7 @@ const CommunityProfile = () => {
             );
         }
 
-        return null; // Default if none of the above conditions are met
+        return null;
     };
 
     return (
@@ -1128,27 +1028,6 @@ const CommunityProfile = () => {
                                 )}
                             </div>
                         </div>
-                        {/* {communityServiceCategories.length > 0 && (
-                <div className="category-filter-bar">
-                    <button
-                        className={`category-button ${selectedCategory === 'all' ? 'active' : ''}`}
-                        onClick={() => setSelectedCategory('all')}
-                    >
-                        All
-                    </button>
-                    {[...communityServiceCategories]
-                        .sort((a, b) => a.category_name.localeCompare(b.category_name))
-                        .map((category) => (
-                        <button
-                            key={category.id}
-                            className={`category-button ${selectedCategory === category.id ? 'active' : ''}`}
-                            onClick={() => setSelectedCategory(category.id)}
-                        >
-                            {category.category_name}
-                        </button>
-                    ))}
-                </div>
-            )} */}
                         {communityServiceCategories.length > 0 && (
                             <div className="category-filter-bar">
                                 <button
@@ -1431,11 +1310,6 @@ const CommunityProfile = () => {
                                                     <span className="recommended-label">
                                                         Recommended by:
                                                     </span>
-                                                    {/* {provider.recommender_clerk_id ? (
-                                          <Link to={`/profile/${provider.recommender_user_id}`} className="recommended-name clickable" target="_blank" rel="noopener noreferrer">{provider.recommender_name}</Link>
-                                      ) : (
-                                          <span className="recommended-name">{provider.recommender_name}</span>
-                                      )} */}
                                                     <Link
                                                         to={`/pro/${provider.recommender_username}`}
                                                         className="recommended-name clickable"
@@ -1665,7 +1539,7 @@ const CommunityProfile = () => {
                 isOpen={isInviteModalOpen}
                 onClose={() => setIsInviteModalOpen(false)}
                 onSubmit={handleGenerateInviteLink}
-                communityName={communityDetails?.name || "this community"} // Pass community name
+                communityName={communityDetails?.name || "this community"}
                 generatedLink={generatedInviteLink}
                 error={inviteGenerationError}
                 loading={inviteGenerationLoading}
