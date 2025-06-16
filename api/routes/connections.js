@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const {
   getConnectionsByEmail,
-  getConnectionsByUserId,
   sendConnectionRequest,
-  getTrustCircleUsers
+  getTrustCircleUsers,
+  getConnectionsByUserId,
+  getConnectionStatus,
+  removeConnection
 } = require('../controllers/connectionsController');
 const pool = require('../config/db.config');
 
@@ -65,6 +67,39 @@ router.post('/trust-circle/users', async (req, res) => {
   } catch (error) {
     console.error('Error in /trust-circle/users route:', error.message);
     res.status(500).json({ error: 'Failed to fetch trust circle users' });
+  }
+});
+
+
+router.post('/status', async (req, res) => {
+  const { fromUserId, toUserId } = req.body;      // Get from request body
+
+  if (!toUserId) {
+    return res.status(400).json({ error: 'The target user ID (toUserId) is required' });
+  }
+
+  try {
+    const status = await getConnectionStatus(fromUserId, toUserId);
+    res.json(status);
+  } catch (error) {
+    console.error('Error in /status route:', error);
+    res.status(500).json({ error: 'Server error checking connection status' });
+  }
+});
+
+router.delete('/remove', async (req, res) => {
+  const { fromUserId, toUserId } = req.body;
+
+  if (!fromUserId || !toUserId) {
+    return res.status(400).json({ error: 'Both user IDs are required' });
+  }
+
+  try {
+    const result = await removeConnection(fromUserId, toUserId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error removing connection:', error);
+    res.status(500).json({ error: 'Server error removing connection' });
   }
 });
 

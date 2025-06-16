@@ -146,11 +146,77 @@ const getTrustCircleUsers = async (email) => {
   }
 };
 
+// Check connection status between two users
+const getConnectionStatus = async (fromUserId, toUserId) => {
+  try {
+    const initiatorResult = await pool.query(
+      `SELECT id FROM users WHERE clerk_id = $1`,
+      [fromUserId]
+    );
+
+    if (initiatorResult.rows.length === 0) {
+      console.warn(`Attempted connection check for a clerk_id not found in the users table: ${fromUserId}`);
+      return { status: 'not_connected' };
+    }
+
+    const fromInternalUserId = initiatorResult.rows[0].id;
+    
+    if (fromInternalUserId === toUserId) {
+        return { status: 'is_self' };
+    }
+
+    const connectionResult = await pool.query(`
+      SELECT status 
+      FROM user_connections 
+      WHERE user_id = $1 AND connected_user_id = $2
+      ORDER BY connected_at DESC
+      LIMIT 1
+    `, [fromInternalUserId, toUserId]);
+
+    if (connectionResult.rows.length === 0) {
+      return { status: 'not_connected' };
+    }
+
+    const connection = connectionResult.rows[0];
+    
+    switch (connection.status) {
+      case 'accepted':
+        return { status: 'connected' };
+      case 'pending':
+        return { status: 'pending_outbound' };
+      default:
+        return { status: connection.status };
+    }
+
+  } catch (error) {
+    console.error('Error checking connection status:', error.message);
+    throw new Error('Database error checking connection status');
+  }
+};
+
+// Unfollow/disconnect from a user
+const removeConnection = async (fromUserId, toUserId) => {
+  try {
+    await pool.query(`
+      DELETE FROM user_connections 
+      WHERE (user_id = $1 AND connected_user_id = $2) 
+         OR (user_id = $2 AND connected_user_id = $1)
+    `, [fromUserId, toUserId]);
+
+    return { message: 'Connection removed successfully', status: 'not_connected' };
+  } catch (error) {
+    console.error('Error removing connection:', error.message);
+    throw new Error('Database error removing connection');
+  }
+};
+
 module.exports = {
   getConnectionsByEmail,
   sendConnectionRequest,
   getTrustCircleUsers,
-  getConnectionsByUserId
+  getConnectionsByUserId,
+  getConnectionStatus,
+  removeConnection
 };
 
 

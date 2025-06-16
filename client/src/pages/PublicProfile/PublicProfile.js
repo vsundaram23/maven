@@ -6,8 +6,8 @@ import { Link, useParams } from "react-router-dom";
 import "../Profile/Profile.css";
 import "./PublicProfile.css";
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = "http://localhost:3000";
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = "http://localhost:3000";
 
 const StarRatingDisplay = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;
@@ -192,6 +192,9 @@ const PublicProfile = () => {
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [selectedProviderForReview, setSelectedProviderForReview] = useState(null);
     const [imageFailed, setImageFailed] = useState(false);
+    const [connectionStatus, setConnectionStatus] = useState('not_connected');
+    const [isFollowLoading, setIsFollowLoading] = useState(false);
+
 
     useEffect(() => {
         if (isLoaded && user) {
@@ -264,9 +267,138 @@ const PublicProfile = () => {
         }
     }, [username, isLoaded, user]);
 
+    // Add this function to fetch connection status
+    const fetchConnectionStatus = useCallback(async () => {
+    if (!currentUserId || !profileInfo?.userId || currentUserId === profileInfo.userId) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/connections/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            fromUserId: currentUserId,
+            toUserId: profileInfo.userId
+        })
+        });
+
+        if (response.ok) {
+        const data = await response.json();
+        setConnectionStatus(data.status);
+        }
+    } catch (error) {
+        console.error('Error fetching connection status:', error);
+    }
+    }, [currentUserId, profileInfo?.userId]);
+
+    // Add this function to handle follow/unfollow
+    const handleFollowToggle = async () => {
+    if (!currentUserId || !profileInfo?.userId || isFollowLoading) return;
+
+    setIsFollowLoading(true);
+    try {
+        if (connectionStatus === 'connected') {
+        // Unfollow
+        const response = await fetch(`${API_URL}/api/connections/remove`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+            fromUserId: currentUserId,
+            toUserId: profileInfo.userId
+            })
+        });
+
+        if (response.ok) {
+            setConnectionStatus('not_connected');
+            // Refresh connections count
+            fetchPageData();
+        }
+        } else {
+        // Follow
+        const response = await fetch(`${API_URL}/api/connections/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+            fromUserId: currentUserId,
+            toUserId: profileInfo.userId
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            setConnectionStatus(data.status === 'accepted' ? 'connected' : 'pending_outbound');
+            // Refresh connections count
+            fetchPageData();
+        }
+        }
+    } catch (error) {
+        console.error('Error toggling follow status:', error);
+        alert('Failed to update follow status');
+    } finally {
+        setIsFollowLoading(false);
+    }
+    };
+
+    // Add this function to render the follow button
+    const renderFollowButton = () => {
+    if (!isSignedIn || !currentUserId || currentUserId === profileInfo?.userId) {
+        return null;
+    }
+
+    const getButtonText = () => {
+        switch (connectionStatus) {
+            case 'connected':
+                return <span className="follow-text">Following</span>;
+            case 'pending_outbound':
+                return <span className="follow-text">Requested</span>;
+            case 'pending_inbound':
+                return <span className="follow-text">Accept Request</span>;
+            default:
+                return <span className="follow-text">Follow</span>;
+        }
+    };
+
+    const getButtonClass = () => {
+        switch (connectionStatus) {
+            case 'connected':
+                return 'follow-button following';
+            case 'pending_outbound':
+                return 'follow-button pending';
+            case 'pending_inbound':
+                return 'follow-button accept';
+            default:
+                return 'follow-button';
+        }
+    };
+
+    return (
+        <button
+            className={getButtonClass()}
+            onClick={handleFollowToggle}
+            disabled={isFollowLoading}
+        >
+            {isFollowLoading ? (
+                <>
+                    <span>⏳</span>
+                    <span>Loading...</span>
+                </>
+            ) : (
+                getButtonText()
+            )}
+        </button>
+    );
+    };
+
     useEffect(() => {
         fetchPageData();
     }, [fetchPageData]);
+    
+    useEffect(() => {
+        if (profileInfo && currentUserId) {
+            fetchConnectionStatus();
+        }
+    }, [profileInfo, currentUserId, fetchConnectionStatus]);
 
     const getInitials = (name, email) => {
         if (name) {
@@ -368,7 +500,7 @@ const PublicProfile = () => {
         return <div className="profile-empty-state"><p>User not found or profile could not be loaded.</p></div>;
     }
 
-    const { userName, userBio, userEmail: profileUserEmail, profileImage } = profileInfo;
+    const { userName, userBio, userEmail: profileUserEmail, userPhone: profileUserPhone, profileImage } = profileInfo;
 
     return (
         <div className="profile-page-container">
@@ -389,9 +521,38 @@ const PublicProfile = () => {
                         )}
                     </div>
                     <div className="profile-details-wrapper">
-                        <h1 className="profile-user-name">{userName || "User Profile"}</h1>
-                        {profileUserEmail && (<p className="profile-user-email"><EnvelopeIcon className="inline-icon" />{profileUserEmail}</p>)}
-                         {userBio && (
+                        <div className="profile-header-top">
+                            <h1 className="profile-user-name">{userName || "User Profile"}</h1>
+                            {renderFollowButton()}
+                        </div>
+                        
+                        <div className="profile-contact-info">
+                            {profileUserPhone && (
+                                <a 
+                                    href={`sms:${profileUserPhone.replace(/\D/g, '')}`} 
+                                    className="profile-contact-link phone"
+                                    title="Send a text to this person"
+                                >
+                                    <svg className="contact-icon" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                                    </svg>
+                                    {profileUserPhone}
+                                </a>
+                            )}
+                            
+                            {profileUserEmail && (
+                                <a 
+                                    href={`mailto:${profileUserEmail}`} 
+                                    className="profile-contact-link email"
+                                    title="Send email to this person"
+                                >
+                                    <EnvelopeIcon className="contact-icon" />
+                                    {profileUserEmail}
+                                </a>
+                            )}
+                        </div>
+                        
+                        {userBio && (
                             <blockquote className="profile-user-bio">
                                 <p>{userBio}</p>
                             </blockquote>

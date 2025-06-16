@@ -175,7 +175,7 @@ const getPublicUserProfile = async (req, res) => {
         //     console.log("Identifier is a username. Querying by username.");
         //     userQuery = `SELECT id, name, email, bio FROM users WHERE username = $1`;
         // }
-        userQuery = `SELECT id, name, email, bio FROM users WHERE username = $1`;
+        userQuery = `SELECT id, name, email, phone_number, bio FROM users WHERE username = $1`;
         
         // 3. Execute the appropriate query
         const userResult = await pool.query(userQuery, queryParams);
@@ -222,6 +222,7 @@ const getPublicUserProfile = async (req, res) => {
             userName: userData.name,
             userBio: userData.bio,
             userEmail: userData.email,
+            userPhone: userData.phone_number,
             profileImage: profileImagePath, // Assuming you have a direct URL in the DB
             recommendations: recommendationsResult.rows,
         });

@@ -1339,7 +1339,7 @@ const TrustCircles = () => {
                                                     </span>
                                                     {provider.recommender_user_id ? (
                                                         <Link
-                                                            to={`/profile/${provider.recommender_user_id}`}
+                                                            to={`/pro/${provider.recommender_username}`}
                                                             className="recommended-name clickable"
                                                             target="_blank"
                                                             rel="noopener noreferrer"
