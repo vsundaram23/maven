@@ -258,6 +258,7 @@ const PublicProfile = () => {
     const [imageFailed, setImageFailed] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('not_connected');
     const [isFollowLoading, setIsFollowLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
 
     useEffect(() => {
@@ -554,6 +555,28 @@ const PublicProfile = () => {
         }
     };
 
+    const sortedRecommendations = React.useMemo(() => {
+        let sortableItems = [...recommendations];
+        
+        // Apply search filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            sortableItems = sortableItems.filter(item => {
+                const businessName = (item.business_name || "").toLowerCase();
+                const message = (item.recommender_message || "").toLowerCase();
+                const tags = Array.isArray(item.tags) ? item.tags.join(" ").toLowerCase() : "";
+                const contactName = (item.provider_contact_name || item.business_contact || "").toLowerCase();
+                
+                return businessName.includes(query) || 
+                       message.includes(query) || 
+                       tags.includes(query) ||
+                       contactName.includes(query);
+            });
+        }
+        
+        return sortableItems;
+    }, [recommendations, searchQuery]);
+
     if (loading) {
         return <div className="profile-loading-container"><div className="profile-spinner"></div><p>Loading Profile...</p></div>;
     }
@@ -681,10 +704,42 @@ const PublicProfile = () => {
             <main className="profile-content-area">
                 <div className="profile-recommendations-header">
                     <h2>{userName ? `${userName}'s Recommendations` : "Recommendations"}</h2>
+                    {recommendations.length > 0 && (
+                        <div className="profile-search-wrapper">
+                            <div className="profile-search-container">
+                                <svg className="profile-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <input
+                                    type="text"
+                                    placeholder="Search recommendations..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="profile-search-input"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery("")}
+                                        className="profile-search-clear"
+                                        title="Clear search"
+                                    >
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+                            {sortedRecommendations.length > 0 && (
+                                <span className="profile-recommendations-count">
+                                    {searchQuery.trim() ? `${sortedRecommendations.length} of ${recommendations.length} recommendations` : `${sortedRecommendations.length} recommendations`}
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
-                 {recommendations.length > 0 ? (
+                 {sortedRecommendations.length > 0 ? (
                     <ul className="provider-list">
-                        {recommendations.map((rec) => (
+                        {sortedRecommendations.map((rec) => (
                             <PublicRecommendationCard
                                 key={rec.id || rec.provider_id}
                                 rec={rec}
@@ -697,10 +752,26 @@ const PublicProfile = () => {
                         ))}
                     </ul>
                 ) : (
-                     <div className="profile-empty-state no-providers-message">
-                        <FaStar className="no-providers-icon" />
-                        <p>{userName ? `${userName} hasn't` : "This user hasn't"} made any recommendations yet.</p>
-                    </div>
+                    searchQuery.trim() ? (
+                        <div className="profile-empty-state no-search-results">
+                            <svg className="no-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <p>No recommendations found for "{searchQuery}"</p>
+                            <p className="search-suggestions">Try searching for business names, descriptions, tags, or contact names.</p>
+                            <button
+                                className="profile-secondary-action-btn"
+                                onClick={() => setSearchQuery("")}
+                            >
+                                Clear Search
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="profile-empty-state no-providers-message">
+                            <FaStar className="no-providers-icon" />
+                            <p>{userName ? `${userName} hasn't` : "This user hasn't"} made any recommendations yet.</p>
+                        </div>
+                    )
                 )}
             </main>
 

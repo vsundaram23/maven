@@ -135,14 +135,7 @@
     padding: 2.5rem 1.5rem;
 }
 
-.profile-recommendations-header h2 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #1A365D;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #e9ecef;
-}
+
 
 .provider-list {
     list-style: none;

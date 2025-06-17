@@ -28,7 +28,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FaStar, FaStarHalfAlt } from "react-icons/fa";
 import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./Profile.css";
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -970,6 +970,7 @@ const MyRecommendationCard = ({
     onRefreshList,
     user,
 }) => {
+    const providerIdForLink = rec.provider_id || rec.id;
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -1057,7 +1058,9 @@ const MyRecommendationCard = ({
         <li className="profile-my-rec-card">
             <div className="profile-my-rec-card-header">
                 <h2 className="profile-my-rec-card-title">
-                    {rec.business_name || "Unknown Business"}
+                    <Link to={`/provider/${providerIdForLink}`} target="_blank" rel="noopener noreferrer" className="clickable provider-name-link" onClick={() => localStorage.setItem("selectedProvider", JSON.stringify(rec))}>
+                        {rec.business_name || "Unknown Business"}
+                    </Link>
                 </h2>
                 <div className="profile-my-rec-badge-wrapper-with-menu">
                     <div className="profile-my-rec-badge-group">
@@ -1361,6 +1364,7 @@ const Profile = () => {
     const [trustCirclesLoading, setTrustCirclesLoading] = useState(false);
     const [trustCirclesError, setTrustCirclesError] = useState("");
     const [likedRecommendations, setLikedRecommendations] = useState(new Set());
+    const [searchQuery, setSearchQuery] = useState("");
     const ASPECT_RATIO = 1;
     const MIN_DIMENSION = 150;
 
@@ -1669,6 +1673,24 @@ const Profile = () => {
 
     const sortedRecommendations = React.useMemo(() => {
         let sortableItems = [...enrichedRecommendations];
+        
+        // Apply search filter first
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            sortableItems = sortableItems.filter(item => {
+                const businessName = (item.business_name || "").toLowerCase();
+                const message = (item.recommender_message || "").toLowerCase();
+                const tags = Array.isArray(item.tags) ? item.tags.join(" ").toLowerCase() : "";
+                const contactName = (item.provider_contact_name || item.business_contact || "").toLowerCase();
+                
+                return businessName.includes(query) || 
+                       message.includes(query) || 
+                       tags.includes(query) ||
+                       contactName.includes(query);
+            });
+        }
+        
+        // Then apply sorting
         if (
             sortOption === "topRated" &&
             sortableItems.every(
@@ -1687,7 +1709,7 @@ const Profile = () => {
                     new Date(a.date_of_recommendation || a.created_at || 0)
             );
         return sortableItems;
-    }, [enrichedRecommendations, sortOption]);
+    }, [enrichedRecommendations, sortOption, searchQuery]);
 
     const handleLogout = async () => {
         try {
@@ -2013,27 +2035,27 @@ const Profile = () => {
                         </div>
                         
                         <div className="profile-contact-info">
-                            {user?.primaryPhoneNumber?.phoneNumber && (
+                            {profileUserData?.userPhone && (
                                 <a 
-                                    href={`sms:${user.primaryPhoneNumber.phoneNumber.replace(/\D/g, '')}`} 
+                                    href={`sms:${profileUserData.userPhone.replace(/\D/g, '')}`} 
                                     className="profile-contact-link phone"
                                     title="Send a text to this number"
                                 >
                                     <svg className="contact-icon" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
                                     </svg>
-                                    {user.primaryPhoneNumber.phoneNumber}
+                                    {profileUserData.userPhone}
                                 </a>
                             )}
                             
-                            {user?.primaryEmailAddress?.emailAddress && (
+                            {profileUserData?.userEmail && (
                                 <a 
-                                    href={`mailto:${user.primaryEmailAddress.emailAddress}`} 
+                                    href={`mailto:${profileUserData.userEmail}`} 
                                     className="profile-contact-link email"
                                     title="Send email to this address"
                                 >
                                     <EnvelopeIcon className="contact-icon" />
-                                    {user.primaryEmailAddress.emailAddress}
+                                    {profileUserData.userEmail}
                                 </a>
                             )}
                         </div>
@@ -2056,7 +2078,7 @@ const Profile = () => {
                     </div>
                     <div className="profile-stats-wrapper">
                         <div className="profile-stat-item">
-                            <span className="profile-stat-number">{sortedRecommendations.length}</span>
+                            <span className="profile-stat-number">{enrichedRecommendations.length}</span>
                             <span className="profile-stat-label">Recommendations</span>
                         </div>
                         <div className="profile-stat-item">
@@ -2066,13 +2088,13 @@ const Profile = () => {
                         <div className="profile-stat-item">
                             <div className="profile-stat-achievement">
                                 <AchievementBadge 
-                                    recCount={sortedRecommendations.length} 
+                                    recCount={enrichedRecommendations.length} 
                                     onStartRecommending={() => navigate("/share-recommendation")}
                                 />
                             </div>
                             <span className="profile-stat-label">
                                 {(() => {
-                                    const count = sortedRecommendations.length;
+                                    const count = enrichedRecommendations.length;
                                     if (count >= 100) return 'Diamond Recommender';
                                     if (count >= 50) return 'Platinum Recommender';
                                     if (count >= 25) return 'Gold Recommender';
@@ -2082,7 +2104,7 @@ const Profile = () => {
                                 })()}
                             </span>
                             {(() => {
-                                const count = sortedRecommendations.length;
+                                const count = enrichedRecommendations.length;
                                 let nextTier, remaining;
                                 if (count < 1) {
                                     nextTier = 'Bronze';
@@ -2114,13 +2136,49 @@ const Profile = () => {
             </header>
             <main className="profile-content-area">
                 <div className="profile-recommendations-header">
-                    <h2>My Recommendations</h2>
-                    <button
-                        className="profile-add-new-btn"
-                        onClick={() => navigate("/share-recommendation")}
-                    >
-                        <PlusCircleIcon className="btn-icon" /> Add New
-                    </button>
+                    <div className="profile-recommendations-title-section">
+                        <h2>My Recommendations</h2>
+                        <div className="profile-recommendations-controls">
+                            <button
+                                className="profile-add-new-btn"
+                                onClick={() => navigate("/share-recommendation")}
+                            >
+                                <PlusCircleIcon className="btn-icon" /> Add New
+                            </button>
+                        </div>
+                    </div>
+                    {enrichedRecommendations.length > 0 && (
+                        <div className="profile-search-wrapper">
+                            <div className="profile-search-container">
+                                <svg className="profile-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <input
+                                    type="text"
+                                    placeholder="Search recommendations..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="profile-search-input"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery("")}
+                                        className="profile-search-clear"
+                                        title="Clear search"
+                                    >
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+                            {sortedRecommendations.length > 0 && (
+                                <span className="profile-recommendations-count">
+                                    {searchQuery.trim() ? `${sortedRecommendations.length} of ${enrichedRecommendations.length} recommendations` : `${sortedRecommendations.length} recommendations`}
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
                 {(loading ||
                     (statsLoading &&
@@ -2168,18 +2226,34 @@ const Profile = () => {
                 ) &&
                     sortedRecommendations.length === 0 &&
                     !error && (
-                        <div className="profile-empty-state no-providers-message">
-                            <FaStar className="no-providers-icon" />
-                            <p>You haven't made any recommendations yet.</p>
-                            <button
-                                className="profile-primary-action-btn"
-                                onClick={() =>
-                                    navigate("/share-recommendation")
-                                }
-                            >
-                                Share Your First Recommendation
-                            </button>
-                        </div>
+                        searchQuery.trim() ? (
+                            <div className="profile-empty-state no-search-results">
+                                <svg className="no-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <p>No recommendations found for "{searchQuery}"</p>
+                                <p className="search-suggestions">Try searching for business names, descriptions, tags, or contact names.</p>
+                                <button
+                                    className="profile-secondary-action-btn"
+                                    onClick={() => setSearchQuery("")}
+                                >
+                                    Clear Search
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="profile-empty-state no-providers-message">
+                                <FaStar className="no-providers-icon" />
+                                <p>You haven't made any recommendations yet.</p>
+                                <button
+                                    className="profile-primary-action-btn"
+                                    onClick={() =>
+                                        navigate("/share-recommendation")
+                                    }
+                                >
+                                    Share Your First Recommendation
+                                </button>
+                            </div>
+                        )
                     )}
                 {!(
                     loading ||
