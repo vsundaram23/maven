@@ -530,13 +530,7 @@
     margin: 0;
 }
 
-.profile-recommendations-count {
-    font-size: 0.875rem;
-    color: #6b7280;
-    font-weight: 500;
-    margin-top: 0.75rem !important;
-    text-align: left;
-}
+
 
 .profile-recommendations-controls {
     display: flex;
@@ -569,74 +563,71 @@
 }
 
 .profile-search-wrapper {
-    width: 100%;
-    max-width: 500px;
+    margin-bottom: 1.5rem;
 }
 
 .profile-search-container {
     position: relative;
-    display: flex;
-    align-items: center;
+    margin-bottom: 1rem;
 }
 
 .profile-search-input {
     width: 100%;
     padding: 0.75rem 1rem 0.75rem 2.75rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 0.75rem;
-    font-size: 0.9rem;
-    color: #374151;
-    background-color: #ffffff;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--profile-border-color);
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    background-color: var(--profile-bg-white);
+    color: var(--profile-text-primary);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .profile-search-input:focus {
     outline: none;
-    border-color: #1A365D;
-    box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1);
-    background-color: #ffffff;
+    border-color: var(--profile-secondary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .profile-search-input::placeholder {
-    color: #9ca3af;
-    font-weight: 400;
+    color: var(--profile-text-muted);
 }
 
 .profile-search-icon {
     position: absolute;
     left: 0.875rem;
+    top: 50%;
+    transform: translateY(-50%);
     width: 1.125rem;
     height: 1.125rem;
-    color: #9ca3af;
-    pointer-events: none;
-    z-index: 1;
+    color: var(--profile-text-muted);
 }
 
 .profile-search-clear {
     position: absolute;
     right: 0.75rem;
-    width: 1.25rem;
-    height: 1.25rem;
-    color: #6b7280;
-    background: none;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.5rem;
+    height: 1.5rem;
     border: none;
+    background: none;
+    color: var(--profile-text-muted);
     cursor: pointer;
     border-radius: 0.25rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 .profile-search-clear:hover {
-    color: #374151;
-    background-color: #f3f4f6;
+    color: var(--profile-text-primary);
+    background-color: var(--profile-bg-gray);
 }
 
 .profile-search-clear svg {
-    width: 0.875rem;
-    height: 0.875rem;
+    width: 1rem;
+    height: 1rem;
 }
 
 .profile-my-recommendations-list {
@@ -2338,4 +2329,183 @@
 .profile-share-btn-header .btn-icon {
     width: 1.1em;
     height: 1.1em;
+}
+
+/* City filtering styles */
+.profile-city-filter-toggle-section {
+    margin-bottom: 1rem;
+}
+
+.profile-city-filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background-color: var(--profile-bg-white);
+    border: 1px solid var(--profile-border-color);
+    border-radius: 0.5rem;
+    color: var(--profile-text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.profile-city-filter-toggle:hover {
+    background-color: #f8fafc;
+    border-color: var(--profile-secondary-color);
+}
+
+.profile-filter-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+    color: var(--profile-text-muted);
+    flex-shrink: 0;
+}
+
+.profile-active-filters-badge {
+    background-color: var(--profile-secondary-color);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+    min-width: 1.25rem;
+    text-align: center;
+    margin-left: auto;
+    margin-right: 0.5rem;
+}
+
+.profile-filter-chevron {
+    width: 1rem;
+    height: 1rem;
+    color: var(--profile-text-muted);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.profile-filter-chevron.rotated {
+    transform: rotate(180deg);
+}
+
+.profile-city-filter-wrapper {
+    background-color: var(--profile-bg-gray);
+    border: 1px solid var(--profile-border-color);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.profile-city-filter-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.profile-city-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    background-color: var(--profile-bg-white);
+    border: 1px solid var(--profile-border-color);
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.profile-city-checkbox-item:hover {
+    background-color: #f8fafc;
+    border-color: var(--profile-secondary-color);
+}
+
+.profile-city-checkbox-item input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.profile-city-checkbox-label {
+    font-weight: 500;
+    color: var(--profile-text-primary);
+}
+
+.profile-city-count {
+    color: var(--profile-text-muted);
+    font-size: 0.8rem;
+}
+
+.profile-city-clear-all {
+    background-color: var(--profile-secondary-color);
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.375rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.profile-city-clear-all:hover {
+    background-color: #1d4ed8;
+}
+
+.profile-recommendations-count {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--profile-text-muted);
+    text-align: center;
+    font-style: italic;
+}
+
+/* Filter clear buttons for empty states */
+.profile-filter-clear-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .profile-city-filter-toggle {
+        font-size: 0.85rem;
+        padding: 0.6rem 0.85rem;
+    }
+    
+    .profile-filter-icon {
+        width: 1rem;
+        height: 1rem;
+    }
+    
+    .profile-city-filter-checkboxes {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .profile-city-checkbox-item {
+        justify-content: space-between;
+    }
+    
+    .profile-filter-clear-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
 }

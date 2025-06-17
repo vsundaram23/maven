@@ -551,6 +551,185 @@
     height: 60px; /* Same visual height as the numbers */
 }
 
+/* City filtering styles */
+.profile-city-filter-toggle-section {
+    margin-bottom: 1rem;
+}
+
+.profile-city-filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background-color: white;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    color: #343a40;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.profile-city-filter-toggle:hover {
+    background-color: #f8fafc;
+    border-color: #2B6CB0;
+}
+
+.profile-filter-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+    color: #6c757d;
+    flex-shrink: 0;
+}
+
+.profile-active-filters-badge {
+    background-color: #2B6CB0;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+    min-width: 1.25rem;
+    text-align: center;
+    margin-left: auto;
+    margin-right: 0.5rem;
+}
+
+.profile-filter-chevron {
+    width: 1rem;
+    height: 1rem;
+    color: #6c757d;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.profile-filter-chevron.rotated {
+    transform: rotate(180deg);
+}
+
+.profile-city-filter-wrapper {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.profile-city-filter-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.profile-city-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    background-color: white;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.profile-city-checkbox-item:hover {
+    background-color: #f8fafc;
+    border-color: #2B6CB0;
+}
+
+.profile-city-checkbox-item input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.profile-city-checkbox-label {
+    font-weight: 500;
+    color: #343a40;
+}
+
+.profile-city-count {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+.profile-city-clear-all {
+    background-color: #2B6CB0;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.375rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.profile-city-clear-all:hover {
+    background-color: #1d4ed8;
+}
+
+.profile-recommendations-count {
+    display: block;
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-align: center;
+    font-style: italic;
+}
+
+/* Filter clear buttons for empty states */
+.profile-filter-clear-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .profile-city-filter-toggle {
+        font-size: 0.85rem;
+        padding: 0.6rem 0.85rem;
+    }
+    
+    .profile-filter-icon {
+        width: 1rem;
+        height: 1rem;
+    }
+    
+    .profile-city-filter-checkboxes {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .profile-city-checkbox-item {
+        justify-content: space-between;
+    }
+    
+    .profile-filter-clear-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
 /* Circular Achievement Badges */
 .achievement-badge-circular {
     width: 60px;

@@ -1336,8 +1336,6 @@ const AchievementBadge = ({ recCount, onStartRecommending }) => {
     );
 };
 
-
-
 const Profile = () => {
     const { isLoaded, isSignedIn, user } = useUser();
     const { signOut } = useClerk();
@@ -1368,6 +1366,8 @@ const Profile = () => {
     const [likedRecommendations, setLikedRecommendations] = useState(new Set());
     const [searchQuery, setSearchQuery] = useState("");
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [selectedCities, setSelectedCities] = useState([]);
+    const [showCityFilter, setShowCityFilter] = useState(false);
     const ASPECT_RATIO = 1;
     const MIN_DIMENSION = 150;
 
@@ -1693,6 +1693,14 @@ const Profile = () => {
             });
         }
         
+        // Apply city filter
+        if (selectedCities.length > 0) {
+            sortableItems = sortableItems.filter(item => {
+                const itemCity = item.city || "Other";
+                return selectedCities.includes(itemCity);
+            });
+        }
+        
         // Then apply sorting
         if (
             sortOption === "topRated" &&
@@ -1712,7 +1720,13 @@ const Profile = () => {
                     new Date(a.date_of_recommendation || a.created_at || 0)
             );
         return sortableItems;
-    }, [enrichedRecommendations, sortOption, searchQuery]);
+    }, [enrichedRecommendations, sortOption, searchQuery, selectedCities]);
+
+    const availableCities = React.useMemo(() => {
+        if (!enrichedRecommendations || enrichedRecommendations.length === 0) return [];
+        const cities = enrichedRecommendations.map((rec) => rec.city || "Other");
+        return Array.from(new Set(cities)).sort((a, b) => a.localeCompare(b));
+    }, [enrichedRecommendations]);
 
     const handleLogout = async () => {
         try {
@@ -2175,9 +2189,70 @@ const Profile = () => {
                                     </button>
                                 )}
                             </div>
+                            {availableCities.length > 1 && (
+                                <div className="profile-city-filter-toggle-section">
+                                    <button
+                                        className="profile-city-filter-toggle"
+                                        onClick={() => setShowCityFilter(!showCityFilter)}
+                                    >
+                                        <svg className="profile-filter-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                        </svg>
+                                        Filter by City
+                                        {selectedCities.length > 0 && (
+                                            <span className="profile-active-filters-badge">
+                                                {selectedCities.length}
+                                            </span>
+                                        )}
+                                        <svg 
+                                            className={`profile-filter-chevron ${showCityFilter ? 'rotated' : ''}`} 
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    
+                                    {showCityFilter && (
+                                        <div className="profile-city-filter-wrapper">
+                                            <div className="profile-city-filter-checkboxes">
+                                                {availableCities.map((city) => (
+                                                    <label key={city} className="profile-city-checkbox-item">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedCities.includes(city)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setSelectedCities(prev => [...prev, city]);
+                                                                } else {
+                                                                    setSelectedCities(prev => prev.filter(c => c !== city));
+                                                                }
+                                                            }}
+                                                        />
+                                                        <span className="profile-city-checkbox-label">{city}</span>
+                                                        <span className="profile-city-count">
+                                                            ({enrichedRecommendations.filter(rec => (rec.city || "Other") === city).length})
+                                                        </span>
+                                                    </label>
+                                                ))}
+                                                {selectedCities.length > 0 && (
+                                                    <button
+                                                        className="profile-city-clear-all"
+                                                        onClick={() => setSelectedCities([])}
+                                                        title="Clear all city filters"
+                                                    >
+                                                        Clear All
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             {sortedRecommendations.length > 0 && (
                                 <span className="profile-recommendations-count">
-                                    {searchQuery.trim() ? `${sortedRecommendations.length} of ${enrichedRecommendations.length} recommendations` : `${sortedRecommendations.length} recommendations`}
+                                    {searchQuery.trim() || selectedCities.length > 0 ? `${sortedRecommendations.length} of ${enrichedRecommendations.length} recommendations` : `${sortedRecommendations.length} recommendations`}
                                 </span>
                             )}
                         </div>
@@ -2229,19 +2304,49 @@ const Profile = () => {
                 ) &&
                     sortedRecommendations.length === 0 &&
                     !error && (
-                        searchQuery.trim() ? (
+                        (searchQuery.trim() || selectedCities.length > 0) ? (
                             <div className="profile-empty-state no-search-results">
                                 <svg className="no-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
-                                <p>No recommendations found for "{searchQuery}"</p>
-                                <p className="search-suggestions">Try searching for business names, descriptions, tags, or contact names.</p>
-                                <button
-                                    className="profile-secondary-action-btn"
-                                    onClick={() => setSearchQuery("")}
-                                >
-                                    Clear Search
-                                </button>
+                                <p>
+                                    No recommendations found
+                                    {searchQuery.trim() && ` for "${searchQuery}"`}
+                                    {selectedCities.length > 0 && ` in ${selectedCities.join(", ")}`}
+                                </p>
+                                <p className="search-suggestions">
+                                    Try {searchQuery.trim() ? "different search terms" : "selecting different cities"} 
+                                    {searchQuery.trim() && selectedCities.length > 0 ? " or clearing filters" : ""}.
+                                </p>
+                                <div className="profile-filter-clear-buttons">
+                                    {searchQuery.trim() && (
+                                        <button
+                                            className="profile-secondary-action-btn"
+                                            onClick={() => setSearchQuery("")}
+                                        >
+                                            Clear Search
+                                        </button>
+                                    )}
+                                    {selectedCities.length > 0 && (
+                                        <button
+                                            className="profile-secondary-action-btn"
+                                            onClick={() => setSelectedCities([])}
+                                        >
+                                            Clear City Filters
+                                        </button>
+                                    )}
+                                    {(searchQuery.trim() || selectedCities.length > 0) && (
+                                        <button
+                                            className="profile-secondary-action-btn"
+                                            onClick={() => {
+                                                setSearchQuery("");
+                                                setSelectedCities([]);
+                                            }}
+                                        >
+                                            Clear All Filters
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         ) : (
                             <div className="profile-empty-state no-providers-message">
