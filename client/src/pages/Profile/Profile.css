@@ -2301,3 +2301,41 @@
         font-size: 1em;
     }
 }
+
+/* Update the existing profile header button styles */
+.profile-share-btn-header {
+    background-color: var(--profile-primary-color);
+    color: var(--profile-bg-white);
+    border: 1px solid var(--profile-primary-color);
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+    justify-content: center;
+}
+
+.profile-share-btn-header:hover:not(:disabled) {
+    background-color: var(--profile-primary-color-dark);
+    color: var(--profile-bg-white);
+    border-color: var(--profile-primary-color-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 54, 93, 0.25);
+}
+
+.profile-share-btn-header:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.profile-share-btn-header .btn-icon {
+    width: 1.1em;
+    height: 1.1em;
+}

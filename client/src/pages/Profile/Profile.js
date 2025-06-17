@@ -5,7 +5,6 @@ import {
 } from "@heroicons/react/24/outline";
 import {
     ArrowPathIcon,
-    ArrowRightOnRectangleIcon,
     CalendarDaysIcon,
     CameraIcon,
     ChatBubbleLeftEllipsisIcon,
@@ -29,6 +28,7 @@ import { FaStar, FaStarHalfAlt } from "react-icons/fa";
 import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Link, useNavigate } from "react-router-dom";
+import ShareProfileModal from "../../components/ShareProfileModal/ShareProfileModal";
 import "./Profile.css";
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -1336,6 +1336,8 @@ const AchievementBadge = ({ recCount, onStartRecommending }) => {
     );
 };
 
+
+
 const Profile = () => {
     const { isLoaded, isSignedIn, user } = useUser();
     const { signOut } = useClerk();
@@ -1365,6 +1367,7 @@ const Profile = () => {
     const [trustCirclesError, setTrustCirclesError] = useState("");
     const [likedRecommendations, setLikedRecommendations] = useState(new Set());
     const [searchQuery, setSearchQuery] = useState("");
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const ASPECT_RATIO = 1;
     const MIN_DIMENSION = 150;
 
@@ -2024,12 +2027,12 @@ const Profile = () => {
                                     </button>
                                 )}
                                 <button
-                                    className="profile-logout-btn-header"
-                                    onClick={handleLogout}
+                                    className="profile-share-btn-header"
+                                    onClick={() => setIsShareModalOpen(true)}
                                     disabled={saving || isEditing}
                                 >
-                                    <ArrowRightOnRectangleIcon className="btn-icon" />{" "}
-                                    Logout
+                                    <ShareIcon className="btn-icon" />{" "}
+                                    Share Profile
                                 </button>
                             </div>
                         </div>
@@ -2285,6 +2288,14 @@ const Profile = () => {
                     trustCirclesLoadingProp={trustCirclesLoading}
                     trustCirclesErrorProp={trustCirclesError}
                     fetchUserTrustCirclesFunc={fetchUserTrustCirclesForModal}
+                />
+            )}
+            {isShareModalOpen && (
+                <ShareProfileModal
+                    isOpen={isShareModalOpen}
+                    onClose={() => setIsShareModalOpen(false)}
+                    profileData={profileUserData}
+                    userEmail={user?.primaryEmailAddress?.emailAddress}
                 />
             )}
         </div>

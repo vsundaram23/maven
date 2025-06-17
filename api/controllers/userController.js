@@ -72,7 +72,7 @@ const getCurrentUserRecommendations = async (req, res) => {
         );
 
         const userResult = await pool.query(
-            `SELECT id, name, phone_number, email, bio FROM users WHERE id = $1`,
+            `SELECT id, name, username, phone_number, email, bio FROM users WHERE id = $1`,
             [internalUserId]
         );
         const userData = userResult.rows[0] || {};
@@ -82,6 +82,7 @@ const getCurrentUserRecommendations = async (req, res) => {
             recommendations: recommendationsResult.rows,
             userId: userData.id,
             userName: userData.name || "User",
+            userUsername: userData.username || null,
             userPhone: userData.phone_number || null,
             userEmail: userData.email || null,
             userBio: userData.bio || null,
