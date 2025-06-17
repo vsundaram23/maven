@@ -120,6 +120,15 @@
     margin-top: 0.25rem;
 }
 
+.profile-stat-progress {
+    display: block;
+    font-size: 0.7rem;
+    color: #9ca3af;
+    margin-top: 0.25rem;
+    font-style: italic;
+    opacity: 0.8;
+}
+
 .profile-content-area {
     max-width: 1024px;
     margin: 0 auto;
@@ -529,5 +538,236 @@
     .contact-icon {
         width: 1rem;
         height: 1rem;
+    }
+}
+
+/* Achievement Badge Styles */
+.profile-stat-item {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Achievement section styling */
+.profile-stat-achievement {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 60px; /* Same visual height as the numbers */
+}
+
+/* Circular Achievement Badges */
+.achievement-badge-circular {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Starter Badge for 0 recommendations */
+.achievement-badge-starter {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px dashed #cbd5e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: default;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+}
+
+.achievement-badge-circular:hover {
+    transform: translateY(-2px) scale(1.1);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.achievement-badge-starter::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.3) 0%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        rgba(203, 213, 224, 0.1) 100%);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.achievement-badge-icon {
+    font-size: 24px;
+    z-index: 2;
+    position: relative;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Bronze Badge */
+.achievement-badge-bronze {
+    background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);
+    border-color: #CD7F32;
+    box-shadow: 0 8px 16px rgba(205, 127, 50, 0.3);
+}
+
+.achievement-badge-bronze:hover {
+    box-shadow: 0 12px 24px rgba(205, 127, 50, 0.4);
+}
+
+.achievement-badge-bronze::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.2) 0%, 
+        rgba(255, 255, 255, 0.05) 50%, 
+        rgba(0, 0, 0, 0.1) 100%);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+/* Silver Badge */
+.achievement-badge-silver {
+    background: linear-gradient(135deg, #C0C0C0 0%, #808080 100%);
+    border-color: #C0C0C0;
+    box-shadow: 0 8px 16px rgba(192, 192, 192, 0.3);
+}
+
+.achievement-badge-silver:hover {
+    box-shadow: 0 12px 24px rgba(192, 192, 192, 0.4);
+}
+
+.achievement-badge-silver::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.3) 0%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        rgba(0, 0, 0, 0.05) 100%);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+/* Gold Badge */
+.achievement-badge-gold {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    border-color: #FFD700;
+    box-shadow: 0 8px 16px rgba(255, 215, 0, 0.3);
+}
+
+.achievement-badge-gold:hover {
+    box-shadow: 0 12px 24px rgba(255, 215, 0, 0.4);
+}
+
+.achievement-badge-gold::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.4) 0%, 
+        rgba(255, 255, 255, 0.2) 50%, 
+        rgba(255, 165, 0, 0.1) 100%);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+/* Platinum Badge */
+.achievement-badge-platinum {
+    background: linear-gradient(135deg, #E5E4E2 0%, #A8A8A8 100%);
+    border-color: #E5E4E2;
+    box-shadow: 0 8px 16px rgba(229, 228, 226, 0.4);
+}
+
+.achievement-badge-platinum:hover {
+    box-shadow: 0 12px 24px rgba(229, 228, 226, 0.5);
+}
+
+.achievement-badge-platinum::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.5) 0%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        rgba(168, 168, 168, 0.1) 100%);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+/* Diamond Badge */
+.achievement-badge-diamond {
+    background: linear-gradient(135deg, #B9F2FF 0%, #7DD3FC 50%, #0369A1 100%);
+    border-color: #B9F2FF;
+    box-shadow: 0 8px 16px rgba(185, 242, 255, 0.4);
+}
+
+.achievement-badge-diamond:hover {
+    box-shadow: 0 12px 24px rgba(185, 242, 255, 0.5);
+}
+
+.achievement-badge-diamond::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.6) 0%, 
+        rgba(255, 255, 255, 0.4) 50%, 
+        rgba(3, 105, 161, 0.1) 100%);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+/* Mobile responsive for badges */
+@media (max-width: 768px) {
+    .profile-stats-wrapper {
+        flex-direction: column;
+        gap: 1.5rem;
+        align-items: center;
+    }
+    
+    .profile-stat-achievement {
+        height: 50px;
+    }
+    
+    .achievement-badge-circular {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .achievement-badge-icon {
+        font-size: 20px;
     }
 }

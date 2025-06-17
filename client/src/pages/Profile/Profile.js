@@ -1,41 +1,34 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useUser, useClerk } from "@clerk/clerk-react";
-import { useNavigate } from "react-router-dom";
-import { FaStar, FaStarHalfAlt, FaThumbsUp } from "react-icons/fa";
-import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
-import "react-image-crop/dist/ReactCrop.css";
+import { useClerk, useUser } from "@clerk/clerk-react";
 import {
-    UserCircleIcon,
-    EnvelopeIcon,
-    UsersIcon as UsersIconSolid,
-    ArrowRightOnRectangleIcon,
-    PencilSquareIcon,
-    PlusCircleIcon,
-    CameraIcon,
-    CheckCircleIcon,
-    XCircleIcon,
-    BuildingOffice2Icon,
-    ChatBubbleLeftEllipsisIcon,
-    EllipsisVerticalIcon,
-    ShareIcon,
-    CalendarDaysIcon,
-    CropIcon,
-    TagIcon,
-    GlobeAltIcon,
-    SparklesIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon, StarIcon as OutlineStarIcon, TrashIcon, XMarkIcon
+} from "@heroicons/react/24/outline";
+import {
     ArrowPathIcon,
+    ArrowRightOnRectangleIcon,
+    CalendarDaysIcon,
+    CameraIcon,
+    ChatBubbleLeftEllipsisIcon,
+    CheckCircleIcon,
+    EnvelopeIcon,
+    ExclamationTriangleIcon,
+    GlobeAltIcon,
+    PencilSquareIcon,
     PhoneIcon,
     PhotoIcon,
+    PlusCircleIcon,
+    ShareIcon,
+    StarIcon as SolidStarIcon,
+    TagIcon,
+    UserCircleIcon,
+    UsersIcon as UsersIconSolid,
+    XCircleIcon
 } from "@heroicons/react/24/solid";
-import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
-import { StarIcon as OutlineStarIcon } from "@heroicons/react/24/outline";
-import {
-    TrashIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    XMarkIcon,
-} from "@heroicons/react/24/outline";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/solid";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { FaStar, FaStarHalfAlt } from "react-icons/fa";
+import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
+import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -1272,6 +1265,74 @@ const MyRecommendationCard = ({
     );
 };
 
+const AchievementBadge = ({ recCount, onStartRecommending }) => {
+    const getBadgeInfo = (count) => {
+        if (count >= 100) {
+            return {
+                level: 'Diamond',
+                tier: 'Diamond Recommender',
+                className: 'achievement-badge-diamond',
+                icon: '💎',
+                description: `Diamond Recommender (${count} recommendations)`
+            };
+        } else if (count >= 50) {
+            return {
+                level: 'Platinum',
+                tier: 'Platinum Recommender',
+                className: 'achievement-badge-platinum',
+                icon: '⭐',
+                description: `Platinum Recommender (${count} recommendations)`
+            };
+        } else if (count >= 25) {
+            return {
+                level: 'Gold',
+                tier: 'Gold Recommender',
+                className: 'achievement-badge-gold',
+                icon: '🏆',
+                description: `Gold Recommender (${count} recommendations)`
+            };
+        } else if (count >= 10) {
+            return {
+                level: 'Silver',
+                tier: 'Silver Recommender',
+                className: 'achievement-badge-silver',
+                icon: '🥈',
+                description: `Silver Recommender (${count} recommendations)`
+            };
+        } else if (count >= 1) {
+            return {
+                level: 'Bronze',
+                tier: 'Bronze Recommender',
+                className: 'achievement-badge-bronze',
+                icon: '🥉',
+                description: `Bronze Recommender (${count} recommendations)`
+            };
+        }
+        return null;
+    };
+
+    const badge = getBadgeInfo(recCount);
+
+    if (!badge) {
+        // Show incentivizing starter badge for users with 0 recommendations
+        return (
+            <div 
+                className="achievement-badge-starter" 
+                title="Share your first recommendation to unlock Bronze tier!"
+                onClick={onStartRecommending}
+            >
+                <div className="achievement-badge-icon">🌟</div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={`achievement-badge-circular ${badge.className}`} title={badge.description}>
+            <div className="achievement-badge-icon">{badge.icon}</div>
+        </div>
+    );
+};
+
 const Profile = () => {
     const { isLoaded, isSignedIn, user } = useUser();
     const { signOut } = useClerk();
@@ -1789,71 +1850,23 @@ const Profile = () => {
         );
 
     return (
-        <div className="profile-page">
-            <header className="profile-main-header">
-                <div className="profile-avatar-section">
-                    {isEditing ? (
-                        <div className="profile-avatar-cropper-wrapper">
-                            <input
-                                type="file"
-                                id="profileImageUploadInput"
-                                style={{ display: "none" }}
-                                accept="image/*"
-                                onChange={handleFileChange}
-                            />
-                            {!imgSrcForCropper && (
-                                <div
-                                    className="profile-avatar-container"
-                                    onClick={() =>
-                                        document
-                                            .getElementById(
-                                                "profileImageUploadInput"
-                                            )
-                                            ?.click()
-                                    }
-                                    style={{ cursor: "pointer" }}
-                                >
-                                    {profileImage ? (
-                                        <img
-                                            src={profileImage}
-                                            alt="Current profile"
-                                            className="profile-avatar-image"
-                                            onError={onAvatarOrPreviewError}
-                                        />
-                                    ) : (
-                                        <UserCircleIcon className="profile-avatar-icon profile-avatar-icon-fallback" />
-                                    )}
-                                    <div className="profile-avatar-edit-overlay">
-                                        <CameraIcon
-                                            style={{
-                                                width: "24px",
-                                                height: "24px",
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                            {imgSrcForCropper && (
-                                <div className="cropper-container">
-                                    <ReactCrop
-                                        crop={crop}
-                                        onChange={(pc, p) => setCrop(p)}
-                                        onComplete={(c) => setCompletedCrop(c)}
-                                        aspect={ASPECT_RATIO}
-                                        minWidth={MIN_DIMENSION}
-                                        minHeight={MIN_DIMENSION}
-                                        circularCrop={true}
-                                    >
-                                        <img
-                                            ref={imgRef}
-                                            src={imgSrcForCropper}
-                                            alt="Crop me"
-                                            onLoad={onImageLoad}
-                                            style={{ maxHeight: "300px" }}
-                                        />
-                                    </ReactCrop>
-                                    <button
-                                        className="profile-change-photo-btn-cropper"
+        <div className="profile-page-container">
+            {error && <div className="profile-error-banner">{error}</div>}
+            <header className="profile-hero-header">
+                <div className="profile-hero-content">
+                    <div className="profile-avatar-wrapper">
+                        {isEditing ? (
+                            <div className="profile-avatar-cropper-wrapper">
+                                <input
+                                    type="file"
+                                    id="profileImageUploadInput"
+                                    style={{ display: "none" }}
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                />
+                                {!imgSrcForCropper && (
+                                    <div
+                                        className="profile-avatar-container"
                                         onClick={() =>
                                             document
                                                 .getElementById(
@@ -1861,206 +1874,326 @@ const Profile = () => {
                                                 )
                                                 ?.click()
                                         }
+                                        style={{ cursor: "pointer" }}
                                     >
-                                        <CameraIcon className="btn-icon" />{" "}
-                                        Change Photo
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="profile-avatar-display-wrapper profile-avatar-container">
-                            {profileImage ? (
-                                <img
-                                    src={profileImage}
-                                    alt={
-                                        profileUserData?.userName ||
-                                        user?.firstName ||
-                                        "User"
-                                    }
-                                    className="profile-avatar-image"
-                                    onError={onAvatarOrPreviewError}
-                                />
-                            ) : null}
-                            <UserCircleIcon
-                                className="profile-avatar-icon profile-avatar-icon-fallback"
-                                style={{
-                                    display: profileImage ? "none" : "flex",
-                                }}
-                            />
-                        </div>
-                    )}
-                </div>
-                <div className="profile-user-info">
-                    <h1>
-                        {profileUserData?.userName ||
-                            `${user?.firstName || ""} ${
-                                user?.lastName || ""
-                            }`.trim() ||
-                            "User"}
-                    </h1>
-                    <p>
-                        <EnvelopeIcon className="inline-icon" />
-                        {user?.primaryEmailAddress?.emailAddress}
-                    </p>
-                    {isEditing ? (
-                        <textarea
-                            className="profile-bio-textarea"
-                            value={editingBio}
-                            onChange={(e) => setEditingBio(e.target.value)}
-                            placeholder="Tell us about yourself..."
-                            rows={3}
-                        />
-                    ) : (
-                        userBio && <p className="profile-user-bio">{userBio}</p>
-                    )}
-                </div>
-                <div className="profile-header-actions">
-                    {isEditing ? (
-                        <>
-                            <button
-                                className="profile-save-btn"
-                                onClick={handleSaveProfile}
-                                disabled={saving}
-                            >
-                                <CheckCircleIcon className="btn-icon" />{" "}
-                                {saving ? "Saving..." : "Save Changes"}
-                            </button>
-                            <button
-                                className="profile-cancel-btn"
-                                onClick={handleEditToggle}
-                                disabled={saving}
-                            >
-                                <XCircleIcon className="btn-icon" /> Cancel
-                            </button>
-                        </>
-                    ) : (
-                        <button
-                            className="profile-edit-btn"
-                            onClick={handleEditToggle}
-                        >
-                            <PencilSquareIcon className="btn-icon" /> Edit
-                            Profile
-                        </button>
-                    )}
-                    <button
-                        className="profile-logout-btn-header"
-                        onClick={handleLogout}
-                        disabled={saving || isEditing}
-                    >
-                        <ArrowRightOnRectangleIcon className="btn-icon" />{" "}
-                        Logout
-                    </button>
-                </div>
-            </header>
-            {error && <div className="profile-error-banner">{error}</div>}
-            <section className="profile-stats-bar">
-                <div className="stat-item">
-                    <FaStar
-                        className="stat-icon"
-                        style={{ color: "var(--profile-accent-yellow)" }}
-                    />
-                    <span>{sortedRecommendations.length}</span>
-                    <p>Recommendations Made</p>
-                </div>
-                <div className="stat-item">
-                    <UsersIconSolid className="stat-icon" />
-                    <span>{connections.length}</span>
-                    <p>Connections</p>
-                </div>
-            </section>
-            <main className="profile-main-content">
-                <section
-                    className="profile-content-section"
-                    id="my-recommendations"
-                >
-                    <div className="section-header">
-                        <h2>My Recommendations</h2>
-                        <button
-                            className="profile-add-new-btn"
-                            onClick={() => navigate("/share-recommendation")}
-                        >
-                            <PlusCircleIcon className="btn-icon" /> Add New
-                        </button>
-                    </div>
-                    {(loading ||
-                        (statsLoading &&
-                            baseRecommendations.length > 0 &&
-                            enrichedRecommendations.length <
-                                baseRecommendations.length)) &&
-                        sortedRecommendations.length === 0 && (
-                            <div className="profile-loading-container small-spinner">
-                                <div className="profile-spinner"></div>
-                                <p>Loading recommendations...</p>
+                                        {profileImage ? (
+                                            <img
+                                                src={profileImage}
+                                                alt="Current profile"
+                                                className="profile-avatar-image"
+                                                onError={onAvatarOrPreviewError}
+                                            />
+                                        ) : (
+                                            <div className="profile-avatar-initials">
+                                                <span>
+                                                    {profileUserData?.userName?.[0]?.toUpperCase() || 
+                                                     user?.firstName?.[0]?.toUpperCase() || 
+                                                     user?.primaryEmailAddress?.emailAddress?.[0]?.toUpperCase() || 
+                                                     "U"}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="profile-avatar-edit-overlay">
+                                            <CameraIcon
+                                                style={{
+                                                    width: "24px",
+                                                    height: "24px",
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                                {imgSrcForCropper && (
+                                    <div className="cropper-container">
+                                        <ReactCrop
+                                            crop={crop}
+                                            onChange={(pc, p) => setCrop(p)}
+                                            onComplete={(c) => setCompletedCrop(c)}
+                                            aspect={ASPECT_RATIO}
+                                            minWidth={MIN_DIMENSION}
+                                            minHeight={MIN_DIMENSION}
+                                            circularCrop={true}
+                                        >
+                                            <img
+                                                ref={imgRef}
+                                                src={imgSrcForCropper}
+                                                alt="Crop me"
+                                                onLoad={onImageLoad}
+                                                style={{ maxHeight: "300px" }}
+                                            />
+                                        </ReactCrop>
+                                        <button
+                                            className="profile-change-photo-btn-cropper"
+                                            onClick={() =>
+                                                document
+                                                    .getElementById(
+                                                        "profileImageUploadInput"
+                                                    )
+                                                    ?.click()
+                                            }
+                                        >
+                                            <CameraIcon className="btn-icon" />{" "}
+                                            Change Photo
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    {!(
-                        loading ||
-                        (statsLoading &&
-                            baseRecommendations.length > 0 &&
-                            enrichedRecommendations.length <
-                                baseRecommendations.length)
-                    ) &&
-                        sortedRecommendations.length > 0 && (
-                            <ul className="profile-my-recommendations-list">
-                                {sortedRecommendations.map((rec) => (
-                                    <MyRecommendationCard
-                                        key={rec.id}
-                                        rec={rec}
-                                        onEdit={(rec) => {
-                                            setCurrentEditingRec(rec);
-                                            setIsEditModalOpen(true);
-                                        }}
-                                        onLikeRecommendation={
-                                            handleProviderLikeFromProfile
+                        ) : (
+                            <>
+                                {profileImage ? (
+                                    <img
+                                        src={profileImage}
+                                        alt={
+                                            profileUserData?.userName ||
+                                            user?.firstName ||
+                                            "User"
                                         }
-                                        onRefreshList={fetchProfileData}
-                                        user={user}
+                                        className="profile-avatar-image"
+                                        onError={onAvatarOrPreviewError}
                                     />
-                                ))}
-                            </ul>
+                                ) : (
+                                    <div className="profile-avatar-initials">
+                                        <span>
+                                            {profileUserData?.userName?.[0]?.toUpperCase() || 
+                                             user?.firstName?.[0]?.toUpperCase() || 
+                                             user?.primaryEmailAddress?.emailAddress?.[0]?.toUpperCase() || 
+                                             "U"}
+                                        </span>
+                                    </div>
+                                )}
+                            </>
                         )}
-                    {!(
-                        loading ||
-                        (statsLoading &&
-                            baseRecommendations.length > 0 &&
-                            enrichedRecommendations.length <
-                                baseRecommendations.length)
-                    ) &&
-                        sortedRecommendations.length === 0 &&
-                        !error && (
-                            <div className="profile-empty-state">
-                                <FaStar
-                                    className="empty-state-icon"
-                                    style={{
-                                        color: "var(--profile-text-light)",
-                                    }}
-                                />
-                                <p>You haven't made any recommendations yet.</p>
+                    </div>
+                    <div className="profile-details-wrapper">
+                        <div className="profile-header-top">
+                            <h1 className="profile-user-name">
+                                {profileUserData?.userName ||
+                                    `${user?.firstName || ""} ${
+                                        user?.lastName || ""
+                                    }`.trim() ||
+                                    "User"}
+                            </h1>
+                            <div className="profile-header-actions">
+                                {isEditing ? (
+                                    <>
+                                        <button
+                                            className="profile-save-btn"
+                                            onClick={handleSaveProfile}
+                                            disabled={saving}
+                                        >
+                                            <CheckCircleIcon className="btn-icon" />{" "}
+                                            {saving ? "Saving..." : "Save Changes"}
+                                        </button>
+                                        <button
+                                            className="profile-cancel-btn"
+                                            onClick={handleEditToggle}
+                                            disabled={saving}
+                                        >
+                                            <XCircleIcon className="btn-icon" /> Cancel
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        className="profile-edit-btn"
+                                        onClick={handleEditToggle}
+                                    >
+                                        <PencilSquareIcon className="btn-icon" /> Edit
+                                        Profile
+                                    </button>
+                                )}
                                 <button
-                                    className="profile-primary-action-btn"
-                                    onClick={() =>
-                                        navigate("/share-recommendation")
-                                    }
+                                    className="profile-logout-btn-header"
+                                    onClick={handleLogout}
+                                    disabled={saving || isEditing}
                                 >
-                                    Share Your First Recommendation
+                                    <ArrowRightOnRectangleIcon className="btn-icon" />{" "}
+                                    Logout
                                 </button>
                             </div>
+                        </div>
+                        
+                        <div className="profile-contact-info">
+                            {user?.primaryPhoneNumber?.phoneNumber && (
+                                <a 
+                                    href={`sms:${user.primaryPhoneNumber.phoneNumber.replace(/\D/g, '')}`} 
+                                    className="profile-contact-link phone"
+                                    title="Send a text to this number"
+                                >
+                                    <svg className="contact-icon" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                                    </svg>
+                                    {user.primaryPhoneNumber.phoneNumber}
+                                </a>
+                            )}
+                            
+                            {user?.primaryEmailAddress?.emailAddress && (
+                                <a 
+                                    href={`mailto:${user.primaryEmailAddress.emailAddress}`} 
+                                    className="profile-contact-link email"
+                                    title="Send email to this address"
+                                >
+                                    <EnvelopeIcon className="contact-icon" />
+                                    {user.primaryEmailAddress.emailAddress}
+                                </a>
+                            )}
+                        </div>
+                        
+                        {isEditing ? (
+                            <textarea
+                                className="profile-bio-textarea"
+                                value={editingBio}
+                                onChange={(e) => setEditingBio(e.target.value)}
+                                placeholder="Tell us about yourself..."
+                                rows={3}
+                            />
+                        ) : (
+                            userBio && (
+                                <blockquote className="profile-user-bio">
+                                    <p>{userBio}</p>
+                                </blockquote>
+                            )
                         )}
-                    {!(
-                        loading ||
-                        (statsLoading &&
-                            baseRecommendations.length > 0 &&
-                            enrichedRecommendations.length <
-                                baseRecommendations.length)
-                    ) &&
-                        sortedRecommendations.length === 0 &&
-                        error && (
-                            <p className="profile-empty-state-error-inline">
-                                Could not load recommendations. {error}
-                            </p>
-                        )}
-                </section>
+                    </div>
+                    <div className="profile-stats-wrapper">
+                        <div className="profile-stat-item">
+                            <span className="profile-stat-number">{sortedRecommendations.length}</span>
+                            <span className="profile-stat-label">Recommendations</span>
+                        </div>
+                        <div className="profile-stat-item">
+                            <span className="profile-stat-number">{connections.length}</span>
+                            <span className="profile-stat-label">Followers</span>
+                        </div>
+                        <div className="profile-stat-item">
+                            <div className="profile-stat-achievement">
+                                <AchievementBadge 
+                                    recCount={sortedRecommendations.length} 
+                                    onStartRecommending={() => navigate("/share-recommendation")}
+                                />
+                            </div>
+                            <span className="profile-stat-label">
+                                {(() => {
+                                    const count = sortedRecommendations.length;
+                                    if (count >= 100) return 'Diamond Recommender';
+                                    if (count >= 50) return 'Platinum Recommender';
+                                    if (count >= 25) return 'Gold Recommender';
+                                    if (count >= 10) return 'Silver Recommender';
+                                    if (count >= 1) return 'Bronze Recommender';
+                                    return 'Start Your Journey';
+                                })()}
+                            </span>
+                            {(() => {
+                                const count = sortedRecommendations.length;
+                                let nextTier, remaining;
+                                if (count < 1) {
+                                    nextTier = 'Bronze';
+                                    remaining = 1 - count;
+                                } else if (count < 10) {
+                                    nextTier = 'Silver';
+                                    remaining = 10 - count;
+                                } else if (count < 25) {
+                                    nextTier = 'Gold';
+                                    remaining = 25 - count;
+                                } else if (count < 50) {
+                                    nextTier = 'Platinum';
+                                    remaining = 50 - count;
+                                } else if (count < 100) {
+                                    nextTier = 'Diamond';
+                                    remaining = 100 - count;
+                                } else {
+                                    return null; // Max tier reached
+                                }
+                                return (
+                                    <span className="profile-stat-progress">
+                                        {count === 0 ? 'Share your first recommendation!' : `${remaining} more to reach ${nextTier}`}
+                                    </span>
+                                );
+                            })()}
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <main className="profile-content-area">
+                <div className="profile-recommendations-header">
+                    <h2>My Recommendations</h2>
+                    <button
+                        className="profile-add-new-btn"
+                        onClick={() => navigate("/share-recommendation")}
+                    >
+                        <PlusCircleIcon className="btn-icon" /> Add New
+                    </button>
+                </div>
+                {(loading ||
+                    (statsLoading &&
+                        baseRecommendations.length > 0 &&
+                        enrichedRecommendations.length <
+                            baseRecommendations.length)) &&
+                    sortedRecommendations.length === 0 && (
+                        <div className="profile-loading-container small-spinner">
+                            <div className="profile-spinner"></div>
+                            <p>Loading recommendations...</p>
+                        </div>
+                    )}
+                {!(
+                    loading ||
+                    (statsLoading &&
+                        baseRecommendations.length > 0 &&
+                        enrichedRecommendations.length <
+                            baseRecommendations.length)
+                ) &&
+                    sortedRecommendations.length > 0 && (
+                        <ul className="provider-list">
+                            {sortedRecommendations.map((rec) => (
+                                <MyRecommendationCard
+                                    key={rec.id}
+                                    rec={rec}
+                                    onEdit={(rec) => {
+                                        setCurrentEditingRec(rec);
+                                        setIsEditModalOpen(true);
+                                    }}
+                                    onLikeRecommendation={
+                                        handleProviderLikeFromProfile
+                                    }
+                                    onRefreshList={fetchProfileData}
+                                    user={user}
+                                />
+                            ))}
+                        </ul>
+                    )}
+                {!(
+                    loading ||
+                    (statsLoading &&
+                        baseRecommendations.length > 0 &&
+                        enrichedRecommendations.length <
+                            baseRecommendations.length)
+                ) &&
+                    sortedRecommendations.length === 0 &&
+                    !error && (
+                        <div className="profile-empty-state no-providers-message">
+                            <FaStar className="no-providers-icon" />
+                            <p>You haven't made any recommendations yet.</p>
+                            <button
+                                className="profile-primary-action-btn"
+                                onClick={() =>
+                                    navigate("/share-recommendation")
+                                }
+                            >
+                                Share Your First Recommendation
+                            </button>
+                        </div>
+                    )}
+                {!(
+                    loading ||
+                    (statsLoading &&
+                        baseRecommendations.length > 0 &&
+                        enrichedRecommendations.length <
+                            baseRecommendations.length)
+                ) &&
+                    sortedRecommendations.length === 0 &&
+                    error && (
+                        <p className="profile-empty-state-error-inline">
+                            Could not load recommendations. {error}
+                        </p>
+                    )}
             </main>
             {isEditModalOpen && currentEditingRec && user && (
                 <EditRecommendationModal

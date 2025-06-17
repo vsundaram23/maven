@@ -177,6 +177,70 @@ const PublicRecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrent
     );
 };
 
+// Add this badge component after the existing components but before PublicProfile component
+const AchievementBadge = ({ recCount }) => {
+    const getBadgeInfo = (count) => {
+        if (count >= 100) {
+            return {
+                level: 'Diamond',
+                tier: 'Diamond Recommender',
+                className: 'achievement-badge-diamond',
+                icon: '💎',
+                description: `Diamond Recommender (${count} recommendations)`
+            };
+        } else if (count >= 50) {
+            return {
+                level: 'Platinum',
+                tier: 'Platinum Recommender',
+                className: 'achievement-badge-platinum',
+                icon: '⭐',
+                description: `Platinum Recommender (${count} recommendations)`
+            };
+        } else if (count >= 25) {
+            return {
+                level: 'Gold',
+                tier: 'Gold Recommender',
+                className: 'achievement-badge-gold',
+                icon: '🏆',
+                description: `Gold Recommender (${count} recommendations)`
+            };
+        } else if (count >= 10) {
+            return {
+                level: 'Silver',
+                tier: 'Silver Recommender',
+                className: 'achievement-badge-silver',
+                icon: '🥈',
+                description: `Silver Recommender (${count} recommendations)`
+            };
+        } else if (count >= 1) {
+            return {
+                level: 'Bronze',
+                tier: 'Bronze Recommender',
+                className: 'achievement-badge-bronze',
+                icon: '🥉',
+                description: `Bronze Recommender (${count} recommendations)`
+            };
+        }
+        return null;
+    };
+
+    const badge = getBadgeInfo(recCount);
+
+    if (!badge) {
+        // Show placeholder for users with 0 recommendations (in public view)
+        return (
+            <div className="achievement-badge-starter" title="This user hasn't shared any recommendations yet">
+                <div className="achievement-badge-icon">🌟</div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={`achievement-badge-circular ${badge.className}`} title={badge.description}>
+            <div className="achievement-badge-icon">{badge.icon}</div>
+        </div>
+    );
+};
 
 const PublicProfile = () => {
     const { username } = useParams();
@@ -566,6 +630,49 @@ const PublicProfile = () => {
                         <div className="profile-stat-item">
                             <span className="profile-stat-number">{connections.length}</span>
                             <span className="profile-stat-label">Followers</span>
+                        </div>
+                        <div className="profile-stat-item">
+                            <div className="profile-stat-achievement">
+                                <AchievementBadge recCount={recommendations.length} />
+                            </div>
+                            <span className="profile-stat-label">
+                                {(() => {
+                                    const count = recommendations.length;
+                                    if (count >= 100) return 'Diamond Recommender';
+                                    if (count >= 50) return 'Platinum Recommender';
+                                    if (count >= 25) return 'Gold Recommender';
+                                    if (count >= 10) return 'Silver Recommender';
+                                    if (count >= 1) return 'Bronze Recommender';
+                                    return 'Getting Started';
+                                })()}
+                            </span>
+                            {(() => {
+                                const count = recommendations.length;
+                                let nextTier, remaining;
+                                if (count < 1) {
+                                    nextTier = 'Bronze';
+                                    remaining = 1 - count;
+                                } else if (count < 10) {
+                                    nextTier = 'Silver';
+                                    remaining = 10 - count;
+                                } else if (count < 25) {
+                                    nextTier = 'Gold';
+                                    remaining = 25 - count;
+                                } else if (count < 50) {
+                                    nextTier = 'Platinum';
+                                    remaining = 50 - count;
+                                } else if (count < 100) {
+                                    nextTier = 'Diamond';
+                                    remaining = 100 - count;
+                                } else {
+                                    return null; // Max tier reached
+                                }
+                                return (
+                                    <span className="profile-stat-progress">
+                                        {count === 0 ? 'No recommendations yet' : `${remaining} more to reach ${nextTier}`}
+                                    </span>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
