@@ -15,13 +15,15 @@ const getConnectionsByEmail = async (email) => {
         u.name,
         u.email,
         u.phone_number,
+        u.username,
+        u.user_score,
         uc.connected_at
       FROM user_id main
       JOIN user_connections uc 
         ON main.id = uc.user_id AND uc.status = 'accepted'
       JOIN users u 
         ON uc.connected_user_id = u.id
-      ORDER BY uc.connected_at DESC
+      ORDER BY u.user_score DESC, uc.connected_at DESC
     `, [email]);
 
     console.log('Query rows:', result.rows);
@@ -46,13 +48,15 @@ const getConnectionsByUserId = async (userId) => {
         u.name,
         u.email,
         u.phone_number,
+        u.username,
+        u.user_score,
         uc.connected_at
       FROM user_info main
       JOIN user_connections uc
         ON main.id = uc.user_id AND uc.status = 'accepted'
       JOIN users u
         ON uc.connected_user_id = u.id
-      ORDER BY uc.connected_at DESC
+      ORDER BY u.user_score DESC, uc.connected_at DESC
     `, [userId]); // And here
 
     console.log('Query rows:', result.rows);

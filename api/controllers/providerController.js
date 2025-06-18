@@ -149,6 +149,79 @@ const getNewestVisibleProviders = async (req, res) => {
     }
 };
 
+const getNewRecommendationsCount = async (req, res) => {
+    const { user_id: clerkUserId, email: userEmail } = req.query;
+
+    // 1. Validate input
+    if (!clerkUserId || !userEmail) {
+        return res.status(400).json({ 
+            success: false, 
+            message: "User ID and email are required." 
+        });
+    }
+
+    try {
+        // 2. Resolve the internal application user ID
+        const internalUserId = await getInternalUserIdByEmail(userEmail, clerkUserId);
+        if (!internalUserId) {
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
+
+        // 3. Fetch the user's last sign-in timestamp from your 'users' table
+        const userQuery = await pool.query(
+            'SELECT last_sign_in_at FROM users WHERE id = $1', 
+            [internalUserId]
+        );
+
+        if (userQuery.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "User data not found in users table." });
+        }
+        
+        const lastSignInAt = userQuery.rows[0].last_sign_in_at;
+
+        // If the user has never signed in before, there are no "new" recommendations.
+        // This handles new users gracefully.
+        if (!lastSignInAt) {
+            return res.json({ success: true, newRecommendationCount: 0 });
+        }
+
+        // 4. Reuse your existing visibility logic to form the base of the query.
+        // This is CRUCIAL for consistency. You're counting from the same pool of
+        // recommendations that the user is allowed to see.
+        const { query: baseQuery, queryParams } = getVisibleProvidersBaseQuery(internalUserId);
+
+        // 5. Construct the final, efficient COUNT query.
+        // It wraps the visibility logic in a Common Table Expression (CTE) and
+        // filters it by the recommendation date.
+        const finalQuery = `
+            SELECT COUNT(*) AS new_recommendation_count
+            FROM (${baseQuery}) AS VisibleProvidersCTE
+            WHERE VisibleProvidersCTE.date_of_recommendation > $${queryParams.length + 1};
+        `;
+        
+        // The parameters are the ones from your base visibility query,
+        // PLUS the lastSignInAt timestamp for the final WHERE clause.
+        const finalQueryParams = [...queryParams, lastSignInAt];
+
+        // 6. Execute the query
+        const result = await pool.query(finalQuery, finalQueryParams);
+
+        // Safely parse the count result, which comes back from the DB as a string.
+        const newCount = parseInt(result.rows[0].new_recommendation_count, 10) || 0;
+
+        // 7. Send the successful response
+        res.json({ success: true, newRecommendationCount: newCount });
+
+    } catch (err) {
+        console.error("Database error in getNewRecommendationsCount:", err);
+        res.status(500).json({ 
+            success: false, 
+            message: "An error occurred while fetching the new recommendation count.", 
+            error: err.message 
+        });
+    }
+};
+
 const getAllVisibleProviders = async (req, res) => {
     const clerkUserId = req.query.user_id;
     const userEmail = req.query.email;
@@ -551,15 +624,81 @@ const simpleLikeRecommendation = async (req, res) => {
     }
 };
 
+const getPublicRecommendations = async (req, res) => {
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const sortBy = req.query.sortBy || 'date_of_recommendation';
+    const sortOrder = req.query.sortOrder || 'desc';
+
+    try {
+        const query = `
+            SELECT DISTINCT
+                sp.id,
+                sp.business_name,
+                sp.description,
+                sp.email,
+                sp.phone_number,
+                sp.tags,
+                sp.website,
+                sp.city,
+                sp.state,
+                sp.zip_code,
+                sp.service_scope,
+                sp.price_range,
+                sp.date_of_recommendation,
+                sp.num_likes,
+                sp.provider_message,
+                sp.business_contact,
+                sp.recommender_message,
+                sp.visibility,
+                sp.images,
+                sc.name AS category,
+                sp.recommended_by AS recommender_user_id,
+                rec_user.username as recommender_username,
+                rec_user.name AS recommender_name,
+                rec_user.phone_number AS recommender_phone,
+                ROUND(AVG(r.rating) OVER (PARTITION BY sp.id), 2) AS average_rating,
+                COUNT(r.id) OVER (PARTITION BY sp.id) AS total_reviews
+            FROM
+                public.service_providers sp
+            LEFT JOIN
+                public.service_categories sc ON sp.category_id = sc.service_id
+            LEFT JOIN
+                public.users rec_user ON sp.recommended_by = rec_user.id
+            LEFT JOIN
+                public.reviews r ON sp.id = r.provider_id
+            WHERE
+                sp.visibility = 'public'
+                AND sp.date_of_recommendation IS NOT NULL
+            ORDER BY 
+                sp.num_likes DESC,
+                sp.date_of_recommendation DESC,
+                sp.id DESC
+            LIMIT $1;
+        `;
+
+        const result = await pool.query(query, [limit]);
+        res.json({ success: true, providers: result.rows });
+    } catch (err) {
+        console.error("Database error in getPublicRecommendations:", err);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error fetching public recommendations", 
+            error: err.message 
+        });
+    }
+};
+
 module.exports = {
     getAllVisibleProviders,
     getProviderById,
     getRecommendationsByTargetUser,
     searchVisibleProviders,
+    getNewRecommendationsCount,
     getProviderCount,
     likeRecommendation,
     simpleLikeRecommendation,
-    getNewestVisibleProviders
+    getNewestVisibleProviders,
+    getPublicRecommendations
 };
 
 // working 5/20
