@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
-import { FaAward, FaBell, FaCheckCircle, FaCommentDots, FaStar, FaTimes, FaUsers} from 'react-icons/fa';
-import {LuTrendingUp} from 'react-icons/lu';
+import { FaAward, FaBell, FaCheckCircle, FaCommentDots, FaStar, FaTimes, FaUsers } from 'react-icons/fa';
+import { LuTrendingUp } from 'react-icons/lu';
 import "./NotificationModal.css";
 
 const NotificationModal = ({ isOpen, onClose, notifications, onMarkAsRead, onMarkAllAsRead }) => {
