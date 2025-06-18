@@ -5,6 +5,7 @@ import { useMediaQuery } from "react-responsive";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
+import useNotifications from "../../hooks/useNotifications";
 
 import {
     LockClosedIcon,
@@ -220,40 +221,48 @@ const PublicRecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrent
 };
 
 const Home = () => {
-    const { isLoaded, isSignedIn, user } = useUser();
+    const { user, isLoaded, isSignedIn } = useUser();
     const { openSignIn } = useClerk();
     const navigate = useNavigate();
     const location = useLocation();
     const isMobile = useMediaQuery({ maxWidth: 768 });
 
+    // Smart notification management
+    const {
+        unreadCount: newNotificationsCount,
+        notifications,
+        isLoadingCount: isLoadingNotificationsCount,
+        isLoadingNotifications,
+        fetchNotifications,
+        markAsRead: handleMarkNotificationAsRead,
+        markAllAsRead: handleMarkAllNotificationsAsRead,
+        forceRefresh: refreshNotifications
+    } = useNotifications();
+
+    // Essential UI state variables
     const [isSearching, setIsSearching] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [showLocationModal, setShowLocationModal] = useState(false);
     const [preferredName, setPreferredName] = useState("");
 
+    // Typing animation state
+    const [displayText, setDisplayText] = useState("");
+    const [isTyping, setIsTyping] = useState(true);
+
+    // Other state variables
+    const [newRecsCount, setNewRecsCount] = useState(0);
+    const [isLoadingNewRecsCount, setIsLoadingNewRecsCount] = useState(true);
+    
     const [providerCount, setProviderCount] = useState(0);
     const [connectionCount, setConnectionCount] = useState(0);
     const [communityCount, setCommunityCount] = useState(0);
-    const [showStatsLine, setShowStatsLine] = useState(false);
-
-    // Loading states for counts
     const [isLoadingCounts, setIsLoadingCounts] = useState(true);
-
-    // Mock data for new dashboard features
-    const [newRecsCount, setNewRecsCount] = useState(0);
-    const [isLoadingNewRecsCount, setIsLoadingNewRecsCount] = useState(true);
-    const [newNotificationsCount, setNewNotificationsCount] = useState(0);
-    const [isLoadingNotificationsCount, setIsLoadingNotificationsCount] = useState(true);
-    const [userScore, setUserScore] = useState(0);
-    const [currentLevel, setCurrentLevel] = useState(0);
-    const [progressToNextLevel, setProgressToNextLevel] = useState(0);
-
+    
     const [recentRecommendations, setRecentRecommendations] = useState([]);
     const [isLoadingRecentRecommendations, setIsLoadingRecentRecommendations] = useState(true);
-    const [recentRecommendationsError, setRecentRecommendationsError] = useState(null);
     const [likedRecommendations, setLikedRecommendations] = useState(new Set());
-    
-    // Public recommendations for non-logged-in users
+    const [recentRecommendationsError, setRecentRecommendationsError] = useState(null);
+
     const [publicRecommendations, setPublicRecommendations] = useState([]);
     const [isLoadingPublicRecommendations, setIsLoadingPublicRecommendations] = useState(true);
     const [publicRecommendationsError, setPublicRecommendationsError] = useState(null);
@@ -261,17 +270,16 @@ const Home = () => {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [providerForReview, setProviderForReview] = useState(null);
 
-    // Notification modal state and data
+    // Notification modal state
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
-    const [notifications, setNotifications] = useState([]);
-    const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
 
-    // Calculate user level and progress
-    const calculateLevel = (score) => {
-        const level = Math.floor(score / 100);
-        const progress = score % 100;
-        return { level, progress };
-    };
+    // Loading states for counts
+    const [showStatsLine, setShowStatsLine] = useState(false);
+
+    // Mock data for new dashboard features
+    const [progressToNextLevel, setProgressToNextLevel] = useState(0);
+    const [currentLevel, setCurrentLevel] = useState(0);
+    const [userScore, setUserScore] = useState(0);
 
     // Leaderboard data from connections
     const [leaderboardData, setLeaderboardData] = useState([]);
@@ -536,75 +544,6 @@ const Home = () => {
         fetchNewRecsCount();
     }, [isLoaded, isSignedIn, user]);
 
-    // Fetch unread notifications count
-    useEffect(() => {
-        const fetchNotificationsCount = async () => {
-            if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress) {
-                setNewNotificationsCount(0);
-                setIsLoadingNotificationsCount(false);
-                return;
-            }
-
-            setIsLoadingNotificationsCount(true);
-            try {
-                const params = new URLSearchParams({
-                    user_id: user.id,
-                    email: user.primaryEmailAddress.emailAddress,
-                });
-                
-                const response = await fetch(`${API_URL}/api/notifications/unread-count?${params.toString()}`);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success) {
-                        setNewNotificationsCount(data.unreadCount || 0);
-                    } else {
-                        console.error("API returned unsuccessful response:", data.message);
-                        setNewNotificationsCount(0);
-                    }
-                } else {
-                    console.error("Failed to fetch unread notifications count:", response.statusText);
-                    setNewNotificationsCount(0);
-                }
-            } catch (error) {
-                console.error("Error fetching unread notifications count:", error);
-                setNewNotificationsCount(0);
-            } finally {
-                setIsLoadingNotificationsCount(false);
-            }
-        };
-
-        fetchNotificationsCount();
-    }, [isLoaded, isSignedIn, user]);
-
-    const targetText = useMemo(() => {
-        if (!isLoaded) return `Welcome to ${BRAND_PHRASE}`;
-        if (!isSignedIn) return `Welcome to ${BRAND_PHRASE}`;
-        return preferredName || user?.firstName ? `Welcome back, ${preferredName || user.firstName}.` : `Welcome to ${BRAND_PHRASE}`;
-    }, [isLoaded, isSignedIn, preferredName, user?.firstName]);
-
-    const [displayText, setDisplayText] = useState("");
-    const [isTyping, setIsTyping] = useState(true);
-
-    useEffect(() => {
-        setDisplayText(""); setIsTyping(true); setShowStatsLine(false);
-    }, [targetText]);
-
-    useEffect(() => {
-        if (!isTyping || !targetText) { if (!targetText) setIsTyping(false); return; }
-        if (displayText.length < targetText.length) {
-            const next = targetText.substring(0, displayText.length + 1);
-            const t = setTimeout(() => setDisplayText(next), 100);
-            return () => clearTimeout(t);
-        } else { setIsTyping(false); }
-    }, [displayText, isTyping, targetText]);
-
-    useEffect(() => {
-        if (!isTyping && displayText === targetText && displayText !== "") {
-            if (isSignedIn) setShowStatsLine(true);
-        } else { setShowStatsLine(false); }
-    }, [isTyping, displayText, targetText, isSignedIn]);
-
     useEffect(() => {
         if (!isLoaded) return;
         const fetchCounts = async () => {
@@ -795,7 +734,7 @@ const Home = () => {
                         username: user.username || null, // Current user's username
                         user_score: userScore,
                         isCurrentUser: true,
-                        avatar: preferredName ? preferredName.charAt(0).toUpperCase() : user?.firstName?.charAt(0) || "U"
+                        avatar: preferredName ? preferredName.charAt(0).toUpperCase() : user.firstName ? user.firstName.charAt(0).toUpperCase() : "U"
                     },
                     ...connections.map(conn => ({
                         name: conn.name || "Unknown",
@@ -844,7 +783,7 @@ const Home = () => {
                     rank: 1,
                     name: preferredName || user.firstName || "You",
                     score: userScore,
-                    avatar: preferredName ? preferredName.charAt(0).toUpperCase() : user?.firstName?.charAt(0) || "U",
+                    avatar: preferredName ? preferredName.charAt(0).toUpperCase() : user.firstName ? user.firstName.charAt(0).toUpperCase() : "U",
                     isCurrentUser: true
                 }]);
             } finally {
@@ -952,80 +891,6 @@ const Home = () => {
 
     const handleLocationClick = () => setShowLocationModal(true);
 
-    // Fetch notifications when modal opens
-    const fetchNotifications = async () => {
-        if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress) {
-            setNotifications([]);
-            setIsLoadingNotifications(false);
-            return;
-        }
-
-        setIsLoadingNotifications(true);
-        try {
-            const params = new URLSearchParams({
-                user_id: user.id,
-                email: user.primaryEmailAddress.emailAddress,
-                limit: '20'
-            });
-            
-            const response = await fetch(`${API_URL}/api/notifications/?${params.toString()}`);
-            
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    // Transform API data to match the expected format
-                    const transformedNotifications = data.notifications.map(notification => ({
-                        id: notification.id,
-                        type: notification.type,
-                        title: getNotificationTitle(notification.type),
-                        message: notification.content,
-                        time: formatTimeAgo(notification.created_at),
-                        unread: !notification.is_read,
-                        link_url: notification.link_url
-                    }));
-                    setNotifications(transformedNotifications);
-                } else {
-                    console.error("API returned unsuccessful response:", data.message);
-                    setNotifications([]);
-                }
-            } else {
-                console.error("Failed to fetch notifications:", response.statusText);
-                setNotifications([]);
-            }
-        } catch (error) {
-            console.error("Error fetching notifications:", error);
-            setNotifications([]);
-        } finally {
-            setIsLoadingNotifications(false);
-        }
-    };
-
-    // Helper function to get notification title based on type
-    const getNotificationTitle = (type) => {
-        const titles = {
-            recommendation: "New recommendation match",
-            trust_circle: "Trust Circle update",
-            level: "Level progress",
-            review: "Review request",
-            achievement: "Achievement unlocked",
-            system: "System notification"
-        };
-        return titles[type] || "Notification";
-    };
-
-    // Helper function to format time ago
-    const formatTimeAgo = (dateString) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffInSeconds = Math.floor((now - date) / 1000);
-
-        if (diffInSeconds < 60) return "Just now";
-        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min ago`;
-        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hour${Math.floor(diffInSeconds / 3600) === 1 ? '' : 's'} ago`;
-        if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} day${Math.floor(diffInSeconds / 86400) === 1 ? '' : 's'} ago`;
-        return date.toLocaleDateString();
-    };
-
     // Notification handlers
     const handleNotificationClick = () => {
         setIsNotificationModalOpen(true);
@@ -1042,97 +907,47 @@ const Home = () => {
         }
     };
     
-    const handleMarkNotificationAsRead = async (id) => {
-        // Optimistically update UI first
-        setNotifications(prev => 
-            prev.map(notification => 
-                notification.id === id 
-                    ? { ...notification, unread: false }
-                    : notification
-            )
-        );
-
-        // Update unread count
-        setNewNotificationsCount(prev => Math.max(0, prev - 1));
-
-        // Call API to mark as read
-        try {
-            const response = await fetch(`${API_URL}/api/notifications/${id}/mark-read`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: user.id,
-                    userEmail: user.primaryEmailAddress.emailAddress
-                })
-            });
-
-            if (!response.ok) {
-                console.error("Failed to mark notification as read:", response.statusText);
-                // Revert optimistic update on failure
-                setNotifications(prev => 
-                    prev.map(notification => 
-                        notification.id === id 
-                            ? { ...notification, unread: true }
-                            : notification
-                    )
-                );
-                setNewNotificationsCount(prev => prev + 1);
-            }
-        } catch (error) {
-            console.error("Error marking notification as read:", error);
-            // Revert optimistic update on failure
-            setNotifications(prev => 
-                prev.map(notification => 
-                    notification.id === id 
-                        ? { ...notification, unread: true }
-                        : notification
-                )
-            );
-            setNewNotificationsCount(prev => prev + 1);
-        }
+    // Calculate user level and progress
+    const calculateLevel = (score) => {
+        const level = Math.floor(score / 100);
+        const progress = score % 100;
+        return { level, progress };
     };
 
-    const handleMarkAllNotificationsAsRead = async () => {
-        const unreadCount = notifications.filter(n => n.unread).length;
-        
-        // Optimistically update UI first
-        setNotifications(prev => 
-            prev.map(notification => ({ ...notification, unread: false }))
-        );
-        setNewNotificationsCount(0);
+    // Typing animation logic
+    const targetText = useMemo(() => {
+        if (!isLoaded) return `Welcome to ${BRAND_PHRASE}`;
+        if (!isSignedIn) return `Welcome to ${BRAND_PHRASE}`;
+        return preferredName || user?.firstName ? `Welcome back, ${preferredName || user.firstName}.` : `Welcome to ${BRAND_PHRASE}`;
+    }, [isLoaded, isSignedIn, preferredName, user?.firstName]);
 
-        // Call API to mark all as read
-        try {
-            const response = await fetch(`${API_URL}/api/notifications/mark-all-read`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: user.id,
-                    userEmail: user.primaryEmailAddress.emailAddress
-                })
-            });
+    useEffect(() => {
+        setDisplayText(""); 
+        setIsTyping(true); 
+        setShowStatsLine(false);
+    }, [targetText]);
 
-            if (!response.ok) {
-                console.error("Failed to mark all notifications as read:", response.statusText);
-                // Revert optimistic update on failure
-                setNotifications(prev => 
-                    prev.map(notification => 
-                        notification.id <= unreadCount ? { ...notification, unread: true } : notification
-                    )
-                );
-                setNewNotificationsCount(unreadCount);
-            }
-        } catch (error) {
-            console.error("Error marking all notifications as read:", error);
-            // Revert optimistic update on failure  
-            setNotifications(prev => 
-                prev.map(notification => 
-                    notification.id <= unreadCount ? { ...notification, unread: true } : notification
-                )
-            );
-            setNewNotificationsCount(unreadCount);
+    useEffect(() => {
+        if (!isTyping || !targetText) { 
+            if (!targetText) setIsTyping(false); 
+            return; 
         }
-    };
+        if (displayText.length < targetText.length) {
+            const next = targetText.substring(0, displayText.length + 1);
+            const t = setTimeout(() => setDisplayText(next), 100);
+            return () => clearTimeout(t);
+        } else { 
+            setIsTyping(false); 
+        }
+    }, [displayText, isTyping, targetText]);
+
+    useEffect(() => {
+        if (!isTyping && displayText === targetText && displayText !== "") {
+            if (isSignedIn) setShowStatsLine(true);
+        } else { 
+            setShowStatsLine(false); 
+        }
+    }, [isTyping, displayText, targetText, isSignedIn]);
 
     if (location.pathname !== "/") return null;
 
@@ -1155,7 +970,7 @@ const Home = () => {
                         {/* Welcome Message */}
                         <div className="dashboard-welcome">
                             <h1 className="dashboard-title">
-                                Welcome back, <span className="highlight-name">{preferredName || user?.firstName || "there"}</span>.
+                                {displayText}
                             </h1>
                             <p className="dashboard-subtitle">
                                 {isLoadingNewRecsCount || isLoadingNotificationsCount ? (
@@ -1267,7 +1082,7 @@ const Home = () => {
                                                 onLike={handleLikeRecommendation}
                                                 isLikedByCurrentUser={likedRecommendations.has(rec.id)}
                                                 loggedInUserId={user?.id}
-                                                currentUserName={preferredName || user?.firstName}
+                                                currentUserName={user?.firstName}
                                             />
                                         ))}
                                     </>
