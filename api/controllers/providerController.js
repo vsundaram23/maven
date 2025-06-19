@@ -138,10 +138,11 @@ const getNewestVisibleProviders = async (req, res) => {
         const finalQuery = `
             SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
             WHERE VisibleProvidersCTE.date_of_recommendation IS NOT NULL
+            AND VisibleProvidersCTE.recommender_user_id != $${queryParams.length + 1}
             ORDER BY VisibleProvidersCTE.${sortBy} ${sortOrder.toUpperCase()}
-            LIMIT $${queryParams.length + 1};
+            LIMIT $${queryParams.length + 2};
         `;
-        const result = await pool.query(finalQuery, [...queryParams, limit]);
+        const result = await pool.query(finalQuery, [...queryParams, internalUserId, limit]);
         res.json({ success: true, providers: result.rows });
     } catch (err) {
         console.error("Database error in getNewestVisibleProviders:", err);
