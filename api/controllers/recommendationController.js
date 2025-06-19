@@ -432,8 +432,9 @@ const updateRecommendation = async (req, res) => {
                     recommender_message = COALESCE($6, recommender_message),
                     visibility = COALESCE($7, visibility),
                     images = $8,
+                    initial_rating = COALESCE($9, initial_rating),
                     updated_at = NOW()
-                WHERE id = $9 RETURNING *;
+                WHERE id = $10 RETURNING *;
             `;
 
             const spValues = [
@@ -445,6 +446,7 @@ const updateRecommendation = async (req, res) => {
                 toNull(recommender_message),
                 visibility_status, // Fixed: use visibility_status instead of undefined variable
                 JSON.stringify(updatedImages),
+                rating, // Add the rating to be saved as initial_rating
                 serviceProviderId,
             ];
 
@@ -452,6 +454,21 @@ const updateRecommendation = async (req, res) => {
                 serviceProviderUpdateQuery,
                 spValues
             );
+
+            // Update the corresponding review if rating is provided
+            if (rating !== undefined && rating !== null) {
+                const recommenderUserId = updatedServiceProvider.rows[0].recommended_by;
+                
+                // Update the review rating to match the updated initial_rating
+                await client.query(
+                    `UPDATE reviews SET 
+                        rating = $1,
+                        content = COALESCE($2, content),
+                        updated_at = NOW()
+                    WHERE provider_id = $3 AND user_id = $4`,
+                    [rating, recommender_message, serviceProviderId, recommenderUserId]
+                );
+            }
 
             // Update trust circle shares if needed
             if (

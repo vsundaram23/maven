@@ -55,7 +55,7 @@ const getCurrentUserRecommendations = async (req, res) => {
             SELECT
                 sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
                 sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.website, sp.business_contact, 
-                sp.recommender_message, sp.images,
+                sp.recommender_message, sp.images, sp.initial_rating,
                 s.name as service_type, c.name as category_name,
                 EXISTS (
                     SELECT 1

@@ -218,7 +218,8 @@ const EditRecommendationModal = ({
             setRecommenderMessage(
                 recommendationToEdit.recommender_message || ""
             );
-            setRatingState(recommendationToEdit.rating || 0);
+            // Use initial_rating if available, otherwise fall back to rating
+            setRatingState(recommendationToEdit.initial_rating || recommendationToEdit.rating || 0);
             setTags(recommendationToEdit.tags || []);
             setProviderContactName(
                 recommendationToEdit.provider_contact_name ||
