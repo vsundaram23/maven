@@ -1,21 +1,18 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useUser } from "@clerk/clerk-react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    FaStar,
-    FaUsers,
-    FaPlusCircle,
-    FaThumbsUp,
     FaEye,
-    FaPhoneAlt,
-    FaEnvelope,
-    FaSms,
+    FaPlusCircle,
+    FaStar,
+    FaThumbsUp,
+    FaUsers
 } from "react-icons/fa";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import "./TrustCircles.css";
 
-const API_URL = "https://api.seanag-recommendations.org:8080";
-// const API_URL = "http://localhost:3000";
+// const API_URL = "https://api.seanag-recommendations.org:8080";
+const API_URL = "http://localhost:3000";
 
 const PersonAddIcon = () => (
     <svg
@@ -75,7 +72,7 @@ const HourglassTopIcon = () => (
 
 const MemberCard = ({ member }) => {
     const [imageFailed, setImageFailed] = useState(false);
-    const primarySrc = member.profile_image_url || member.avatarUrl;
+    const primarySrc = member.profile_image_url || member.profile_image || member.avatarUrl;
     const fallbackUiAvatarSrc = `https://ui-avatars.com/api/?name=${encodeURIComponent(
         member.name || member.email || "NA"
     )}&background=random&color=fff&size=60&font-size=0.33`;
@@ -136,36 +133,62 @@ const MemberCard = ({ member }) => {
         <div className="member-item-card">
             {avatarContent}
             <div className="member-name-container">
-                {nameParts.length > 1 ? (
-                    <>
-                        {nameParts.slice(0, -1).join(" ")}{" "}
-                        <span className="member-last-name">
-                            {nameParts.slice(-1)[0]}
-                        </span>
-                    </>
+                {member.username ? (
+                    <Link
+                        to={`/pro/${member.username}`}
+                        className="member-name-link"
+                        style={{ color: "inherit", cursor: "pointer" }}
+                    >
+                        {nameParts.length > 1 ? (
+                            <>
+                                {nameParts.slice(0, -1).join(" ")}{" "}
+                                <span className="member-last-name">
+                                    {nameParts.slice(-1)[0]}
+                                </span>
+                            </>
+                        ) : (
+                            displayName
+                        )}
+                    </Link>
                 ) : (
-                    displayName
+                    nameParts.length > 1 ? (
+                        <>
+                            {nameParts.slice(0, -1).join(" ")}{" "}
+                            <span className="member-last-name">
+                                {nameParts.slice(-1)[0]}
+                            </span>
+                        </>
+                    ) : (
+                        displayName
+                    )
                 )}
             </div>
-            <div className="member-actions">
-                {member.phone_number && (
-                    <a
-                        href={`sms:${member.phone_number.replace(/\D/g, "")}`}
-                        className="member-action-icon"
-                        title="Send SMS"
-                    >
-                        <FaSms />
-                    </a>
+            <div className="member-info">
+                {member.status !== 'requested' && member.status !== 'pending' && (
+                    <div className="trust-points">
+                        {member.user_score || member.trust_points || 0} Trust Points
+                    </div>
                 )}
-                {member.email && (
-                    <a
-                        href={`mailto:${member.email}`}
-                        className="member-action-icon"
-                        title="Send Email"
-                    >
-                        <FaEnvelope />
-                    </a>
-                )}
+                <div className="member-actions">
+                    {member.phone_number && (
+                        <a
+                            href={`sms:${member.phone_number.replace(/\D/g, "")}`}
+                            className="member-action-button text-button"
+                            title="Send Text Message"
+                        >
+                            Text
+                        </a>
+                    )}
+                    {member.email && (
+                        <a
+                            href={`mailto:${member.email}`}
+                            className="member-action-button email-button"
+                            title="Send Email"
+                        >
+                            Email
+                        </a>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -354,6 +377,9 @@ const TrustCircles = () => {
     const [newCommunityName, setNewCommunityName] = useState("");
     const [newCommunityDescription, setNewCommunityDescription] = useState("");
     const [activeTab, setActiveTab] = useState("myTrust");
+
+    // Add search state for followers
+    const [followersSearch, setFollowersSearch] = useState("");
 
     useEffect(() => {
         if (isLoaded && isSignedIn && user) {
@@ -626,6 +652,35 @@ const TrustCircles = () => {
             return (a.originalIndex || 0) - (b.originalIndex || 0);
         });
     }, [myRecRawProviders, myRecSortOption]);
+
+    // Sort communities by recommendation count (descending)
+    const sortedMyCommunities = useMemo(() => {
+        return [...myCommunities].sort((a, b) => (b.recommendations || 0) - (a.recommendations || 0));
+    }, [myCommunities]);
+
+    // Filter and sort followers by search term and Trust Points
+    const filteredFollowers = useMemo(() => {
+        let followers = individualConnections;
+        
+        // Filter by search term if provided
+        if (followersSearch.trim()) {
+            followers = followers.filter(conn => {
+                const name = conn.name || '';
+                const email = conn.email || '';
+                const searchTerm = followersSearch.toLowerCase();
+                
+                return name.toLowerCase().includes(searchTerm) || 
+                       email.toLowerCase().includes(searchTerm);
+            });
+        }
+        
+        // Sort by Trust Points (user_score) in descending order
+        return followers.sort((a, b) => {
+            const scoreA = a.user_score || a.trust_points || 0;
+            const scoreB = b.user_score || b.trust_points || 0;
+            return scoreB - scoreA;
+        });
+    }, [individualConnections, followersSearch]);
 
     const handleMyRecReviewSubmit = async (reviewData) => {
         if (
@@ -936,9 +991,9 @@ const TrustCircles = () => {
                                 .
                             </p>
                         ) : null}
-                        {myCommunities.length > 0 && (
+                        {sortedMyCommunities.length > 0 && (
                             <div className="grid-layout">
-                                {myCommunities.map((comm) => (
+                                {sortedMyCommunities.map((comm) => (
                                     <div className="card" key={comm.id}>
                                         <div className="card-content">
                                             {comm.created_by ===
@@ -1038,17 +1093,33 @@ const TrustCircles = () => {
                     <section className="section-container">
                         <div className="section-title-container">
                             <h2 className="section-title">
-                                Individual Connections
+                                Your Followers ({individualConnections.length})
                             </h2>
                             <div className="section-actions">
                                 <button
                                     className="button button-primary button-small icon-button"
                                     onClick={() => setShowAddPersonModal(true)}
                                 >
-                                    <PersonAddIcon /> Add Connection
+                                    <PersonAddIcon /> Add Follower
                                 </button>
                             </div>
                         </div>
+                        
+                        {individualConnections.length > 0 && (
+                            <div className="followers-search-container">
+                                <div className="search-input-wrapper">
+                                    <SearchIconSvg />
+                                    <input
+                                        type="text"
+                                        placeholder="Search followers..."
+                                        value={followersSearch}
+                                        onChange={(e) => setFollowersSearch(e.target.value)}
+                                        className="followers-search-input"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                        
                         {individualConnections.length === 0 &&
                         !trustCircleError ? (
                             <p className="empty-message">
@@ -1065,9 +1136,16 @@ const TrustCircles = () => {
                                 .
                             </p>
                         ) : null}
-                        {individualConnections.length > 0 && (
-                            <div className="members-list">
-                                {individualConnections.map((conn) => (
+                        
+                        {filteredFollowers.length === 0 && individualConnections.length > 0 && followersSearch ? (
+                            <p className="empty-message">
+                                No followers found matching "{followersSearch}".
+                            </p>
+                        ) : null}
+                        
+                        {filteredFollowers.length > 0 && (
+                            <div className="followers-list-vertical">
+                                {filteredFollowers.map((conn) => (
                                     <MemberCard
                                         key={conn.email}
                                         member={conn}

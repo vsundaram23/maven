@@ -1,5 +1,7 @@
 const pool = require('../config/db.config');
 
+const API_BASE_URL = "https://api.seanag-recommendations.org:8080";
+
 // Get accepted connections by email
 const getConnectionsByEmail = async (email) => {
   try {
@@ -12,11 +14,13 @@ const getConnectionsByEmail = async (email) => {
         WHERE email = $1
       )
       SELECT 
+        u.id,
         u.name,
         u.email,
         u.phone_number,
         u.username,
         u.user_score,
+        u.profile_image,
         uc.connected_at
       FROM user_id main
       JOIN user_connections uc 
@@ -27,7 +31,24 @@ const getConnectionsByEmail = async (email) => {
     `, [email]);
 
     console.log('Query rows:', result.rows);
-    return result.rows;
+    
+    // Map the results to include constructed profile image URLs
+    return result.rows.map((row) => {
+      let imageUrl = null;
+      if (row.profile_image) {
+        imageUrl = `${API_BASE_URL}/api/users/${row.id}/profile/image`;
+      }
+      return {
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        phone_number: row.phone_number,
+        username: row.username,
+        user_score: row.user_score,
+        profile_image_url: imageUrl,
+        connected_at: row.connected_at,
+      };
+    });
   } catch (error) {
     console.error('Error fetching connections:', error.message);
     throw new Error('Database error fetching connections');
@@ -45,11 +66,13 @@ const getConnectionsByUserId = async (userId) => {
         WHERE id = $1       -- The only change is here
       )
       SELECT
+        u.id,
         u.name,
         u.email,
         u.phone_number,
         u.username,
         u.user_score,
+        u.profile_image,
         uc.connected_at
       FROM user_info main
       JOIN user_connections uc
@@ -60,7 +83,24 @@ const getConnectionsByUserId = async (userId) => {
     `, [userId]); // And here
 
     console.log('Query rows:', result.rows);
-    return result.rows;
+    
+    // Map the results to include constructed profile image URLs
+    return result.rows.map((row) => {
+      let imageUrl = null;
+      if (row.profile_image) {
+        imageUrl = `${API_BASE_URL}/api/users/${row.id}/profile/image`;
+      }
+      return {
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        phone_number: row.phone_number,
+        username: row.username,
+        user_score: row.user_score,
+        profile_image_url: imageUrl,
+        connected_at: row.connected_at,
+      };
+    });
   } catch (error) {
     console.error('Error fetching connections by ID:', error.message);
     throw new Error('Database error fetching connections by ID');

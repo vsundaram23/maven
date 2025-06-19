@@ -24,7 +24,7 @@ const TrustScoreWheel = ({ score, showDebug = false }) => {
     <div className="trust-score-modal-wrapper" onClick={() => setShowRatingInfo(false)}>
       <div className="trust-score-modal" onClick={(e) => e.stopPropagation()}>
         <div className="trust-score-modal-header">
-          <h3>How Trust Points is Calculated</h3>
+          <h3>How Trust Points are Calculated</h3>
           <button className="trust-score-modal-close" onClick={() => setShowRatingInfo(false)}>
             ×
           </button>
