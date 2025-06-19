@@ -646,7 +646,7 @@ const getOnboardingStatus = async (req, res) => {
 };
 
 const saveOnboardingData = async (req, res) => {
-    const { userId, email, preferredName, phoneNumber, location, interests } =
+    const { userId, email, preferredName, phoneNumber, location, interests, username } =
         req.body;
 
     if (!email || !userId) {
@@ -668,22 +668,24 @@ const saveOnboardingData = async (req, res) => {
         // Ensure interests is an array
         const interestsArray = Array.isArray(interests) ? interests : [];
 
-        // Now update the user with onboarding data
+        // Now update the user with onboarding data including username
         const result = await pool.query(
             `UPDATE users
              SET preferred_name = $1,
                  phone_number = $2,
                  location = $3,
                  interests = $4,
+                 username = $5,
                  has_completed_onboarding = true,
                  updated_at = NOW()
-             WHERE id = $5
+             WHERE id = $6
              RETURNING *`,
             [
                 preferredName || null,
                 phoneNumber || null,
                 location || null,
                 interestsArray,
+                username || null,
                 internalUserId,
             ]
         );
@@ -707,6 +709,7 @@ const saveOnboardingData = async (req, res) => {
             email,
             userId,
             preferredName,
+            username,
         });
 
         res.status(500).json({
@@ -825,6 +828,48 @@ const getUserPublicProfileByUsername = async (req, res) => {
     }
 };
 
+const checkUsernameAvailability = async (req, res) => {
+    const { username } = req.body;
+
+    if (!username) {
+        return res.status(400).json({
+            success: false,
+            message: "Username is required.",
+        });
+    }
+
+    // Validate username format (optional but recommended)
+    if (!/^[a-z0-9]{3,20}$/.test(username)) {
+        return res.status(400).json({
+            success: false,
+            available: false,
+            message: "Username must be 3-20 characters long and contain only lowercase letters and numbers.",
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            "SELECT id FROM users WHERE username = $1",
+            [username]
+        );
+
+        const isAvailable = result.rows.length === 0;
+
+        res.json({
+            success: true,
+            available: isAvailable,
+            username: username,
+        });
+    } catch (err) {
+        console.error("Error checking username availability:", err.message, err.stack);
+        res.status(500).json({
+            success: false,
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+};
+
 module.exports = {
     getCurrentUserRecommendations,
     getRecommendationsByUserId,
@@ -839,4 +884,5 @@ module.exports = {
     saveOnboardingData,
     getPreferredName,
     getUserPublicProfileByUsername,
+    checkUsernameAvailability,
 };

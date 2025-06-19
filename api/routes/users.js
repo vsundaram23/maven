@@ -15,6 +15,7 @@ const {
     saveOnboardingData,
     getPreferredName,
     getUserPublicProfileByUsername,
+    checkUsernameAvailability,
 } = require("../controllers/userController");
 
 router.get("/me/recommendations", getCurrentUserRecommendations);
@@ -44,6 +45,8 @@ router.get("/onboarding-status", getOnboardingStatus);
 router.get("/preferred-name", getPreferredName);
 
 router.get("/pro/:username", getUserPublicProfileByUsername);
+
+router.post("/check-username", checkUsernameAvailability);
 
 module.exports = router;
 

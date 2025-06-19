@@ -24,15 +24,7 @@ const API_URL = 'https://api.seanag-recommendations.org:8080';
 const BRAND_PHRASE = "Tried & Trusted.";
 const LOCKED_LOCATION = "Greater Seattle Area";
 
-const placeholderPublicRecommendations = [
-    { id: 'pub1', provider_id: 'pub1', business_name: "Evergreen Home Services", primary_service: "Landscaping", average_rating: 4.8, total_reviews: 15, recommender_message: "Top-notch local landscapers, great attention to detail and beautiful results every time. Highly recommend for any garden work.", tags: ["landscaping", "reliable", "quality"], num_likes: 22, recommender_name: "Sarah M.", date_of_recommendation: "2024-05-15T10:00:00Z", city: "Bellevue", state: "WA" },
-    { id: 'pub2', provider_id: 'pub2', business_name: "Sound Financial Advisors", primary_service: "Financial Planning", average_rating: 5.0, total_reviews: 25, recommender_message: "They provide clear, actionable advice. Helped me set up a solid retirement plan. Client focus is evident.", tags: ["finance", "planning", "expert"], num_likes: 30, recommender_name: "John B.", date_of_recommendation: "2024-04-20T10:00:00Z", city: "Seattle", state: "WA" },
-    { id: 'pub3', provider_id: 'pub3', business_name: "Cascade Auto Repair", primary_service: "Auto Maintenance", average_rating: 4.5, total_reviews: 40, recommender_message: "Honest mechanics, fair prices, and quick service. My go-to for car troubles.", tags: ["auto", "repair", "trustworthy"], num_likes: 18, recommender_name: "Alice C.", date_of_recommendation: "2024-03-10T10:00:00Z", city: "Redmond", state: "WA" },
-    { id: 'pub4', provider_id: 'pub4', business_name: "Lakeview Bakery", primary_service: "Bakery", average_rating: 4.7, total_reviews: 30, recommender_message: "Best sourdough in town! Their pastries are also divine. Friendly staff.", tags: ["food", "bakery", "fresh"], num_likes: 25, recommender_name: "Emily R.", date_of_recommendation: "2024-05-01T10:00:00Z", city: "Kirkland", state: "WA" },
-    { id: 'pub5', provider_id: 'pub5', business_name: "Green Cleaners", primary_service: "House Cleaning", average_rating: 4.9, total_reviews: 20, recommender_message: "Reliable and thorough cleaning service. They use eco-friendly products which is a big plus!", tags: ["cleaning", "eco-friendly", "home"], num_likes: 28, recommender_name: "David K.", date_of_recommendation: "2024-04-10T10:00:00Z", city: "Seattle", state: "WA" },
-    { id: 'pub6', provider_id: 'pub6', business_name: "Evergreen Home Repair", primary_service: "Handyman", average_rating: 4.6, total_reviews: 12, recommender_message: "Reliable and quick fixes for everything around the house. A true lifesaver!", tags: ["handyman", "quick", "local"], num_likes: 15, recommender_name: "Mike L.", date_of_recommendation: "2024-05-20T10:00:00Z", city: "Seattle", state: "WA" },
-    { id: 'pub7', provider_id: 'pub7', business_name: "Northwest Tech Support", primary_service: "IT Services", average_rating: 4.9, total_reviews: 18, recommender_message: "Fixed my computer issues in no time, very knowledgeable and friendly. Highly recommend for tech support.", tags: ["tech", "support", "expert"], num_likes: 20, recommender_name: "Olivia P.", date_of_recommendation: "2024-05-25T10:00:00Z", city: "Bellevue", state: "WA" },
-];
+
 
 const StarRatingDisplay = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;
@@ -636,7 +628,7 @@ const Home = () => {
                     const jsonResponse = await response.json();
                     rawData = jsonResponse.success && jsonResponse.providers ? jsonResponse.providers : [];
                 } else {
-                    rawData = placeholderPublicRecommendations.slice(0, 3);
+                    rawData = [];
                 }
 
                 if (rawData.length === 0) {
@@ -690,11 +682,7 @@ const Home = () => {
             } catch (error) {
                 console.error("Error fetching recent recommendations:", error);
                 setRecentRecommendationsError(error.message);
-                if (!isSignedIn) {
-                    setRecentRecommendations(placeholderPublicRecommendations.slice(0, 3));
-                } else {
-                    setRecentRecommendations([]);
-                }
+                setRecentRecommendations([]);
                 setLikedRecommendations(new Set());
             } finally {
                 setIsLoadingRecentRecommendations(false);
