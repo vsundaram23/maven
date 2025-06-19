@@ -2073,7 +2073,7 @@ body {
     justify-content: flex-end;
   }
 
-  /* Trust Score Wheel mobile styling for logged-in */
+  /* Trust Points Wheel mobile styling for logged-in */
   .dashboard-layout:not(.not-logged-in) .score-wheel-container {
     padding: 1.5rem;
     max-width: 200px;

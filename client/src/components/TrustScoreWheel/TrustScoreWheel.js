@@ -21,49 +21,36 @@ const TrustScoreWheel = ({ score, showDebug = false }) => {
   };
 
   const RatingInfoModal = () => (
-    <AnimatePresence>
-      {showRatingInfo && (
-        <div className="trust-score-modal-wrapper">
-          <motion.div
-            className="trust-score-modal"
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 500 }}
-          >
-            <div className="trust-score-modal-header">
-              <h3>How Trust Score is Calculated</h3>
-              <button 
-                className="trust-score-modal-close"
-                onClick={() => setShowRatingInfo(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="trust-score-modal-content">
-              <div className="trust-score-points-breakdown">
-                <div className="trust-score-point-item">
-                  <span className="trust-score-point-value">+10 points</span>
-                  <span className="trust-score-point-action">Adding a recommendation</span>
-                </div>
-                <div className="trust-score-point-item">
-                  <span className="trust-score-point-value">+5 points</span>
-                  <span className="trust-score-point-action">Joining a community</span>
-                </div>
-                <div className="trust-score-point-item">
-                  <span className="trust-score-point-value">+2 points</span>
-                  <span className="trust-score-point-action">For every follower</span>
-                </div>
-              </div>
-              <p className="trust-score-modal-description">
-                Build your trust score by actively participating in the community. 
-                Share quality recommendations and connect with others to level up!
-              </p>
-            </div>
-          </motion.div>
+    <div className="trust-score-modal-wrapper" onClick={() => setShowRatingInfo(false)}>
+      <div className="trust-score-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="trust-score-modal-header">
+          <h3>How Trust Points is Calculated</h3>
+          <button className="trust-score-modal-close" onClick={() => setShowRatingInfo(false)}>
+            ×
+          </button>
         </div>
-      )}
-    </AnimatePresence>
+        <div className="trust-score-modal-content">
+          <div className="trust-score-points-breakdown">
+            <div className="trust-score-point-item">
+              <span className="trust-score-point-value">+10 points</span>
+              <span className="trust-score-point-action">Adding a recommendation</span>
+            </div>
+            <div className="trust-score-point-item">
+              <span className="trust-score-point-value">+5 points</span>
+              <span className="trust-score-point-action">Joining a community</span>
+            </div>
+            <div className="trust-score-point-item">
+              <span className="trust-score-point-value">+2 points</span>
+              <span className="trust-score-point-action">For every follower</span>
+            </div>
+          </div>
+          <p className="trust-score-modal-description">
+            Build your trust points by actively participating in the community. 
+            Share quality recommendations and connect with others to level up!
+          </p>
+        </div>
+      </div>
+    </div>
   );
 
   return (
@@ -186,7 +173,7 @@ const TrustScoreWheel = ({ score, showDebug = false }) => {
         </div>
       )}
 
-      <RatingInfoModal />
+      {showRatingInfo && <RatingInfoModal />}
     </div>
   );
 };

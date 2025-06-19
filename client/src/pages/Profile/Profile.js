@@ -29,6 +29,7 @@ import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Link, useNavigate } from "react-router-dom";
 import ShareProfileModal from "../../components/ShareProfileModal/ShareProfileModal";
+import TrustScoreWheel from "../../components/TrustScoreWheel/TrustScoreWheel";
 import "./Profile.css";
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -1368,6 +1369,7 @@ const Profile = () => {
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [selectedCities, setSelectedCities] = useState([]);
     const [showCityFilter, setShowCityFilter] = useState(false);
+    const [userScore, setUserScore] = useState(0);
     const ASPECT_RATIO = 1;
     const MIN_DIMENSION = 150;
 
@@ -1418,6 +1420,22 @@ const Profile = () => {
             setBaseRecommendations(profileData.recommendations || []);
             setUserBio(profileData.userBio || "");
             setEditingBio(profileData.userBio || "");
+            
+            // Fetch user score for Trust Points Wheel
+            try {
+                const scoreResponse = await fetch(`${API_URL}/api/users/preferred-name?email=${encodeURIComponent(user.primaryEmailAddress.emailAddress)}`);
+                if (scoreResponse.ok) {
+                    const scoreData = await scoreResponse.json();
+                    const score = parseInt(scoreData.userScore || scoreData.user_score) || 0;
+                    setUserScore(score);
+                } else {
+                    setUserScore(0);
+                }
+            } catch (scoreError) {
+                console.error("Error fetching user score:", scoreError);
+                setUserScore(0);
+            }
+            
             const imageQuery = getClerkUserQueryParams();
             if (imageQuery)
                 setProfileImage(
@@ -2103,6 +2121,14 @@ const Profile = () => {
                             <span className="profile-stat-label">Followers</span>
                         </div>
                         <div className="profile-stat-item">
+                            <div className="profile-trust-score-wrapper">
+                                <TrustScoreWheel 
+                                    score={userScore} 
+                                    showDebug={false}
+                                />
+                            </div>
+                        </div>
+                        <div className="profile-stat-item profile-achievement-hidden" style={{display: 'none'}}>
                             <div className="profile-stat-achievement">
                                 <AchievementBadge 
                                     recCount={enrichedRecommendations.length} 

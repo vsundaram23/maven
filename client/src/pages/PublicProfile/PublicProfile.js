@@ -3,6 +3,7 @@ import { EnvelopeIcon } from "@heroicons/react/24/solid";
 import React, { useCallback, useEffect, useState } from "react";
 import { FaPlusCircle, FaStar, FaThumbsUp } from "react-icons/fa";
 import { Link, useParams } from "react-router-dom";
+import TrustScoreWheel from "../../components/TrustScoreWheel/TrustScoreWheel";
 import "../Profile/Profile.css";
 import "./PublicProfile.css";
 
@@ -261,6 +262,7 @@ const PublicProfile = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCities, setSelectedCities] = useState([]);
     const [showCityFilter, setShowCityFilter] = useState(false);
+    const [userScore, setUserScore] = useState(0);
 
 
     useEffect(() => {
@@ -283,6 +285,22 @@ const PublicProfile = () => {
             if (!profileRes.ok) throw new Error("Failed to fetch profile data");
             const data = await profileRes.json();
             setProfileInfo(data);
+            
+            // Fetch user score for Trust Points Wheel
+            try {
+                const scoreResponse = await fetch(`${API_URL}/api/users/preferred-name?email=${encodeURIComponent(data.userEmail || '')}`);
+                if (scoreResponse.ok) {
+                    const scoreData = await scoreResponse.json();
+                    const score = parseInt(scoreData.userScore || scoreData.user_score) || 0;
+                    setUserScore(score);
+                } else {
+                    setUserScore(0);
+                }
+            } catch (scoreError) {
+                console.error("Error fetching user score:", scoreError);
+                setUserScore(0);
+            }
+            
             const connectionsPromise = fetch(`${API_URL}/api/connections/check-connections`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -671,6 +689,14 @@ const PublicProfile = () => {
                             <span className="profile-stat-label">Followers</span>
                         </div>
                         <div className="profile-stat-item">
+                            <div className="profile-trust-score-wrapper">
+                                <TrustScoreWheel 
+                                    score={userScore} 
+                                    showDebug={false}
+                                />
+                            </div>
+                        </div>
+                        <div className="profile-stat-item profile-achievement-hidden" style={{display: 'none'}}>
                             <div className="profile-stat-achievement">
                                 <AchievementBadge recCount={recommendations.length} />
                             </div>
