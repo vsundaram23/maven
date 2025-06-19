@@ -272,6 +272,7 @@ const Home = () => {
     const [progressToNextLevel, setProgressToNextLevel] = useState(0);
     const [currentLevel, setCurrentLevel] = useState(0);
     const [userScore, setUserScore] = useState(0);
+    const [isLoadingUserScore, setIsLoadingUserScore] = useState(true);
 
     // Leaderboard data from connections
     const [leaderboardData, setLeaderboardData] = useState([]);
@@ -459,8 +460,11 @@ const Home = () => {
                 setUserScore(0);
                 setCurrentLevel(0);
                 setProgressToNextLevel(0);
+                setIsLoadingUserScore(false);
                 return;
             }
+            
+            setIsLoadingUserScore(true);
             try {
                 const response = await fetch(`${API_URL}/api/users/preferred-name?email=${encodeURIComponent(user.primaryEmailAddress.emailAddress)}`);
                 if (response.ok) {
@@ -490,6 +494,8 @@ const Home = () => {
                 setUserScore(0);
                 setCurrentLevel(0);
                 setProgressToNextLevel(0);
+            } finally {
+                setIsLoadingUserScore(false);
             }
         };
         fetchUserData();
@@ -695,7 +701,7 @@ const Home = () => {
     // Fetch leaderboard data from connections
     useEffect(() => {
         const fetchLeaderboardData = async () => {
-            if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress) {
+            if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress || isLoadingUserScore) {
                 setLeaderboardData([]);
                 setIsLoadingLeaderboard(false);
                 return;
@@ -780,7 +786,7 @@ const Home = () => {
         };
 
         fetchLeaderboardData();
-    }, [isLoaded, isSignedIn, user, userScore, preferredName]);
+    }, [isLoaded, isSignedIn, user, userScore, preferredName, isLoadingUserScore]);
 
     // Fetch public recommendations for non-logged-in users
     useEffect(() => {
