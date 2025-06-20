@@ -646,7 +646,7 @@ const getOnboardingStatus = async (req, res) => {
 };
 
 const saveOnboardingData = async (req, res) => {
-    const { userId, email, preferredName, phoneNumber, location, interests, username } =
+    const { userId, email, preferredName, phoneNumber, location, state, interests, username } =
         req.body;
 
     if (!email || !userId) {
@@ -677,7 +677,8 @@ const saveOnboardingData = async (req, res) => {
                  interests = $4,
                  username = $5,
                  has_completed_onboarding = true,
-                 updated_at = NOW()
+                 updated_at = NOW(),
+                 state = $7
              WHERE id = $6
              RETURNING *`,
             [
@@ -687,6 +688,7 @@ const saveOnboardingData = async (req, res) => {
                 interestsArray,
                 username || null,
                 internalUserId,
+                state || null,
             ]
         );
 
@@ -710,6 +712,7 @@ const saveOnboardingData = async (req, res) => {
             userId,
             preferredName,
             username,
+            state,
         });
 
         res.status(500).json({

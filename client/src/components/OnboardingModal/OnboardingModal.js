@@ -25,6 +25,7 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
         preferredName: user?.firstName || "",
         phoneNumber: user?.primaryPhoneNumber?.phoneNumber || "",
         location: "",
+        state: "",
         interests: [],
     });
 
@@ -85,7 +86,11 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
                 break;
             case 3:
                 if (!formData.location.trim()) {
-                    setError("Location is required");
+                    setError("City is required");
+                    return false;
+                }
+                if (!formData.state.trim()) {
+                    setError("State is required");
                     return false;
                 }
                 break;
@@ -286,17 +291,32 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
                     <div className="onboarding-step-form">
                         <div className="onboarding-form-group">
                             <label>Location *</label>
-                            <input
-                                type="text"
-                                value={formData.location}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        location: e.target.value,
-                                    }))
-                                }
-                                placeholder="Your city"
-                            />
+                            <div className="onboarding-location-inputs">
+                                <input
+                                    type="text"
+                                    value={formData.location}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            location: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="Your city"
+                                    required
+                                />
+                                <input
+                                    type="text"
+                                    value={formData.state}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            state: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="Your state"
+                                    required
+                                />
+                            </div>
                         </div>
                         <div className="onboarding-step-buttons">
                             <button

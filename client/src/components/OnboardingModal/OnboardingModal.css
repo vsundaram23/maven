@@ -252,6 +252,15 @@
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
+.onboarding-location-inputs {
+    display: flex;
+    gap: 1rem;
+}
+
+.onboarding-location-inputs input {
+    width: 100%;
+}
+
 .onboarding-interests-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
