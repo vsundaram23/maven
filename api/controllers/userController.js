@@ -730,19 +730,57 @@ const getPreferredName = async (req, res) => {
 
     try {
         const result = await pool.query(
-            "SELECT preferred_name, user_score FROM users WHERE email = $1",
+            "SELECT preferred_name, user_score, location, state FROM users WHERE email = $1",
             [email]
         );
+
+        if (result.rows.length === 0) {
+            return res.json({
+                preferredName: null,
+                userScore: null,
+                location: null,
+                state: null,
+            });
+        }
 
         res.json({
             preferredName: result.rows[0]?.preferred_name || null,
             userScore: result.rows[0]?.user_score || null,
+            location: result.rows[0]?.location || null,
+            state: result.rows[0]?.state || null,
         });
     } catch (error) {
-        console.error("Error fetching preferred name:", error);
+        console.error("Error fetching preferred name and location:", error);
         res.status(500).json({
-            error: "Failed to fetch preferred name",
+            error: "Failed to fetch user data",
         });
+    }
+};
+
+const updateUserLocation = async (req, res) => {
+    // Note: In a production environment, user identity should be derived from 
+    // a verified session/token (e.g., req.user.id from Clerk middleware)
+    // rather than an email in the request body to prevent unauthorized updates.
+    const { email, location, state } = req.body;
+
+    if (!email || !location || !state) {
+        return res.status(400).json({ success: false, message: "Email, location, and state are required." });
+    }
+
+    try {
+        const result = await pool.query(
+            "UPDATE users SET location = $1, state = $2 WHERE email = $3 RETURNING id",
+            [location, state, email]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
+
+        res.json({ success: true, message: "Location updated successfully." });
+    } catch (error) {
+        console.error("Error updating user location:", error);
+        res.status(500).json({ success: false, message: "Failed to update location." });
     }
 };
 
@@ -883,6 +921,7 @@ module.exports = {
     getOnboardingStatus,
     saveOnboardingData,
     getPreferredName,
+    updateUserLocation,
     getUserPublicProfileByUsername,
     checkUsernameAvailability,
 };

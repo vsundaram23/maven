@@ -8,23 +8,19 @@ import { loadFull } from "tsparticles";
 import useNotifications from "../../hooks/useNotifications";
 
 import {
-    LockClosedIcon,
     MagnifyingGlassIcon,
     MapPinIcon,
-    XMarkIcon,
+    XMarkIcon
 } from "@heroicons/react/24/solid";
 import { FaPlusCircle, FaStar, FaThumbsUp } from 'react-icons/fa';
 import NotificationModal from "../../components/NotificationModal/NotificationModal";
 import TrustScoreWheel from '../../components/TrustScoreWheel/TrustScoreWheel';
 import "./Home.css";
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = "http://localhost:3000";
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = "http://localhost:3000";
 
 const BRAND_PHRASE = "Tried & Trusted.";
-const LOCKED_LOCATION = "Greater Seattle Area";
-
-
 
 const StarRatingDisplay = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;
@@ -236,6 +232,10 @@ const Home = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [showLocationModal, setShowLocationModal] = useState(false);
     const [preferredName, setPreferredName] = useState("");
+    const [city, setCity] = useState("");
+    const [state, setState] = useState("");
+    const [locationInput, setLocationInput] = useState('');
+    const [isEditingLocation, setIsEditingLocation] = useState(false);
 
     // Typing animation state
     const [displayText, setDisplayText] = useState("");
@@ -277,6 +277,62 @@ const Home = () => {
     // Leaderboard data from connections
     const [leaderboardData, setLeaderboardData] = useState([]);
     const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
+
+    useEffect(() => {
+        // Update local storage whenever location changes, ensuring persistence for non-logged-in users
+        // or as a fallback.
+        if (city && state) {
+            localStorage.setItem('userSelectedLocation', `${city}, ${state}`);
+        }
+    }, [city, state]);
+
+    const handleUpdateLocation = async () => {
+        setIsEditingLocation(false);
+        const originalLocation = `${city}, ${state}`;
+
+        if (locationInput !== originalLocation && isSignedIn && user) {
+            const parts = locationInput.split(',').map(p => p.trim());
+            const newCity = parts[0] || '';
+            const newState = parts.length > 1 ? parts[1] : '';
+
+            if (!newCity || !newState) {
+                console.warn("Invalid location format. Reverting.");
+                return; // Revert happens implicitly as state isn't set
+            }
+
+            const previousCity = city;
+            const previousState = state;
+
+            // Optimistically update UI
+            setCity(newCity);
+            setState(newState);
+
+            try {
+                const session = await window.Clerk.session.getToken();
+                const response = await fetch(`${API_URL}/api/users/me/location`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session}`
+                    },
+                    body: JSON.stringify({
+                        email: user.primaryEmailAddress.emailAddress,
+                        location: newCity,
+                        state: newState,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to update location on the backend.");
+                }
+            } catch (error) {
+                console.error("Error updating location, reverting UI change.", error);
+                // Revert the optimistic update
+                setCity(previousCity);
+                setState(previousState);
+            }
+        }
+    };
 
     // Blue gradient color function (light blue to dark blue)
     const getBlueGradientColor = (percentage) => {
@@ -474,6 +530,17 @@ const Home = () => {
                     console.log('Raw API Response:', data);
                     
                     setPreferredName(data.preferredName || "");
+                    
+                    if (data.location && data.state) {
+                        setCity(data.location);
+                        setState(data.state);
+                    } else {
+                        // If no location in DB, fall back to localStorage or a default
+                        const cachedLocation = localStorage.getItem('userSelectedLocation') || 'Seattle, WA';
+                        const parts = cachedLocation.split(',').map(p => p.trim());
+                        setCity(parts[0] || 'Seattle');
+                        setState(parts[1] || 'WA');
+                    }
                     
                     const score = parseInt(data.userScore || data.user_score) || 0;
                     console.log('Parsed score:', score, 'Original userScore:', data.userScore, 'Original user_score:', data.user_score, 'Type:', typeof data.userScore);
@@ -872,14 +939,22 @@ const Home = () => {
         if (!isSignedIn) { openSignIn(); setIsSearching(false); return; }
         setIsSearching(true);
         try {
-            const params = new URLSearchParams({ q: q, user_id: user.id, email: user.primaryEmailAddress?.emailAddress, location: LOCKED_LOCATION });
+            const params = new URLSearchParams({
+                q: q,
+                user_id: user.id,
+                email: user.primaryEmailAddress?.emailAddress,
+                state: state // Directly use the state variable
+            });
             const searchUrl = `${API_URL}/api/providers/search?${params.toString()}`;
             const response = await fetch(searchUrl);
             const responseBody = await response.text();
             if (!response.ok) { let errP; try { errP = JSON.parse(responseBody); } catch (pE) { throw new Error(`HTTP error! status: ${response.status}, Non-JSON response: ${responseBody}`); } throw new Error(errP.message || errP.error || `HTTP error! ${response.status}`); }
             const d = JSON.parse(responseBody);
             if (d.success) {
-                const base = `/search?q=${encodeURIComponent(q)}&location=${encodeURIComponent(LOCKED_LOCATION)}`; navigate(d.providers?.length > 0 ? base : base + "&noResults=true", { state: { initialProviders: d.providers, currentSearchUserId: user.id }, });
+                const base = `/search?q=${encodeURIComponent(q)}&state=${encodeURIComponent(state)}`; // Pass state to URL
+                navigate(d.providers?.length > 0 ? base : base + "&noResults=true", {
+                    state: { initialProviders: d.providers, currentSearchUserId: user.id },
+                });
             } else { throw new Error(d.message || d.error || "Search not successful"); }
         } catch (err) { console.error("Search error:", err); }
         finally { setIsSearching(false); }
@@ -1043,10 +1118,29 @@ const Home = () => {
                                     onChange={(e) => setSearchQuery(e.target.value)} 
                                     disabled={isSearching} 
                                 />
-                                <div className="location-input-wrapper" onClick={handleLocationClick}>
-                                    <MapPinIcon className="location-icon" /> 
-                                    <span className="location-text">{LOCKED_LOCATION}</span> 
-                                    <LockClosedIcon className="location-lock-icon" />
+                                <div className="location-input-wrapper">
+                                    <MapPinIcon className="location-icon" />
+                                    {isEditingLocation ? (
+                                        <input
+                                            className="location-input"
+                                            type="text"
+                                            value={locationInput}
+                                            onChange={e => setLocationInput(e.target.value)}
+                                            onBlur={handleUpdateLocation}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleUpdateLocation()}
+                                            autoFocus
+                                        />
+                                    ) : (
+                                        <>
+                                            <span className="location-text">{city && state ? `${city}, ${state}` : 'Your Location'}</span>
+                                            <button type="button" className="location-change-button" onClick={() => {
+                                                setLocationInput(`${city}, ${state}`);
+                                                setIsEditingLocation(true);
+                                            }}>
+                                                Change
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                                 <button type="submit" className="search-submit-button" disabled={isSearching}> 
                                     {isSearching ? <span className="search-spinner"></span> : <MagnifyingGlassIcon className="search-button-icon" />} 
@@ -1054,11 +1148,37 @@ const Home = () => {
                             </div>
                             {/* Mobile Location Info Below Search */}
                             {isMobile && (
-                                <div className="mobile-location-info" onClick={handleLocationClick}>
-                                    <MapPinIcon className="location-icon" />
-                                    <span>{LOCKED_LOCATION}</span>
-                                    <span className="mobile-location-change">Change</span>
-                                </div>
+                                isEditingLocation ? (
+                                    <div className="mobile-location-edit-wrapper">
+                                        <input
+                                            className="location-input mobile-edit"
+                                            type="text"
+                                            value={locationInput}
+                                            onChange={e => setLocationInput(e.target.value)}
+                                            onBlur={handleUpdateLocation}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleUpdateLocation()}
+                                            autoFocus
+                                        />
+                                        <button
+                                            type="button"
+                                            className="location-save-button"
+                                            onClick={handleUpdateLocation}
+                                        >
+                                            Save
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="mobile-location-info">
+                                        <MapPinIcon className="location-icon" />
+                                        <span>{city && state ? `${city}, ${state}` : "Set Location"}</span>
+                                        <button type="button" className="mobile-location-change" onClick={() => {
+                                            setLocationInput(`${city}, ${state}`);
+                                            setIsEditingLocation(true);
+                                        }}>
+                                            Change
+                                        </button>
+                                    </div>
+                                )
                             )}
                         </form>
 
@@ -1258,21 +1378,27 @@ const Home = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)} 
                                 disabled={isSearching} 
                             />
-                            <div className="location-input-wrapper mobile-location-centered" onClick={handleLocationClick}>
-                                <MapPinIcon className="location-icon" /> 
-                                <span className="location-text">{LOCKED_LOCATION}</span> 
-                                <LockClosedIcon className="location-lock-icon" />
+                            <div className="location-input-wrapper" onClick={openSignIn}>
+                                <MapPinIcon className="location-icon" />
+                                <span className="location-text">{city && state ? `${city}, ${state}` : 'Your Location'}</span>
+                                <button type="button" className="location-change-button" onClick={openSignIn}>
+                                    Change
+                                </button>
                             </div>
-                            <button type="submit" className="search-submit-button" disabled={isSearching}> 
-                                {isSearching ? <span className="search-spinner"></span> : <MagnifyingGlassIcon className="search-button-icon" />} 
+                            <button type="submit" className="search-submit-button" disabled={isSearching}>
+                                {isSearching ? <span className="search-spinner"></span> : <MagnifyingGlassIcon className="search-button-icon" />}
                             </button>
                         </div>
                         {/* Mobile Location Info Below Search */}
-                        <div className="mobile-location-info" onClick={handleLocationClick}>
-                            <MapPinIcon className="location-icon" />
-                            <span>{LOCKED_LOCATION}</span>
-                            <span className="mobile-location-change">Change</span>
-                        </div>
+                        {isMobile && (
+                            <div className="mobile-location-info" onClick={openSignIn}>
+                                <MapPinIcon className="location-icon" />
+                                <span>{city && state ? `${city}, ${state}` : "Set Location"}</span>
+                                <button type="button" className="mobile-location-change" onClick={openSignIn}>
+                                    Change
+                                </button>
+                            </div>
+                        )}
                     </form>
 
                     {/* Mobile Social Proof Banner */}

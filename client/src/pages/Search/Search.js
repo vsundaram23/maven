@@ -5,8 +5,19 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import QuoteModal from '../../components/QuoteModal/QuoteModal';
 import './Search.css';
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = "http://localhost:3000";
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = "http://localhost:3000";
+
+// US States list for location selector
+const US_STATES = [
+  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware',
+  'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky',
+  'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi',
+  'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico',
+  'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania',
+  'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
+  'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+];
 
 const StarRatingDisplay = ({ rating }) => {
   const numRating = parseFloat(rating) || 0;
@@ -269,6 +280,7 @@ const Search = () => {
 
   const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const query = useMemo(() => params.get('q'), [params]);
+  const stateParam = useMemo(() => params.get('state'), [params]);
   const noResultsParam = useMemo(() => params.get('noResults') === 'true', [params]);
   
   const initialProvidersRef = useRef(location.state?.initialProviders);
@@ -307,7 +319,7 @@ const Search = () => {
         }
     }
   }, [user, isSignedIn, isClerkLoaded]);
-  
+
   useEffect(() => {
     if(location.state?.initialProviders && initialProvidersRef.current !== location.state.initialProviders) {
         initialProvidersRef.current = location.state.initialProviders;
@@ -402,7 +414,10 @@ const Search = () => {
 
     (async () => {
       try {
-        const fetchUrl = `${API_URL}/api/providers/search?q=${encodeURIComponent(query)}&user_id=${currentUserId}&email=${encodeURIComponent(currentUserEmail)}`;
+        let fetchUrl = `${API_URL}/api/providers/search?q=${encodeURIComponent(query)}&user_id=${currentUserId}&email=${encodeURIComponent(currentUserEmail)}`;
+        if (stateParam) {
+            fetchUrl += `&state=${encodeURIComponent(stateParam)}`;
+        }
         const res = await fetch(fetchUrl);
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({ message: `Search error: ${res.status}` }));
@@ -414,19 +429,23 @@ const Search = () => {
         }
         await processAndSetProviders(data.providers || []);
         
-        const currentUrlParams = new URLSearchParams(location.search);
-        const urlQuery = currentUrlParams.get('q');
-        const urlUserId = currentUrlParams.get('user_id');
-        const urlEmail = currentUrlParams.get('email');
+        // Construct the full, correct URL that should be in the address bar
+        const targetUrl = new URL(window.location.href);
+        targetUrl.searchParams.set('q', query);
+        targetUrl.searchParams.set('user_id', currentUserId);
+        targetUrl.searchParams.set('email', currentUserEmail);
+        if (stateParam) {
+            targetUrl.searchParams.set('state', stateParam);
+        } else {
+            targetUrl.searchParams.delete('state');
+        }
 
-        if (urlQuery !== query || urlUserId !== currentUserId || urlEmail !== currentUserEmail) {
-          navigate(
-              `${location.pathname}?q=${encodeURIComponent(query)}&user_id=${currentUserId}&email=${encodeURIComponent(currentUserEmail)}`, 
-              { 
-                  replace: true, 
-                  state: { prevQuery: query, currentSearchUserId: currentUserId } 
-              }
-          );
+        // Only navigate if the constructed URL is different from the current one
+        if (targetUrl.href !== window.location.href) {
+            navigate(targetUrl.pathname + targetUrl.search, { 
+                replace: true, 
+                state: { prevQuery: query, currentSearchUserId: currentUserId } 
+            });
         }
 
       } catch (err) {
@@ -437,7 +456,7 @@ const Search = () => {
         setIsLoading(false);
       }
     })();
-  }, [query, currentUserId, currentUserEmail, navigate, location.search, isClerkLoaded, isSignedIn]);
+  }, [query, stateParam, currentUserId, currentUserEmail, navigate, location.search, isClerkLoaded, isSignedIn]);
 
 
   const sortedProviders = useMemo(() => {

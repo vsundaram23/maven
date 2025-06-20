@@ -14,6 +14,7 @@ const {
     getOnboardingStatus,
     saveOnboardingData,
     getPreferredName,
+    updateUserLocation,
     getUserPublicProfileByUsername,
     checkUsernameAvailability,
 } = require("../controllers/userController");
@@ -47,6 +48,8 @@ router.get("/preferred-name", getPreferredName);
 router.get("/pro/:username", getUserPublicProfileByUsername);
 
 router.post("/check-username", checkUsernameAvailability);
+
+router.put("/me/location", updateUserLocation);
 
 module.exports = router;
 

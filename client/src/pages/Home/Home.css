@@ -135,31 +135,70 @@ body {
   display: flex;
   align-items: center;
   padding: 0 1rem;
-  background-color: #e9ecef;
+  background-color: transparent;
   border: none;
   border-left: 1px solid #dee2e6;
   height: 100%;
-  cursor: pointer;
+  cursor: text;
   color: #495057;
   font-size: 0.9rem;
   white-space: nowrap;
   transition: background-color 0.2s;
   border-radius: 0;
+  position: relative;
 }
 
 .location-input-wrapper:hover {
   background-color: #dfe3e7;
 }
 
-.location-icon,
-.location-lock-icon {
+.location-icon {
   width: 1.1em;
   height: 1.1em;
   color: #6c757d;
+  flex-shrink: 0;
 }
 
-.location-icon {
-  margin-right: 0.4rem;
+.location-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  color: #343a40;
+  flex-grow: 1;
+  width: 100%;
+  min-width: 120px;
+  margin-left: 0.5rem;
+  padding-right: 1.5rem; /* Make space for chevron */
+}
+
+.location-input::placeholder {
+    color: #868e96;
+}
+
+.location-change-button {
+    background: none;
+    border: none;
+    color: #495057;
+    font-weight: 500;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-left: auto;
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+}
+
+.location-change-button:hover {
+    color: #1A365D;
+}
+
+.location-chevron {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #6c757d;
+    pointer-events: none;
+    margin-left: 0.5rem;
 }
 
 .location-text {
@@ -2374,6 +2413,11 @@ body {
     text-decoration: none;
     cursor: pointer;
     margin-left: 0.75rem;
+    background: none;
+    border: none;
+    font-size: inherit;
+    font-family: inherit;
+    padding: 0;
   }
 
   .mobile-location-change:hover {
@@ -3381,4 +3425,44 @@ body {
   .desktop-only-right {
     display: flex !important;
   }
+}
+
+.mobile-location-edit-wrapper {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.location-input.mobile-edit {
+  flex-grow: 1;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  background: white;
+  margin-left: 0;
+  padding-right: 0.75rem;
+}
+
+.location-input.mobile-edit:focus {
+  border-color: #1A365D;
+  box-shadow: 0 0 0 2px rgba(26, 54, 93, 0.15);
+  outline: none;
+}
+
+.location-save-button {
+  background: #1A365D;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.location-save-button:hover {
+  background: #12264a;
 }

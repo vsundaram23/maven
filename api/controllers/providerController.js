@@ -356,6 +356,7 @@ const searchVisibleProviders = async (req, res) => {
     const { q } = req.query;
     const clerkUserId = req.query.user_id;
     const userEmail = req.query.email;
+    const userState = req.query.state; // Add state parameter for locality filtering
     const searchQuery = q?.toLowerCase().trim();
 
     if (!clerkUserId || !userEmail) {
@@ -387,13 +388,13 @@ const searchVisibleProviders = async (req, res) => {
         // Stage 1: Exact matches
         if (searchTokens.length > 1) { 
             const phraseTsQuery = searchTokens.join('<->');
-            results = await executeFtsQuery(baseVisibilityQuery, baseVisibilityParams, phraseTsQuery);
+            results = await executeFtsQuery(baseVisibilityQuery, baseVisibilityParams, phraseTsQuery, userState);
         }
 
         // Stage 2: All terms search (AND)
         if (results.length === 0 && searchTokens.length > 0) {
             const allTermsTsQuery = searchTokens.join(' & ');
-            results = await executeFtsQuery(baseVisibilityQuery, baseVisibilityParams, allTermsTsQuery);
+            results = await executeFtsQuery(baseVisibilityQuery, baseVisibilityParams, allTermsTsQuery, userState);
         }
 
         // Stage 3: Any term search (OR) with synonyms
@@ -414,26 +415,38 @@ const searchVisibleProviders = async (req, res) => {
                 queryParts.push(`(${tokenAndSynonyms.join(' | ')})`);
             }
             const anyTermWithSynonymsTsQuery = queryParts.join(' | ');
-            results = await executeFtsQuery(baseVisibilityQuery, baseVisibilityParams, anyTermWithSynonymsTsQuery);
+            results = await executeFtsQuery(baseVisibilityQuery, baseVisibilityParams, anyTermWithSynonymsTsQuery, userState);
         }
 
         // Stage 4: Fallback to ILIKE 
         if (results.length === 0) {
             const ilikeSearchQuery = `%${searchQuery}%`;
+            
+            // Build locality filter condition for fallback
+            let localityCondition = '';
+            let fallbackParams = [...baseVisibilityParams, ilikeSearchQuery];
+            
+            if (userState) {
+                const stateParamIndex = baseVisibilityParams.length + 2;
+                localityCondition = `AND (VisibleProvidersCTE.service_scope = 'remote' OR (VisibleProvidersCTE.service_scope = 'local' AND VisibleProvidersCTE.state = $${stateParamIndex}))`;
+                fallbackParams.push(userState);
+            }
+            
             const fallbackQuery = `
                 SELECT *, 0 as rank -- Add a dummy rank column for consistent response shape
                 FROM (${baseVisibilityQuery}) AS VisibleProvidersCTE
                 WHERE
-                    LOWER(COALESCE(VisibleProvidersCTE.business_name, '')) LIKE $${baseVisibilityParams.length + 1}
+                    (LOWER(COALESCE(VisibleProvidersCTE.business_name, '')) LIKE $${baseVisibilityParams.length + 1}
                     OR LOWER(COALESCE(VisibleProvidersCTE.category, '')) LIKE $${baseVisibilityParams.length + 1}
                     OR LOWER(COALESCE(VisibleProvidersCTE.description, '')) LIKE $${baseVisibilityParams.length + 1}
                     OR EXISTS (
                         SELECT 1 FROM unnest(VisibleProvidersCTE.tags) AS tag
                         WHERE LOWER(tag) LIKE $${baseVisibilityParams.length + 1}
-                    )
+                    ))
+                    ${localityCondition}
                 LIMIT 10;
             `;
-            const fallbackResult = await pool.query(fallbackQuery, [...baseVisibilityParams, ilikeSearchQuery]);
+            const fallbackResult = await pool.query(fallbackQuery, fallbackParams);
             results = fallbackResult.rows;
         }
 
@@ -444,19 +457,31 @@ const searchVisibleProviders = async (req, res) => {
     }
 };
 
-const executeFtsQuery = async (baseQuery, baseParams, ftsInputString) => {
+const executeFtsQuery = async (baseQuery, baseParams, ftsInputString, userState = null) => {
     if (!ftsInputString || ftsInputString.trim().length === 0) {
         return [];
     }
     const ftsParamIndex = baseParams.length + 1;
+    
+    // Build locality filter condition
+    let localityCondition = '';
+    let queryParams = [...baseParams, ftsInputString];
+    
+    if (userState) {
+        const stateParamIndex = baseParams.length + 2;
+        localityCondition = `AND (VisibleProvidersCTE.service_scope = 'remote' OR (VisibleProvidersCTE.service_scope = 'local' AND VisibleProvidersCTE.state = $${stateParamIndex}))`;
+        queryParams.push(userState);
+    }
+    
     const ftsQuery = `
         SELECT *, ts_rank_cd(search_vector, to_tsquery('english', $${ftsParamIndex})) as rank
         FROM (${baseQuery}) AS VisibleProvidersCTE
         WHERE VisibleProvidersCTE.search_vector @@ to_tsquery('english', $${ftsParamIndex})
+        ${localityCondition}
         ORDER BY rank DESC
         LIMIT 10;
     `;
-    const result = await pool.query(ftsQuery, [...baseParams, ftsInputString]);
+    const result = await pool.query(ftsQuery, queryParams);
     return result.rows;
 }
 
