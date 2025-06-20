@@ -33,7 +33,7 @@ const GroupAddIcon = () => (
         fill="currentColor"
         style={{ marginRight: "8px" }}
     >
-        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z" />
     </svg>
 );
 const LaunchIcon = () => (
@@ -244,15 +244,34 @@ const MyRecReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
     };
 
     const handleTagKeyDown = (e) => {
-        if (e.key === "Enter") {
+        if (e.key === "Enter" || e.key === ",") {
             e.preventDefault();
-            const trimmed = tagInput.trim();
-            if (trimmed && !tags.includes(trimmed)) {
-                setTags([...tags, trimmed]);
-            }
-            setTagInput("");
+            processTagInput();
         }
     };
+
+    const processTagInput = () => {
+        if (!tagInput.trim()) return;
+        
+        // Split by comma and process each tag
+        const newTags = tagInput
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag && !tags.includes(tag));
+        
+        if (newTags.length > 0) {
+            setTags([...tags, ...newTags]);
+        }
+        setTagInput("");
+    };
+
+    // Handle blur event to process comma-separated tags when user leaves input
+    const handleTagInputBlur = () => {
+        if (tagInput.includes(',')) {
+            processTagInput();
+        }
+    };
+
     const removeTag = (tagToRemove) =>
         setTags(tags.filter((tag) => tag !== tagToRemove));
     if (!isOpen || !provider) return null;
@@ -294,12 +313,13 @@ const MyRecReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
                         />
                     </div>
                     <div className="tag-input-group">
-                        <label>Add tags (press Enter to add):</label>
+                        <label>Add tags (press Enter or comma to add):</label>
                         <input
                             type="text"
                             value={tagInput}
                             onChange={(e) => setTagInput(e.target.value)}
                             onKeyDown={handleTagKeyDown}
+                            onBlur={handleTagInputBlur}
                             placeholder="e.g. friendly, affordable"
                         />
                         <div className="tag-container modal-tag-container">

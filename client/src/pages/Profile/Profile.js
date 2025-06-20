@@ -290,14 +290,34 @@ const EditRecommendationModal = ({
 
     const handleStarClick = (n) => setRatingState(n);
     const handleTagKeyDown = (e) => {
-        if (e.key === "Enter" && tagInput.trim()) {
+        if (e.key === "Enter" || e.key === ",") {
             e.preventDefault();
-            const newTag = tagInput.trim().toLowerCase();
-            if (newTag && !tags.includes(newTag))
-                setTags((prevTags) => [...prevTags, newTag]);
-            setTagInput("");
+            processTagInput();
         }
     };
+
+    const processTagInput = () => {
+        if (!tagInput.trim()) return;
+        
+        // Split by comma and process each tag
+        const newTags = tagInput
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag && !tags.includes(tag));
+        
+        if (newTags.length > 0) {
+            setTags([...tags, ...newTags]);
+        }
+        setTagInput("");
+    };
+
+    // Handle blur event to process comma-separated tags when user leaves input
+    const handleTagInputBlur = () => {
+        if (tagInput.includes(',')) {
+            processTagInput();
+        }
+    };
+
     const removeTag = (tagToRemove) =>
         setTags((prevTags) => prevTags.filter((tag) => tag !== tagToRemove));
     const handlePublishScopeChange = (e) => {
@@ -567,6 +587,7 @@ const EditRecommendationModal = ({
                                             setTagInput(e.target.value)
                                         }
                                         onKeyDown={handleTagKeyDown}
+                                        onBlur={handleTagInputBlur}
                                         placeholder="e.g., reliable, fast"
                                     />
                                     <div className="profile-edit-modal-tag-container">

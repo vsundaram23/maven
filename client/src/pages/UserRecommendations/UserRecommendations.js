@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
 import { useUser } from "@clerk/clerk-react";
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { FaStar, FaPhone, FaEnvelope, FaUsers, FaPlusCircle } from 'react-icons/fa';
+import React, { useEffect, useState } from 'react';
+import { FaPlusCircle, FaStar, FaUsers } from 'react-icons/fa';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import QuoteModal from '../../components/QuoteModal/QuoteModal';
 import './UserRecommendations.css';
 
@@ -53,13 +53,31 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
   };
 
   const handleTagKeyDown = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
-      const trimmed = tagInput.trim();
-      if (trimmed && !tags.includes(trimmed)) {
-        setTags([...tags, trimmed]);
-      }
-      setTagInput('');
+      processTagInput();
+    }
+  };
+
+  const processTagInput = () => {
+    if (!tagInput.trim()) return;
+    
+    // Split by comma and process each tag
+    const newTags = tagInput
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag && !tags.includes(tag));
+    
+    if (newTags.length > 0) {
+      setTags([...tags, ...newTags]);
+    }
+    setTagInput('');
+  };
+
+  // Handle blur event to process comma-separated tags when user leaves input
+  const handleTagInputBlur = () => {
+    if (tagInput.includes(',')) {
+      processTagInput();
     }
   };
 
@@ -99,12 +117,13 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
             />
           </div>
           <div className="tag-input-group">
-            <label>Add tags (press Enter to add):</label>
+            <label>Add tags (press Enter or , to add):</label>
             <input
               type="text"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={handleTagKeyDown}
+              onBlur={handleTagInputBlur}
               placeholder="e.g. fast, professional"
             />
             <div className="tag-container modal-tag-container">

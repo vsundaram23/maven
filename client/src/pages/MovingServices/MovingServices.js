@@ -1,16 +1,16 @@
-import { Link, useNavigate } from "react-router-dom";
-import React, { useState, useEffect } from "react";
-import {
-    FaStar,
-    FaPhone,
-    FaEnvelope,
-    FaUsers,
-    FaPlusCircle,
-    FaThumbsUp,
-    FaEye, // Added FaEye
-} from "react-icons/fa";
-import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import { useUser } from "@clerk/clerk-react";
+import React, { useEffect, useState } from "react";
+import {
+    FaEnvelope,
+    FaEye,
+    FaPhone,
+    FaPlusCircle,
+    FaStar,
+    FaThumbsUp,
+    FaUsers,
+} from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import "./MovingServices.css"; // Ensure you have styles for .like-button.liked here
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -64,13 +64,31 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
     };
 
     const handleTagKeyDown = (e) => {
-        if (e.key === "Enter") {
+        if (e.key === "Enter" || e.key === ",") {
             e.preventDefault();
-            const trimmed = tagInput.trim();
-            if (trimmed && !tags.includes(trimmed)) {
-                setTags([...tags, trimmed]);
-            }
-            setTagInput("");
+            processTagInput();
+        }
+    };
+
+    const processTagInput = () => {
+        if (!tagInput.trim()) return;
+        
+        // Split by comma and process each tag
+        const newTags = tagInput
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag && !tags.includes(tag));
+        
+        if (newTags.length > 0) {
+            setTags([...tags, ...newTags]);
+        }
+        setTagInput("");
+    };
+
+    // Handle blur event to process comma-separated tags when user leaves input
+    const handleTagInputBlur = () => {
+        if (tagInput.includes(',')) {
+            processTagInput();
         }
     };
 
@@ -117,12 +135,13 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
                         />
                     </div>
                     <div className="tag-input-group">
-                        <label>Add tags (press Enter to add):</label>
+                        <label>Add tags (press Enter or comma to add):</label>
                         <input
                             type="text"
                             value={tagInput}
                             onChange={(e) => setTagInput(e.target.value)}
                             onKeyDown={handleTagKeyDown}
+                            onBlur={handleTagInputBlur}
                             placeholder="e.g. reliable, affordable"
                         />
                         <div className="tag-container modal-tag-container">

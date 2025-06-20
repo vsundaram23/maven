@@ -198,13 +198,30 @@ const CommunityRecReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
         onClose();
     };
     const handleTagKeyDown = (e) => {
-        if (e.key === "Enter") {
+        if (e.key === "Enter" || e.key === ",") {
             e.preventDefault();
-            const trimmed = tagInput.trim();
-            if (trimmed && !tags.includes(trimmed)) {
-                setTags([...tags, trimmed]);
-            }
-            setTagInput("");
+            processTagInput();
+        }
+    };
+    const processTagInput = () => {
+        if (!tagInput.trim()) return;
+        
+        // Split by comma and process each tag
+        const newTags = tagInput
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag && !tags.includes(tag));
+        
+        if (newTags.length > 0) {
+            setTags([...tags, ...newTags]);
+        }
+        setTagInput("");
+    };
+
+    // Handle blur event to process comma-separated tags when user leaves input
+    const handleTagInputBlur = () => {
+        if (tagInput.includes(',')) {
+            processTagInput();
         }
     };
     const removeTag = (tagToRemove) =>
@@ -247,12 +264,13 @@ const CommunityRecReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
                         />
                     </div>
                     <div className="tag-input-group">
-                        <label>Add tags (press Enter to add):</label>
+                        <label>Add tags (press Enter or comma to add):</label>
                         <input
                             type="text"
                             value={tagInput}
                             onChange={(e) => setTagInput(e.target.value)}
                             onKeyDown={handleTagKeyDown}
+                            onBlur={handleTagInputBlur}
                             placeholder="e.g. friendly, affordable"
                         />
                         <div className="tag-container modal-tag-container">
