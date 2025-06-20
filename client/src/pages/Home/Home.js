@@ -17,8 +17,8 @@ import NotificationModal from "../../components/NotificationModal/NotificationMo
 import TrustScoreWheel from '../../components/TrustScoreWheel/TrustScoreWheel';
 import "./Home.css";
 
-// const API_URL = 'https://api.seanag-recommendations.org:8080';
-const API_URL = "http://localhost:3000";
+const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = "http://localhost:3000";
 
 const BRAND_PHRASE = "Tried & Trusted.";
 

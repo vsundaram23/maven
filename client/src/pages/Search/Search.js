@@ -5,8 +5,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import QuoteModal from '../../components/QuoteModal/QuoteModal';
 import './Search.css';
 
-// const API_URL = 'https://api.seanag-recommendations.org:8080';
-const API_URL = "http://localhost:3000";
+const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = "http://localhost:3000";
 
 // US States list for location selector
 const US_STATES = [
