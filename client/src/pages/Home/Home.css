@@ -804,6 +804,136 @@ body {
   overflow-y: auto;
 }
 
+/* Additional modal styles for ReviewModal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.rating-container {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.rating-container label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.review-input {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.review-input label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.review-input textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  min-height: 80px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.review-input textarea:focus {
+  outline: none;
+  border-color: #1A365D;
+  box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1);
+}
+
+.tag-input-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.tag-input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.tag-input-group input[type="text"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  margin-bottom: 0.5rem;
+}
+
+.tag-input-group input[type="text"]:focus {
+  outline: none;
+  border-color: #1A365D;
+  box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1);
+}
+
+.tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-badge {
+  background-color: #1A365D;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.remove-tag {
+  cursor: pointer;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.remove-tag:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 1.5rem;
+}
+
 .review-modal-content {
   max-width: 550px;
   text-align: left;
@@ -845,6 +975,66 @@ body {
 
 .stars-interactive .star-interactive.active {
   color: #ffc107;
+}
+
+/* ReviewModal styles - matching the working components */
+.stars {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.star {
+  font-size: 2rem;
+  color: #e0e0e0;
+  cursor: pointer;
+  transition: color 0.2s;
+  margin: 0 0.2rem;
+}
+
+.star.active {
+  color: #ffc107;
+}
+
+.cancel-button,
+.submit-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  text-align: center;
+  border: none;
+}
+
+.cancel-button {
+  background-color: #6c757d;
+  color: white;
+  border: 1px solid #6c757d;
+}
+
+.cancel-button:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+
+.submit-button {
+  background-color: #1A365D;
+  color: white;
+  border: 1px solid #1A365D;
+}
+
+.submit-button:hover {
+  background-color: #12264a;
+  border-color: #12264a;
 }
 
 .review-text-input textarea {

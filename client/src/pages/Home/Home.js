@@ -343,10 +343,12 @@ const Home = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
-                    providerId: providerForReview.provider_id || providerForReview.id,
-                    userId: user.id,
+                    provider_id: providerForReview.provider_id || providerForReview.id,
+                    provider_email: providerForReview.email || "",
+                    user_id: user.id,
+                    email: user.primaryEmailAddress?.emailAddress,
                     rating: reviewData.rating,
-                    reviewText: reviewData.review,
+                    content: reviewData.review,
                     tags: reviewData.tags,
                 }),
             });
