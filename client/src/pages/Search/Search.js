@@ -281,7 +281,7 @@ const Search = () => {
   const [reviewStatsMap, setReviewStatsMap] = useState({});
   const [reviewMap, setReviewMap] = useState({});
   const [error, setError] = useState(null);
-  const [sortOption, setSortOption] = useState('recommended');
+  const [sortOption, setSortOption] = useState('mostRecent');
 
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
@@ -457,6 +457,21 @@ const Search = () => {
           if (b.average_rating !== a.average_rating) return b.average_rating - a.average_rating;
           return (b.total_reviews || 0) - (a.total_reviews || 0);
         });
+    } else if (sortOption === 'mostRecent') {
+      return providersToSort.sort((a, b) => {
+        const dateA = a.date_of_recommendation ? new Date(a.date_of_recommendation) : null;
+        const dateB = b.date_of_recommendation ? new Date(b.date_of_recommendation) : null;
+        
+        // If both have no date, maintain original order
+        if (!dateA && !dateB) return (a.originalIndex || 0) - (b.originalIndex || 0);
+        
+        // Items with no date go to the end
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        
+        // Sort by most recent date first (descending order)
+        return dateB - dateA;
+      });
     } else {
       return providersToSort.sort((a, b) => {
         const bandA = getBand(a.average_rating);
@@ -672,6 +687,7 @@ const Search = () => {
         >
           <option value="recommended">Recommended</option>
           <option value="topRated">Top Rated</option>
+          <option value="mostRecent">Most Recent</option>
         </select>
       </div>
       
