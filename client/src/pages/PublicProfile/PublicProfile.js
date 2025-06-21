@@ -261,6 +261,34 @@ const AchievementBadge = ({ recCount }) => {
     );
 };
 
+const UnfollowConfirmationModal = ({ isOpen, onClose, onConfirm, userName, isLoading }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content">
+                <h2 style={{ marginTop: 0 }}>Unfollow {userName}?</h2>
+                <p>
+                    Their recommendations will no longer appear in your feed. You can always follow them back later.
+                </p>
+                <div className="modal-buttons" style={{ justifyContent: 'flex-end' }}>
+                    <button type="button" onClick={onClose} className="cancel-button" disabled={isLoading}>
+                        Cancel
+                    </button>
+                    <button 
+                        type="button" 
+                        onClick={onConfirm} 
+                        className="submit-button danger" 
+                        disabled={isLoading}
+                    >
+                        {isLoading ? 'Processing...' : 'Unfollow'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const PublicProfile = () => {
     const { username } = useParams();
     const { user, isLoaded, isSignedIn } = useUser();
@@ -277,6 +305,7 @@ const PublicProfile = () => {
     const [imageFailed, setImageFailed] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('not_connected');
     const [isFollowLoading, setIsFollowLoading] = useState(false);
+    const [isUnfollowModalOpen, setIsUnfollowModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCities, setSelectedCities] = useState([]);
     const [showCityFilter, setShowCityFilter] = useState(false);
@@ -395,30 +424,48 @@ const PublicProfile = () => {
     }
     }, [currentUserId, profileInfo?.userId]);
 
+    const handleConfirmUnfollow = async () => {
+        if (!currentUserId || !profileInfo?.userId || isFollowLoading) return;
+    
+        setIsFollowLoading(true);
+        try {
+            const response = await fetch(`${API_URL}/api/connections/remove`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fromUserId: currentUserId,
+                    toUserId: profileInfo.userId
+                })
+            });
+    
+            if (response.ok) {
+                setConnectionStatus('not_connected');
+                fetchPageData(); // Refresh data to update follower count, etc.
+            } else {
+                alert('Failed to unfollow user. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error removing connection:', error);
+            alert('An error occurred while trying to unfollow.');
+        } finally {
+            setIsFollowLoading(false);
+            setIsUnfollowModalOpen(false); // Close the modal regardless of outcome
+        }
+    };
+
     // Add this function to handle follow/unfollow
     const handleFollowToggle = async () => {
     if (!currentUserId || !profileInfo?.userId || isFollowLoading) return;
 
+    if (connectionStatus === 'connected') {
+        // Open the confirmation modal instead of directly unfollowing
+        setIsUnfollowModalOpen(true);
+        return; 
+    }
+
     setIsFollowLoading(true);
     try {
-        if (connectionStatus === 'connected') {
-        // Unfollow
-        const response = await fetch(`${API_URL}/api/connections/remove`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-            fromUserId: currentUserId,
-            toUserId: profileInfo.userId
-            })
-        });
-
-        if (response.ok) {
-            setConnectionStatus('not_connected');
-            // Refresh connections count
-            fetchPageData();
-        }
-        } else {
-        // Follow
+        // Follow logic remains the same
         const response = await fetch(`${API_URL}/api/connections/send`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -433,7 +480,6 @@ const PublicProfile = () => {
             setConnectionStatus(data.status === 'accepted' ? 'connected' : 'pending_outbound');
             // Refresh connections count
             fetchPageData();
-        }
         }
     } catch (error) {
         console.error('Error toggling follow status:', error);
@@ -925,6 +971,14 @@ const PublicProfile = () => {
                     )
                 )}
             </main>
+
+            <UnfollowConfirmationModal
+                isOpen={isUnfollowModalOpen}
+                onClose={() => setIsUnfollowModalOpen(false)}
+                onConfirm={handleConfirmUnfollow}
+                userName={profileInfo?.userName || 'this user'}
+                isLoading={isFollowLoading}
+            />
 
             {selectedProviderForReview && (
                 <ReviewModal

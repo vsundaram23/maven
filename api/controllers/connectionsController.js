@@ -110,40 +110,41 @@ const getConnectionsByUserId = async (userId) => {
 // Send or accept a connection request (still uses userIds from localStorage)
 const sendConnectionRequest = async (fromUserId, toUserId) => {
   try {
+    // The inbound fromUserId is the clerk_id, so we need to get the internal UUID
+    const initiatorResult = await pool.query(
+      `SELECT id FROM users WHERE clerk_id = $1`,
+      [fromUserId]
+    );
+
+    if (initiatorResult.rows.length === 0) {
+      console.error(`Initiator with clerk_id ${fromUserId} not found in users table.`);
+      throw new Error(`User with clerk_id ${fromUserId} not found.`);
+    }
+    const fromInternalUserId = initiatorResult.rows[0].id;
+
+    if (fromInternalUserId === toUserId) {
+      return { message: 'You cannot follow yourself.', status: 'is_self' };
+    }
+
     const existing = await pool.query(
       `SELECT * FROM user_connections 
        WHERE user_id = $1 AND connected_user_id = $2`,
-      [fromUserId, toUserId]
+      [fromInternalUserId, toUserId]
     );
 
     if (existing.rows.length > 0) {
-      return { message: 'Friend request already sent', status: existing.rows[0].status };
+      return { message: 'You are already following this user.', status: existing.rows[0].status };
     }
 
-    const reverse = await pool.query(
-      `SELECT * FROM user_connections 
-       WHERE user_id = $1 AND connected_user_id = $2 AND status = 'pending'`,
-      [toUserId, fromUserId]
-    );
-
-    if (reverse.rows.length > 0) {
-      await pool.query(
-        `UPDATE user_connections
-         SET status = 'accepted', connected_at = CURRENT_TIMESTAMP
-         WHERE user_id = $1 AND connected_user_id = $2`,
-        [toUserId, fromUserId]
-      );
-
-      return { message: 'Friend request accepted (mutual)', status: 'accepted' };
-    }
-
+    // With a one-way follow model, we automatically accept the connection.
+    // No 'pending' status or mutual acceptance logic is needed.
     await pool.query(
-      `INSERT INTO user_connections (user_id, connected_user_id, status)
-       VALUES ($1, $2, 'pending')`,
-      [fromUserId, toUserId]
+      `INSERT INTO user_connections (user_id, connected_user_id, status, connected_at)
+       VALUES ($1, $2, 'accepted', CURRENT_TIMESTAMP)`,
+      [fromInternalUserId, toUserId]
     );
 
-    return { message: 'Friend request sent', status: 'pending' };
+    return { message: 'Successfully followed user.', status: 'accepted' };
   } catch (error) {
     console.error('Error sending connection request:', error.message);
     throw new Error('Database error sending connection request');
@@ -209,28 +210,40 @@ const getConnectionStatus = async (fromUserId, toUserId) => {
         return { status: 'is_self' };
     }
 
-    const connectionResult = await pool.query(`
+    // Check for an outbound connection (from the current user to the profile user)
+    const outboundConnection = await pool.query(`
       SELECT status 
       FROM user_connections 
       WHERE user_id = $1 AND connected_user_id = $2
-      ORDER BY connected_at DESC
-      LIMIT 1
     `, [fromInternalUserId, toUserId]);
 
-    if (connectionResult.rows.length === 0) {
-      return { status: 'not_connected' };
+    if (outboundConnection.rows.length > 0) {
+      const { status } = outboundConnection.rows[0];
+      switch (status) {
+        case 'accepted':
+          return { status: 'connected' }; // You are following them.
+        case 'pending':
+          return { status: 'pending_outbound' }; // Your request to follow is pending.
+        default:
+          return { status };
+      }
     }
 
-    const connection = connectionResult.rows[0];
-    
-    switch (connection.status) {
-      case 'accepted':
-        return { status: 'connected' };
-      case 'pending':
-        return { status: 'pending_outbound' };
-      default:
-        return { status: connection.status };
+    // If no outbound connection, check for an inbound one to see if they requested to follow you.
+    const inboundConnection = await pool.query(`
+        SELECT status
+        FROM user_connections
+        WHERE user_id = $1 AND connected_user_id = $2
+    `, [toUserId, fromInternalUserId]);
+
+    if (inboundConnection.rows.length > 0) {
+        if (inboundConnection.rows[0].status === 'pending') {
+            return { status: 'pending_inbound' }; // They have requested to follow you.
+        }
     }
+
+    // If no connection in either direction.
+    return { status: 'not_connected' };
 
   } catch (error) {
     console.error('Error checking connection status:', error.message);
@@ -241,11 +254,26 @@ const getConnectionStatus = async (fromUserId, toUserId) => {
 // Unfollow/disconnect from a user
 const removeConnection = async (fromUserId, toUserId) => {
   try {
+    // The inbound fromUserId is the clerk_id, so we need to get our internal UUID
+    const initiatorResult = await pool.query(
+      `SELECT id FROM users WHERE clerk_id = $1`,
+      [fromUserId]
+    );
+
+    // If the user doesn't exist for some reason, we can't proceed.
+    if (initiatorResult.rows.length === 0) {
+      console.warn(`Attempted to remove connection for a clerk_id not found: ${fromUserId}`);
+      // Return a success-like response to avoid front-end errors on non-critical issue.
+      return { message: 'User not found, but operation concluded.', status: 'not_connected' };
+    }
+    const fromInternalUserId = initiatorResult.rows[0].id;
+
+    // In a one-way follow system, we only need to delete the specific follow relationship.
+    // The person initiating the removal is `fromUserId`.
     await pool.query(`
       DELETE FROM user_connections 
-      WHERE (user_id = $1 AND connected_user_id = $2) 
-         OR (user_id = $2 AND connected_user_id = $1)
-    `, [fromUserId, toUserId]);
+      WHERE user_id = $1 AND connected_user_id = $2
+    `, [fromInternalUserId, toUserId]);
 
     return { message: 'Connection removed successfully', status: 'not_connected' };
   } catch (error) {
