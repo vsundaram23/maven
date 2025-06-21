@@ -1,24 +1,23 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useUser } from "@clerk/clerk-react";
-import { useNavigate } from "react-router-dom";
-import Papa from "papaparse";
 import {
-    StarIcon as OutlineStarIcon,
-    TagIcon,
-    GlobeAltIcon,
-    PhoneIcon,
-    UsersIcon,
-    UserCircleIcon,
-    SparklesIcon,
-    DocumentTextIcon,
-    CheckCircleIcon,
-    XCircleIcon,
-    ChevronDownIcon,
     ArrowPathIcon,
+    CheckCircleIcon,
+    DocumentTextIcon,
+    GlobeAltIcon,
+    StarIcon as OutlineStarIcon,
+    PhoneIcon,
     PhotoIcon,
-    XMarkIcon,
+    SparklesIcon,
+    TagIcon,
+    UserCircleIcon,
+    UsersIcon,
+    XCircleIcon,
+    XMarkIcon
 } from "@heroicons/react/24/outline";
 import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
+import Papa from "papaparse";
+import React, { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./ShareRecommendation.css";
 
 const API_URL = "https://api.seanag-recommendations.org:8080";
@@ -132,9 +131,6 @@ export default function ShareRecommendation() {
     const [mode, setMode] = useState("single");
     const [typewriterText, setTypewriterText] = useState("");
     const [typewriterIndex, setTypewriterIndex] = useState(0);
-
-    const [categoryState, setCategoryState] = useState("");
-    const [subcategoryState, setSubcategoryState] = useState("");
 
     const [businessName, setBusinessName] = useState("");
     const [providerContactName, setProviderContactName] = useState("");
@@ -276,8 +272,6 @@ export default function ShareRecommendation() {
         setTags([]);
         setPublishScope("Full Trust Circle");
         setSelectedTrustCircles([]);
-        setCategoryState("");
-        setSubcategoryState("");
         setMessage("");
         setTypewriterIndex(0);
         setTypewriterText("");
@@ -395,13 +389,10 @@ export default function ShareRecommendation() {
             provider_contact_name: providerContactName.trim() || null,
             recommender_message: recommendationBlurb,
             rating: rating,
-            category: categoryState || null,
-            subcategory: subcategoryState || null,
             website: website.trim() || null,
             phone_number: phoneNumber.trim() || null,
             tags: tags,
             publish_scope: publishScope,
-            email: null,
             ...(publishScope === "Specific Trust Circles" && {
                 trust_circle_ids: selectedTrustCircles,
             }),
@@ -608,10 +599,12 @@ export default function ShareRecommendation() {
             }
 
             try {
+                const formData = new FormData();
+                formData.append("data", JSON.stringify(transformedData));
+
                 const response = await fetch(`${API_URL}/api/recommendations`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(transformedData),
+                    body: formData,
                 });
 
                 if (!response.ok) {
