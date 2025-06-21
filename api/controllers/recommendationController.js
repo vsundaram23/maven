@@ -119,7 +119,7 @@ const createRecommendation = async (req, res) => {
         id, business_name, description, category_id, service_id, recommended_by, date_of_recommendation,
         email, phone_number, website, tags, city, state, zip_code, service_scope, price_range,
         business_contact, provider_message, recommender_message, visibility, num_likes, notes, price_paid,
-        submitted_category_name, submitted_service_name, created_at, updated_at, images
+        created_at, updated_at, images
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 0, $21, $22, $23, $24, $25, $26, $27
       ) RETURNING id;
