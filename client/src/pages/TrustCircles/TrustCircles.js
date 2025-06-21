@@ -852,7 +852,7 @@ const TrustCircles = () => {
         if (!user?.id) return;
         try {
             const res = await fetch(
-                `${API_URL}/api/communities/request/internal`,
+                `${API_URL}/api/communities/request`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
