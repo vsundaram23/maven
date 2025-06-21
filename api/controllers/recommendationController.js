@@ -545,7 +545,6 @@ const getVisibleRecommendationsForUser = async (req, res) => {
                 sp.business_contact, sp.provider_message, sp.recommender_message,
                 sp.visibility, sp.notes, sp.price_paid,
                 sp.date_of_recommendation, sp.created_at,
-                sp.submitted_category_name, sp.submitted_service_name,
                 cat.name AS category_name,
                 ser.name AS service_type,
                 rec_user.id AS recommender_user_id,
@@ -629,7 +628,6 @@ const searchProviders = async (req, res) => {
                 sp.business_contact, sp.provider_message, sp.recommender_message,
                 sp.visibility, sp.notes, sp.price_paid,
                 sp.date_of_recommendation, sp.created_at,
-                sp.submitted_category_name, sp.submitted_service_name,
                 cat.name AS category_name,
                 ser.name AS service_type,
                 rec_user.id AS recommender_user_id,
@@ -654,8 +652,6 @@ const searchProviders = async (req, res) => {
                     LOWER(cat.name) LIKE $2 OR
                     LOWER(ser.name) LIKE $2 OR
                     EXISTS (SELECT 1 FROM unnest(sp.tags) AS tag WHERE LOWER(tag) LIKE $2) OR
-                    LOWER(sp.submitted_category_name) LIKE $2 OR
-                    LOWER(sp.submitted_service_name) LIKE $2 OR
                     LOWER(rec_user.name) LIKE $2 OR
                     LOWER(rec_user.email) LIKE $2
                 ) AND

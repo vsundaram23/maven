@@ -694,7 +694,7 @@ export default function ShareRecommendation() {
                     <div className="form-grid">
                         <div className="form-group span-2">
                             <label htmlFor="businessName">
-                                Service Provider Name *
+                                Recommendation Name *
                             </label>
                             <input
                                 id="businessName"

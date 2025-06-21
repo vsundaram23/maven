@@ -581,7 +581,6 @@ const getCommunityRecommendations = async (communityId, clerkUserId) => {
               sp.tags, sp.city, sp.state, sp.zip_code, sp.service_scope, sp.price_range,
               sp.business_contact, sp.provider_message, sp.recommender_message,
               sp.visibility, sp.date_of_recommendation, sp.created_at,
-              sp.submitted_category_name, sp.submitted_service_name,
               cs.community_service_category_id,
               cat.name AS category_name,
               ser.name AS service_type,
