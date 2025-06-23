@@ -208,7 +208,20 @@ const getPublicUserProfile = async (req, res) => {
             LEFT JOIN service_categories c ON s.category_id = c.service_id
             LEFT JOIN users u ON sp.recommended_by = u.id
             LEFT JOIN recommendation_likes l ON l.recommendation_id = sp.id AND l.user_id = $2
-            WHERE sp.recommended_by = $1
+            WHERE sp.recommended_by = $1 AND (
+                $1 = $2 OR -- The user is viewing their own profile
+                sp.visibility = 'public' OR
+                (sp.visibility = 'connections' AND EXISTS (
+                    SELECT 1 FROM user_connections
+                    WHERE status = 'accepted' AND 
+                    ((user_id = $1 AND connected_user_id = $2) OR (user_id = $2 AND connected_user_id = $1))
+                )) OR
+                (sp.visibility = 'communities' AND EXISTS (
+                    SELECT 1 FROM community_shares cs
+                    JOIN community_memberships cm ON cs.community_id = cm.community_id
+                    WHERE cs.service_provider_id = sp.id AND cm.user_id = $2 AND cm.status = 'approved'
+                ))
+            )
             ORDER BY sp.date_of_recommendation DESC, sp.created_at DESC
         `;
         const recommendationsResult = await pool.query(recommendationsQuery, [
@@ -835,7 +848,20 @@ const getUserPublicProfileByUsername = async (req, res) => {
             LEFT JOIN service_categories c ON s.category_id = c.service_id
             LEFT JOIN users u ON sp.recommended_by = u.id
             LEFT JOIN recommendation_likes l ON l.recommendation_id = sp.id AND l.user_id = $2
-            WHERE sp.recommended_by = $1
+            WHERE sp.recommended_by = $1 AND (
+                $1 = $2 OR -- The user is viewing their own profile
+                sp.visibility = 'public' OR
+                (sp.visibility = 'connections' AND EXISTS (
+                    SELECT 1 FROM user_connections
+                    WHERE status = 'accepted' AND 
+                    ((user_id = $1 AND connected_user_id = $2) OR (user_id = $2 AND connected_user_id = $1))
+                )) OR
+                (sp.visibility = 'communities' AND EXISTS (
+                    SELECT 1 FROM community_shares cs
+                    JOIN community_memberships cm ON cs.community_id = cm.community_id
+                    WHERE cs.service_provider_id = sp.id AND cm.user_id = $2 AND cm.status = 'approved'
+                ))
+            )
             ORDER BY sp.date_of_recommendation DESC, sp.created_at DESC
         `;
         const recommendationsResult = await pool.query(recommendationsQuery, [

@@ -599,7 +599,7 @@ const getCommunityRecommendations = async (communityId, clerkUserId) => {
           LEFT JOIN services ser ON sp.service_id = ser.service_id AND ser.service_id != $2
           LEFT JOIN service_categories cat ON ser.category_id = cat.service_id AND cat.service_id != $3
           WHERE cs.community_id = $4
-            AND (sp.visibility = 'public' OR sp.visibility = 'connections')
+            AND (sp.visibility = 'public' OR sp.visibility = 'connections' OR sp.visibility = 'communities')
           ORDER BY sp.created_at DESC;
       `;
 

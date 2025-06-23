@@ -553,6 +553,14 @@ export default function ShareRecommendation() {
         for (let i = 0; i < csvData.length; i++) {
             const row = csvData[i];
 
+            let publishScopeFromCsv =
+                row[
+                    "Publish Scope (Public/Specific Trust Circles/Full Trust Circle, Optional)"
+                ] || "Full Trust Circle";
+            if (publishScopeFromCsv === "Entire Trust Circle") {
+                publishScopeFromCsv = "Full Trust Circle";
+            }
+
             // Transform CSV columns to API fields
             const transformedData = {
                 user_email: user.primaryEmailAddress?.emailAddress,
@@ -564,10 +572,7 @@ export default function ShareRecommendation() {
                 website: row["Website (Optional)"]?.trim() || null,
                 phone_number: row["Phone (Optional)"]?.trim() || null,
                 tags: processTags(row["Tags (comma-separated, Optional)"]),
-                publish_scope:
-                    row[
-                        "Publish Scope (Public/Specific Trust Circles/Entire Trust Circle, Optional)"
-                    ] || "Full Trust Circle",
+                publish_scope: publishScopeFromCsv,
                 trust_circle_ids:
                     row[
                         "Trust Circle IDs (comma-separated if Specific Trust Circles, Optional)"
@@ -1057,7 +1062,7 @@ export default function ShareRecommendation() {
                 Business Name, Your Experience, Rating (1-5), Provider Contact
                 Name (Optional), Website (Optional), Phone (Optional), Tags
                 (comma-separated, Optional), Publish Scope (Public/Specific
-                Trust Circles/Entire Trust Circle, Optional), Trust Circle IDs
+                Trust Circles/Full Trust Circle, Optional), Trust Circle IDs
                 (comma-separated if Specific Trust Circles, Optional)
             </code>{" "}
             <div className="form-group file-upload-group">

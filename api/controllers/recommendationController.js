@@ -104,11 +104,10 @@ const createRecommendation = async (req, res) => {
             let visibility_status = "private";
             if (publish_scope === "Public") {
                 visibility_status = "public";
-            } else if (
-                publish_scope === "Full Trust Circle" ||
-                publish_scope === "Specific Trust Circles"
-            ) {
+            } else if (publish_scope === "Full Trust Circle") {
                 visibility_status = "connections";
+            } else if (publish_scope === "Specific Trust Circles") {
+                visibility_status = "communities";
             }
 
             const newProviderId = uuidv4();
@@ -397,11 +396,10 @@ const updateRecommendation = async (req, res) => {
             let visibility_status = "private";
             if (publish_scope === "Public") {
                 visibility_status = "public";
-            } else if (
-                publish_scope === "Full Trust Circle" ||
-                publish_scope === "Specific Trust Circles"
-            ) {
+            } else if (publish_scope === "Full Trust Circle") {
                 visibility_status = "connections";
+            } else if (publish_scope === "Specific Trust Circles") {
+                visibility_status = "communities";
             }
 
             // Process new images
@@ -442,9 +440,9 @@ const updateRecommendation = async (req, res) => {
                 toNull(website),
                 toNull(provider_contact_name),
                 toNull(recommender_message),
-                visibility_status, // Fixed: use visibility_status instead of undefined variable
+                visibility_status,
                 JSON.stringify(updatedImages),
-                rating, // Add the rating to be saved as initial_rating
+                rating,
                 serviceProviderId,
             ];
 
@@ -564,6 +562,13 @@ const getVisibleRecommendationsForUser = async (req, res) => {
                     sp.recommended_by = $1 OR
                     (
                         sp.visibility = 'connections' AND EXISTS (
+                            SELECT 1 FROM user_connections
+                            WHERE status = 'accepted' AND 
+                            ((user_id = $1 AND connected_user_id = sp.recommended_by) OR (user_id = sp.recommended_by AND connected_user_id = $1))
+                        )
+                    ) OR
+                    (
+                        sp.visibility = 'communities' AND EXISTS (
                             SELECT 1 FROM community_shares cs
                             JOIN community_memberships cm ON cs.community_id = cm.community_id
                             WHERE cs.service_provider_id = sp.id AND cm.user_id = $1 AND cm.status = 'approved'
@@ -658,6 +663,13 @@ const searchProviders = async (req, res) => {
                     sp.recommended_by = $1 OR
                     (
                         sp.visibility = 'connections' AND EXISTS (
+                            SELECT 1 FROM user_connections
+                            WHERE status = 'accepted' AND 
+                            ((user_id = $1 AND connected_user_id = sp.recommended_by) OR (user_id = sp.recommended_by AND connected_user_id = $1))
+                        )
+                    ) OR
+                    (
+                        sp.visibility = 'communities' AND EXISTS (
                             SELECT 1 FROM community_shares cs
                             JOIN community_memberships cm ON cs.community_id = cm.community_id
                             WHERE cs.service_provider_id = sp.id AND cm.user_id = $1 AND cm.status = 'approved'

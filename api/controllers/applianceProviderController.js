@@ -59,7 +59,7 @@ const getVisibleProvidersBaseQueryForServicePage = (currentUserId) => {
             OR
             (sp.visibility = 'connections' AND con_direct.user_id IS NOT NULL)
             OR
-            (cs.community_id IS NOT NULL AND cm_user_x.user_id IS NOT NULL)
+            (sp.visibility = 'communities' AND cm_user_x.user_id IS NOT NULL)
         )
   `;
     const queryParams = [currentUserId];
