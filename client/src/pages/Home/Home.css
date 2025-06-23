@@ -820,10 +820,10 @@ body {
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 10000;
-  padding: 2rem;
+  padding: 8rem 2rem 2rem;
   overflow-y: auto;
 }
 
@@ -3465,4 +3465,9 @@ body {
 
 .location-save-button:hover {
   background: #12264a;
+}
+
+.review-modal-overlay {
+    align-items: flex-start !important;
+    padding-top: 8rem !important;
 }
