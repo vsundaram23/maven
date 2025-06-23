@@ -229,20 +229,43 @@ const EditRecommendationModal = ({
             setWebsite(recommendationToEdit.website || "");
             setPhoneNumber(recommendationToEdit.phone_number || "");
             let initialPublishScope = "Full Trust Circle";
-            if (recommendationToEdit.visibility === "public")
-                initialPublishScope = "Public";
-            else if (recommendationToEdit.visibility === "connections") {
-                initialPublishScope =
-                    Array.isArray(recommendationToEdit.trust_circle_ids) &&
-                    recommendationToEdit.trust_circle_ids.length > 0
-                        ? "Specific Trust Circles"
-                        : "Full Trust Circle";
-            } else if (recommendationToEdit.publish_scope)
-                initialPublishScope = recommendationToEdit.publish_scope;
+            let initialSelectedCircles = [];
+
+            switch (recommendationToEdit.visibility) {
+                case 'public':
+                    initialPublishScope = 'Public';
+                    break;
+                case 'connections':
+                    initialPublishScope = 'Full Trust Circle';
+                    break;
+                case 'communities':
+                    initialPublishScope = 'Specific Trust Circles';
+                    if (Array.isArray(recommendationToEdit.trust_circle_ids)) {
+                        initialSelectedCircles = recommendationToEdit.trust_circle_ids;
+                    }
+                    break;
+                default:
+                    // Fallback for older data that might use publish_scope or a different visibility logic
+                    if (recommendationToEdit.publish_scope) {
+                        initialPublishScope = recommendationToEdit.publish_scope;
+                        if (initialPublishScope === 'Specific Trust Circles' && Array.isArray(recommendationToEdit.trust_circle_ids)) {
+                            initialSelectedCircles = recommendationToEdit.trust_circle_ids;
+                        }
+                    } else if (
+                        recommendationToEdit.visibility === "connections" &&
+                        Array.isArray(recommendationToEdit.trust_circle_ids) &&
+                        recommendationToEdit.trust_circle_ids.length > 0
+                    ) {
+                        // Handle legacy case where 'connections' with IDs meant 'Specific'
+                        initialPublishScope = 'Specific Trust Circles';
+                        initialSelectedCircles = recommendationToEdit.trust_circle_ids;
+                    }
+                    break;
+            }
+
             setPublishScope(initialPublishScope);
-            setSelectedTrustCircles(
-                recommendationToEdit.trust_circle_ids || []
-            );
+            setSelectedTrustCircles(initialSelectedCircles);
+            
             setMessage("");
             setHoverRating(0);
             setTagInput("");
