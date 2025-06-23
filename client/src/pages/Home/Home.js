@@ -20,6 +20,30 @@ import "./Home.css";
 const API_URL = 'https://api.seanag-recommendations.org:8080';
 // const API_URL = "http://localhost:3000";
 
+const stateMap = {
+    'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland', 'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina', 'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
+};
+
+const stateNameMap = Object.fromEntries(
+  Object.entries(stateMap).map(([abbr, name]) => [name.toLowerCase(), name])
+);
+
+const getFullStateName = (input) => {
+  if (!input) return "";
+  const trimmed = input.trim();
+  const upper = trimmed.toUpperCase();
+
+  if (stateMap[upper]) {
+    return stateMap[upper];
+  }
+
+  const lower = trimmed.toLowerCase();
+  if (stateNameMap[lower]) {
+    return stateNameMap[lower];
+  }
+  return trimmed;
+};
+
 const BRAND_PHRASE = "Tried & Trusted.";
 
 const StarRatingDisplay = ({ rating }) => {
@@ -293,11 +317,12 @@ const Home = () => {
         if (locationInput !== originalLocation && isSignedIn && user) {
             const parts = locationInput.split(',').map(p => p.trim());
             const newCity = parts[0] || '';
-            const newState = parts.length > 1 ? parts[1] : '';
+            const newState = parts.length > 1 ? getFullStateName(parts[1]) : '';
 
             if (!newCity || !newState) {
                 console.warn("Invalid location format. Reverting.");
-                return; // Revert happens implicitly as state isn't set
+                setLocationInput(`${city}, ${state}`); // Revert input field
+                return;
             }
 
             const previousCity = city;
@@ -306,6 +331,7 @@ const Home = () => {
             // Optimistically update UI
             setCity(newCity);
             setState(newState);
+            setLocationInput(`${newCity}, ${newState}`); // Update input to reflect change
 
             try {
                 const session = await window.Clerk.session.getToken();
@@ -330,6 +356,7 @@ const Home = () => {
                 // Revert the optimistic update
                 setCity(previousCity);
                 setState(previousState);
+                setLocationInput(`${previousCity}, ${previousState}`);
             }
         }
     };
@@ -939,11 +966,12 @@ const Home = () => {
         if (!isSignedIn) { openSignIn(); setIsSearching(false); return; }
         setIsSearching(true);
         try {
+            const finalState = getFullStateName(state);
             const params = new URLSearchParams({
                 q: q,
                 user_id: user.id,
                 email: user.primaryEmailAddress?.emailAddress,
-                state: state // Directly use the state variable
+                state: finalState
             });
             const searchUrl = `${API_URL}/api/providers/search?${params.toString()}`;
             const response = await fetch(searchUrl);
@@ -951,7 +979,7 @@ const Home = () => {
             if (!response.ok) { let errP; try { errP = JSON.parse(responseBody); } catch (pE) { throw new Error(`HTTP error! status: ${response.status}, Non-JSON response: ${responseBody}`); } throw new Error(errP.message || errP.error || `HTTP error! ${response.status}`); }
             const d = JSON.parse(responseBody);
             if (d.success) {
-                const base = `/search?q=${encodeURIComponent(q)}&state=${encodeURIComponent(state)}`; // Pass state to URL
+                const base = `/search?q=${encodeURIComponent(q)}&state=${encodeURIComponent(finalState)}`; // Pass state to URL
                 navigate(d.providers?.length > 0 ? base : base + "&noResults=true", {
                     state: { initialProviders: d.providers, currentSearchUserId: user.id },
                 });
