@@ -108,6 +108,10 @@ body {
   gap: 12px;
 }
 
+.communities-mobile-actions {
+    display: none;
+}
+
 .grid-layout {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1125,6 +1129,15 @@ body {
   }
 
   .list-section-container .list-header .section-actions-followers {
+    display: none;
+  }
+
+  .communities-mobile-actions {
+      display: flex;
+      margin-bottom: 20px;
+  }
+
+  .communities-desktop-actions {
     display: none;
   }
 }

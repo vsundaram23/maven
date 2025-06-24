@@ -1039,9 +1039,25 @@ const TrustCircles = () => {
                         </div>
                     )}
                     <section className="section-container">
+                        <div className="section-actions communities-mobile-actions">
+                            <button
+                                className="button button-primary icon-button"
+                                onClick={() => setShowDiscoverModal(true)}
+                            >
+                                <FaSearch style={{ marginRight: "8px" }} /> Discover Communities
+                            </button>
+                            <button
+                                className="button button-primary icon-button"
+                                onClick={() =>
+                                    setShowCreateCommunityModal(true)
+                                }
+                            >
+                                <GroupAddIcon /> Create Community
+                            </button>
+                        </div>
                         <div className="section-title-container">
                             <h2 className="section-title">My Communities</h2>
-                            <div className="section-actions">
+                            <div className="section-actions communities-desktop-actions">
                                 <button
                                     className="button button-primary icon-button"
                                     onClick={() => setShowDiscoverModal(true)}
