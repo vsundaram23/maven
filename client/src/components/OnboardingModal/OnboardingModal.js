@@ -5,8 +5,8 @@ import {
     ChevronDownIcon,
     UsersIcon
 } from "@heroicons/react/24/outline";
-import { CheckIcon } from "@heroicons/react/24/solid";
-import React, { useState } from "react";
+import { CheckIcon, UserPlusIcon } from "@heroicons/react/24/solid";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./OnboardingModal.css";
 
@@ -52,6 +52,30 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
         state: "",
         interests: [],
     });
+
+    const [topRecommenders, setTopRecommenders] = useState([]);
+    const [loadingRecommenders, setLoadingRecommenders] = useState(false);
+    const [selectedRecommenders, setSelectedRecommenders] = useState(new Set());
+
+    useEffect(() => {
+        if (currentStep === 5 && !isInvite) {
+            const fetchRecommenders = async () => {
+                setLoadingRecommenders(true);
+                try {
+                    const response = await fetch(`${API_URL}/api/connections/top-recommenders?state=${encodeURIComponent(formData.state)}&userId=${user.id}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        setTopRecommenders(data);
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch top recommenders", err);
+                } finally {
+                    setLoadingRecommenders(false);
+                }
+            };
+            fetchRecommenders();
+        }
+    }, [currentStep, formData.state, user?.id, isInvite]);
 
     if (!isOpen) return null;
 
@@ -234,10 +258,29 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
         }
     };
 
-    const handleFinish = () => {
+    const handleFinish = async (followSelected = false) => {
+        if (followSelected) {
+            const fromUserId = user.id;
+            const followPromises = Array.from(selectedRecommenders).map(toUserId => {
+                return fetch(`${API_URL}/api/connections/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fromUserId, toUserId })
+                });
+            });
+
+            try {
+                await Promise.all(followPromises);
+            } catch (error) {
+                console.error("Error following users:", error);
+                // Non-critical, so we can still proceed
+            }
+        }
+        
         onComplete();
         if (!isInvite) {
-            navigate("/trustcircles?tab=discover");
+            // After following, navigate to the Home page
+            navigate("/");
         }
     };
 
@@ -451,7 +494,37 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
     };
 
     if (currentStep === 5) {
-        // Success screen
+        if (isInvite) {
+             return (
+                <div className="onboarding-modal-overlay">
+                    <div className="onboarding-modal">
+                        <div className="onboarding-progress">
+                            <div
+                                className="onboarding-progress-bar"
+                                style={{ width: '100%' }}
+                            />
+                        </div>
+                        <div className="onboarding-content">
+                            <div className="onboarding-success-content">
+                                <CheckCircleIcon className="onboarding-success-icon" />
+                                <h2>You're all set! 🎊</h2>
+                                <p className="onboarding-success-message">
+                                    Complete setup to join the community.
+                                </p>
+                                <button
+                                    className="onboarding-finish-btn"
+                                    onClick={() => onComplete()}
+                                >
+                                    <CheckCircleIcon className="w-4 h-4" />
+                                     Finish
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        // Success screen for non-invite flow with top recommenders
         return (
             <div className="onboarding-modal-overlay">
                 <div className="onboarding-modal">
@@ -463,29 +536,67 @@ const OnboardingModal = ({ isOpen, onComplete, user }) => {
                     </div>
                     <div className="onboarding-content">
                         <div className="onboarding-success-content">
-                            <CheckCircleIcon className="onboarding-success-icon" />
-                            <h2>You're all set! 🎊</h2>
+                            <UsersIcon className="onboarding-success-icon" />
+                            <h2>Follow Top Recommenders in {formData.state}</h2>
                             <p className="onboarding-success-message">
-                                {isInvite
-                                    ? "Complete setup to join the community."
-                                    : "Now you can explore communities to find and share relevant recommendations!"}
+                                Get connected with influential people in your area to kickstart your network.
                             </p>
-                            <button
-                                className="onboarding-finish-btn"
-                                onClick={handleFinish}
-                            >
-                                {isInvite ? (
-                                    <>
-                                        <CheckCircleIcon className="w-4 h-4" />
-                                        Finish
-                                    </>
-                                ) : (
-                                    <>
-                                        <UsersIcon className="w-4 h-4" />
-                                        Discover Communities
-                                    </>
-                                )}
-                            </button>
+                            
+                            {loadingRecommenders ? (
+                                <p>Loading suggestions...</p>
+                            ) : topRecommenders.length > 0 ? (
+                                <div className="onboarding-recommenders-grid">
+                                    {topRecommenders.map(rec => {
+                                        const isChecked = selectedRecommenders.has(rec.id);
+                                        return (
+                                            <label key={rec.id} className={`onboarding-interest-item ${isChecked ? 'checked' : ''}`}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => {
+                                                        setSelectedRecommenders(prev => {
+                                                            const newSet = new Set(prev);
+                                                            if (newSet.has(rec.id)) {
+                                                                newSet.delete(rec.id);
+                                                            } else {
+                                                                newSet.add(rec.id);
+                                                            }
+                                                            return newSet;
+                                                        });
+                                                    }}
+                                                />
+                                                <div className="onboarding-checkbox-custom">
+                                                    <CheckIcon className="onboarding-checkbox-checkmark" />
+                                                </div>
+                                                <img src={rec.profile_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(rec.name)}&background=random&color=fff&size=40`} alt={rec.name} className="onboarding-recommender-avatar" />
+                                                <div className="onboarding-recommender-info">
+                                                    <span className="onboarding-recommender-name">{rec.name}</span>
+                                                    <span className="onboarding-recommender-details">{rec.user_score || 0} Trust Points &bull; {rec.city}</span>
+                                                </div>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <p>No top recommenders found in your state yet. You can build your network later!</p>
+                            )}
+
+                            <div className="onboarding-success-buttons">
+                                <button
+                                    className="onboarding-finish-btn"
+                                    onClick={() => handleFinish(true)}
+                                    disabled={selectedRecommenders.size === 0}
+                                >
+                                    <UserPlusIcon className="w-4 h-4" />
+                                    Follow Selected ({selectedRecommenders.size}) & Finish
+                                </button>
+                                <button
+                                    className="onboarding-skip-btn"
+                                    onClick={() => handleFinish(false)}
+                                >
+                                    Skip & Finish
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

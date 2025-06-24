@@ -7,8 +7,8 @@ import TrustScoreWheel from "../../components/TrustScoreWheel/TrustScoreWheel";
 import "../Profile/Profile.css";
 import "./PublicProfile.css";
 
-// const API_URL = 'https://api.seanag-recommendations.org:8080';
-const API_URL = "http://localhost:3000";
+const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = "http://localhost:3000";
 
 const StarRatingDisplay = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;
@@ -348,15 +348,10 @@ const PublicProfile = () => {
                 setUserScore(0);
             }
             
-            const connectionsPromise = fetch(`${API_URL}/api/connections/check-connections`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_id: data.userId }),
-            });
-            const connectionsRes = await connectionsPromise;
-            if (connectionsRes.ok) {
-                const connectionsData = await connectionsRes.json();
-                setConnections(Array.isArray(connectionsData) ? connectionsData : []);
+            const followersRes = await fetch(`${API_URL}/api/connections/followers?user_id=${data.clerk_id}`);
+            if (followersRes.ok) {
+                const followersData = await followersRes.json();
+                setConnections(Array.isArray(followersData) ? followersData : []);
             } else {
                 setConnections([]);
             }

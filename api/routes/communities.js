@@ -217,7 +217,7 @@ router.get('/user/email/:email', async (req, res) => {
       }
 
       // Now that we're sure the user exists, fetch their full details (including clerk_id)
-      const result = await pool.query('SELECT id, clerk_id, name, email FROM users WHERE id = $1', [internalUserId]);
+      const result = await pool.query('SELECT id, clerk_id, name, email, state FROM users WHERE id = $1', [internalUserId]);
 
       if (result.rows.length === 0) {
           // This should theoretically not happen if getOrCreateUser worked, but as a safeguard
@@ -293,6 +293,39 @@ router.get('/:communityId/categories', async (req, res) => {
   } catch (error) {
     console.error(`Error in GET /:communityId/categories route for community ${communityId}:`, error.message);
     res.status(500).json({ success: false, message: error.message || 'Server error fetching community categories' });
+  }
+});
+
+router.post('/user/check-phone', async (req, res) => {
+  const { phoneNumber } = req.body;
+  if (!phoneNumber) {
+    return res.status(400).json({ error: 'Phone number is required' });
+  }
+  
+  const client = await pool.connect();
+  try {
+    const numericPhoneNumber = phoneNumber.replace(/\D/g, '');
+    if (numericPhoneNumber.length < 7) { // Very basic validation
+         client.release();
+         return res.status(400).json({ error: 'Invalid phone number format.' });
+    }
+    
+    // This is not very efficient on large tables without an index on the expression.
+    const result = await client.query(
+        "SELECT username FROM users WHERE regexp_replace(phone_number, '[^0-9]', '', 'g') LIKE $1 LIMIT 1",
+        [`%${numericPhoneNumber}`] // Match if the stored number ends with the provided digits
+    );
+    
+    if (result.rows.length > 0) {
+      res.json({ exists: true, username: result.rows[0].username });
+    } else {
+      res.json({ exists: false });
+    }
+  } catch (error) {
+    console.error('Error checking phone number:', error);
+    res.status(500).json({ error: 'Server error checking phone number' });
+  } finally {
+    client.release();
   }
 });
 

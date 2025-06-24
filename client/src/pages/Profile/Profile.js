@@ -1440,15 +1440,7 @@ const Profile = () => {
                 `${API_URL}/api/users/me/recommendations?${queryParams}`
             );
             const connectionsResPromise = fetch(
-                `${API_URL}/api/connections/check-connections?${queryParams}`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        email: user.primaryEmailAddress?.emailAddress,
-                        // user_id: user.id,
-                    }),
-                }
+                `${API_URL}/api/connections/followers?user_id=${user.id}`
             );
             const [profileRes, connectionsRes] = await Promise.all([
                 profileResPromise,

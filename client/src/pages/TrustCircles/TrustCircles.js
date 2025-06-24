@@ -1,14 +1,21 @@
 import { useUser } from "@clerk/clerk-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+    FaCheck,
     FaEye,
+    FaHeart,
     FaPlusCircle,
+    FaSearch,
     FaStar,
     FaThumbsUp,
+    FaUserFriends,
+    FaUserPlus,
     FaUsers
 } from "react-icons/fa";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import MemberCard from "../../components/MemberCard/MemberCard";
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
+import SuggestedFollowersModal from "../../components/SuggestedFollowersModal/SuggestedFollowersModal";
 import "./TrustCircles.css";
 
 const API_URL = "https://api.seanag-recommendations.org:8080";
@@ -69,130 +76,6 @@ const HourglassTopIcon = () => (
         <path d="M6 2v6h.01L6 8.01 10 12l-4 4 .01.01H6V22h12v-5.99h-.01L18 16.01l-4-4 4-3.99-.01-.01H18V2H6zm10 14.5V20H8v-3.5l4-4 4 4zM8 4h8v3.5l-4 4-4-4V4z" />
     </svg>
 );
-
-const MemberCard = ({ member }) => {
-    const [imageFailed, setImageFailed] = useState(false);
-    const primarySrc = member.profile_image_url || member.profile_image || member.avatarUrl;
-    const fallbackUiAvatarSrc = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        member.name || member.email || "NA"
-    )}&background=random&color=fff&size=60&font-size=0.33`;
-
-    const handleImageError = (e) => {
-        if (e.target.src === primarySrc && primarySrc !== fallbackUiAvatarSrc) {
-            e.target.src = fallbackUiAvatarSrc;
-        } else {
-            setImageFailed(true);
-        }
-    };
-
-    const getInitials = (name, email) => {
-        if (name) {
-            const names = name.split(" ").filter((n) => n);
-            if (names.length > 1) {
-                return (names[0][0] + names[names.length - 1][0]).toUpperCase();
-            } else if (names.length === 1 && names[0].length > 1) {
-                return names[0].substring(0, 2).toUpperCase();
-            } else if (names.length === 1 && names[0].length) {
-                return names[0][0].toUpperCase();
-            }
-        }
-        if (email && email.length > 0) return email[0].toUpperCase();
-        return "U";
-    };
-
-    const cleanAltText = (name, email) => {
-        const text = name || email || "Community Member";
-        return text.replace(/(\r\n|\n|\r)/gm, " ");
-    };
-
-    let avatarContent;
-    if (imageFailed) {
-        avatarContent = (
-            <div className="member-avatar member-avatar-initials-fallback">
-                <span>{getInitials(member.name, member.email)}</span>
-            </div>
-        );
-    } else {
-        avatarContent = (
-            <img
-                src={primarySrc || fallbackUiAvatarSrc}
-                alt={cleanAltText(member.name, member.email)}
-                className="member-avatar"
-                onError={handleImageError}
-            />
-        );
-    }
-
-    const displayName = member.name || member.email || "";
-    let nameParts = [];
-    if (member.name) {
-        nameParts = member.name.split(" ").filter((n) => n);
-    }
-
-    return (
-        <div className="member-item-card">
-            {avatarContent}
-            <div className="member-name-container">
-                {member.username ? (
-                    <Link
-                        to={`/pro/${member.username}`}
-                        className="member-name-link"
-                        style={{ color: "inherit", cursor: "pointer" }}
-                    >
-                        {nameParts.length > 1 ? (
-                            <>
-                                {nameParts.slice(0, -1).join(" ")}{" "}
-                                <span className="member-last-name">
-                                    {nameParts.slice(-1)[0]}
-                                </span>
-                            </>
-                        ) : (
-                            displayName
-                        )}
-                    </Link>
-                ) : (
-                    nameParts.length > 1 ? (
-                        <>
-                            {nameParts.slice(0, -1).join(" ")}{" "}
-                            <span className="member-last-name">
-                                {nameParts.slice(-1)[0]}
-                            </span>
-                        </>
-                    ) : (
-                        displayName
-                    )
-                )}
-            </div>
-            <div className="member-info">
-                {member.status !== 'requested' && member.status !== 'pending' && (
-                    <div className="trust-points">
-                        {member.user_score || member.trust_points || 0} Trust Points
-                    </div>
-                )}
-                <div className="member-actions">
-                    {member.phone_number && (
-                        <a
-                            href={`sms:${member.phone_number.replace(/\D/g, "")}`}
-                            className="member-action-button text-button"
-                            title="Send Text Message"
-                        >
-                            Text
-                        </a>
-                    )}
-                    {member.email && (
-                        <a
-                            href={`mailto:${member.email}`}
-                            className="member-action-button email-button"
-                            title="Send Email"
-                        >
-                            Email
-                        </a>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const MyRecStarRating = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;
@@ -391,15 +274,29 @@ const TrustCircles = () => {
         useState(false);
 
     const [showAddPersonModal, setShowAddPersonModal] = useState(false);
-    const [newPersonEmail, setNewPersonEmail] = useState("");
+    const [newPersonPhone, setNewPersonPhone] = useState("");
+    const [showProfileConfirmation, setShowProfileConfirmation] = useState(false);
+    const [profileToNavigate, setProfileToNavigate] = useState(null);
     const [showCreateCommunityModal, setShowCreateCommunityModal] =
         useState(false);
     const [newCommunityName, setNewCommunityName] = useState("");
     const [newCommunityDescription, setNewCommunityDescription] = useState("");
-    const [activeTab, setActiveTab] = useState("myTrust");
+    const [activeTab, setActiveTab] = useState("network");
+    const [showSuggestionsModal, setShowSuggestionsModal] = useState(false);
+    const [showDiscoverModal, setShowDiscoverModal] = useState(false);
+    const [discoverSearchTerm, setDiscoverSearchTerm] = useState('');
 
     // Add search state for followers
     const [followersSearch, setFollowersSearch] = useState("");
+
+    const [followingConnections, setFollowingConnections] = useState([]);
+    const [followersTabActiveList, setFollowersTabActiveList] =
+        useState("followers");
+    const [loadingFollowing, setLoadingFollowing] = useState(false);
+    const [suggestedFollows, setSuggestedFollows] = useState([]);
+    const [loadingSuggestedFollows, setLoadingSuggestedFollows] = useState(false);
+    const [userSearchResults, setUserSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
 
     useEffect(() => {
         if (isLoaded && isSignedIn && user) {
@@ -414,9 +311,9 @@ const TrustCircles = () => {
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const tabParam = params.get("tab");
-        if (tabParam === "myRecommendations") setActiveTab("myRecommendations");
-        else if (tabParam === "discover") setActiveTab("discover");
-        else setActiveTab("myTrust");
+        if (tabParam === "for-you") setActiveTab("for-you");
+        else if (tabParam === "communities") setActiveTab("communities");
+        else setActiveTab("network");
     }, [location.search]);
 
     const fetchMyTrustCircleData = useCallback(async () => {
@@ -436,22 +333,20 @@ const TrustCircles = () => {
                     "Failed to fetch user details for Trust Circle."
                 );
             const userData = await userRes.json();
-            setCurrentUser(userData);
+            setCurrentUser({
+                ...userData,
+                state: userData.state || null
+            });
 
-            const conRes = await fetch(
-                `${API_URL}/api/connections/check-connections`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: currentUserEmail }),
-                }
+            const followersRes = await fetch(
+                `${API_URL}/api/connections/followers?user_id=${currentUserId}`
             );
-            if (!conRes.ok)
-                throw new Error("Failed to fetch individual connections.");
-            const conData = await conRes.json();
+            if (!followersRes.ok)
+                throw new Error("Failed to fetch followers.");
+            const followersData = await followersRes.json();
             setIndividualConnections(
-                Array.from(new Set(conData.map((u) => u.email))).map((email) =>
-                    conData.find((u) => u.email === email)
+                Array.from(new Set(followersData.map((u) => u.email))).map((email) =>
+                    followersData.find((u) => u.email === email)
                 )
             );
 
@@ -623,21 +518,72 @@ const TrustCircles = () => {
         }
     }, [currentUserId, currentUserEmail, isLoaded, isSignedIn, navigate]);
 
+    const fetchFollowingData = useCallback(async () => {
+        if (!currentUserId || !currentUserEmail) return;
+        setLoadingFollowing(true);
+        try {
+            const params = new URLSearchParams({
+                user_id: currentUserId,
+                email: currentUserEmail,
+            });
+            const res = await fetch(
+                `${API_URL}/api/connections/following?${params.toString()}`
+            );
+            if (!res.ok) throw new Error("Failed to fetch following list.");
+            const data = await res.json();
+            // Assuming data is an array of users
+            setFollowingConnections(Array.isArray(data) ? data : []);
+        } catch (err) {
+            // Handle error - maybe show a message
+            console.error(err);
+            setFollowingConnections([]);
+        } finally {
+            setLoadingFollowing(false);
+        }
+    }, [currentUserId, currentUserEmail]);
+
     useEffect(() => {
         if (isLoaded && isSignedIn) {
-            if (activeTab === "myTrust" || activeTab === "discover")
+            if (activeTab === "communities") {
                 fetchMyTrustCircleData();
-            else if (activeTab === "myRecommendations")
+            } else if (activeTab === "network") {
+                fetchMyTrustCircleData();
+                fetchFollowingData();
+            } else if (activeTab === "for-you") {
                 fetchMyVisibleRecommendations();
+            }
         } else if (isLoaded && !isSignedIn) navigate("/");
     }, [
         fetchMyTrustCircleData,
         fetchMyVisibleRecommendations,
+        fetchFollowingData,
         activeTab,
         isLoaded,
         isSignedIn,
         navigate,
     ]);
+
+    const fetchSuggestedFollows = useCallback(async () => {
+        if (!currentUser?.state || !currentUserId) return;
+        setLoadingSuggestedFollows(true);
+        try {
+            const res = await fetch(`${API_URL}/api/connections/top-recommenders?state=${encodeURIComponent(currentUser.state)}&userId=${currentUserId}`);
+            if (res.ok) {
+                const data = await res.json();
+                setSuggestedFollows(data);
+            }
+        } catch (err) {
+            console.error("Error fetching suggested follows", err);
+        } finally {
+            setLoadingSuggestedFollows(false);
+        }
+    }, [currentUserId, currentUser?.state]);
+
+    useEffect(() => {
+        if (activeTab === 'network' && currentUser?.state && suggestedFollows.length === 0) {
+            fetchSuggestedFollows();
+        }
+    }, [activeTab, currentUser, suggestedFollows.length, fetchSuggestedFollows]);
 
     const sortedMyRecProviders = useMemo(() => {
         if (!myRecRawProviders) return [];
@@ -701,6 +647,35 @@ const TrustCircles = () => {
             return scoreB - scoreA;
         });
     }, [individualConnections, followersSearch]);
+
+    const filteredFollowing = useMemo(() => {
+        let following = followingConnections;
+        if (followersSearch.trim()) {
+            following = following.filter((conn) => {
+                const name = conn.name || "";
+                const email = conn.email || "";
+                const searchTerm = followersSearch.toLowerCase();
+                return (
+                    name.toLowerCase().includes(searchTerm) ||
+                    email.toLowerCase().includes(searchTerm)
+                );
+            });
+        }
+        return following.sort((a, b) => {
+            const scoreA = a.user_score || a.trust_points || 0;
+            const scoreB = b.user_score || b.trust_points || 0;
+            return scoreB - scoreA;
+        });
+    }, [followingConnections, followersSearch]);
+
+    const discoverableCommunities = useMemo(() => {
+        return availableCommunities
+            .filter(c => c.user_membership_status !== 'approved' && c.created_by !== currentUser?.id)
+            .filter(c => 
+                c.name.toLowerCase().includes(discoverSearchTerm.toLowerCase()) ||
+                (c.description && c.description.toLowerCase().includes(discoverSearchTerm.toLowerCase()))
+            );
+    }, [availableCommunities, discoverSearchTerm, currentUser]);
 
     const handleMyRecReviewSubmit = async (reviewData) => {
         if (
@@ -815,13 +790,40 @@ const TrustCircles = () => {
         }
     };
 
-    const handleAddIndividualConnection = async (e) => {
+    const handleInviteFriend = async (e) => {
         e.preventDefault();
-        if (!newPersonEmail.trim() || !currentUser) return;
-        alert(`Simulated: Connection request to ${newPersonEmail}.`);
-        setNewPersonEmail("");
-        setShowAddPersonModal(false);
+        if (!newPersonPhone.trim()) return;
+
+        try {
+            const res = await fetch(`${API_URL}/api/communities/user/check-phone`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phoneNumber: newPersonPhone })
+            });
+            
+            const data = await res.json();
+
+            setShowAddPersonModal(false);
+
+            if (res.ok && data.exists) {
+                if (data.username) {
+                    setProfileToNavigate(data.username);
+                    setShowProfileConfirmation(true);
+                } else {
+                    alert("This user is already on Tried & Trusted, but their profile could not be found.");
+                }
+            } else if (res.ok && !data.exists) {
+                const message = `Hey! I've started sharing my Recs on Tried & Trusted and would love for you to join. You can join here: https://triedandtrusted.ai/`;
+                window.location.href = `sms:${newPersonPhone}?&body=${encodeURIComponent(message)}`;
+                setNewPersonPhone("");
+            } else {
+                throw new Error(data.error || 'Failed to check phone number.');
+            }
+        } catch (err) {
+            alert(`An error occurred: ${err.message}`);
+        }
     };
+
     const handleCreateCommunity = async (e) => {
         e.preventDefault();
         if (!newCommunityName.trim() || !user?.id) return;
@@ -900,10 +902,83 @@ const TrustCircles = () => {
         navigate(`/trustcircles?tab=${tabName}`, { replace: true });
     };
 
+    const handleFollowersTabChange = (listType) => {
+        setFollowersTabActiveList(listType);
+        if (listType === "following" && followingConnections.length === 0) {
+            fetchFollowingData();
+        }
+    };
+
+    const handleFollowUser = async (toUserId) => {
+        if (!currentUserId) {
+            alert("You must be logged in to follow users.");
+            return;
+        }
+
+        const userToFollow = suggestedFollows.find(u => u.id === toUserId);
+        
+        // Optimistic update: remove from suggestions
+        setSuggestedFollows(prev => prev.filter(u => u.id !== toUserId));
+        
+        // Optimistic update: add to following list if not already there
+        if (userToFollow && !followingConnections.find(f => f.id === toUserId)) {
+            setFollowingConnections(prev => [...prev, userToFollow]);
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/api/connections/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fromUserId: currentUserId, toUserId: toUserId })
+            });
+
+            if (!res.ok) throw new Error('Failed to follow user');
+            
+            // Re-fetch following data for consistency
+            fetchFollowingData();
+
+        } catch (err) {
+            console.error(err);
+            // Revert optimistic updates on failure
+            if (userToFollow) {
+                if (!suggestedFollows.find(s => s.id === toUserId)) {
+                     setSuggestedFollows(prev => [...prev, userToFollow]);
+                }
+                setFollowingConnections(prev => prev.filter(f => f.id !== toUserId));
+            }
+            alert('An error occurred while trying to follow the user. Please try again.');
+        }
+    };
+
+    const handleSearchChange = useCallback(async (e) => {
+        const term = e.target.value;
+        setFollowersSearch(term);
+
+        if (followersTabActiveList === 'following' && term.trim() !== '') {
+            setIsSearching(true);
+            try {
+                const params = new URLSearchParams({ userId: currentUserId, term });
+                const res = await fetch(`${API_URL}/api/connections/search-users?${params.toString()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setUserSearchResults(data);
+                } else {
+                    setUserSearchResults([]);
+                }
+            } catch (err) {
+                console.error("Error searching users:", err);
+                setUserSearchResults([]);
+            }
+        } else {
+            setIsSearching(false);
+            setUserSearchResults([]);
+        }
+    }, [followersTabActiveList, currentUserId]);
+
     if (
         !isLoaded ||
         (loadingTrustCircle &&
-            (activeTab === "myTrust" || activeTab === "discover"))
+            (activeTab === "communities" || activeTab === "network"))
     )
         return (
             <div className="loading-message">Loading your Trust Circle...</div>
@@ -917,50 +992,47 @@ const TrustCircles = () => {
         <div className="trust-circles-page-container">
             <header>
                 <h1 className="trust-circles-main-header">
-                    Manage Your Trust Network
+                    Your Trust Network
                 </h1>
                 <p className="trust-circles-sub-header">
-                    Connect, discover communities, and view your
-                    recommendations.
+                    Connect, discover communities, and build meaningful
+                    relationships through trusted recommendations.
                 </p>
             </header>
-            <div className="tabs">
-                <button
-                    className={`tab-button ${
-                        activeTab === "myTrust" ? "active" : ""
-                    }`}
-                    onClick={() => handleTabChange("myTrust")}
-                >
-                    My Trust Circle
-                </button>
-                <button
-                    className={`tab-button ${
-                        activeTab === "myRecommendations" ? "active" : ""
-                    }`}
-                    onClick={() => handleTabChange("myRecommendations")}
-                >
-                    Recommendations For You
-                </button>
-                <button
-                    className={`tab-button ${
-                        activeTab === "discover" ? "active" : ""
-                    }`}
-                    onClick={() => handleTabChange("discover")}
-                >
-                    Discover Communities
-                </button>
+            <div style={{ textAlign: "center" }}>
+                <div className="tabs">
+                    <button
+                        className={`tab-button ${
+                            activeTab === "network" ? "active" : ""
+                        }`}
+                        onClick={() => handleTabChange("network")}
+                    >
+                        <FaHeart style={{ marginRight: "8px" }} />
+                        Network
+                    </button>
+                    <button
+                        className={`tab-button ${
+                            activeTab === "for-you" ? "active" : ""
+                        }`}
+                        onClick={() => handleTabChange("for-you")}
+                    >
+                        <FaStar style={{ marginRight: "8px" }} />
+                        Recs For You
+                    </button>
+                    <button
+                        className={`tab-button ${
+                            activeTab === "communities" ? "active" : ""
+                        }`}
+                        onClick={() => handleTabChange("communities")}
+                    >
+                        <FaUsers style={{ marginRight: "8px" }} />
+                        Communities
+                    </button>
+                </div>
             </div>
 
-            {activeTab === "myTrust" && !loadingTrustCircle && (
+            {activeTab === "communities" && !loadingTrustCircle && (
                 <div className="tab-content">
-                    {/* <div className="trust-circle-explanation">
-                        <p>Your <strong>Trust Circle</strong> is your personal network for discovering and sharing trusted recommendations. It's formed by:</p>
-                        <ul>
-                            <li>The <strong>Communities</strong> you are a part of (e.g., local groups, alumni associations).</li>
-                            <li>Your direct <strong>Individual Connections</strong> (e.g., friends, family, trusted colleagues).</li>
-                        </ul>
-                        <p>The stronger and more diverse your Trust Circle, the more relevant and reliable the recommendations you'll find and can share.</p>
-                    </div> */}
                     {trustCircleError && (
                         <div className="empty-message error-text">
                             {trustCircleError}
@@ -971,18 +1043,18 @@ const TrustCircles = () => {
                             <h2 className="section-title">My Communities</h2>
                             <div className="section-actions">
                                 <button
-                                    className="button button-success button-small icon-button"
+                                    className="button button-primary icon-button"
+                                    onClick={() => setShowDiscoverModal(true)}
+                                >
+                                    <FaSearch style={{ marginRight: "8px" }} /> Discover Communities
+                                </button>
+                                <button
+                                    className="button button-primary icon-button"
                                     onClick={() =>
                                         setShowCreateCommunityModal(true)
                                     }
                                 >
                                     <GroupAddIcon /> Create Community
-                                </button>
-                                <button
-                                    className="button button-outline button-small icon-button"
-                                    onClick={() => handleTabChange("discover")}
-                                >
-                                    <SearchIconSvg /> Discover More
                                 </button>
                             </div>
                         </div>
@@ -993,20 +1065,10 @@ const TrustCircles = () => {
                                     href="#"
                                     onClick={(e) => {
                                         e.preventDefault();
-                                        handleTabChange("discover");
-                                    }}
-                                >
-                                    Discover
-                                </a>{" "}
-                                or{" "}
-                                <a
-                                    href="#"
-                                    onClick={(e) => {
-                                        e.preventDefault();
                                         setShowCreateCommunityModal(true);
                                     }}
                                 >
-                                    create one
+                                    Create one
                                 </a>
                                 .
                             </p>
@@ -1110,74 +1172,200 @@ const TrustCircles = () => {
                             </div>
                         )}
                     </section>
-                    <section className="section-container">
-                        <div className="section-title-container">
-                            <h2 className="section-title">
-                                Your Followers ({individualConnections.length})
-                            </h2>
-                            <div className="section-actions">
-                                <button
-                                    className="button button-primary button-small icon-button"
-                                    onClick={() => setShowAddPersonModal(true)}
-                                >
-                                    <PersonAddIcon /> Add Follower
-                                </button>
-                            </div>
-                        </div>
-                        
-                        {individualConnections.length > 0 && (
-                            <div className="followers-search-container">
-                                <div className="search-input-wrapper">
-                                    <SearchIconSvg />
-                                    <input
-                                        type="text"
-                                        placeholder="Search followers..."
-                                        value={followersSearch}
-                                        onChange={(e) => setFollowersSearch(e.target.value)}
-                                        className="followers-search-input"
-                                    />
-                                </div>
-                            </div>
-                        )}
-                        
-                        {individualConnections.length === 0 &&
-                        !trustCircleError ? (
-                            <p className="empty-message">
-                                No individual connections yet.{" "}
-                                <a
-                                    href="#"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        setShowAddPersonModal(true);
-                                    }}
-                                >
-                                    Add one
-                                </a>
-                                .
-                            </p>
-                        ) : null}
-                        
-                        {filteredFollowers.length === 0 && individualConnections.length > 0 && followersSearch ? (
-                            <p className="empty-message">
-                                No followers found matching "{followersSearch}".
-                            </p>
-                        ) : null}
-                        
-                        {filteredFollowers.length > 0 && (
-                            <div className="followers-list-vertical">
-                                {filteredFollowers.map((conn) => (
-                                    <MemberCard
-                                        key={conn.email}
-                                        member={conn}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </section>
                 </div>
             )}
 
-            {activeTab === "myRecommendations" && (
+            {activeTab === "network" && !loadingTrustCircle && (
+                <div className="tab-content">
+                    <div className="connections-header">
+                        <div className="followers-toggle-container">
+                            <button
+                                className={`toggle-button ${
+                                    followersTabActiveList === "followers"
+                                        ? "active"
+                                        : ""
+                                }`}
+                                onClick={() =>
+                                    handleFollowersTabChange("followers")
+                                }
+                            >
+                                <FaUserFriends style={{ marginRight: "8px" }} />
+                                Followers ({individualConnections.length})
+                            </button>
+                            <button
+                                className={`toggle-button ${
+                                    followersTabActiveList === "following"
+                                        ? "active"
+                                        : ""
+                                }`}
+                                onClick={() =>
+                                    handleFollowersTabChange("following")
+                                }
+                            >
+                                <FaUserPlus style={{ marginRight: "8px" }} />
+                                Following ({followingConnections.length})
+                            </button>
+                        </div>
+                        <div className="search-filter-container">
+                            <div className="search-input-wrapper">
+                                <SearchIconSvg />
+                                <input
+                                    type="text"
+                                    placeholder={
+                                        followersTabActiveList === "followers"
+                                            ? "Search followers..."
+                                            : "Look for accounts"
+                                    }
+                                    value={followersSearch}
+                                    onChange={handleSearchChange}
+                                    className="followers-search-input"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    {trustCircleError && (
+                        <div className="empty-message error-text">
+                            {trustCircleError}
+                        </div>
+                    )}
+
+                    {followersTabActiveList === "followers" && (
+                        <section className="list-section-container">
+                            <div className="list-header">
+                                <div className="list-title-group">
+                                    <h3 className="list-title">
+                                        Your Followers
+                                    </h3>
+                                    <span className="count-badge">
+                                        {individualConnections.length} people
+                                    </span>
+                                </div>
+                                <div className="section-actions">
+                                    <button
+                                        className="button button-primary button-small icon-button"
+                                        onClick={() =>
+                                            setShowAddPersonModal(true)
+                                        }
+                                    >
+                                        <FaUserPlus
+                                            style={{ marginRight: "8px" }}
+                                        />{" "}
+                                        Invite Friends
+                                    </button>
+                                </div>
+                            </div>
+
+                            {individualConnections.length === 0 &&
+                            !trustCircleError ? (
+                                <p className="empty-message">
+                                    No followers yet. Invite friends to connect!
+                                </p>
+                            ) : null}
+
+                            {filteredFollowers.length === 0 &&
+                            individualConnections.length > 0 &&
+                            followersSearch ? (
+                                <p className="empty-message">
+                                    No followers found matching "
+                                    {followersSearch}".
+                                </p>
+                            ) : null}
+
+                            {filteredFollowers.length > 0 && (
+                                <div className="followers-list-vertical">
+                                    {filteredFollowers.map((conn) => (
+                                        <MemberCard
+                                            key={conn.email}
+                                            member={conn}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+                    )}
+
+                    {followersTabActiveList === "following" && (
+                        <>
+                            {isSearching ? (
+                                <section className="list-section-container">
+                                    <div className="list-header">
+                                        <h3 className="list-title">Search Results</h3>
+                                    </div>
+                                    {userSearchResults.length > 0 ? (
+                                        <div className="followers-list-vertical">
+                                            {userSearchResults.map((user) => {
+                                                const isFollowing = followingConnections.some(c => c.id === user.id);
+                                                return (
+                                                    <div key={user.id} className="user-search-result-item">
+                                                        <MemberCard member={user} hideContactActions={true} />
+                                                        {isFollowing ? (
+                                                            <button className="button button-small status-following" disabled>
+                                                                <FaCheck style={{ marginRight: '6px' }} /> Following
+                                                            </button>
+                                                        ) : (
+                                                            <button 
+                                                                className="button button-primary button-small"
+                                                                onClick={() => handleFollowUser(user.id)}
+                                                            >
+                                                                <FaUserPlus style={{ marginRight: '6px' }} />
+                                                                Follow
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <p className="empty-message">No users found.</p>
+                                    )}
+                                </section>
+                            ) : (
+                                <section className="list-section-container">
+                                    <div className="list-header">
+                                        <div className="list-title-group">
+                                            <h3 className="list-title">People You Follow</h3>
+                                            <span className="count-badge">
+                                                {followingConnections.length} people
+                                            </span>
+                                        </div>
+                                        <div className="section-actions">
+                                            <a
+                                                href="#"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    setShowSuggestionsModal(true);
+                                                }}
+                                                style={{ cursor: 'pointer', textDecoration: 'underline', color: '#0056b3' }}
+                                            >
+                                                Suggested Recommenders For You...
+                                            </a>
+                                        </div>
+                                    </div>
+                                    {loadingFollowing ? (
+                                        <div className="loading-message">Loading...</div>
+                                    ) : filteredFollowing.length > 0 ? (
+                                        <div className="followers-list-vertical">
+                                            {filteredFollowing.map((conn) => (
+                                                <MemberCard key={conn.id} member={conn} />
+                                            ))}
+                                        </div>
+                                    ) : followersSearch ? (
+                                        <p className="empty-message">
+                                            No one found matching "{followersSearch}".
+                                        </p>
+                                    ) : (
+                                        <p className="empty-message">
+                                            You are not following anyone yet.
+                                        </p>
+                                    )}
+                                </section>
+                            )}
+                        </>
+                    )}
+                </div>
+            )}
+
+            {activeTab === "for-you" && (
                 <div className="tab-content appliance-services-container my-recommendations-tab-content">
                     <h1 className="section-heading">
                         Recommendations Shared With You
@@ -1222,7 +1410,7 @@ const TrustCircles = () => {
                                 <div className="no-providers-actions">
                                     <button
                                         onClick={() =>
-                                            handleTabChange("discover")
+                                            handleTabChange("communities")
                                         }
                                         className="primary-button"
                                     >
@@ -1566,96 +1754,6 @@ const TrustCircles = () => {
                 </div>
             )}
 
-            {activeTab === "discover" && !loadingTrustCircle && (
-                <div className="tab-content">
-                    {trustCircleError && (
-                        <div className="empty-message error-text">
-                            {trustCircleError}
-                        </div>
-                    )}
-                    <section className="section-container">
-                        <div className="section-title-container">
-                            <h2 className="section-title">
-                                Discover & Join Communities
-                            </h2>
-                            <div className="section-actions">
-                                <button
-                                    className="button button-success button-small icon-button"
-                                    onClick={() =>
-                                        setShowCreateCommunityModal(true)
-                                    }
-                                >
-                                    <GroupAddIcon /> Create New Community
-                                </button>
-                            </div>
-                        </div>
-                        {availableCommunities.filter(
-                            (c) =>
-                                c.user_membership_status !== "approved" &&
-                                c.created_by !== currentUser?.id
-                        ).length === 0 && !trustCircleError ? (
-                            <p className="empty-message">
-                                No new communities to discover.
-                            </p>
-                        ) : null}
-                        {availableCommunities.filter(
-                            (c) =>
-                                c.user_membership_status !== "approved" &&
-                                c.created_by !== currentUser?.id
-                        ).length > 0 && (
-                            <div className="grid-layout">
-                                {availableCommunities
-                                    .filter(
-                                        (c) =>
-                                            c.user_membership_status !==
-                                                "approved" &&
-                                            c.created_by !== currentUser?.id
-                                    )
-                                    .map((comm) => (
-                                        <div className="card" key={comm.id}>
-                                            <div className="card-content">
-                                                <h3 className="card-title">
-                                                    {comm.name}
-                                                </h3>
-                                                <p className="card-description">
-                                                    {comm.description}
-                                                </p>
-                                                <p className="card-info">
-                                                    {comm.memberCount} members
-                                                </p>
-                                            </div>
-                                            <div className="card-actions">
-                                                {comm.user_membership_status ===
-                                                "requested" ? (
-                                                    <button
-                                                        className="button button-small icon-button status-requested"
-                                                        disabled
-                                                    >
-                                                        <HourglassTopIcon />{" "}
-                                                        Request Sent
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        className="button button-primary"
-                                                        onClick={() =>
-                                                            handleRequestToJoinCommunity(
-                                                                comm.id
-                                                            )
-                                                        }
-                                                        disabled={!currentUser}
-                                                    >
-                                                        Request to Join
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                            </div>
-                        )}
-                    </section>
-                </div>
-            )}
-
             {showAddPersonModal && (
                 <div
                     className="modal-backdrop"
@@ -1665,17 +1763,15 @@ const TrustCircles = () => {
                         className="modal-content"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <h3 className="modal-header">
-                            Add Individual Connection
-                        </h3>
-                        <form onSubmit={handleAddIndividualConnection}>
+                        <h3 className="modal-header">Invite Friends</h3>
+                        <form onSubmit={handleInviteFriend}>
                             <input
-                                type="email"
+                                type="tel"
                                 className="form-input"
-                                placeholder="Enter email"
-                                value={newPersonEmail}
+                                placeholder="Enter friend's phone number"
+                                value={newPersonPhone}
                                 onChange={(e) =>
-                                    setNewPersonEmail(e.target.value)
+                                    setNewPersonPhone(e.target.value)
                                 }
                                 required
                             />
@@ -1691,7 +1787,7 @@ const TrustCircles = () => {
                                     type="submit"
                                     className="button button-primary"
                                 >
-                                    Send Request
+                                    Send Invite
                                 </button>
                             </div>
                         </form>
@@ -1832,6 +1928,101 @@ const TrustCircles = () => {
                     providerPhotoUrl={myRecSelectedProvider.profile_image}
                     onClose={() => setMyRecIsQuoteModalOpen(false)}
                 />
+            )}
+            {showProfileConfirmation && (
+                <div className="modal-backdrop" onClick={() => setShowProfileConfirmation(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="modal-header">User Exists</h3>
+                        <p style={{marginBottom: "24px"}}>That user is already on Tried & Trusted! Want to see their profile?</p>
+                        <div className="modal-actions">
+                            <button
+                                type="button"
+                                className="button button-secondary"
+                                onClick={() => {
+                                    setShowProfileConfirmation(false);
+                                    setProfileToNavigate(null);
+                                    setNewPersonPhone("");
+                                }}
+                            >
+                                No
+                            </button>
+                            <button
+                                type="button"
+                                className="button button-primary"
+                                onClick={() => {
+                                    navigate(`/pro/${profileToNavigate}`);
+                                    setShowProfileConfirmation(false);
+                                    setProfileToNavigate(null);
+                                    setNewPersonPhone("");
+                                }}
+                            >
+                                Yes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            <SuggestedFollowersModal
+                isOpen={showSuggestionsModal}
+                onClose={() => setShowSuggestionsModal(false)}
+                suggestedFollows={suggestedFollows}
+                loading={loadingSuggestedFollows}
+                onFollow={handleFollowUser}
+            />
+            {showDiscoverModal && (
+                 <div className="modal-backdrop" onClick={() => setShowDiscoverModal(false)}>
+                    <div className="modal-content discover-communities-modal" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="modal-header">Discover Communities</h3>
+                        <div className="search-bar-sfm" style={{marginBottom: '24px'}}>
+                            <FaSearch className="search-icon-sfm" />
+                            <input
+                                type="text"
+                                className="followers-search-input"
+                                placeholder="Search by name or description..."
+                                value={discoverSearchTerm}
+                                onChange={(e) => setDiscoverSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        
+                        <div className="grid-layout modal-grid-layout">
+                            {discoverableCommunities.length > 0 ? discoverableCommunities.map((comm) => (
+                                <div className="card" key={comm.id}>
+                                    <div className="card-content">
+                                        <h3 className="card-title">{comm.name}</h3>
+                                        <p className="card-description">{comm.description}</p>
+                                        <p className="card-info">{comm.memberCount} members</p>
+                                    </div>
+                                    <div className="card-actions">
+                                        {comm.user_membership_status === "requested" ? (
+                                            <button className="button button-small icon-button status-requested" disabled>
+                                                <HourglassTopIcon /> Request Sent
+                                            </button>
+                                        ) : (
+                                            <button
+                                                className="button button-primary"
+                                                onClick={() => handleRequestToJoinCommunity(comm.id)}
+                                                disabled={!currentUser}
+                                            >
+                                                Request to Join
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )) : (
+                                <p className="empty-message">No communities found matching your search.</p>
+                            )}
+                        </div>
+                         <div className="modal-actions">
+                            <button
+                                type="button"
+                                className="button button-secondary"
+                                onClick={() => setShowDiscoverModal(false)}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

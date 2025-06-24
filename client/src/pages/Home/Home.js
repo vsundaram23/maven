@@ -665,15 +665,10 @@ const Home = () => {
                     setProviderCount(0);
                 }
 
-                const connRes = await fetch(`${API_URL}/api/connections/check-connections`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: user.primaryEmailAddress.emailAddress }),
-                });
+                const connRes = await fetch(`${API_URL}/api/connections/followers?user_id=${user.id}`);
                 if (connRes.ok) {
                     const d = await connRes.json();
-                    const u = Array.isArray(d) ? Array.from(new Set(d.map((x) => x.email))) : [];
-                    setConnectionCount(u.length);
+                    setConnectionCount(Array.isArray(d) ? d.length : 0);
                 } else {
                     setConnectionCount(0);
                 }

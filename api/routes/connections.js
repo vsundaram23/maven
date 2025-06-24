@@ -6,7 +6,11 @@ const {
   getTrustCircleUsers,
   getConnectionsByUserId,
   getConnectionStatus,
-  removeConnection
+  removeConnection,
+  getTopRecommendersByState,
+  getFollowing,
+  getFollowers,
+  searchUsers
 } = require('../controllers/connectionsController');
 const pool = require('../config/db.config');
 
@@ -101,6 +105,67 @@ router.delete('/remove', async (req, res) => {
     console.error('Error removing connection:', error);
     res.status(500).json({ error: 'Server error removing connection' });
   }
+});
+
+router.get('/top-recommenders', async (req, res) => {
+  const { state, userId } = req.query; // userId is clerk_id
+
+  if (!state || !userId) {
+    return res.status(400).json({ error: 'State and userId query parameters are required.' });
+  }
+
+  try {
+    const recommenders = await getTopRecommendersByState(userId, state);
+    res.json(recommenders);
+  } catch (error) {
+    console.error('Failed to fetch top recommenders:', error);
+    res.status(500).json({ error: 'Server error fetching top recommenders' });
+  }
+});
+
+router.get('/followers', async (req, res) => {
+  const { user_id } = req.query; // This is clerk_id from frontend
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id query parameter is required.' });
+  }
+
+  try {
+    const followersList = await getFollowers(user_id);
+    res.json(followersList);
+  } catch (error) {
+    console.error('Failed to fetch followers list:', error);
+    res.status(500).json({ error: 'Server error fetching followers list' });
+  }
+});
+
+router.get('/following', async (req, res) => {
+  const { user_id } = req.query; // This is clerk_id from frontend
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id query parameter is required.' });
+  }
+
+  try {
+    const followingList = await getFollowing(user_id);
+    res.json(followingList);
+  } catch (error) {
+    console.error('Failed to fetch following list:', error);
+    res.status(500).json({ error: 'Server error fetching following list' });
+  }
+});
+
+router.get('/search-users', async (req, res) => {
+    const { userId, term } = req.query; // userId is clerk_id
+    if (!userId || !term) {
+        return res.status(400).json({ error: 'userId and term query parameters are required.' });
+    }
+
+    try {
+        const users = await searchUsers(userId, term);
+        res.json(users);
+    } catch (error) {
+        console.error('Failed to search users:', error);
+        res.status(500).json({ error: 'Server error searching users' });
+    }
 });
 
 module.exports = router;

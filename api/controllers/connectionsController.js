@@ -282,13 +282,205 @@ const removeConnection = async (fromUserId, toUserId) => {
   }
 };
 
+const getFollowing = async (clerkUserId) => {
+  try {
+    const userResult = await pool.query(
+      `SELECT id FROM users WHERE clerk_id = $1`,
+      [clerkUserId]
+    );
+
+    if (userResult.rows.length === 0) {
+      console.warn(`User with clerk_id ${clerkUserId} not found when fetching following list.`);
+      return [];
+    }
+    const internalUserId = userResult.rows[0].id;
+
+    const result = await pool.query(`
+      SELECT
+        u.id,
+        u.name,
+        u.email,
+        u.phone_number,
+        u.username,
+        u.user_score,
+        u.profile_image,
+        uc.connected_at
+      FROM user_connections uc
+      JOIN users u
+        ON uc.connected_user_id = u.id
+      WHERE uc.user_id = $1 AND uc.status = 'accepted'
+      ORDER BY u.user_score DESC, uc.connected_at DESC
+    `, [internalUserId]);
+
+    return result.rows.map(mapUserWithImageUrl);
+  } catch (error) {
+    console.error('Error fetching following list:', error.message);
+    throw new Error('Database error fetching following list');
+  }
+};
+
+const getFollowers = async (clerkUserId) => {
+  try {
+    const userResult = await pool.query(
+      `SELECT id FROM users WHERE clerk_id = $1`,
+      [clerkUserId]
+    );
+
+    if (userResult.rows.length === 0) {
+      console.warn(`User with clerk_id ${clerkUserId} not found when fetching followers list.`);
+      return [];
+    }
+    const internalUserId = userResult.rows[0].id;
+
+    const result = await pool.query(`
+      SELECT
+        u.id,
+        u.name,
+        u.email,
+        u.phone_number,
+        u.username,
+        u.user_score,
+        u.profile_image,
+        uc.connected_at
+      FROM user_connections uc
+      JOIN users u
+        ON uc.user_id = u.id
+      WHERE uc.connected_user_id = $1 AND uc.status = 'accepted'
+      ORDER BY u.user_score DESC, uc.connected_at DESC
+    `, [internalUserId]);
+
+    return result.rows.map(mapUserWithImageUrl);
+  } catch (error) {
+    console.error('Error fetching followers list:', error.message);
+    throw new Error('Database error fetching followers list');
+  }
+};
+
+const searchUsers = async (clerkUserId, searchTerm) => {
+  try {
+    const userResult = await pool.query(
+      `SELECT id FROM users WHERE clerk_id = $1`,
+      [clerkUserId]
+    );
+
+    if (userResult.rows.length === 0) {
+      // If the user isn't found, they can't be following anyone, so just return a standard search.
+      const publicSearchResult = await pool.query(`
+        SELECT u.id, u.name, u.email, u.username, u.user_score, u.profile_image
+        FROM users u
+        WHERE (u.name ILIKE $1 OR u.email ILIKE $1)
+        LIMIT 10;
+      `, [`%${searchTerm}%`]);
+      return publicSearchResult.rows.map(mapUserWithImageUrl);
+    }
+    
+    const internalUserId = userResult.rows[0].id;
+
+    const result = await pool.query(`
+      SELECT u.id, u.name, u.email, u.username, u.user_score, u.profile_image
+      FROM users u
+      WHERE 
+        (u.name ILIKE $1 OR u.email ILIKE $1)
+        AND u.id != $2
+      ORDER BY u.user_score DESC NULLS LAST
+      LIMIT 10;
+    `, [`%${searchTerm}%`, internalUserId]);
+
+    return result.rows.map(mapUserWithImageUrl);
+  } catch (error) {
+    console.error('Error searching users:', error.message);
+    throw new Error('Database error searching users');
+  }
+};
+
+const getTopRecommendersByState = async (clerkUserId, state) => {
+  try {
+    const currentUserResult = await pool.query(
+      `SELECT id FROM users WHERE clerk_id = $1`,
+      [clerkUserId]
+    );
+
+    if (currentUserResult.rows.length === 0) {
+      console.warn(`User with clerk_id ${clerkUserId} not found when fetching top recommenders.`);
+      // Fallback: fetch top recommenders without filtering for 'already following' if user not found.
+      const fallbackResult = await pool.query(`
+        SELECT
+          u.id,
+          u.name,
+          u.email,
+          u.username,
+          u.user_score,
+          u.profile_image,
+          u.location as city,
+          u.state
+        FROM users u
+        WHERE u.state = $1
+        ORDER BY u.user_score DESC NULLS LAST, u.created_at DESC
+        LIMIT 10;
+      `, [state]);
+      return fallbackResult.rows.map(mapUserWithImageUrl);
+    }
+    const currentInternalUserId = currentUserResult.rows[0].id;
+
+    const result = await pool.query(`
+      SELECT
+        u.id,
+        u.name,
+        u.email,
+        u.username,
+        u.user_score,
+        u.profile_image,
+        u.location as city,
+        u.state
+      FROM users u
+      WHERE u.state = $1
+        AND u.id != $2 -- Don't include self
+        AND u.id NOT IN (
+          SELECT connected_user_id
+          FROM user_connections
+          WHERE user_id = $2 AND status = 'accepted'
+        )
+      ORDER BY u.user_score DESC NULLS LAST, u.created_at DESC
+      LIMIT 10;
+    `, [state, currentInternalUserId]);
+
+    return result.rows.map(mapUserWithImageUrl);
+  } catch (error) {
+    console.error('Error fetching top recommenders:', error.message);
+    throw new Error('Database error fetching top recommenders');
+  }
+};
+
+const mapUserWithImageUrl = (row) => {
+  let imageUrl = null;
+  if (row.profile_image) {
+    imageUrl = `${API_BASE_URL}/api/users/${row.id}/profile/image`;
+  }
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    phone_number: row.phone_number,
+    username: row.username,
+    user_score: row.user_score,
+    profile_image_url: imageUrl,
+    connected_at: row.connected_at,
+    city: row.city,
+    state: row.state,
+  };
+};
+
 module.exports = {
   getConnectionsByEmail,
   sendConnectionRequest,
   getTrustCircleUsers,
   getConnectionsByUserId,
   getConnectionStatus,
-  removeConnection
+  removeConnection,
+  getTopRecommendersByState,
+  getFollowing,
+  getFollowers,
+  searchUsers
 };
 
 

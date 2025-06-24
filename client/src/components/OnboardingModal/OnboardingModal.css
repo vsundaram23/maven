@@ -560,3 +560,60 @@
         padding: 1rem 0.75rem;
     }
 }
+
+.onboarding-skip-btn {
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 1rem 2rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.onboarding-skip-btn:hover {
+    background: var(--neutral-100);
+    color: var(--text-primary);
+}
+
+.onboarding-recommenders-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+    text-align: left;
+}
+
+.onboarding-recommender-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.onboarding-recommender-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.onboarding-recommender-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.onboarding-recommender-details {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.onboarding-success-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
