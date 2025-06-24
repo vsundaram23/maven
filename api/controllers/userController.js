@@ -156,7 +156,7 @@ const updateCurrentUserProfile = async (req, res) => {
 const getPublicUserProfile = async (req, res) => {
     // 1. Get the generic identifier from the route parameter
     const { username } = req.params; 
-    const loggedInUserId = req.auth ? req.auth.userId : null;
+    const loggedInClerkId = req.query.loggedInUserId || (req.auth ? req.auth.userId : null);
 
     if (!username) {
         return res.status(400).json({
@@ -166,27 +166,19 @@ const getPublicUserProfile = async (req, res) => {
     }
 
     try {
-        // function isUUID(str) {
-        //     const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-        //     return uuidRegex.test(str);
-        // }
+        let loggedInUserUuid = null;
+        if (loggedInClerkId) {
+            const viewerResult = await pool.query(`SELECT id FROM users WHERE clerk_id = $1`, [loggedInClerkId]);
+            if (viewerResult.rows.length > 0) {
+                loggedInUserUuid = viewerResult.rows[0].id;
+            }
+        }
         
         let userQuery;
         let queryParams = [username];
         
-        // 2. Check if the identifier is a UUID or a username.
-        // if (isUUID(username)) {
-        //     // It's a user ID (UUID), so query by the 'id' column
-        //     console.log("Identifier is a UUID. Querying by ID.");
-        //     userQuery = `SELECT id, name, email, bio FROM users WHERE id = $1`;
-        // } else {
-        //     // It's not a UUID, so assume it's a username.
-        //     console.log("Identifier is a username. Querying by username.");
-        //     userQuery = `SELECT id, name, email, bio FROM users WHERE username = $1`;
-        // }
         userQuery = `SELECT id, name, email, phone_number, bio FROM users WHERE username = $1`;
         
-        // 3. Execute the appropriate query
         const userResult = await pool.query(userQuery, queryParams);
 
         if (userResult.rows.length === 0) {
@@ -195,11 +187,9 @@ const getPublicUserProfile = async (req, res) => {
                 .json({ success: false, message: "User not found." });
         }
         
-        // 4. From here, the rest of the function works perfectly because you now have the user's data.
         const userData = userResult.rows[0];
-        const profileOwnerUserId = userData.id; // Use the actual ID for subsequent queries
+        const profileOwnerUserId = userData.id;
 
-        // Fetch user's recommendations using the resolved user ID
         const recommendationsQuery = `
             SELECT
                 sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
@@ -233,8 +223,8 @@ const getPublicUserProfile = async (req, res) => {
             ORDER BY sp.date_of_recommendation DESC, sp.created_at DESC
         `;
         const recommendationsResult = await pool.query(recommendationsQuery, [
-            profileOwnerUserId, // Use the ID we found
-            loggedInUserId,
+            profileOwnerUserId,
+            loggedInUserUuid,
         ]);
         const profileImagePath = `/api/users/${userData.id}/profile/image`;
 
@@ -245,7 +235,7 @@ const getPublicUserProfile = async (req, res) => {
             userBio: userData.bio,
             userEmail: userData.email,
             userPhone: userData.phone_number,
-            profileImage: profileImagePath, // Assuming you have a direct URL in the DB
+            profileImage: profileImagePath,
             recommendations: recommendationsResult.rows,
         });
     } catch (err) {
@@ -261,82 +251,6 @@ const getPublicUserProfile = async (req, res) => {
         });
     }
 };
-
-// const getPublicUserProfile = async (req, res) => {
-//     const { userId } = req.params; // This is the ID of the profile being viewed
-
-//     if (!userId) {
-//         return res.status(400).json({
-//             success: false,
-//             message: "User ID is required.",
-//         });
-//     }
-
-//     try {
-//         // Fetch basic user data
-//         const userQuery = `SELECT id, name, email, bio FROM users WHERE id = $1`;
-//         const userResult = await pool.query(userQuery, [userId]);
-//         const loggedInUserId = req.auth ? req.auth.userId : null;
-
-//         if (userResult.rows.length === 0) {
-//             return res
-//                 .status(404)
-//                 .json({ success: false, message: "User not found." });
-//         }
-//         const userData = userResult.rows[0];
-
-//         // Fetch user's recommendations
-        // const recommendationsQuery = `
-        //     SELECT
-        //         sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
-        //         sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.num_likes, sp.website, sp.business_contact, 
-        //         sp.recommender_message, sp.images,
-        //         s.name as service_type, c.name as category_name,
-        //         u.phone_number AS recommender_phone,
-        //         u.email AS recommender_email,
-        //         u.name AS recommender_name,
-        //         sp.recommended_by AS recommender_user_id,
-        //         CASE WHEN l.user_id IS NOT NULL THEN true ELSE false END AS "currentUserLiked"
-        //     FROM service_providers sp
-        //     LEFT JOIN services s ON sp.service_id = s.service_id
-        //     LEFT JOIN service_categories c ON s.category_id = c.service_id
-        //     LEFT JOIN users u ON sp.recommended_by = u.id
-        //     LEFT JOIN recommendation_likes l ON l.recommendation_id = sp.id AND l.user_id = $2
-        //     WHERE sp.recommended_by = $1
-        //     ORDER BY sp.date_of_recommendation DESC, sp.created_at DESC
-        // `;
-//         // THIS IS THE CORRECT CODE YOU NEED
-//         const recommendationsResult = await pool.query(recommendationsQuery, [
-//             userId,
-//             loggedInUserId,
-//         ]);
-
-//         // Construct profile image URL (to be fetched separately by the client if needed, or direct path)
-//         const profileImage = `/api/users/${userId}/profile/image`; // Path for frontend to request
-
-//         res.json({
-//             success: true,
-//             userId: userData.id, // Return the ID for consistency
-//             userName: userData.name,
-//             userBio: userData.bio,
-//             userEmail: userData.email, // Assuming email is public or you'll handle privacy
-//             profileImage: profileImage, // Path to the image
-//             recommendations: recommendationsResult.rows,
-//             // Note: 'connections' count is NOT included here
-//         });
-//     } catch (err) {
-//         console.error(
-//             "Error fetching public user profile:",
-//             err.message,
-//             err.stack
-//         );
-//         res.status(500).json({
-//             success: false,
-//             error: "Internal server error",
-//             message: err.message,
-//         });
-//     }
-// };
 
 const serveCurrentUserProfileImage = async (req, res) => {
     const clerkUserId = req.query.user_id;
@@ -543,13 +457,11 @@ const updateUserProfileById = async (req, res) => {
         nameToUpdate = `${finalFirstName} ${finalLastName}`.trim();
 
         if (nameToUpdate && nameToUpdate !== currentName) {
-            // Only update if there's a change
             queryFieldsToUpdate.push(`name = $${queryParamIndex++}`);
             queryValues.push(nameToUpdate);
         } else if (!nameToUpdate && currentName) {
-            // If cleared and was not empty
             queryFieldsToUpdate.push(`name = $${queryParamIndex++}`);
-            queryValues.push(null); // Or "" depending on DB schema
+            queryValues.push(null);
         }
     }
 
@@ -677,7 +589,6 @@ const saveOnboardingData = async (req, res) => {
     }
 
     try {
-        // First ensure the user exists by getting or creating them
         const internalUserId = await userService.getOrCreateUser({
             id: userId,
             emailAddresses: [{ emailAddress: email }],
@@ -686,10 +597,8 @@ const saveOnboardingData = async (req, res) => {
             phoneNumbers: phoneNumber ? [{ phoneNumber }] : [],
         });
 
-        // Ensure interests is an array
         const interestsArray = Array.isArray(interests) ? interests : [];
 
-        // Now update the user with onboarding data including username
         const result = await pool.query(
             `UPDATE users
              SET preferred_name = $1,
@@ -714,8 +623,6 @@ const saveOnboardingData = async (req, res) => {
         );
 
         if (result.rows.length === 0) {
-            // This case should ideally not be hit if getOrCreateUser always creates a user
-            // before this point, but it's good for robustness.
             return res.status(404).json({
                 error: "Failed to update user after creation",
             });
@@ -782,9 +689,6 @@ const getPreferredName = async (req, res) => {
 };
 
 const updateUserLocation = async (req, res) => {
-    // Note: In a production environment, user identity should be derived from 
-    // a verified session/token (e.g., req.user.id from Clerk middleware)
-    // rather than an email in the request body to prevent unauthorized updates.
     const { email, location, state } = req.body;
 
     if (!email || !location || !state) {
@@ -809,11 +713,9 @@ const updateUserLocation = async (req, res) => {
 };
 
 const getUserPublicProfileByUsername = async (req, res) => {
-    // 1. Get the username from the URL parameter
     const { username } = req.params;
     
-    // Get the ID of the person viewing the profile, if they are logged in
-    const loggedInUserId = req.auth ? req.auth.userId : null;
+    const loggedInClerkId = req.auth ? req.auth.userId : null;
 
     if (!username) {
         return res.status(400).json({
@@ -823,10 +725,20 @@ const getUserPublicProfileByUsername = async (req, res) => {
     }
 
     try {
-        // 2. Fetch the user's basic data and ID using their username
-        // This requires a 'username' column in your 'users' table.
-        const userQuery = `SELECT id, name, email, bio FROM users WHERE username = $1`;
-        const userResult = await pool.query(userQuery, [username]);
+        let loggedInUserUuid = null;
+        if (loggedInClerkId) {
+            const viewerResult = await pool.query(`SELECT id FROM users WHERE clerk_id = $1`, [loggedInClerkId]);
+            if (viewerResult.rows.length > 0) {
+                loggedInUserUuid = viewerResult.rows[0].id;
+            }
+        }
+        
+        let userQuery;
+        let queryParams = [username];
+        
+        userQuery = `SELECT id, name, email, bio FROM users WHERE username = $1`;
+        
+        const userResult = await pool.query(userQuery, queryParams);
 
         if (userResult.rows.length === 0) {
             return res
@@ -835,10 +747,8 @@ const getUserPublicProfileByUsername = async (req, res) => {
         }
         
         const userData = userResult.rows[0];
-        // 3. Use the user's actual ID for all subsequent queries
         const profileOwnerUserId = userData.id;
 
-        // 4. Fetch the user's recommendations using their resolved ID
         const recommendationsQuery = `
             SELECT
                 sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
@@ -856,6 +766,7 @@ const getUserPublicProfileByUsername = async (req, res) => {
             LEFT JOIN service_categories c ON s.category_id = c.service_id
             LEFT JOIN users u ON sp.recommended_by = u.id
             LEFT JOIN recommendation_likes l ON l.recommendation_id = sp.id AND l.user_id = $2
+            LEFT JOIN users rec_user ON sp.recommended_by = rec_user.id
             WHERE sp.recommended_by = $1 AND (
                 $1 = $2 OR -- The user is viewing their own profile
                 sp.visibility = 'public' OR
@@ -873,19 +784,18 @@ const getUserPublicProfileByUsername = async (req, res) => {
             ORDER BY sp.date_of_recommendation DESC, sp.created_at DESC
         `;
         const recommendationsResult = await pool.query(recommendationsQuery, [
-            profileOwnerUserId, // Use the ID we found
-            loggedInUserId,
+            profileOwnerUserId,
+            loggedInUserUuid,
         ]);
         const profileImagePath = `/api/users/${userData.id}/profile/image`;
 
-        // 5. Respond with the complete profile data
         res.json({
             success: true,
-            userId: userData.id, // Return the actual ID
+            userId: userData.id,
             userName: userData.name,
             userBio: userData.bio,
             userEmail: userData.email,
-            profileImage: profileImagePath, // Or construct the path if you prefer
+            profileImage: profileImagePath,
             recommendations: recommendationsResult.rows,
         });
 
@@ -913,7 +823,6 @@ const checkUsernameAvailability = async (req, res) => {
         });
     }
 
-    // Validate username format (optional but recommended)
     if (!/^[a-z0-9]{3,20}$/.test(username)) {
         return res.status(400).json({
             success: false,

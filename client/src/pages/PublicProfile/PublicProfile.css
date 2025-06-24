@@ -151,6 +151,10 @@
             "avatar details"
             "avatar stats";
     }
+    .public-profile-scope .profile-header-top, .profile-header-top {
+        flex-direction: row;
+        align-items: flex-start;
+    }
     .profile-avatar-wrapper {
         justify-self: start;
         align-self: start;
@@ -338,143 +342,6 @@
     gap: 1rem;
     margin-bottom: 0.5rem;
     width: 100%;
-}
-
-.follow-button {
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border: 2px solid transparent;
-    white-space: nowrap;
-    min-width: 120px;
-    text-align: center;
-    font-family: 'Inter', sans-serif;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-.follow-button {
-    background-color: #1A365D;
-    color: white;
-    border-color: #1A365D;
-}
-
-.follow-button:hover {
-    background-color: #2B6CB0;
-    border-color: #2B6CB0;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(26, 54, 93, 0.2);
-}
-
-.follow-button.following {
-    background-color: #f8f9fa;
-    color: #1A365D;
-    border-color: #dee2e6;
-}
-
-.follow-button.following::before {
-    content: "✓ ";
-    font-weight: bold;
-    margin-right: 0.25rem;
-}
-
-.follow-button.following:hover {
-    background-color: #fee;
-    border-color: #dc3545;
-    color: #dc3545;
-    transform: translateY(-1px);
-}
-
-.follow-button.following:hover::before {
-    content: "✗ ";
-    margin-right: 0.25rem;
-}
-
-.follow-button.following:hover .follow-text::after {
-    content: "Unfollow";
-}
-
-.follow-button.following:hover .follow-text {
-    font-size: 0;
-}
-
-.follow-button.pending {
-    background-color: #fff3cd;
-    color: #856404;
-    border-color: #ffeaa7;
-    cursor: default;
-}
-
-.follow-button.pending::before {
-    content: "⏳ ";
-}
-
-.follow-button.pending:hover {
-    background-color: #fff3cd;
-    border-color: #ffeaa7;
-    transform: none;
-    box-shadow: none;
-}
-
-.follow-button.accept {
-    background-color: #28a745;
-    border-color: #28a745;
-    color: white;
-}
-
-.follow-button.accept::before {
-    content: "👤 ";
-}
-
-.follow-button.accept:hover {
-    background-color: #218838;
-    border-color: #1e7e34;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
-}
-
-.follow-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
-    box-shadow: none !important;
-}
-
-.follow-button:disabled:hover {
-    background-color: inherit;
-    border-color: inherit;
-    color: inherit;
-}
-
-@media (max-width: 768px) {
-    .profile-header-top {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-    
-    .follow-button {
-        align-self: flex-end;
-        min-width: 100px;
-        padding: 0.6rem 1.2rem;
-        font-size: 0.85rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .profile-header-top {
-        align-items: stretch;
-    }
-    
-    .follow-button {
-        align-self: stretch;
-        width: 100%;
-    }
 }
 
 .profile-contact-info {
@@ -1068,4 +935,147 @@
     .profile-trust-score-wrapper .trust-score-next-level {
         font-size: 0.75rem;
     }
+}
+
+.follow-button {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    white-space: nowrap;
+    min-width: 120px;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.follow-button {
+    background-color: #1A365D;
+    color: white;
+    border-color: #1A365D;
+}
+
+.follow-button:hover {
+    background-color: #2B6CB0;
+    border-color: #2B6CB0;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 54, 93, 0.2);
+}
+
+.follow-button.following {
+    background-color: #f8f9fa;
+    color: #1A365D;
+    border-color: #dee2e6;
+}
+
+.follow-button.following::before {
+    content: "✓ ";
+    font-weight: bold;
+    margin-right: 0.25rem;
+}
+
+.follow-button.following:hover {
+    background-color: #fee;
+    border-color: #dc3545;
+    color: #dc3545;
+    transform: translateY(-1px);
+}
+
+.follow-button.following:hover::before {
+    content: "✗ ";
+    margin-right: 0.25rem;
+}
+
+.follow-button.following:hover .follow-text::after {
+    content: "Unfollow";
+}
+
+.follow-button.following:hover .follow-text {
+    font-size: 0;
+}
+
+.follow-button.pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border-color: #ffeaa7;
+    cursor: default;
+}
+
+.follow-button.pending::before {
+    content: "⏳ ";
+}
+
+.follow-button.pending:hover {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    transform: none;
+    box-shadow: none;
+}
+
+.follow-button.accept {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+.follow-button.accept::before {
+    content: "👤 ";
+}
+
+.follow-button.accept:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+}
+
+.follow-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.follow-button:disabled:hover {
+    background-color: inherit;
+    border-color: inherit;
+    color: inherit;
+}
+
+@media (max-width: 768px) {
+    .profile-header-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .follow-button {
+        align-self: flex-end;
+        min-width: 100px;
+        padding: 0.6rem 1.2rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-header-top {
+        align-items: stretch;
+    }
+    
+    .follow-button {
+        align-self: stretch;
+        width: 100%;
+    }
+}
+
+.profile-contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }

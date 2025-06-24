@@ -7,8 +7,8 @@ import TrustScoreWheel from "../../components/TrustScoreWheel/TrustScoreWheel";
 import "../Profile/Profile.css";
 import "./PublicProfile.css";
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = "http://localhost:3000";
+// const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = "http://localhost:3000";
 
 const StarRatingDisplay = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;
