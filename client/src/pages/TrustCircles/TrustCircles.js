@@ -1223,6 +1223,7 @@ const TrustCircles = () => {
                             </div>
                         </div>
                     </div>
+
                     {trustCircleError && (
                         <div className="empty-message error-text">
                             {trustCircleError}
@@ -1230,19 +1231,11 @@ const TrustCircles = () => {
                     )}
 
                     {followersTabActiveList === "followers" && (
-                        <section className="list-section-container">
-                            <div className="list-header">
-                                <div className="list-title-group">
-                                    <h3 className="list-title">
-                                        Your Followers
-                                    </h3>
-                                    <span className="count-badge">
-                                        {individualConnections.length} people
-                                    </span>
-                                </div>
-                                <div className="section-actions">
+                        <>
+                            <div className="connections-header-mobile-search">
+                                <div className="section-actions" style={{ width: '100%' }}>
                                     <button
-                                        className="button button-primary button-small icon-button"
+                                        className="button button-primary icon-button"
                                         onClick={() =>
                                             setShowAddPersonModal(true)
                                         }
@@ -1254,38 +1247,87 @@ const TrustCircles = () => {
                                     </button>
                                 </div>
                             </div>
-
-                            {individualConnections.length === 0 &&
-                            !trustCircleError ? (
-                                <p className="empty-message">
-                                    No followers yet. Invite friends to connect!
-                                </p>
-                            ) : null}
-
-                            {filteredFollowers.length === 0 &&
-                            individualConnections.length > 0 &&
-                            followersSearch ? (
-                                <p className="empty-message">
-                                    No followers found matching "
-                                    {followersSearch}".
-                                </p>
-                            ) : null}
-
-                            {filteredFollowers.length > 0 && (
-                                <div className="followers-list-vertical">
-                                    {filteredFollowers.map((conn) => (
-                                        <MemberCard
-                                            key={conn.email}
-                                            member={conn}
-                                        />
-                                    ))}
+                            <section className="list-section-container">
+                                <div className="list-header">
+                                    <div className="list-title-group">
+                                        <h3 className="list-title">
+                                            Your Followers
+                                        </h3>
+                                        <span className="count-badge">
+                                            {individualConnections.length} people
+                                        </span>
+                                    </div>
+                                    <div className="section-actions section-actions-followers">
+                                        <button
+                                            className="button button-primary button-small icon-button"
+                                            onClick={() =>
+                                                setShowAddPersonModal(true)
+                                            }
+                                        >
+                                            <FaUserPlus
+                                                style={{ marginRight: "8px" }}
+                                            />{" "}
+                                            Invite Friends
+                                        </button>
+                                    </div>
                                 </div>
-                            )}
-                        </section>
+                                <div className="connections-header-mobile-search">
+                                     <div className="search-input-wrapper">
+                                        <SearchIconSvg />
+                                        <input
+                                            type="text"
+                                            placeholder="Search followers..."
+                                            value={followersSearch}
+                                            onChange={handleSearchChange}
+                                            className="followers-search-input"
+                                        />
+                                    </div>
+                                </div>
+
+                                {individualConnections.length === 0 &&
+                                !trustCircleError ? (
+                                    <p className="empty-message">
+                                        No followers yet. Invite friends to connect!
+                                    </p>
+                                ) : null}
+
+                                {filteredFollowers.length === 0 &&
+                                individualConnections.length > 0 &&
+                                followersSearch ? (
+                                    <p className="empty-message">
+                                        No followers found matching "
+                                        {followersSearch}".
+                                    </p>
+                                ) : null}
+
+                                {filteredFollowers.length > 0 && (
+                                    <div className="followers-list-vertical">
+                                        {filteredFollowers.map((conn) => (
+                                            <MemberCard
+                                                key={conn.email}
+                                                member={conn}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </section>
+                        </>
                     )}
 
                     {followersTabActiveList === "following" && (
                         <>
+                            <div className="connections-header-mobile-search">
+                                <div className="search-input-wrapper">
+                                    <SearchIconSvg />
+                                    <input
+                                        type="text"
+                                        placeholder="Look for accounts"
+                                        value={followersSearch}
+                                        onChange={handleSearchChange}
+                                        className="followers-search-input"
+                                    />
+                                </div>
+                            </div>
                             {isSearching ? (
                                 <section className="list-section-container">
                                     <div className="list-header">
