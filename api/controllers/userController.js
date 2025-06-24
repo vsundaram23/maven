@@ -177,7 +177,7 @@ const getPublicUserProfile = async (req, res) => {
         let userQuery;
         let queryParams = [username];
         
-        userQuery = `SELECT id, name, email, phone_number, bio FROM users WHERE username = $1`;
+        userQuery = `SELECT id, name, email, phone_number, bio, clerk_id FROM users WHERE username = $1`;
         
         const userResult = await pool.query(userQuery, queryParams);
 
@@ -235,6 +235,7 @@ const getPublicUserProfile = async (req, res) => {
             userBio: userData.bio,
             userEmail: userData.email,
             userPhone: userData.phone_number,
+            clerkId: userData.clerk_id,
             profileImage: profileImagePath,
             recommendations: recommendationsResult.rows,
         });

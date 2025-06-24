@@ -155,6 +155,9 @@
         flex-direction: row;
         align-items: flex-start;
     }
+    .profile-top-stats {
+        display: contents;
+    }
     .profile-avatar-wrapper {
         justify-self: start;
         align-self: start;
@@ -795,6 +798,13 @@
         align-items: center;
     }
     
+    .profile-top-stats {
+        display: flex;
+        gap: 3rem;
+        justify-content: center;
+        width: 100%;
+    }
+
     .profile-stat-achievement {
         height: 50px;
     }
@@ -898,15 +908,16 @@
 
 @media (max-width: 768px) {
     .profile-trust-score-wrapper {
-        transform: scale(0.75);
+        transform: scale(0.9);
         margin: -20px 0;
+        width: 100%;
+        max-width: none;
     }
     
     .profile-trust-score-wrapper .trust-score-content-horizontal {
-        flex-direction: column;
+        flex-direction: row;
         gap: 0.75rem;
-        text-align: left;
-        align-items: flex-start;
+        align-items: center;
     }
     
     .profile-trust-score-wrapper .trust-score-level-text {
@@ -924,7 +935,7 @@
 
 @media (max-width: 480px) {
     .profile-trust-score-wrapper {
-        transform: scale(0.65);
+        transform: scale(0.8);
         margin: -25px 0;
     }
     

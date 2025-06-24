@@ -348,7 +348,7 @@ const PublicProfile = () => {
                 setUserScore(0);
             }
             
-            const followersRes = await fetch(`${API_URL}/api/connections/followers?user_id=${data.clerk_id}`);
+            const followersRes = await fetch(`${API_URL}/api/connections/followers?user_id=${data.clerkId}`);
             if (followersRes.ok) {
                 const followersData = await followersRes.json();
                 setConnections(Array.isArray(followersData) ? followersData : []);
@@ -739,13 +739,15 @@ const PublicProfile = () => {
                         )}
                     </div>
                     <div className="profile-stats-wrapper">
-                        <div className="profile-stat-item">
-                            <span className="profile-stat-number">{recommendations.length}</span>
-                            <span className="profile-stat-label">Recommendations</span>
-                        </div>
-                        <div className="profile-stat-item">
-                            <span className="profile-stat-number">{connections.length}</span>
-                            <span className="profile-stat-label">Followers</span>
+                        <div className="profile-top-stats">
+                            <div className="profile-stat-item">
+                                <span className="profile-stat-number">{recommendations.length}</span>
+                                <span className="profile-stat-label">Recommendations</span>
+                            </div>
+                            <div className="profile-stat-item">
+                                <span className="profile-stat-number">{connections.length}</span>
+                                <span className="profile-stat-label">Followers</span>
+                            </div>
                         </div>
                         <div className="profile-stat-item">
                             <div className="profile-trust-score-wrapper">

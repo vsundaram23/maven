@@ -538,348 +538,284 @@ const Home = () => {
         }
     };
 
+    const fetchLeaderboardData = useCallback(async (currentUserScore, currentUserPreferredName) => {
+        if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress) {
+            setLeaderboardData([]);
+            setIsLoadingLeaderboard(false);
+            return;
+        }
+
+        setIsLoadingLeaderboard(true);
+        try {
+            // Fetch connections with scores
+            const response = await fetch(`${API_URL}/api/connections/check-connections`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: user.primaryEmailAddress.emailAddress }),
+            });
+
+            let connections = [];
+            if (response.ok) {
+                connections = await response.json();
+            }
+
+            // Create leaderboard array with current user and connections
+            const allUsers = [
+                {
+                    name: currentUserPreferredName || user.firstName || "You",
+                    username: user.username || null, // Current user's username
+                    leaderboard_user_score: currentUserScore,
+                    isCurrentUser: true,
+                    avatar: currentUserPreferredName ? currentUserPreferredName.charAt(0).toUpperCase() : user.firstName ? user.firstName.charAt(0).toUpperCase() : "U"
+                },
+                ...connections.map(conn => ({
+                    name: conn.name || "Unknown",
+                    username: conn.username || null,
+                    leaderboard_user_score: conn.user_score || 0,
+                    isCurrentUser: false,
+                    avatar: conn.name ? conn.name.charAt(0).toUpperCase() : "U"
+                }))
+            ];
+
+            // Sort by score and add ranks
+            const sortedUsers = allUsers
+                .sort((a, b) => (b.leaderboard_user_score || 0) - (a.leaderboard_user_score || 0))
+                .map((user, index) => ({
+                    ...user,
+                    rank: index + 1,
+                    score: user.leaderboard_user_score || 0
+                }));
+
+            // Find current user's position
+            const currentUserIndex = sortedUsers.findIndex(user => user.isCurrentUser);
+            const currentUserRank = currentUserIndex + 1;
+
+            let displayUsers = [];
+            
+            if (currentUserRank <= 5) {
+                // Current user is in top 5, show top 5
+                displayUsers = sortedUsers.slice(0, 5);
+            } else {
+                // Current user is not in top 5, show top 4 + separator + current user
+                const top4 = sortedUsers.slice(0, 4);
+                const currentUser = sortedUsers[currentUserIndex];
+                
+                displayUsers = [
+                    ...top4,
+                    { isSeparator: true }, // Special separator item
+                    currentUser
+                ];
+            }
+
+            setLeaderboardData(displayUsers);
+        } catch (error) {
+            console.error("Error fetching leaderboard data:", error);
+            // Fallback to just current user
+            setLeaderboardData([{
+                rank: 1,
+                name: currentUserPreferredName || user.firstName || "You",
+                score: currentUserScore,
+                avatar: currentUserPreferredName ? currentUserPreferredName.charAt(0).toUpperCase() : user.firstName ? user.firstName.charAt(0).toUpperCase() : "U",
+                isCurrentUser: true
+            }]);
+        } finally {
+            setIsLoadingLeaderboard(false);
+        }
+    }, [isLoaded, isSignedIn, user]);
+
     useEffect(() => {
-        const fetchUserData = async () => {
-            if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress) {
+        const fetchDashboardData = async () => {
+            if (!isLoaded || !isSignedIn || !user?.id || !user?.primaryEmailAddress?.emailAddress) {
+                // Reset states for logged-out user
                 setPreferredName("");
                 setUserScore(0);
                 setCurrentLevel(0);
                 setProgressToNextLevel(0);
+                setProviderCount(0);
+                setConnectionCount(0);
+                setCommunityCount(0);
+                setNewRecsCount(0);
+                setRecentRecommendations([]);
+                setRecentRecommendationsError(null);
                 setIsLoadingUserScore(false);
+                setIsLoadingCounts(false);
+                setIsLoadingNewRecsCount(false);
+                setIsLoadingRecentRecommendations(false);
                 return;
             }
-            
+
             setIsLoadingUserScore(true);
+            setIsLoadingCounts(true);
+            setIsLoadingNewRecsCount(true);
+            setIsLoadingRecentRecommendations(true);
+            setRecentRecommendationsError(null);
+
             try {
-                const response = await fetch(`${API_URL}/api/users/preferred-name?email=${encodeURIComponent(user.primaryEmailAddress.emailAddress)}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('Raw API Response:', data);
+                const userEmail = user.primaryEmailAddress.emailAddress;
+                const userId = user.id;
+
+                // --- Start all fetches in parallel ---
+                const userDataPromise = fetch(`${API_URL}/api/users/preferred-name?email=${encodeURIComponent(userEmail)}`);
+                
+                const countParams = new URLSearchParams({ user_id: userId, email: userEmail });
+                const providerCountPromise = fetch(`${API_URL}/api/providers/count?${countParams.toString()}`);
+                const connectionCountPromise = fetch(`${API_URL}/api/connections/followers?user_id=${userId}`);
+                const communityCountPromise = fetch(`${API_URL}/api/communities/count/communities`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, email: userEmail }),
+                });
+                const newRecsCountPromise = fetch(`${API_URL}/api/providers/new/count?${countParams.toString()}`);
+
+                const recsParams = new URLSearchParams({ ...Object.fromEntries(countParams), limit: '3', sortBy: 'date_of_recommendation', sortOrder: 'desc' });
+                const recentRecsPromise = fetch(`${API_URL}/api/providers/newest-visible?${recsParams.toString()}`);
+
+                // Await all promises
+                const [
+                    userDataRes,
+                    providerCountRes,
+                    connectionCountRes,
+                    communityCountRes,
+                    newRecsCountRes,
+                    recentRecsRes
+                ] = await Promise.all([
+                    userDataPromise,
+                    providerCountPromise,
+                    connectionCountPromise,
+                    communityCountPromise,
+                    newRecsCountPromise,
+                    recentRecsPromise
+                ]);
+
+                // --- Process results ---
+
+                // Process User Data and then trigger leaderboard fetch
+                if (userDataRes.ok) {
+                    const data = await userDataRes.json();
+                    const name = data.preferredName || "";
+                    const score = parseInt(data.userScore || data.user_score) || 0;
+                    const { level, progress } = calculateLevel(score);
                     
-                    setPreferredName(data.preferredName || "");
-                    
+                    setPreferredName(name);
+                    setUserScore(score);
+                    setCurrentLevel(level);
+                    setProgressToNextLevel(progress);
+
                     if (data.location && data.state) {
                         setCity(data.location);
                         setState(data.state);
                     } else {
-                        // If no location in DB, fall back to localStorage or a default
                         const cachedLocation = localStorage.getItem('userSelectedLocation') || 'Seattle, WA';
                         const parts = cachedLocation.split(',').map(p => p.trim());
                         setCity(parts[0] || 'Seattle');
                         setState(parts[1] || 'WA');
                     }
-                    
-                    const score = parseInt(data.userScore || data.user_score) || 0;
-                    console.log('Parsed score:', score, 'Original userScore:', data.userScore, 'Original user_score:', data.user_score, 'Type:', typeof data.userScore);
-                    
-                    const { level, progress } = calculateLevel(score);
-                    console.log('Calculated values:', { score, level, progress });
-                    
-                    setUserScore(score);
-                    setCurrentLevel(level);
-                    setProgressToNextLevel(progress);
+                    fetchLeaderboardData(score, name);
                 } else {
                     setPreferredName("");
                     setUserScore(0);
                     setCurrentLevel(0);
                     setProgressToNextLevel(0);
+                    fetchLeaderboardData(0, "");
                 }
+                setIsLoadingUserScore(false);
+
+                // Process Counts
+                if (providerCountRes.ok) {
+                    const d = await providerCountRes.json();
+                    setProviderCount(d.count || 0);
+                } else { setProviderCount(0); }
+
+                if (connectionCountRes.ok) {
+                    const d = await connectionCountRes.json();
+                    setConnectionCount(Array.isArray(d) ? d.length : 0);
+                } else { setConnectionCount(0); }
+
+                if (communityCountRes.ok) {
+                    const data = await communityCountRes.json();
+                    setCommunityCount(data.count || 0);
+                } else { setCommunityCount(0); }
+                setIsLoadingCounts(false);
+
+                // Process New Recs Count
+                if (newRecsCountRes.ok) {
+                    const data = await newRecsCountRes.json();
+                    setNewRecsCount(data.success ? (data.newRecommendationCount || 0) : 0);
+                } else { setNewRecsCount(0); }
+                setIsLoadingNewRecsCount(false);
+
+                // Process Recent Recommendations
+                if (recentRecsRes.ok) {
+                    const jsonResponse = await recentRecsRes.json();
+                    const rawData = jsonResponse.success && Array.isArray(jsonResponse.providers) ? jsonResponse.providers : [];
+                    
+                    if (rawData.length > 0) {
+                        const newLikedSet = new Set();
+                        const statsMap = {};
+
+                        await Promise.all(
+                            rawData.map(async (p) => {
+                                const providerId = p.provider_id || p.id;
+                                try {
+                                    const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
+                                    if (statsRes.ok) {
+                                        statsMap[providerId] = await statsRes.json();
+                                    }
+                                } catch (err) {
+                                    console.error(`Failed to fetch stats for provider ${providerId}`, err);
+                                }
+                            })
+                        );
+
+                        const processedData = rawData.map(p => {
+                            const providerId = p.provider_id || p.id;
+                            if (p.currentUserLiked) {
+                                newLikedSet.add(providerId);
+                            }
+                            const stats = statsMap[providerId] || { average_rating: p.average_rating, total_reviews: p.total_reviews };
+                            return {
+                                ...p,
+                                id: providerId,
+                                average_rating: parseFloat(stats.average_rating) || 0,
+                                total_reviews: parseInt(stats.total_reviews, 10) || 0,
+                            };
+                        });
+                        
+                        setRecentRecommendations(processedData);
+                        setLikedRecommendations(newLikedSet);
+                    } else {
+                        setRecentRecommendations([]);
+                    }
+                } else {
+                    setRecentRecommendationsError('Failed to load recent recommendations.');
+                    setRecentRecommendations([]);
+                }
+                setIsLoadingRecentRecommendations(false);
+
             } catch (error) {
-                console.error("Error fetching user data:", error);
+                console.error("Error fetching dashboard data:", error);
+                // Reset all states on error
                 setPreferredName("");
                 setUserScore(0);
                 setCurrentLevel(0);
                 setProgressToNextLevel(0);
-            } finally {
-                setIsLoadingUserScore(false);
-            }
-        };
-        fetchUserData();
-    }, [isLoaded, isSignedIn, user]);
-
-    // Fetch new recommendations count
-    useEffect(() => {
-        const fetchNewRecsCount = async () => {
-            if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress) {
-                setNewRecsCount(0);
-                setIsLoadingNewRecsCount(false);
-                return;
-            }
-
-            setIsLoadingNewRecsCount(true);
-            try {
-                const params = new URLSearchParams({
-                    user_id: user.id,
-                    email: user.primaryEmailAddress.emailAddress,
-                });
-                
-                const response = await fetch(`${API_URL}/api/providers/new/count?${params.toString()}`);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success) {
-                        setNewRecsCount(data.newRecommendationCount || 0);
-                    } else {
-                        console.error("API returned unsuccessful response:", data.message);
-                        setNewRecsCount(0);
-                    }
-                } else {
-                    console.error("Failed to fetch new recommendations count:", response.statusText);
-                    setNewRecsCount(0);
-                }
-            } catch (error) {
-                console.error("Error fetching new recommendations count:", error);
-                setNewRecsCount(0);
-            } finally {
-                setIsLoadingNewRecsCount(false);
-            }
-        };
-
-        fetchNewRecsCount();
-    }, [isLoaded, isSignedIn, user]);
-
-    useEffect(() => {
-        if (!isLoaded) return;
-        const fetchCounts = async () => {
-            if (!isSignedIn || !user) {
                 setProviderCount(0);
                 setConnectionCount(0);
                 setCommunityCount(0);
-                setIsLoadingCounts(false);
-                return;
-            }
-            
-            setIsLoadingCounts(true);
-            try {
-                const params = new URLSearchParams({
-                    user_id: user.id,
-                    email: user.primaryEmailAddress?.emailAddress,
-                    firstName: user.firstName || "",
-                    lastName: user.lastName || ""
-                });
-                const providerRes = await fetch(`${API_URL}/api/providers/count?${params.toString()}`);
-                if (providerRes.ok) {
-                    const d = await providerRes.json();
-                    setProviderCount(d.count || 0);
-                } else {
-                    setProviderCount(0);
-                }
-
-                const connRes = await fetch(`${API_URL}/api/connections/followers?user_id=${user.id}`);
-                if (connRes.ok) {
-                    const d = await connRes.json();
-                    setConnectionCount(Array.isArray(d) ? d.length : 0);
-                } else {
-                    setConnectionCount(0);
-                }
-
-                const communityRes = await fetch(`${API_URL}/api/communities/count/communities`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: user.id,
-                        email: user.primaryEmailAddress.emailAddress
-                    }),
-                });
-                if (communityRes.ok) {
-                    const data = await communityRes.json();
-                    setCommunityCount(data.count || 0);
-                } else {
-                    setCommunityCount(0);
-                    console.error("Failed to fetch community count:", communityRes.statusText);
-                }
-
-            } catch (err) {
-                console.error("Error fetching counts:", err);
-                setProviderCount(0);
-                setConnectionCount(0);
-                setCommunityCount(0);
-            } finally {
-                setIsLoadingCounts(false);
-            }
-        };
-        fetchCounts();
-    }, [isLoaded, isSignedIn, user]);
-
-    useEffect(() => {
-        const fetchRecentRecommendations = async () => {
-            if (!isLoaded) return;
-            setIsLoadingRecentRecommendations(true);
-            setRecentRecommendationsError(null);
-            const newLikedSet = new Set();
-
-            try {
-                let rawData;
-                if (isSignedIn && user) {
-                    const params = new URLSearchParams({
-                        user_id: user.id,
-                        email: user.primaryEmailAddress?.emailAddress,
-                        firstName: user.firstName || "",
-                        lastName: user.lastName || "",
-                        limit: '3',
-                        sortBy: 'date_of_recommendation',
-                        sortOrder: 'desc'
-                    });
-                    const response = await fetch(`${API_URL}/api/providers/newest-visible?${params.toString()}`);
-                    if (!response.ok) throw new Error(`API error: ${response.statusText}`);
-                    const jsonResponse = await response.json();
-                    rawData = jsonResponse.success && jsonResponse.providers ? jsonResponse.providers : [];
-                } else {
-                    rawData = [];
-                }
-
-                if (rawData.length === 0) {
-                    setRecentRecommendations([]);
-                    setIsLoadingRecentRecommendations(false);
-                    return;
-                }
-
-                const statsMap = {};
-                await Promise.all(
-                    rawData.map(async (p) => {
-                        const providerId = p.provider_id || p.id;
-                        try {
-                            const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
-                            if (statsRes.ok) {
-                                statsMap[providerId] = await statsRes.json();
-                            } else {
-                                statsMap[providerId] = {
-                                    average_rating: p.average_rating || 0,
-                                    total_reviews: p.total_reviews || 0,
-                                };
-                            }
-                        } catch (err) {
-                            console.error(`Failed to fetch stats for provider ${providerId}`, err);
-                            statsMap[providerId] = {
-                                average_rating: p.average_rating || 0,
-                                total_reviews: p.total_reviews || 0,
-                            };
-                        }
-                    })
-                );
-
-                const processedData = rawData.map(p => {
-                    const providerId = p.provider_id || p.id;
-                    if (p.currentUserLiked) {
-                        newLikedSet.add(providerId);
-                    }
-                    const stats = statsMap[providerId] || { average_rating: p.average_rating, total_reviews: p.total_reviews };
-
-                    return {
-                        ...p,
-                        id: providerId,
-                        average_rating: stats.average_rating || 0,
-                        total_reviews: stats.total_reviews || 0,
-                    };
-                });
-
-                setRecentRecommendations(processedData);
-                setLikedRecommendations(newLikedSet);
-
-            } catch (error) {
-                console.error("Error fetching recent recommendations:", error);
-                setRecentRecommendationsError(error.message);
+                setNewRecsCount(0);
                 setRecentRecommendations([]);
-                setLikedRecommendations(new Set());
-            } finally {
+                setRecentRecommendationsError(error.message);
+                setIsLoadingUserScore(false);
+                setIsLoadingCounts(false);
+                setIsLoadingNewRecsCount(false);
                 setIsLoadingRecentRecommendations(false);
+                fetchLeaderboardData(0, ""); // Ensure leaderboard is cleared or shows default
             }
         };
 
-        fetchRecentRecommendations();
-    }, [isLoaded, isSignedIn, user, API_URL]);
+        fetchDashboardData();
+    }, [isLoaded, isSignedIn, user, fetchLeaderboardData]);
 
-    // Fetch leaderboard data from connections
-    useEffect(() => {
-        const fetchLeaderboardData = async () => {
-            if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress || isLoadingUserScore) {
-                setLeaderboardData([]);
-                setIsLoadingLeaderboard(false);
-                return;
-            }
-
-            setIsLoadingLeaderboard(true);
-            try {
-                // Fetch connections with scores
-                const response = await fetch(`${API_URL}/api/connections/check-connections`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: user.primaryEmailAddress.emailAddress }),
-                });
-
-                let connections = [];
-                if (response.ok) {
-                    connections = await response.json();
-                }
-
-                // Create leaderboard array with current user and connections
-                const allUsers = [
-                    {
-                        name: preferredName || user.firstName || "You",
-                        username: user.username || null, // Current user's username
-                        user_score: userScore,
-                        isCurrentUser: true,
-                        avatar: preferredName ? preferredName.charAt(0).toUpperCase() : user.firstName ? user.firstName.charAt(0).toUpperCase() : "U"
-                    },
-                    ...connections.map(conn => ({
-                        name: conn.name || "Unknown",
-                        username: conn.username || null,
-                        user_score: conn.user_score || 0,
-                        isCurrentUser: false,
-                        avatar: conn.name ? conn.name.charAt(0).toUpperCase() : "U"
-                    }))
-                ];
-
-                // Sort by score and add ranks
-                const sortedUsers = allUsers
-                    .sort((a, b) => (b.user_score || 0) - (a.user_score || 0))
-                    .map((user, index) => ({
-                        ...user,
-                        rank: index + 1,
-                        score: user.user_score || 0
-                    }));
-
-                // Find current user's position
-                const currentUserIndex = sortedUsers.findIndex(user => user.isCurrentUser);
-                const currentUserRank = currentUserIndex + 1;
-
-                let displayUsers = [];
-                
-                if (currentUserRank <= 5) {
-                    // Current user is in top 5, show top 5
-                    displayUsers = sortedUsers.slice(0, 5);
-                } else {
-                    // Current user is not in top 5, show top 4 + separator + current user
-                    const top4 = sortedUsers.slice(0, 4);
-                    const currentUser = sortedUsers[currentUserIndex];
-                    
-                    displayUsers = [
-                        ...top4,
-                        { isSeparator: true }, // Special separator item
-                        currentUser
-                    ];
-                }
-
-                setLeaderboardData(displayUsers);
-            } catch (error) {
-                console.error("Error fetching leaderboard data:", error);
-                // Fallback to just current user
-                setLeaderboardData([{
-                    rank: 1,
-                    name: preferredName || user.firstName || "You",
-                    score: userScore,
-                    avatar: preferredName ? preferredName.charAt(0).toUpperCase() : user.firstName ? user.firstName.charAt(0).toUpperCase() : "U",
-                    isCurrentUser: true
-                }]);
-            } finally {
-                setIsLoadingLeaderboard(false);
-            }
-        };
-
-        fetchLeaderboardData();
-    }, [isLoaded, isSignedIn, user, userScore, preferredName, isLoadingUserScore]);
-
-    // Fetch public recommendations for non-logged-in users
     useEffect(() => {
         const fetchPublicRecommendations = async () => {
             if (isSignedIn) {
@@ -900,48 +836,36 @@ const Home = () => {
 
                 if (rawData.length === 0) {
                     setPublicRecommendations([]);
-                    setIsLoadingPublicRecommendations(false);
-                    return;
-                }
-
-                // Process the data similar to logged-in users
-                const statsMap = {};
-                await Promise.all(
-                    rawData.map(async (p) => {
-                        const providerId = p.id;
-                        try {
-                            const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
-                            if (statsRes.ok) {
-                                statsMap[providerId] = await statsRes.json();
-                            } else {
-                                statsMap[providerId] = {
-                                    average_rating: p.average_rating || 0,
-                                    total_reviews: p.total_reviews || 0,
-                                };
+                } else {
+                    const statsMap = {};
+                    await Promise.all(
+                        rawData.map(async (p) => {
+                            const providerId = p.id;
+                            try {
+                                const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
+                                if (statsRes.ok) {
+                                    statsMap[providerId] = await statsRes.json();
+                                }
+                            } catch (err) {
+                                console.error(`Failed to fetch stats for provider ${providerId}`, err);
                             }
-                        } catch (err) {
-                            console.error(`Failed to fetch stats for provider ${providerId}`, err);
-                            statsMap[providerId] = {
-                                average_rating: p.average_rating || 0,
-                                total_reviews: p.total_reviews || 0,
-                            };
-                        }
-                    })
-                );
+                        })
+                    );
 
-                const processedData = rawData.map(p => {
-                    const providerId = p.id;
-                    const stats = statsMap[providerId] || { average_rating: p.average_rating, total_reviews: p.total_reviews };
+                    const processedData = rawData.map(p => {
+                        const providerId = p.id;
+                        const stats = statsMap[providerId] || { average_rating: p.average_rating, total_reviews: p.total_reviews };
 
-                    return {
-                        ...p,
-                        provider_id: providerId,
-                        average_rating: stats.average_rating || 0,
-                        total_reviews: stats.total_reviews || 0,
-                    };
-                });
+                        return {
+                            ...p,
+                            provider_id: providerId,
+                            average_rating: stats.average_rating || 0,
+                            total_reviews: stats.total_reviews || 0,
+                        };
+                    });
 
-                setPublicRecommendations(processedData);
+                    setPublicRecommendations(processedData);
+                }
             } catch (error) {
                 console.error("Error fetching public recommendations:", error);
                 setPublicRecommendationsError(error.message);
