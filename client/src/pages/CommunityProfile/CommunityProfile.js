@@ -343,9 +343,7 @@ const CommunityProfile = () => {
     const [commRecsShowFeatureComingModal, setCommRecsShowFeatureComingModal] =
         useState(false);
 
-    const [communityServiceCategories, setCommunityServiceCategories] =
-        useState([]);
-    const [selectedCategory, setSelectedCategory] = useState("all");
+    const [selectedServiceId, setSelectedServiceId] = useState("all");
 
     const [selectedCity, setSelectedCity] = useState("all");
 
@@ -562,29 +560,6 @@ const CommunityProfile = () => {
             }
             setCommRecsReviewMap(allReviewsMap);
 
-            let currentCommunityCategories = [];
-            const categoriesResponse = await fetch(
-                `${API_URL}/api/communities/${communityId}/categories`
-            );
-            if (categoriesResponse.ok) {
-                const categoriesData = await categoriesResponse.json();
-                if (categoriesData.success && categoriesData.categories) {
-                    currentCommunityCategories = categoriesData.categories;
-                    setCommunityServiceCategories(categoriesData.categories);
-                } else {
-                    setCommunityServiceCategories([]);
-                }
-            } else {
-                setCommunityServiceCategories([]);
-            }
-
-            const miscellaneousCategory = currentCommunityCategories.find(
-                (cat) => cat.category_name === "Miscellaneous"
-            );
-            const miscellaneousCategoryId = miscellaneousCategory
-                ? miscellaneousCategory.id
-                : null;
-
             const enriched = fetchedProviders.map((p, idx) => ({
                 ...p,
                 originalIndex: idx,
@@ -598,8 +573,6 @@ const CommunityProfile = () => {
                     0,
                 currentUserLiked: p.currentUserLiked || false,
                 num_likes: parseInt(p.num_likes, 10) || 0,
-                community_service_category_id:
-                    p.community_service_category_id || miscellaneousCategoryId,
             }));
             const initialLikes = new Map();
             enriched.forEach((p) => {
@@ -610,7 +583,6 @@ const CommunityProfile = () => {
         } catch (err) {
             setCommRecsError(err.message);
             setCommRecsRaw([]);
-            setCommunityServiceCategories([]);
         } finally {
             setLoadingCommRecs(false);
         }
@@ -645,11 +617,24 @@ const CommunityProfile = () => {
         return Array.from(new Set(cities)).sort((a, b) => a.localeCompare(b));
     }, [commRecsRaw]);
 
-    const categoryCounts = useMemo(() => {
+    const availableServices = useMemo(() => {
+        const serviceMap = new Map();
+        commRecsRaw.forEach((rec) => {
+            if (rec.recommended_service_id && rec.recommended_service_name) {
+                serviceMap.set(rec.recommended_service_id, {
+                    id: rec.recommended_service_id,
+                    name: rec.recommended_service_name,
+                });
+            }
+        });
+        return Array.from(serviceMap.values());
+    }, [commRecsRaw]);
+
+    const serviceIdCounts = useMemo(() => {
         return commRecsRaw.reduce((acc, rec) => {
-            const categoryId = rec.community_service_category_id;
-            if (categoryId) {
-                acc[categoryId] = (acc[categoryId] || 0) + 1;
+            const serviceId = rec.recommended_service_id;
+            if (serviceId) {
+                acc[serviceId] = (acc[serviceId] || 0) + 1;
             }
             return acc;
         }, {});
@@ -660,12 +645,9 @@ const CommunityProfile = () => {
 
         let list = [...commRecsRaw];
 
-        if (
-            communityServiceCategories.length > 0 &&
-            selectedCategory !== "all"
-        ) {
+        if (selectedServiceId !== "all") {
             list = list.filter(
-                (p) => p.community_service_category_id === selectedCategory
+                (p) => p.recommended_service_id === selectedServiceId
             );
         }
 
@@ -695,9 +677,8 @@ const CommunityProfile = () => {
     }, [
         commRecsRaw,
         commRecsSortOption,
-        selectedCategory,
+        selectedServiceId,
         selectedCity,
-        communityServiceCategories,
     ]);
 
     const handleCommRecsLike = async (providerId) => {
@@ -1046,38 +1027,38 @@ const CommunityProfile = () => {
                                 )}
                             </div>
                         </div>
-                        {communityServiceCategories.length > 0 && (
+                        {availableServices.length > 0 && (
                             <div className="category-filter-bar">
                                 <button
                                     className={`category-button ${
-                                        selectedCategory === "all"
+                                        selectedServiceId === "all"
                                             ? "active"
                                             : ""
                                     }`}
-                                    onClick={() => setSelectedCategory("all")}
+                                    onClick={() => setSelectedServiceId("all")}
                                 >
                                     All ({commRecsRaw.length})
                                 </button>
-                                {[...communityServiceCategories]
+                                {[...availableServices]
                                     .sort(
                                         (a, b) =>
-                                            (categoryCounts[b.id] || 0) -
-                                            (categoryCounts[a.id] || 0)
+                                            (serviceIdCounts[b.id] || 0) -
+                                            (serviceIdCounts[a.id] || 0)
                                     )
-                                    .map((category) => (
+                                    .map((service) => (
                                         <button
-                                            key={category.id}
+                                            key={service.id}
                                             className={`category-button ${
-                                                selectedCategory === category.id
+                                                selectedServiceId === service.id
                                                     ? "active"
                                                     : ""
                                             }`}
                                             onClick={() =>
-                                                setSelectedCategory(category.id)
+                                                setSelectedServiceId(service.id)
                                             }
                                         >
-                                            {category.category_name} (
-                                            {categoryCounts[category.id] || 0})
+                                            {service.name} (
+                                            {serviceIdCounts[service.id] || 0})
                                         </button>
                                     ))}
                             </div>
