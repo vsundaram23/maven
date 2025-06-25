@@ -9,6 +9,7 @@ import {
     CameraIcon,
     ChatBubbleLeftEllipsisIcon,
     CheckCircleIcon,
+    ChevronDownIcon,
     EnvelopeIcon,
     ExclamationTriangleIcon,
     GlobeAltIcon,
@@ -24,7 +25,7 @@ import {
     XCircleIcon
 } from "@heroicons/react/24/solid";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { FaStar, FaStarHalfAlt } from "react-icons/fa";
+import { FaConciergeBell, FaMapMarkerAlt, FaStar, FaStarHalfAlt } from "react-icons/fa";
 import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Link, useNavigate } from "react-router-dom";
@@ -1414,6 +1415,8 @@ const Profile = () => {
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [selectedCities, setSelectedCities] = useState([]);
     const [showCityFilter, setShowCityFilter] = useState(false);
+    const [selectedServices, setSelectedServices] = useState([]);
+    const [showServiceFilter, setShowServiceFilter] = useState(false);
     const [userScore, setUserScore] = useState(0);
     const ASPECT_RATIO = 1;
     const MIN_DIMENSION = 150;
@@ -1748,6 +1751,14 @@ const Profile = () => {
             });
         }
         
+        // Apply service filter
+        if (selectedServices.length > 0) {
+            sortableItems = sortableItems.filter(item => {
+                const itemService = item.recommended_service_name || "Other";
+                return selectedServices.includes(itemService);
+            });
+        }
+        
         // Apply city filter
         if (selectedCities.length > 0) {
             sortableItems = sortableItems.filter(item => {
@@ -1775,12 +1786,28 @@ const Profile = () => {
                     new Date(a.date_of_recommendation || a.created_at || 0)
             );
         return sortableItems;
-    }, [enrichedRecommendations, sortOption, searchQuery, selectedCities]);
+    }, [enrichedRecommendations, sortOption, searchQuery, selectedCities, selectedServices]);
 
     const availableCities = React.useMemo(() => {
         if (!enrichedRecommendations || enrichedRecommendations.length === 0) return [];
-        const cities = enrichedRecommendations.map((rec) => rec.city || "Other");
-        return Array.from(new Set(cities)).sort((a, b) => a.localeCompare(b));
+        const cityCounts = enrichedRecommendations.reduce((acc, rec) => {
+            const city = rec.city || "Other";
+            acc[city] = (acc[city] || 0) + 1;
+            return acc;
+        }, {});
+
+        return Object.entries(cityCounts).sort(([, countA], [, countB]) => countB - countA);
+    }, [enrichedRecommendations]);
+
+    const availableServices = React.useMemo(() => {
+        if (!enrichedRecommendations || enrichedRecommendations.length === 0) return [];
+        const serviceCounts = enrichedRecommendations.reduce((acc, rec) => {
+            const service = rec.recommended_service_name || "Other";
+            acc[service] = (acc[service] || 0) + 1;
+            return acc;
+        }, {});
+
+        return Object.entries(serviceCounts).sort(([, countA], [, countB]) => countB - countA);
     }, [enrichedRecommendations]);
 
     const handleLogout = async () => {
@@ -2252,72 +2279,180 @@ const Profile = () => {
                                     </button>
                                 )}
                             </div>
-                            {availableCities.length > 1 && (
-                                <div className="profile-city-filter-toggle-section">
-                                    <button
-                                        className="profile-city-filter-toggle"
-                                        onClick={() => setShowCityFilter(!showCityFilter)}
-                                    >
-                                        <svg className="profile-filter-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                                        </svg>
-                                        Filter by City
-                                        {selectedCities.length > 0 && (
-                                            <span className="profile-active-filters-badge">
-                                                {selectedCities.length}
-                                            </span>
-                                        )}
-                                        <svg 
-                                            className={`profile-filter-chevron ${showCityFilter ? 'rotated' : ''}`} 
-                                            fill="none" 
-                                            stroke="currentColor" 
-                                            viewBox="0 0 24 24"
+                            <div
+                                className={`filters-container ${
+                                    showCityFilter || showServiceFilter
+                                        ? "filters-container--open"
+                                        : ""
+                                }`}
+                            >
+                                {availableServices.length > 0 && (
+                                    <div className="profile-city-filter-toggle-section">
+                                        <button
+                                            className="profile-city-filter-toggle"
+                                            onClick={() =>
+                                                setShowServiceFilter(
+                                                    !showServiceFilter
+                                                )
+                                            }
                                         >
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-                                    
-                                    {showCityFilter && (
-                                        <div className="profile-city-filter-wrapper">
-                                            <div className="profile-city-filter-checkboxes">
-                                                {availableCities.map((city) => (
-                                                    <label key={city} className="profile-city-checkbox-item">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedCities.includes(city)}
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) {
-                                                                    setSelectedCities(prev => [...prev, city]);
-                                                                } else {
-                                                                    setSelectedCities(prev => prev.filter(c => c !== city));
-                                                                }
-                                                            }}
-                                                        />
-                                                        <span className="profile-city-checkbox-label">{city}</span>
-                                                        <span className="profile-city-count">
-                                                            ({enrichedRecommendations.filter(rec => (rec.city || "Other") === city).length})
-                                                        </span>
-                                                    </label>
-                                                ))}
-                                                {selectedCities.length > 0 && (
-                                                    <button
-                                                        className="profile-city-clear-all"
-                                                        onClick={() => setSelectedCities([])}
-                                                        title="Clear all city filters"
-                                                    >
-                                                        Clear All
-                                                    </button>
-                                                )}
+                                            <FaConciergeBell className="profile-filter-icon" />
+                                            <span className="filter-button-text">
+                                                <span className="filter-button-text-long">
+                                                    Filter by{" "}
+                                                </span>
+                                                <span>Service</span>
+                                            </span>
+                                            {selectedServices.length > 0 && (
+                                                <span className="profile-active-filters-badge">
+                                                    {selectedServices.length}
+                                                </span>
+                                            )}
+                                            <ChevronDownIcon
+                                                className={`profile-filter-chevron ${
+                                                    showServiceFilter
+                                                        ? "rotated"
+                                                        : ""
+                                                }`}
+                                            />
+                                        </button>
+                                        {showServiceFilter && (
+                                            <div className="profile-city-filter-wrapper">
+                                                <div className="profile-city-filter-checkboxes">
+                                                    {availableServices.map(
+                                                        ([service, count]) => (
+                                                            <div
+                                                                key={service}
+                                                                className="profile-city-checkbox-item"
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    id={`service-${service.replace(/\s+/g, '-')}`}
+                                                                    name={service}
+                                                                    checked={selectedServices.includes(
+                                                                        service
+                                                                    )}
+                                                                    onChange={() =>
+                                                                        handleServiceSelection(
+                                                                            service
+                                                                        )
+                                                                    }
+                                                                />
+                                                                <label
+                                                                    htmlFor={`service-${service.replace(/\s+/g, '-')}`}
+                                                                    className="profile-city-checkbox-label"
+                                                                >
+                                                                    {service}
+                                                                </label>
+                                                                <span className="profile-city-count">
+                                                                    ({count})
+                                                                </span>
+                                                            </div>
+                                                        )
+                                                    )}
+                                                    {selectedServices.length > 0 && (
+                                                        <button
+                                                            onClick={() =>
+                                                                setSelectedServices(
+                                                                    []
+                                                                )
+                                                            }
+                                                            className="profile-city-clear-all"
+                                                        >
+                                                            Clear
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            {sortedRecommendations.length > 0 && (
-                                <span className="profile-recommendations-count">
-                                    {searchQuery.trim() || selectedCities.length > 0 ? `${sortedRecommendations.length} of ${enrichedRecommendations.length} recommendations` : `${sortedRecommendations.length} recommendations`}
-                                </span>
-                            )}
+                                        )}
+                                    </div>
+                                )}
+                                {availableCities.length > 1 && (
+                                    <div className="profile-city-filter-toggle-section">
+                                        <button
+                                            className="profile-city-filter-toggle"
+                                            onClick={() =>
+                                                setShowCityFilter(
+                                                    !showCityFilter
+                                                )
+                                            }
+                                        >
+                                            <FaMapMarkerAlt className="profile-filter-icon" />
+                                            <span className="filter-button-text">
+                                                <span className="filter-button-text-long">
+                                                    Filter by{" "}
+                                                </span>
+                                                <span>City</span>
+                                            </span>
+                                            {selectedCities.length > 0 && (
+                                                <span className="profile-active-filters-badge">
+                                                    {selectedCities.length}
+                                                </span>
+                                            )}
+                                            <ChevronDownIcon
+                                                className={`profile-filter-chevron ${
+                                                    showCityFilter
+                                                        ? "rotated"
+                                                        : ""
+                                                }`}
+                                            />
+                                        </button>
+                                        {showCityFilter && (
+                                            <div className="profile-city-filter-wrapper">
+                                                <div className="profile-city-filter-checkboxes">
+                                                    {availableCities.map(
+                                                        ([city, count]) => (
+                                                            <div
+                                                                key={city}
+                                                                className="profile-city-checkbox-item"
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    id={`city-${city.replace(
+                                                                        /\s+/g,
+                                                                        '-'
+                                                                    )}`}
+                                                                    name={city}
+                                                                    checked={selectedCities.includes(
+                                                                        city
+                                                                    )}
+                                                                    onChange={() =>
+                                                                        handleCitySelection(
+                                                                            city
+                                                                        )
+                                                                    }
+                                                                />
+                                                                <label
+                                                                    htmlFor={`city-${city.replace(
+                                                                        /\s+/g,
+                                                                        '-'
+                                                                    )}`}
+                                                                    className="profile-city-checkbox-label"
+                                                                >
+                                                                    {city}
+                                                                </label>
+                                                                <span className="profile-city-count">
+                                                                    ({count})
+                                                                </span>
+                                                            </div>
+                                                        )
+                                                    )}
+                                                    {selectedCities.length > 0 && (
+                                                        <button
+                                                            onClick={() =>
+                                                                setSelectedCities([])
+                                                            }
+                                                            className="profile-city-clear-all"
+                                                        >
+                                                            Clear
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -2367,7 +2502,7 @@ const Profile = () => {
                 ) &&
                     sortedRecommendations.length === 0 &&
                     !error && (
-                        (searchQuery.trim() || selectedCities.length > 0) ? (
+                        (searchQuery.trim() || selectedCities.length > 0 || selectedServices.length > 0) ? (
                             <div className="profile-empty-state no-search-results">
                                 <svg className="no-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -2375,11 +2510,11 @@ const Profile = () => {
                                 <p>
                                     No recommendations found
                                     {searchQuery.trim() && ` for "${searchQuery}"`}
+                                    {selectedServices.length > 0 && ` for ${selectedServices.join(", ")}`}
                                     {selectedCities.length > 0 && ` in ${selectedCities.join(", ")}`}
                                 </p>
                                 <p className="search-suggestions">
-                                    Try {searchQuery.trim() ? "different search terms" : "selecting different cities"} 
-                                    {searchQuery.trim() && selectedCities.length > 0 ? " or clearing filters" : ""}.
+                                    Try adjusting your search or filters.
                                 </p>
                                 <div className="profile-filter-clear-buttons">
                                     {searchQuery.trim() && (
@@ -2390,6 +2525,14 @@ const Profile = () => {
                                             Clear Search
                                         </button>
                                     )}
+                                    {selectedServices.length > 0 && (
+                                        <button
+                                            className="profile-secondary-action-btn"
+                                            onClick={() => setSelectedServices([])}
+                                        >
+                                            Clear Service Filters
+                                        </button>
+                                    )}
                                     {selectedCities.length > 0 && (
                                         <button
                                             className="profile-secondary-action-btn"
@@ -2398,12 +2541,13 @@ const Profile = () => {
                                             Clear City Filters
                                         </button>
                                     )}
-                                    {(searchQuery.trim() || selectedCities.length > 0) && (
+                                    {(searchQuery.trim() || selectedCities.length > 0 || selectedServices.length > 0) && (
                                         <button
                                             className="profile-secondary-action-btn"
                                             onClick={() => {
                                                 setSearchQuery("");
                                                 setSelectedCities([]);
+                                                setSelectedServices([]);
                                             }}
                                         >
                                             Clear All Filters

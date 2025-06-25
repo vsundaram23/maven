@@ -2419,6 +2419,348 @@
 
 .profile-city-checkbox-item {
     display: flex;
+    align-items: left;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    background-color: var(--profile-bg-white);
+    border: 1px solid var(--profile-border-color);
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.profile-city-checkbox-item:hover {
+    background-color: #f8fafc;
+    border-color: var(--profile-secondary-color);
+}
+
+.profile-city-checkbox-item input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.profile-city-checkbox-label {
+    align-items: left;
+    font-weight: 500;
+    color: var(--profile-text-primary);
+}
+
+.profile-city-count {
+    color: var(--profile-text-muted);
+    font-size: 0.8rem;
+}
+
+.profile-city-clear-all {
+    background-color: var(--profile-secondary-color);
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.375rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.profile-city-clear-all:hover {
+    background-color: #1d4ed8;
+}
+
+.profile-recommendations-count {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--profile-text-muted);
+    text-align: center;
+    font-style: italic;
+}
+
+/* Filter clear buttons for empty states */
+.profile-filter-clear-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .profile-city-filter-toggle {
+        font-size: 0.85rem;
+        padding: 0.6rem 0.85rem;
+    }
+    
+    .profile-filter-icon {
+        width: 1rem;
+        height: 1rem;
+    }
+    
+    .profile-city-filter-checkboxes {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .profile-city-checkbox-item {
+        justify-content: space-between;
+    }
+    
+    .profile-filter-clear-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* Trust Points Wheel in Profile Stats */
+.profile-trust-score-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: scale(0.9);
+    transform-origin: center;
+    margin: -15px 0;
+    max-width: 400px;
+    position: relative;
+    z-index: 1;
+}
+
+.profile-trust-score-wrapper .trust-score-wheel-container {
+    margin: 0;
+    width: 100%;
+}
+
+.profile-trust-score-wrapper .trust-score-card-horizontal {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+}
+
+.profile-trust-score-wrapper .trust-score-content-horizontal {
+    gap: 1rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-trust-score-wrapper .trust-score-circle-section {
+    flex-shrink: 0;
+}
+
+.profile-trust-score-wrapper .trust-score-info-section {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    text-align: left;
+}
+
+.profile-trust-score-wrapper .trust-score-level-header {
+    text-align: left;
+}
+
+.profile-trust-score-wrapper .trust-score-level-text {
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: left;
+}
+
+.profile-trust-score-wrapper .trust-score-next-level {
+    font-size: 0.85rem;
+    opacity: 0.8;
+    text-align: left;
+}
+
+.profile-trust-score-wrapper .trust-score-stats {
+    text-align: left;
+}
+
+.profile-trust-score-wrapper .trust-score-info-button {
+    text-align: left;
+    justify-content: flex-start;
+    z-index: 1;
+    position: relative;
+}
+
+/* Hide achievement badge but keep code */
+.profile-achievement-hidden {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .profile-trust-score-wrapper {
+        transform: scale(0.75);
+        margin: -20px 0;
+    }
+    
+    .profile-trust-score-wrapper .trust-score-content-horizontal {
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: left;
+        align-items: flex-start;
+    }
+    
+    .profile-trust-score-wrapper .trust-score-level-text {
+        font-size: 0.9rem;
+    }
+    
+    .profile-trust-score-wrapper .trust-score-next-level {
+        font-size: 0.8rem;
+    }
+    
+    .profile-trust-score-wrapper .trust-score-circle-section {
+        align-self: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-trust-score-wrapper {
+        transform: scale(0.65);
+        margin: -25px 0;
+    }
+    
+    .profile-trust-score-wrapper .trust-score-level-text {
+        font-size: 0.85rem;
+    }
+    
+    .profile-trust-score-wrapper .trust-score-next-level {
+        font-size: 0.75rem;
+    }
+}
+
+/* Trust Points Modal z-index fix */
+.profile-trust-score-wrapper .trust-score-modal-wrapper {
+    z-index: 9999 !important;
+    position: fixed !important;
+}
+
+.profile-trust-score-wrapper .trust-score-modal {
+    z-index: 10000 !important;
+    position: relative !important;
+}
+
+/* Trust Points Wheel in Profile Stats */
+
+.filters-container {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.filters-container.filters-container--open {
+    flex-direction: column;
+}
+
+.filters-container .profile-city-filter-toggle-section {
+    flex: 1;
+    margin-bottom: 0 !important;
+}
+
+.profile-city-filter-toggle .filter-button-text {
+    flex-grow: 1;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.filter-button-text-long {
+    display: none;
+}
+
+@media (min-width: 520px) {
+    .filter-button-text-long {
+        display: inline;
+    }
+}
+
+/* City filtering styles */
+.profile-city-filter-toggle-section {
+    margin-bottom: 1rem;
+}
+
+.profile-city-filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background-color: var(--profile-bg-white);
+    border: 1px solid var(--profile-border-color);
+    border-radius: 0.5rem;
+    color: var(--profile-text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.profile-city-filter-toggle:hover {
+    background-color: #f8fafc;
+    border-color: var(--profile-secondary-color);
+}
+
+.profile-filter-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+    color: var(--profile-text-muted);
+    flex-shrink: 0;
+}
+
+.profile-active-filters-badge {
+    background-color: var(--profile-secondary-color);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+    min-width: 1.25rem;
+    text-align: center;
+    margin-left: auto;
+    margin-right: 0.5rem;
+}
+
+.profile-filter-chevron {
+    width: 1rem;
+    height: 1rem;
+    color: var(--profile-text-muted);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.profile-filter-chevron.rotated {
+    transform: rotate(180deg);
+}
+
+.profile-city-filter-wrapper {
+    background-color: var(--profile-bg-gray);
+    border: 1px solid var(--profile-border-color);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.profile-city-filter-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.profile-city-checkbox-item {
+    display: flex;
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
@@ -2501,7 +2843,7 @@
     }
     
     .profile-city-checkbox-item {
-        justify-content: space-between;
+        justify-content: flex-start;
     }
     
     .profile-filter-clear-buttons {

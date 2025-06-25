@@ -56,7 +56,9 @@ const getCurrentUserRecommendations = async (req, res) => {
                 sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
                 sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.website, sp.business_contact, 
                 sp.recommender_message, sp.images, sp.initial_rating, sp.visibility,
-                s.name as service_type, c.name as category_name,
+                sp.service_id,
+                s.display_name AS recommended_service_name,
+                c.name as category_name,
                 EXISTS (
                     SELECT 1
                     FROM public.recommendation_likes rl
@@ -195,7 +197,8 @@ const getPublicUserProfile = async (req, res) => {
                 sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
                 sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.num_likes, sp.website, sp.business_contact, 
                 sp.recommender_message, sp.images,
-                s.name as service_type, c.name as category_name,
+                s.display_name AS recommended_service_name,
+                c.name as category_name,
                 u.phone_number AS recommender_phone,
                 u.email AS recommender_email,
                 u.name AS recommender_name,
@@ -362,7 +365,8 @@ const getRecommendationsByUserId = async (req, res) => {
             `
             SELECT sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
                    sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.recommender_message,
-                   s.name as service_type, c.name as category_name
+                   s.display_name AS recommended_service_name,
+                   c.name as category_name
             FROM service_providers sp
             LEFT JOIN services s ON sp.service_id = s.service_id
             LEFT JOIN service_categories c ON s.category_id = c.service_id
@@ -756,7 +760,8 @@ const getUserPublicProfileByUsername = async (req, res) => {
                 sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
                 sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.num_likes, sp.website, sp.business_contact, 
                 sp.recommender_message, sp.images,
-                s.name as service_type, c.name as category_name,
+                s.display_name AS recommended_service_name,
+                c.name as category_name,
                 u.phone_number AS recommender_phone,
                 u.email AS recommender_email,
                 u.name AS recommender_name,

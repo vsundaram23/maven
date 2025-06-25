@@ -2,10 +2,13 @@ import { useUser } from "@clerk/clerk-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     FaCalendarAlt,
+    FaChevronDown,
+    FaConciergeBell,
     FaEdit,
     FaEnvelope,
     FaEye,
     FaHourglassHalf,
+    FaMapMarkerAlt,
     FaPlusCircle,
     FaSignInAlt,
     FaSms,
@@ -15,7 +18,7 @@ import {
     FaUserCheck,
     FaUserPlus,
     FaUsers,
-    FaUserTie
+    FaUserTie,
 } from "react-icons/fa";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import InviteMembersModal from "../../components/InviteModal/InviteModal";
@@ -331,7 +334,6 @@ const CommunityProfile = () => {
         useState(false);
     const [commRecsSelectedProvider, setCommRecsSelectedProvider] =
         useState(null);
-    const [commRecsSortOption, setCommRecsSortOption] = useState("recommended");
     const [commRecsDropdownOpenForId, setCommRecsDropdownOpenForId] =
         useState(null);
     const [commRecsShowLinkCopied, setCommRecsShowLinkCopied] = useState(false);
@@ -343,9 +345,11 @@ const CommunityProfile = () => {
     const [commRecsShowFeatureComingModal, setCommRecsShowFeatureComingModal] =
         useState(false);
 
-    const [selectedServiceId, setSelectedServiceId] = useState("all");
+    const [selectedServices, setSelectedServices] = useState([]);
+    const [showServiceFilter, setShowServiceFilter] = useState(false);
 
-    const [selectedCity, setSelectedCity] = useState("all");
+    const [selectedCities, setSelectedCities] = useState([]);
+    const [showCityFilter, setShowCityFilter] = useState(false);
 
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [inviteExpiresAt, setInviteExpiresAt] = useState("");
@@ -612,32 +616,31 @@ const CommunityProfile = () => {
     ]);
 
     const availableCities = useMemo(() => {
-        if (!commRecsRaw) return [];
-        const cities = commRecsRaw.map((p) => (p.city ? p.city : "Other"));
-        return Array.from(new Set(cities)).sort((a, b) => a.localeCompare(b));
+        if (!commRecsRaw || commRecsRaw.length === 0) return [];
+        const cityCounts = commRecsRaw.reduce((acc, rec) => {
+            const city = rec.city || "Other";
+            acc[city] = (acc[city] || 0) + 1;
+            return acc;
+        }, {});
+
+        return Object.entries(cityCounts).sort(
+            ([, countA], [, countB]) => countB - countA
+        );
     }, [commRecsRaw]);
 
     const availableServices = useMemo(() => {
-        const serviceMap = new Map();
-        commRecsRaw.forEach((rec) => {
-            if (rec.recommended_service_id && rec.recommended_service_name) {
-                serviceMap.set(rec.recommended_service_id, {
-                    id: rec.recommended_service_id,
-                    name: rec.recommended_service_name,
-                });
-            }
-        });
-        return Array.from(serviceMap.values());
-    }, [commRecsRaw]);
-
-    const serviceIdCounts = useMemo(() => {
-        return commRecsRaw.reduce((acc, rec) => {
-            const serviceId = rec.recommended_service_id;
-            if (serviceId) {
-                acc[serviceId] = (acc[serviceId] || 0) + 1;
+        if (!commRecsRaw || commRecsRaw.length === 0) return [];
+        const serviceCounts = commRecsRaw.reduce((acc, rec) => {
+            const service = rec.recommended_service_name;
+            if (service) {
+                acc[service] = (acc[service] || 0) + 1;
             }
             return acc;
         }, {});
+
+        return Object.entries(serviceCounts).sort(
+            ([, countA], [, countB]) => countB - countA
+        );
     }, [commRecsRaw]);
 
     const sortedAndFilteredCommRecs = useMemo(() => {
@@ -645,24 +648,19 @@ const CommunityProfile = () => {
 
         let list = [...commRecsRaw];
 
-        if (selectedServiceId !== "all") {
+        if (selectedServices.length > 0) {
             list = list.filter(
-                (p) => p.recommended_service_id === selectedServiceId
+                (p) =>
+                    p.recommended_service_name &&
+                    selectedServices.includes(p.recommended_service_name)
             );
         }
 
-        if (selectedCity !== "all") {
-            list = list.filter((p) => (p.city || "Other") === selectedCity);
-        }
-
-        if (commRecsSortOption === "topRated") {
-            return list
-                .filter((p) => p.average_rating >= 4.5)
-                .sort((a, b) =>
-                    b.average_rating !== a.average_rating
-                        ? b.average_rating - a.average_rating
-                        : (b.total_reviews || 0) - (a.total_reviews || 0)
-                );
+        if (selectedCities.length > 0) {
+            list = list.filter(p => {
+                const city = p.city || "Other";
+                return selectedCities.includes(city);
+            });
         }
 
         return list.sort((a, b) => {
@@ -676,10 +674,25 @@ const CommunityProfile = () => {
         });
     }, [
         commRecsRaw,
-        commRecsSortOption,
-        selectedServiceId,
-        selectedCity,
+        selectedServices,
+        selectedCities,
     ]);
+
+    const handleServiceSelection = (serviceName) => {
+        setSelectedServices((prev) =>
+            prev.includes(serviceName)
+                ? prev.filter((s) => s !== serviceName)
+                : [...prev, serviceName]
+        );
+    };
+
+    const handleCitySelection = (cityName) => {
+        setSelectedCities((prev) =>
+            prev.includes(cityName)
+                ? prev.filter((c) => c !== cityName)
+                : [...prev, cityName]
+        );
+    };
 
     const handleCommRecsLike = async (providerId) => {
         if (!currentUserId || !currentUserEmail) {
@@ -985,84 +998,166 @@ const CommunityProfile = () => {
 
                 {activeTab === "recommendations" && (
                     <div className="recommendations-section appliance-services-container">
-                        <div className="sort-city-container">
-                            <div className="sort-bar">
-                                <label htmlFor="sortDropdown">Filter by:</label>
-                                <select
-                                    id="sortDropdown"
-                                    className="sort-dropdown"
-                                    value={
-                                        commRecsSortOption.startsWith(
-                                            "force-refresh-"
-                                        )
-                                            ? "recommended"
-                                            : commRecsSortOption
-                                    }
-                                    onChange={(e) =>
-                                        setCommRecsSortOption(e.target.value)
+                        <div
+                            className={`community-filters-container ${
+                                showCityFilter || showServiceFilter
+                                    ? "community-filters-container--open"
+                                    : ""
+                            }`}
+                        >
+                            <div className="profile-city-filter-toggle-section">
+                                <button
+                                    className="profile-city-filter-toggle"
+                                    onClick={() =>
+                                        setShowCityFilter(!showCityFilter)
                                     }
                                 >
-                                    <option value="recommended">
-                                        Recommended
-                                    </option>
-                                    <option value="topRated">Top Rated</option>
-                                </select>
-
-                                {availableCities.length > 0 && (
-                                    <select
-                                        id="cityFilter"
-                                        className="city-dropdown"
-                                        value={selectedCity}
-                                        onChange={(e) =>
-                                            setSelectedCity(e.target.value)
-                                        }
-                                    >
-                                        <option value="all">All Cities</option>
-                                        {availableCities.map((city) => (
-                                            <option key={city} value={city}>
-                                                {city}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <FaMapMarkerAlt className="profile-filter-icon" />
+                                    <span className="filter-button-text">
+                                        <span className="filter-button-text-long">
+                                            Filter by{" "}
+                                        </span>
+                                        <span>City</span>
+                                    </span>
+                                    {selectedCities.length > 0 && (
+                                        <span className="profile-active-filters-badge">
+                                            {selectedCities.length}
+                                        </span>
+                                    )}
+                                    <FaChevronDown
+                                        className={`profile-filter-chevron ${
+                                            showCityFilter ? "rotated" : ""
+                                        }`}
+                                    />
+                                </button>
+                                {showCityFilter && (
+                                    <div className="profile-city-filter-wrapper">
+                                        <div className="profile-city-filter-checkboxes">
+                                            {availableCities.map(
+                                                ([cityName, count]) => (
+                                                    <div
+                                                        key={cityName}
+                                                        className="profile-city-checkbox-item"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            id={`city-${cityName.replace(/\s+/g, '-')}`}
+                                                            name={cityName}
+                                                            checked={selectedCities.includes(
+                                                                cityName
+                                                            )}
+                                                            onChange={() =>
+                                                                handleCitySelection(
+                                                                    cityName
+                                                                )
+                                                            }
+                                                        />
+                                                        <label
+                                                            htmlFor={`city-${cityName.replace(/\s+/g, '-')}`}
+                                                            className="profile-city-checkbox-label"
+                                                        >
+                                                            {cityName}
+                                                        </label>
+                                                        <span className="profile-city-count">
+                                                            ({count})
+                                                        </span>
+                                                    </div>
+                                                )
+                                            )}
+                                            {selectedCities.length > 0 && (
+                                                <button
+                                                    onClick={() =>
+                                                        setSelectedCities([])
+                                                    }
+                                                    className="profile-city-clear-all"
+                                                >
+                                                    Clear
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                 )}
                             </div>
-                        </div>
-                        {availableServices.length > 0 && (
-                            <div className="category-filter-bar">
-                                <button
-                                    className={`category-button ${
-                                        selectedServiceId === "all"
-                                            ? "active"
-                                            : ""
-                                    }`}
-                                    onClick={() => setSelectedServiceId("all")}
-                                >
-                                    All ({commRecsRaw.length})
-                                </button>
-                                {[...availableServices]
-                                    .sort(
-                                        (a, b) =>
-                                            (serviceIdCounts[b.id] || 0) -
-                                            (serviceIdCounts[a.id] || 0)
-                                    )
-                                    .map((service) => (
-                                        <button
-                                            key={service.id}
-                                            className={`category-button ${
-                                                selectedServiceId === service.id
-                                                    ? "active"
+                            {availableServices.length > 0 && (
+                                <div className="profile-city-filter-toggle-section">
+                                    <button
+                                        className="profile-city-filter-toggle"
+                                        onClick={() =>
+                                            setShowServiceFilter(
+                                                !showServiceFilter
+                                            )
+                                        }
+                                    >
+                                        <FaConciergeBell className="profile-filter-icon" />
+                                        <span className="filter-button-text">
+                                            <span className="filter-button-text-long">
+                                                Filter by{" "}
+                                            </span>
+                                            <span>Service</span>
+                                        </span>
+                                        {selectedServices.length > 0 && (
+                                            <span className="profile-active-filters-badge">
+                                                {selectedServices.length}
+                                            </span>
+                                        )}
+                                        <FaChevronDown
+                                            className={`profile-filter-chevron ${
+                                                showServiceFilter
+                                                    ? "rotated"
                                                     : ""
                                             }`}
-                                            onClick={() =>
-                                                setSelectedServiceId(service.id)
-                                            }
-                                        >
-                                            {service.name} (
-                                            {serviceIdCounts[service.id] || 0})
-                                        </button>
-                                    ))}
-                            </div>
-                        )}
+                                        />
+                                    </button>
+                                    {showServiceFilter && (
+                                        <div className="profile-city-filter-wrapper">
+                                            <div className="profile-city-filter-checkboxes">
+                                                {availableServices.map(
+                                                    ([serviceName, count]) => (
+                                                        <div
+                                                            key={serviceName}
+                                                            className="profile-city-checkbox-item"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                id={`service-${serviceName.replace(/\s+/g, '-')}`}
+                                                                name={serviceName}
+                                                                checked={selectedServices.includes(
+                                                                    serviceName
+                                                                )}
+                                                                onChange={() =>
+                                                                    handleServiceSelection(
+                                                                        serviceName
+                                                                    )
+                                                                }
+                                                            />
+                                                            <label
+                                                                htmlFor={`service-${serviceName.replace(/\s+/g, '-')}`}
+                                                                className="profile-city-checkbox-label"
+                                                            >
+                                                                {serviceName}
+                                                            </label>
+                                                            <span className="profile-city-count">
+                                                                ({count})
+                                                            </span>
+                                                        </div>
+                                                    )
+                                                )}
+                                                {selectedServices.length > 0 && (
+                                                    <button
+                                                        onClick={() =>
+                                                            setSelectedServices([])
+                                                        }
+                                                        className="profile-city-clear-all"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                         {loadingCommRecs && (
                             <div className="loading-spinner">
                                 Loading recommendations...

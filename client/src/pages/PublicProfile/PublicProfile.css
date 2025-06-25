@@ -1090,3 +1090,43 @@
     flex-direction: column;
     gap: 0.75rem;
 }
+
+.filters-container {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.filters-container.filters-container--open {
+    flex-direction: column;
+}
+
+.filters-container .profile-city-filter-toggle-section {
+    flex: 1;
+    margin-bottom: 0 !important;
+}
+
+.profile-city-filter-toggle .filter-button-text {
+    flex-grow: 1;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.filter-button-text-long {
+    display: none;
+}
+
+@media (min-width: 520px) {
+    .filter-button-text-long {
+        display: inline;
+    }
+}
+
+.profile-city-checkbox-item {
+    justify-content: flex-start;
+}
+
+.profile-filter-clear-buttons {
+    flex-direction: column;
+}
