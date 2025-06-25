@@ -662,7 +662,7 @@ const getPreferredName = async (req, res) => {
 
     try {
         const result = await pool.query(
-            "SELECT preferred_name, user_score, location, state FROM users WHERE email = $1",
+            "SELECT preferred_name, user_score, location, state, clerk_id FROM users WHERE email = $1",
             [email]
         );
 
@@ -680,6 +680,7 @@ const getPreferredName = async (req, res) => {
             userScore: result.rows[0]?.user_score || null,
             location: result.rows[0]?.location || null,
             state: result.rows[0]?.state || null,
+            clerkId: result.rows[0]?.clerk_id || null,
         });
     } catch (error) {
         console.error("Error fetching preferred name and location:", error);

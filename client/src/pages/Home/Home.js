@@ -265,6 +265,9 @@ const Home = () => {
     const [displayText, setDisplayText] = useState("");
     const [isTyping, setIsTyping] = useState(true);
 
+    // This state will hold the full user profile fetched from our backend
+    const [dbUser, setDbUser] = useState(null);
+
     // Other state variables
     const [newRecsCount, setNewRecsCount] = useState(0);
     const [isLoadingNewRecsCount, setIsLoadingNewRecsCount] = useState(true);
@@ -415,7 +418,7 @@ const Home = () => {
     const handleCloseReviewModal = () => setIsReviewModalOpen(false);
 
     const handleSubmitReview = async (reviewData) => {
-        if (!providerForReview || !user) return;
+        if (!providerForReview || !user || !dbUser) return;
         const session = window.Clerk.session;
         if (!session) { console.error("Clerk session not available"); return; }
         const token = await session.getToken();
@@ -428,7 +431,7 @@ const Home = () => {
                 body: JSON.stringify({
                     provider_id: providerForReview.provider_id || providerForReview.id,
                     provider_email: providerForReview.email || "",
-                    user_id: user.id,
+                    user_id: dbUser.clerkId,
                     email: user.primaryEmailAddress?.emailAddress,
                     rating: reviewData.rating,
                     content: reviewData.review,
@@ -442,12 +445,12 @@ const Home = () => {
     };
 
     const handleLikeRecommendation = async (providerId) => {
-        if (!isSignedIn || !user) {
+        if (!isSignedIn || !user || !dbUser) {
             openSignIn();
             return;
         }
 
-        const currentUserId = user.id;
+        const currentUserId = dbUser.clerkId;
         const recommendation = recentRecommendations.find(rec => (rec.provider_id || rec.id) === providerId);
         if (!recommendation) {
             console.error("Recommendation not found for like action:", providerId);
@@ -546,6 +549,7 @@ const Home = () => {
                 setCurrentLevel(0);
                 setProgressToNextLevel(0);
                 setIsLoadingUserScore(false);
+                setDbUser(null);
                 return;
             }
             
@@ -556,6 +560,8 @@ const Home = () => {
                     const data = await response.json();
                     console.log('Raw API Response:', data);
                     
+                    setDbUser(data); // Store the full user object from the backend.
+
                     setPreferredName(data.preferredName || "");
                     
                     if (data.location && data.state) {
@@ -583,6 +589,7 @@ const Home = () => {
                     setUserScore(0);
                     setCurrentLevel(0);
                     setProgressToNextLevel(0);
+                    setDbUser(null);
                 }
             } catch (error) {
                 console.error("Error fetching user data:", error);
@@ -590,6 +597,7 @@ const Home = () => {
                 setUserScore(0);
                 setCurrentLevel(0);
                 setProgressToNextLevel(0);
+                setDbUser(null);
             } finally {
                 setIsLoadingUserScore(false);
             }
@@ -600,7 +608,7 @@ const Home = () => {
     // Fetch new recommendations count
     useEffect(() => {
         const fetchNewRecsCount = async () => {
-            if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress) {
+            if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress || !dbUser) {
                 setNewRecsCount(0);
                 setIsLoadingNewRecsCount(false);
                 return;
@@ -609,7 +617,7 @@ const Home = () => {
             setIsLoadingNewRecsCount(true);
             try {
                 const params = new URLSearchParams({
-                    user_id: user.id,
+                    user_id: dbUser.clerkId,
                     email: user.primaryEmailAddress.emailAddress,
                 });
                 
@@ -636,12 +644,12 @@ const Home = () => {
         };
 
         fetchNewRecsCount();
-    }, [isLoaded, isSignedIn, user]);
+    }, [isLoaded, isSignedIn, user, dbUser]);
 
     useEffect(() => {
         if (!isLoaded) return;
         const fetchCounts = async () => {
-            if (!isSignedIn || !user) {
+            if (!isSignedIn || !user || !dbUser) {
                 setProviderCount(0);
                 setConnectionCount(0);
                 setCommunityCount(0);
@@ -652,7 +660,7 @@ const Home = () => {
             setIsLoadingCounts(true);
             try {
                 const params = new URLSearchParams({
-                    user_id: user.id,
+                    user_id: dbUser.clerkId,
                     email: user.primaryEmailAddress?.emailAddress,
                     firstName: user.firstName || "",
                     lastName: user.lastName || ""
@@ -665,7 +673,7 @@ const Home = () => {
                     setProviderCount(0);
                 }
 
-                const connRes = await fetch(`${API_URL}/api/connections/followers?user_id=${user.id}`);
+                const connRes = await fetch(`${API_URL}/api/connections/followers?user_id=${dbUser.clerkId}`);
                 if (connRes.ok) {
                     const d = await connRes.json();
                     setConnectionCount(Array.isArray(d) ? d.length : 0);
@@ -677,7 +685,7 @@ const Home = () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: user.id,
+                        user_id: dbUser.clerkId,
                         email: user.primaryEmailAddress.emailAddress
                     }),
                 });
@@ -699,7 +707,7 @@ const Home = () => {
             }
         };
         fetchCounts();
-    }, [isLoaded, isSignedIn, user]);
+    }, [isLoaded, isSignedIn, user, dbUser]);
 
     useEffect(() => {
         const fetchRecentRecommendations = async () => {
@@ -710,9 +718,9 @@ const Home = () => {
 
             try {
                 let rawData;
-                if (isSignedIn && user) {
+                if (isSignedIn && user && dbUser) {
                     const params = new URLSearchParams({
-                        user_id: user.id,
+                        user_id: dbUser.clerkId,
                         email: user.primaryEmailAddress?.emailAddress,
                         firstName: user.firstName || "",
                         lastName: user.lastName || "",
@@ -787,12 +795,12 @@ const Home = () => {
         };
 
         fetchRecentRecommendations();
-    }, [isLoaded, isSignedIn, user, API_URL]);
+    }, [isLoaded, isSignedIn, user, dbUser, API_URL]);
 
     // Fetch leaderboard data from connections
     useEffect(() => {
         const fetchLeaderboardData = async () => {
-            if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress || isLoadingUserScore) {
+            if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress || isLoadingUserScore || !dbUser) {
                 setLeaderboardData([]);
                 setIsLoadingLeaderboard(false);
                 return;
@@ -877,7 +885,7 @@ const Home = () => {
         };
 
         fetchLeaderboardData();
-    }, [isLoaded, isSignedIn, user, userScore, preferredName, isLoadingUserScore]);
+    }, [isLoaded, isSignedIn, user, userScore, preferredName, isLoadingUserScore, dbUser]);
 
     // Fetch public recommendations for non-logged-in users
     useEffect(() => {
@@ -958,13 +966,13 @@ const Home = () => {
         if (e) e.preventDefault();
         const q = searchQuery.trim();
         if (!q || !isLoaded) return;
-        if (!isSignedIn) { openSignIn(); setIsSearching(false); return; }
+        if (!isSignedIn || !dbUser) { openSignIn(); setIsSearching(false); return; }
         setIsSearching(true);
         try {
             const finalState = getFullStateName(state);
             const params = new URLSearchParams({
                 q: q,
-                user_id: user.id,
+                user_id: dbUser.clerkId,
                 email: user.primaryEmailAddress?.emailAddress,
                 state: finalState
             });
@@ -976,7 +984,7 @@ const Home = () => {
             if (d.success) {
                 const base = `/search?q=${encodeURIComponent(q)}&state=${encodeURIComponent(finalState)}`; // Pass state to URL
                 navigate(d.providers?.length > 0 ? base : base + "&noResults=true", {
-                    state: { initialProviders: d.providers, currentSearchUserId: user.id },
+                    state: { initialProviders: d.providers, currentSearchUserId: dbUser.clerkId },
                 });
             } else { throw new Error(d.message || d.error || "Search not successful"); }
         } catch (err) { console.error("Search error:", err); }
@@ -1220,7 +1228,7 @@ const Home = () => {
                                                 onWriteReview={handleOpenReviewModal}
                                                 onLike={handleLikeRecommendation}
                                                 isLikedByCurrentUser={likedRecommendations.has(rec.id)}
-                                                loggedInUserId={user?.id}
+                                                loggedInUserId={dbUser?.clerkId}
                                                 currentUserName={user?.firstName}
                                             />
                                         ))}

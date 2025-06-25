@@ -336,20 +336,20 @@ const getFollowers = async (clerkUserId) => {
       [clerkUserId]
     );
 
-    // If user not found, wait and retry once. This handles potential replication lag or webhook processing delay.
-    if (userResult.rows.length === 0) {
-      console.warn(`Initial check: User with clerk_id ${clerkUserId} not found. Retrying in 0.5 seconds...`);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      userResult = await pool.query(
-        `SELECT id FROM users WHERE clerk_id = $1`,
-        [clerkUserId]
-      );
-    }
+    // // If user not found, wait and retry once. This handles potential replication lag or webhook processing delay.
+    // if (userResult.rows.length === 0) {
+    //   console.warn(`Initial check: User with clerk_id ${clerkUserId} not found. Retrying in 0.5 seconds...`);
+    //   await new Promise(resolve => setTimeout(resolve, 500));
+    //   userResult = await pool.query(
+    //     `SELECT id FROM users WHERE clerk_id = $1`,
+    //     [clerkUserId]
+    //   );
+    // }
 
-    if (userResult.rows.length === 0) {
-      console.error(`Final check: User with clerk_id ${clerkUserId} still not found when fetching followers list.`);
-      return [];
-    }
+    // if (userResult.rows.length === 0) {
+    //   console.error(`Final check: User with clerk_id ${clerkUserId} still not found when fetching followers list.`);
+    //   return [];
+    // }
     const internalUserId = userResult.rows[0].id;
 
     const result = await pool.query(`
