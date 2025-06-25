@@ -1213,9 +1213,52 @@ const Home = () => {
                             )}
                         </form>
 
+                        {/* Quick Stats for Mobile */}
+                        {isMobile && (
+                            <div className="dashboard-stats mobile-only-stats">
+                                <button className="metric-card" onClick={() => navigate("/trustcircles?tab=for-you")}>
+                                    <div className="metric-icon-container">
+                                        {isLoadingCounts ? (
+                                            <div className="metric-loading-spinner"></div>
+                                        ) : (
+                                            <div className="metric-number"><CountUp end={providerCount || 0} duration={2} separator="," /></div>
+                                        )}
+                                    </div>
+                                    <div className="metric-content">
+                                        <div className="metric-label">Recommendations</div>
+                                        <div className="metric-sublabel">for you</div>
+                                    </div>
+                                </button>
+                                <button className="metric-card" onClick={() => navigate("/trustcircles?tab=myTrust")}>
+                                    <div className="metric-icon-container">
+                                        {isLoadingCounts ? (
+                                            <div className="metric-loading-spinner"></div>
+                                        ) : (
+                                            <div className="metric-number"><CountUp end={connectionCount || 0} duration={2} /></div>
+                                        )}
+                                    </div>
+                                    <div className="metric-content">
+                                        <div className="metric-label">Followers</div>
+                                    </div>
+                                </button>
+                                <button className="metric-card" onClick={() => navigate("/trustcircles?tab=communities")}>
+                                    <div className="metric-icon-container">
+                                        {isLoadingCounts ? (
+                                            <div className="metric-loading-spinner"></div>
+                                        ) : (
+                                            <div className="metric-number"><CountUp end={communityCount || 0} duration={2} /></div>
+                                        )}
+                                    </div>
+                                    <div className="metric-content">
+                                        <div className="metric-label">Communities</div>
+                                    </div>
+                                </button>
+                            </div>
+                        )}
+
                         {/* Recent Recommendations */}
                         <div className="dashboard-recommendations">
-                            <h2 className="section-title">Recent Recommendations For You</h2>
+                            <h2 className="section-title">3 Recent Recommendations For You</h2>
                             <div className="recommendations-feed">
                                 {isLoadingRecentRecommendations && <div className="feed-message">Loading recommendations...</div>}
                                 {recentRecommendationsError && <div className="feed-message feed-error">Could not load recommendations.</div>}
@@ -1251,45 +1294,47 @@ const Home = () => {
                         />
 
                         {/* Stats Cards */}
-                        <div className="dashboard-stats">
-                            <button className="metric-card" onClick={() => navigate("/trustcircles?tab=myRecommendations")}>
-                                <div className="metric-icon-container">
-                                    {isLoadingCounts ? (
-                                        <div className="metric-loading-spinner"></div>
-                                    ) : (
-                                        <div className="metric-number"><CountUp end={providerCount || 0} duration={2} separator="," /></div>
-                                    )}
-                                </div>
-                                <div className="metric-content">
-                                    <div className="metric-label">Recommendations</div>
-                                    <div className="metric-sublabel">for you</div>
-                                </div>
-                            </button>
-                            <button className="metric-card" onClick={() => navigate("/trustcircles?tab=myTrust")}>
-                                <div className="metric-icon-container">
-                                    {isLoadingCounts ? (
-                                        <div className="metric-loading-spinner"></div>
-                                    ) : (
-                                        <div className="metric-number"><CountUp end={connectionCount || 0} duration={2} /></div>
-                                    )}
-                                </div>
-                                <div className="metric-content">
-                                    <div className="metric-label">Followers</div>
-                                </div>
-                            </button>
-                            <button className="metric-card" onClick={() => navigate("/communities")}>
-                                <div className="metric-icon-container">
-                                    {isLoadingCounts ? (
-                                        <div className="metric-loading-spinner"></div>
-                                    ) : (
-                                        <div className="metric-number"><CountUp end={communityCount || 0} duration={2} /></div>
-                                    )}
-                                </div>
-                                <div className="metric-content">
-                                    <div className="metric-label">Communities</div>
-                                </div>
-                            </button>
-                        </div>
+                        {!isMobile && (
+                            <div className="dashboard-stats">
+                                <button className="metric-card" onClick={() => navigate("/trustcircles?tab=for-you")}>
+                                    <div className="metric-icon-container">
+                                        {isLoadingCounts ? (
+                                            <div className="metric-loading-spinner"></div>
+                                        ) : (
+                                            <div className="metric-number"><CountUp end={providerCount || 0} duration={2} separator="," /></div>
+                                        )}
+                                    </div>
+                                    <div className="metric-content">
+                                        <div className="metric-label">Recommendations</div>
+                                        <div className="metric-sublabel">for you</div>
+                                    </div>
+                                </button>
+                                <button className="metric-card" onClick={() => navigate("/trustcircles?tab=myTrust")}>
+                                    <div className="metric-icon-container">
+                                        {isLoadingCounts ? (
+                                            <div className="metric-loading-spinner"></div>
+                                        ) : (
+                                            <div className="metric-number"><CountUp end={connectionCount || 0} duration={2} /></div>
+                                        )}
+                                    </div>
+                                    <div className="metric-content">
+                                        <div className="metric-label">Followers</div>
+                                    </div>
+                                </button>
+                                <button className="metric-card" onClick={() => navigate("/trustcircles?tab=communities")}>
+                                    <div className="metric-icon-container">
+                                        {isLoadingCounts ? (
+                                            <div className="metric-loading-spinner"></div>
+                                        ) : (
+                                            <div className="metric-number"><CountUp end={communityCount || 0} duration={2} /></div>
+                                        )}
+                                    </div>
+                                    <div className="metric-content">
+                                        <div className="metric-label">Communities</div>
+                                    </div>
+                                </button>
+                            </div>
+                        )}
 
                         {/* Leaderboard */}
                         <div className="leaderboard-container">

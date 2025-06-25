@@ -261,7 +261,6 @@ const TrustCircles = () => {
     const [myRecError, setMyRecError] = useState(null);
     const [myRecIsReviewModalOpen, setMyRecIsReviewModalOpen] = useState(false);
     const [myRecSelectedProvider, setMyRecSelectedProvider] = useState(null);
-    const [myRecSortOption, setMyRecSortOption] = useState("recommended");
     const [myRecDropdownOpenForId, setMyRecDropdownOpenForId] = useState(null);
     const [myRecShowLinkCopied, setMyRecShowLinkCopied] = useState(false);
     const [myRecIsQuoteModalOpen, setMyRecIsQuoteModalOpen] = useState(false);
@@ -587,37 +586,20 @@ const TrustCircles = () => {
 
     const sortedMyRecProviders = useMemo(() => {
         if (!myRecRawProviders) return [];
-        const getBand = (r) => {
-            if (r >= 4) return 0;
-            if (r >= 3) return 1;
-            if (r >= 2) return 2;
-            if (r >= 1) return 3;
-            return 4;
-        };
         let list = [...myRecRawProviders];
-        if (myRecSortOption === "topRated") {
-            return list
-                .filter((p) => p.average_rating >= 4.5)
-                .sort((a, b) =>
-                    b.average_rating !== a.average_rating
-                        ? b.average_rating - a.average_rating
-                        : (b.total_reviews || 0) - (a.total_reviews || 0)
-                );
-        }
+        
+        // Default sort by most recent recommendation date
         return list.sort((a, b) => {
-            const bA = getBand(a.average_rating);
-            const bB = getBand(b.average_rating);
-            if (bA !== bB) return bA - bB;
-            const sA = (a.average_rating || 0) * (a.total_reviews || 0);
-            const sB = (b.average_rating || 0) * (b.total_reviews || 0);
-            if (sB !== sA) return sB - sA;
-            if (b.average_rating !== a.average_rating)
-                return b.average_rating - a.average_rating;
-            if ((b.total_reviews || 0) !== (a.total_reviews || 0))
-                return (b.total_reviews || 0) - (a.total_reviews || 0);
-            return (a.originalIndex || 0) - (b.originalIndex || 0);
+            const dateA = a.date_of_recommendation ? new Date(a.date_of_recommendation) : null;
+            const dateB = b.date_of_recommendation ? new Date(b.date_of_recommendation) : null;
+
+            if (dateB && dateA) return dateB - dateA; // Most recent first
+            if (dateB) return 1; // B has a date, A does not, so B comes first
+            if (dateA) return -1; // A has a date, B does not, so A comes first
+
+            return (a.originalIndex || 0) - (b.originalIndex || 0); // Fallback for items without dates
         });
-    }, [myRecRawProviders, myRecSortOption]);
+    }, [myRecRawProviders]);
 
     // Sort communities by recommendation count (descending)
     const sortedMyCommunities = useMemo(() => {
@@ -1428,7 +1410,7 @@ const TrustCircles = () => {
                     <h1 className="section-heading">
                         Recommendations Shared With You
                     </h1>
-                    <div className="sort-bar">
+                    {/* <div className="sort-bar">
                         Sort by:
                         <select
                             className="sort-dropdown"
@@ -1442,7 +1424,7 @@ const TrustCircles = () => {
                             <option value="recommended">Recommended</option>
                             <option value="topRated">Top Rated</option>
                         </select>
-                    </div>
+                    </div> */}
                     {loadingMyRecommendations && (
                         <div className="loading-spinner">
                             Loading your recommendations...
