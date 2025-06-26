@@ -161,8 +161,6 @@ const Search = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
 
-  const [reviewStatsMap, setReviewStatsMap] = useState({});
-  const [reviewMap, setReviewMap] = useState({});
   const [error, setError] = useState(null);
 
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -207,22 +205,8 @@ const Search = () => {
         setLikedRecommendations(new Set());
         return;
     }
-    const stats = {};
-    const revs = {};
-    await Promise.all(providersToProcess.map(async p => {
-      if (!p || typeof p.id === 'undefined') return;
-      try {
-        const statsRes = await fetch(`${API_URL}/api/reviews/stats/${p.id}`);
-        stats[p.id] = statsRes.ok ? await statsRes.json() : { average_rating: p.average_rating ?? 0, total_reviews: p.total_reviews ?? 0 };
-      } catch (err) {
-        stats[p.id] = { average_rating: p.average_rating ?? 0, total_reviews: p.total_reviews ?? 0 };
-      }
-      try {
-        const rRes = await fetch(`${API_URL}/api/reviews/${p.id}`);
-        revs[p.id] = rRes.ok ? await rRes.json() : [];
-      } catch { revs[p.id] = []; }
-    }));
     
+    // Use review data directly from service_providers table instead of individual API calls
     const newInitialUserLikes = new Set();
     const enriched = providersToProcess.map((p, idx) => {
         if (!p || typeof p.id === 'undefined') return null; 
@@ -232,14 +216,13 @@ const Search = () => {
         return {
             ...p,
             originalIndex: idx,
-            average_rating: parseFloat(stats[p.id]?.average_rating) || p.average_rating || 0,
-            total_reviews: parseInt(stats[p.id]?.total_reviews, 10) || p.total_reviews || 0,
+            average_rating: parseFloat(p.average_rating) || 0,
+            total_reviews: parseInt(p.total_reviews, 10) || 0,
+            users_who_reviewed: p.users_who_reviewed || []
         };
     }).filter(p => p !== null);
 
     setLikedRecommendations(newInitialUserLikes);
-    setReviewStatsMap(stats);
-    setReviewMap(revs);
     setRawProviders(enriched);
   };
 
@@ -660,9 +643,7 @@ const Search = () => {
       {!isLoading && sortedProviders.length > 0 && (
         <ul className="provider-list">
           {sortedProviders.map(p => {
-            const providerStats = reviewStatsMap[p.id] || { average_rating: p.average_rating || 0, total_reviews: p.total_reviews || 0 };
-            const providerReviews  = reviewMap[p.id]   || [];
-            const displayAvgRating = (parseFloat(providerStats.average_rating) || 0).toFixed(1);
+            const displayAvgRating = (parseFloat(p.average_rating) || 0).toFixed(1);
             const hasUserLiked = likedRecommendations.has(p.id);
 
             return (
@@ -681,7 +662,7 @@ const Search = () => {
                   </h2>
                   <div className="badge-wrapper-with-menu">
                     <div className="badge-group">
-                      {(parseFloat(providerStats.average_rating) || 0) >= 4.5 && (
+                      {(parseFloat(p.average_rating) || 0) >= 4.5 && (
                         <span className="top-rated-badge">Top Rated</span>
                       )}
                     </div>
@@ -718,9 +699,9 @@ const Search = () => {
                 </div>
 
                 <div className="review-summary">
-                  <StarRatingDisplay rating={parseFloat(providerStats.average_rating) || 0} />
+                  <StarRatingDisplay rating={parseFloat(p.average_rating) || 0} />
                   <span className="review-score">
-                    {displayAvgRating} ({providerStats.total_reviews || 0})
+                    {displayAvgRating} ({p.total_reviews || 0})
                   </span>
                   <button
                     className="see-all-button"
@@ -784,12 +765,12 @@ const Search = () => {
                   </div>
                 )}
 
-                {providerReviews.length > 0 &&
-                  [...new Set(providerReviews.map(r => r.user_name).filter(n => n && n !== p.recommender_name))].length > 0 && (
+                {Array.isArray(p.users_who_reviewed) && p.users_who_reviewed.length > 0 &&
+                  p.users_who_reviewed.filter(u => u.name && u.name !== p.recommender_name).length > 0 && (
                   <div className="recommended-row">
                     <span className="recommended-label">Also used by:</span>
                     <span className="used-by-names">
-                      {[...new Set(providerReviews.map(r => r.user_name).filter(n => n && n !== p.recommender_name))].join(', ')}
+                      {p.users_who_reviewed.filter(u => u.name && u.name !== p.recommender_name).map(u => u.name).join(', ')}
                     </span>
                   </div>
                 )}
@@ -839,7 +820,7 @@ const Search = () => {
           isOpen={isProfileModalOpen}
           onClose={() => setIsProfileModalOpen(false)}
           provider={selectedProvider}
-          reviews={reviewMap[selectedProvider.id] || []}
+          reviews={[]} // Reviews now come from users_who_reviewed in provider data
           setSelectedProvider={setSelectedProvider}
           setIsReviewModalOpen={setIsReviewModalOpen}
         />
