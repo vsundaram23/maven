@@ -3,7 +3,7 @@ const pool = require("../config/db.config");
 
 const getVisibleProvidersBaseQueryForOutdoorPage = (currentUserId) => {
     const query = `
-    SELECT DISTINCT
+    SELECT
         sp.id,
         sp.business_name,
         sp.description,
@@ -21,6 +21,8 @@ const getVisibleProvidersBaseQueryForOutdoorPage = (currentUserId) => {
         sp.provider_message,
         sp.recommender_message,
         sp.visibility,
+        sp.average_rating,
+        sp.total_reviews,
         sc.name AS category_name,
         s.name AS service_type,
         sp.recommended_by AS recommender_user_id,
@@ -32,7 +34,20 @@ const getVisibleProvidersBaseQueryForOutdoorPage = (currentUserId) => {
             SELECT 1
             FROM public.recommendation_likes rl
             WHERE rl.recommendation_id = sp.id AND rl.user_id = $1
-        ) AS "currentUserLiked"
+        ) AS "currentUserLiked",
+        COALESCE(
+            (SELECT json_agg(
+                json_build_object(
+                    'id', reviewer_user.id,
+                    'name', reviewer_user.name,
+                    'email', reviewer_user.email
+                )
+            )
+            FROM unnest(sp.users_who_reviewed) AS reviewer_id
+            LEFT JOIN users reviewer_user ON reviewer_user.id = reviewer_id
+            WHERE reviewer_user.id IS NOT NULL),
+            '[]'::json
+        ) AS users_who_reviewed
     FROM
         public.service_providers sp
     LEFT JOIN
@@ -95,9 +110,9 @@ const getAllVisibleOutdoorProviders = async (req, res) => {
             getVisibleProvidersBaseQueryForOutdoorPage(internalUserId);
         const serviceName = "Outdoor Services";
         const finalQuery = `
-            SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
+            SELECT DISTINCT ON (id) * FROM (${baseQuery}) AS VisibleProvidersCTE
             WHERE VisibleProvidersCTE.service_type = $${queryParams.length + 1}
-            ORDER BY VisibleProvidersCTE.business_name;
+            ORDER BY id, VisibleProvidersCTE.business_name;
         `;
         const finalParams = [...queryParams, serviceName];
 
@@ -148,8 +163,9 @@ const getVisibleOutdoorProviderById = async (req, res) => {
         const paramIndexForService = queryParams.length + 2;
 
         const finalQuery = `
-            SELECT * FROM (${baseQuery}) AS VisibleProvidersCTE
-            WHERE VisibleProvidersCTE.id = $${paramIndexForId} AND VisibleProvidersCTE.service_type = $${paramIndexForService};
+            SELECT DISTINCT ON (id) * FROM (${baseQuery}) AS VisibleProvidersCTE
+            WHERE VisibleProvidersCTE.id = $${paramIndexForId} AND VisibleProvidersCTE.service_type = $${paramIndexForService}
+            ORDER BY id;
         `;
         const finalParams = [...queryParams, providerId, serviceName];
 

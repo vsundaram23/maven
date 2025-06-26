@@ -197,7 +197,6 @@ const FinancialServices = () => {
     const navigate = useNavigate();
 
     const [rawProviders, setRawProviders] = useState([]);
-    const [reviewMap, setReviewMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -215,6 +214,7 @@ const FinancialServices = () => {
     const [successMessage, setSuccessMessage] = useState("");
     const [selectedCities, setSelectedCities] = useState([]);
     const [showCityFilter, setShowCityFilter] = useState(false);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const handleCitySelection = (cityName) => {
         setSelectedCities((prev) =>
@@ -313,46 +313,13 @@ const FinancialServices = () => {
                 }
 
                 let fetchedProviders = data.providers || [];
-                const statsMap = {};
-                const allReviewsMap = {};
-
-                if (fetchedProviders.length > 0) {
-                    await Promise.all(
-                        fetchedProviders.map(async (provider) => {
-                            try {
-                                const statsRes = await fetch(`${API_URL}/api/reviews/stats/${provider.id}`);
-                                if (statsRes.ok) {
-                                    const statsData = await statsRes.json();
-                                    statsMap[provider.id] = {
-                                        average_rating: parseFloat(statsData.average_rating) || 0,
-                                        total_reviews: parseInt(statsData.total_reviews, 10) || 0,
-                                    };
-                                } else {
-                                    statsMap[provider.id] = { average_rating: provider.average_rating || 0, total_reviews: provider.total_reviews || 0 };
-                                }
-                            } catch (err) {
-                                statsMap[provider.id] = { average_rating: provider.average_rating || 0, total_reviews: provider.total_reviews || 0 };
-                            }
-                            try {
-                                const reviewsRes = await fetch(`${API_URL}/api/reviews/${provider.id}`);
-                                if (reviewsRes.ok) {
-                                    allReviewsMap[provider.id] = await reviewsRes.json();
-                                } else {
-                                    allReviewsMap[provider.id] = [];
-                                }
-                            } catch (err) {
-                                allReviewsMap[provider.id] = [];
-                            }
-                        })
-                    );
-                }
-                setReviewMap(allReviewsMap);
 
                 const enrichedProviders = fetchedProviders.map((p, idx) => ({
                     ...p,
                     originalIndex: idx,
-                    average_rating: statsMap[p.id]?.average_rating || p.average_rating || 0,
-                    total_reviews: statsMap[p.id]?.total_reviews || p.total_reviews || 0,
+                    average_rating: parseFloat(p.average_rating) || 0,
+                    total_reviews: parseInt(p.total_reviews, 10) || 0,
+                    users_who_reviewed: p.users_who_reviewed || [],
                     currentUserLiked: p.currentUserLiked || false,
                     num_likes: parseInt(p.num_likes, 10) || 0,
                 }));
@@ -381,7 +348,7 @@ const FinancialServices = () => {
             setLoading(false);
             setRawProviders([]);
         }
-    }, [isLoaded, isSignedIn, user, currentUserId, currentUserEmail]);
+    }, [refreshTrigger, isLoaded, isSignedIn, user, currentUserId, currentUserEmail]);
 
     const handleReviewSubmit = async (reviewData) => {
         if (!isSignedIn || !selectedProvider || !currentUserId || !currentUserEmail) {
@@ -411,8 +378,7 @@ const FinancialServices = () => {
             setSuccessMessage(`Thank you for reviewing ${selectedProvider.business_name}! Your feedback helps others make better decisions.`);
             setIsSuccessModalOpen(true);
             
-            // Refresh the data by reloading
-            setTimeout(() => window.location.reload(), 1000);
+            setRefreshTrigger(Date.now());
         } catch (err) {
             alert(`Error submitting review: ${err.message}`);
         }
@@ -640,7 +606,6 @@ const FinancialServices = () => {
             {providers.length > 0 && (
                 <ul className="provider-list">
                     {providers.map((provider) => {
-                        const currentReviews = reviewMap[provider.id] || [];
                         const displayAvgRating = (
                             parseFloat(provider.average_rating) || 0
                         ).toFixed(1);
@@ -802,32 +767,14 @@ const FinancialServices = () => {
                                             )}
                                         </div>
 
-                                        {currentReviews.length > 0 &&
-                                            [
-                                                ...new Set(
-                                                    currentReviews
-                                                        .map(r => r.user_name)
-                                                        .filter(name => (
-                                                            name &&
-                                                            name !== provider.recommender_name
-                                                        ))
-                                                ),
-                                            ].filter(name => name).length > 0 && (
+                                        {Array.isArray(provider.users_who_reviewed) && provider.users_who_reviewed.length > 0 &&
+                                            provider.users_who_reviewed.filter(u => u.name && u.name !== provider.recommender_name).length > 0 && (
                                                 <div className="recommended-row">
                                                     <span className="recommended-label">
                                                         Also used by:
                                                     </span>
                                                     <span className="used-by-names">
-                                                        {[
-                                                            ...new Set(
-                                                                currentReviews
-                                                                    .map(r => r.user_name)
-                                                                    .filter(name => (
-                                                                        name &&
-                                                                        name !== provider.recommender_name
-                                                                    ))
-                                                            ),
-                                                        ].filter(name => name).join(", ")}
+                                                        {provider.users_who_reviewed.filter(u => u.name && u.name !== provider.recommender_name).map(u => u.name).join(", ")}
                                                     </span>
                                                 </div>
                                             )}
@@ -882,7 +829,7 @@ const FinancialServices = () => {
                     isOpen={isProfileModalOpen}
                     onClose={() => setIsProfileModalOpen(false)}
                     provider={selectedProvider}
-                    reviews={reviewMap[selectedProvider.id] || []}
+                    reviews={[]}
                     setSelectedProvider={setSelectedProvider}
                     setIsReviewModalOpen={setIsReviewModalOpen}
                 />

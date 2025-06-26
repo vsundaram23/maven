@@ -11,12 +11,13 @@ import {
     FaThumbsUp,
     FaUsers
 } from "react-icons/fa";
-import { Link, useNavigate} from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import ReviewModal from "../../components/ReviewModal/ReviewModal";
 import "./OutdoorServices.css"; // Ensure you have styles for .like-button.liked here
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = "http://localhost:3000";
 
 const StarRating = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;
@@ -195,7 +196,6 @@ const OutdoorServices = () => {
     const navigate = useNavigate();
 
     const [rawProviders, setRawProviders] = useState([]);
-    const [reviewMap, setReviewMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -307,46 +307,13 @@ const OutdoorServices = () => {
                 }
 
                 let fetchedProviders = data.providers || [];
-                const statsMap = {};
-                const allReviewsMap = {};
-
-                if (fetchedProviders.length > 0) {
-                    await Promise.all(
-                        fetchedProviders.map(async (provider) => {
-                            try {
-                                const statsRes = await fetch(`${API_URL}/api/reviews/stats/${provider.id}`);
-                                if (statsRes.ok) {
-                                    const statsData = await statsRes.json();
-                                    statsMap[provider.id] = {
-                                        average_rating: parseFloat(statsData.average_rating) || 0,
-                                        total_reviews: parseInt(statsData.total_reviews, 10) || 0,
-                                    };
-                                } else {
-                                    statsMap[provider.id] = { average_rating: provider.average_rating || 0, total_reviews: provider.total_reviews || 0 };
-                                }
-                            } catch (err) {
-                                statsMap[provider.id] = { average_rating: provider.average_rating || 0, total_reviews: provider.total_reviews || 0 };
-                            }
-                            try {
-                                const reviewsRes = await fetch(`${API_URL}/api/reviews/${provider.id}`);
-                                if (reviewsRes.ok) {
-                                    allReviewsMap[provider.id] = await reviewsRes.json();
-                                } else {
-                                    allReviewsMap[provider.id] = [];
-                                }
-                            } catch (err) {
-                                allReviewsMap[provider.id] = [];
-                            }
-                        })
-                    );
-                }
-                setReviewMap(allReviewsMap);
 
                 const enrichedProviders = fetchedProviders.map((p, idx) => ({
                     ...p,
                     originalIndex: idx,
-                    average_rating: statsMap[p.id]?.average_rating || p.average_rating || 0,
-                    total_reviews: statsMap[p.id]?.total_reviews || p.total_reviews || 0,
+                    average_rating: parseFloat(p.average_rating) || 0,
+                    total_reviews: parseInt(p.total_reviews, 10) || 0,
+                    users_who_reviewed: p.users_who_reviewed || [],
                     currentUserLiked: p.currentUserLiked || false,
                     num_likes: parseInt(p.num_likes, 10) || 0,
                 }));
@@ -629,7 +596,6 @@ const OutdoorServices = () => {
             {providers.length > 0 && (
                 <ul className="provider-list">
                     {providers.map((provider) => {
-                        const currentReviews = reviewMap[provider.id] || [];
                         const displayAvgRating = (
                             parseFloat(provider.average_rating) || 0
                         ).toFixed(1);
@@ -791,32 +757,14 @@ const OutdoorServices = () => {
                                             )}
                                         </div>
 
-                                        {currentReviews.length > 0 &&
-                                            [
-                                                ...new Set(
-                                                    currentReviews
-                                                        .map(r => r.user_name)
-                                                        .filter(name => (
-                                                            name &&
-                                                            name !== provider.recommender_name
-                                                        ))
-                                                ),
-                                            ].filter(name => name).length > 0 && (
+                                        {Array.isArray(provider.users_who_reviewed) && provider.users_who_reviewed.length > 0 &&
+                                            provider.users_who_reviewed.filter(u => u.name && u.name !== provider.recommender_name).length > 0 && (
                                                 <div className="recommended-row">
                                                     <span className="recommended-label">
                                                         Also used by:
                                                     </span>
                                                     <span className="used-by-names">
-                                                        {[
-                                                            ...new Set(
-                                                                currentReviews
-                                                                    .map(r => r.user_name)
-                                                                    .filter(name => (
-                                                                        name &&
-                                                                        name !== provider.recommender_name
-                                                                    ))
-                                                            ),
-                                                        ].filter(name => name).join(", ")}
+                                                        {provider.users_who_reviewed.filter(u => u.name && u.name !== provider.recommender_name).map(u => u.name).join(", ")}
                                                     </span>
                                                 </div>
                                             )}
@@ -871,7 +819,7 @@ const OutdoorServices = () => {
                     isOpen={isProfileModalOpen}
                     onClose={() => setIsProfileModalOpen(false)}
                     provider={selectedProvider}
-                    reviews={reviewMap[selectedProvider.id] || []}
+                    reviews={[]}
                     setSelectedProvider={setSelectedProvider}
                     setIsReviewModalOpen={setIsReviewModalOpen}
                 />
