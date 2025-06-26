@@ -634,6 +634,11 @@ body {
   text-decoration: underline;
 }
 
+.public-used-by-names {
+  color: #495057;
+  font-weight: normal;
+}
+
 .public-recommendation-date {
   white-space: nowrap;
 }

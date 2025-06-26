@@ -74,22 +74,27 @@ const getVisibleProvidersBaseQuery = (currentInternalUserId) => {
         rec_user.username as recommender_username,
         rec_user.name AS recommender_name,
         rec_user.phone_number AS recommender_phone,
-        ROUND(AVG(r.rating) OVER (PARTITION BY sp.id), 2) AS average_rating,
-        COUNT(r.id) OVER (PARTITION BY sp.id) AS total_reviews,
+        sp.average_rating,
+        sp.total_reviews,
         sp.search_vector,
         EXISTS (
             SELECT 1
             FROM public.recommendation_likes rl
             WHERE rl.recommendation_id = sp.id AND rl.user_id = $1
-        ) AS "currentUserLiked"
+        ) AS "currentUserLiked",
+        COALESCE(
+            (SELECT ARRAY_AGG(DISTINCT review_users.name)
+             FROM public.reviews rev_sub
+             LEFT JOIN public.users review_users ON rev_sub.user_id = review_users.id
+             WHERE rev_sub.provider_id = sp.id AND review_users.name IS NOT NULL
+            ), ARRAY[]::text[]
+        ) AS users_who_reviewed
     FROM
         public.service_providers sp
     LEFT JOIN
         public.service_categories sc ON sp.service_id = sc.service_id
     LEFT JOIN
         public.users rec_user ON sp.recommended_by = rec_user.id
-    LEFT JOIN
-        public.reviews r ON sp.id = r.provider_id
     LEFT JOIN
         public.user_connections con_direct ON
             ((sp.recommended_by = con_direct.user_id AND con_direct.connected_user_id = $1) OR
@@ -686,16 +691,21 @@ const getPublicRecommendations = async (req, res) => {
                 rec_user.username as recommender_username,
                 rec_user.name AS recommender_name,
                 rec_user.phone_number AS recommender_phone,
-                ROUND(AVG(r.rating) OVER (PARTITION BY sp.id), 2) AS average_rating,
-                COUNT(r.id) OVER (PARTITION BY sp.id) AS total_reviews
+                sp.average_rating,
+                sp.total_reviews,
+                COALESCE(
+                    (SELECT ARRAY_AGG(DISTINCT review_users.name)
+                     FROM public.reviews rev_sub
+                     LEFT JOIN public.users review_users ON rev_sub.user_id = review_users.id
+                     WHERE rev_sub.provider_id = sp.id AND review_users.name IS NOT NULL
+                    ), ARRAY[]::text[]
+                ) AS users_who_reviewed
             FROM
                 public.service_providers sp
             LEFT JOIN
                 public.service_categories sc ON sp.service_id = sc.service_id
             LEFT JOIN
                 public.users rec_user ON sp.recommended_by = rec_user.id
-            LEFT JOIN
-                public.reviews r ON sp.id = r.provider_id
             WHERE
                 sp.visibility = 'public'
                 AND sp.date_of_recommendation IS NOT NULL

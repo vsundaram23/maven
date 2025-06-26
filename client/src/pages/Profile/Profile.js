@@ -1195,6 +1195,33 @@ const MyRecommendationCard = ({
                 <ChatBubbleLeftEllipsisIcon className="inline-icon" />
                 {rec.recommender_message || "No detailed message provided."}
             </p>
+            {rec.users_who_reviewed && 
+                rec.users_who_reviewed.length > 0 &&
+                rec.users_who_reviewed.filter(name => {
+                    if (!name) return false;
+                    // Exclude the current user's name
+                    const currentUserName = user?.firstName && user?.lastName 
+                        ? `${user.firstName} ${user.lastName}`.trim()
+                        : user?.firstName || user?.lastName || '';
+                    return name !== currentUserName;
+                }).length > 0 && (
+                    <div className="recommended-row">
+                        <span className="recommended-label">
+                            Also used by:
+                        </span>
+                        <span className="used-by-names">
+                            {rec.users_who_reviewed
+                                .filter(name => {
+                                    if (!name) return false;
+                                    const currentUserName = user?.firstName && user?.lastName 
+                                        ? `${user.firstName} ${user.lastName}`.trim()
+                                        : user?.firstName || user?.lastName || '';
+                                    return name !== currentUserName;
+                                })
+                                .join(", ")}
+                        </span>
+                    </div>
+                )}
             {parsedImages.length > 0 && (
                 <div className="profile-my-rec-images">
                     <ImageCarousel
@@ -1502,54 +1529,28 @@ const Profile = () => {
     useEffect(() => {
         if (baseRecommendations.length > 0 && user?.id) {
             setStatsLoading(true);
-            const enrichAndSetRecommendations = async () => {
-                const enriched = await Promise.all(
-                    baseRecommendations.map(async (rec) => {
-                        let communityStats = {
-                            average_rating: 0,
-                            total_reviews: 0,
-                        };
-                        const providerIdForData = rec.provider_id || rec.id;
+            // Process recommendations directly from backend data - no individual API calls needed
+            const enriched = baseRecommendations.map((rec) => ({
+                ...rec,
+                average_rating: parseFloat(rec.average_rating) || 0,
+                total_reviews: parseInt(rec.total_reviews, 10) || 0,
+                num_likes: parseInt(rec.num_likes, 10) || 0,
+                currentUserLiked: rec.currentUserLiked || false,
+                users_who_reviewed: rec.users_who_reviewed || [],
+            }));
+            
+            setEnrichedRecommendations(enriched);
 
-                        if (providerIdForData) {
-                            try {
-                                const statsRes = await fetch(
-                                    `${API_URL}/api/reviews/stats/${providerIdForData}`
-                                );
-                                if (statsRes.ok) {
-                                    const statsData = await statsRes.json();
-                                    communityStats.average_rating =
-                                        parseFloat(statsData.average_rating) ||
-                                        0;
-                                    communityStats.total_reviews =
-                                        parseInt(statsData.total_reviews, 10) ||
-                                        0;
-                                }
-                            } catch (err) {}
-                        }
-                        return {
-                            ...rec,
-                            average_rating: communityStats.average_rating,
-                            total_reviews: communityStats.total_reviews,
-                            num_likes: parseInt(rec.num_likes, 10) || 0,
-                            currentUserLiked: rec.currentUserLiked || false,
-                        };
-                    })
-                );
-                setEnrichedRecommendations(enriched);
+            const newInitialUserLikes = new Set();
+            enriched.forEach((r) => {
+                const providerId = r.provider_id || r.id;
+                if (r.currentUserLiked && providerId) {
+                    newInitialUserLikes.add(providerId);
+                }
+            });
+            setLikedRecommendations(newInitialUserLikes);
 
-                const newInitialUserLikes = new Set();
-                enriched.forEach((r) => {
-                    const providerId = r.provider_id || r.id;
-                    if (r.currentUserLiked && providerId) {
-                        newInitialUserLikes.add(providerId);
-                    }
-                });
-                setLikedRecommendations(newInitialUserLikes);
-
-                setStatsLoading(false);
-            };
-            enrichAndSetRecommendations();
+            setStatsLoading(false);
         } else {
             setEnrichedRecommendations([]);
             setLikedRecommendations(new Set());

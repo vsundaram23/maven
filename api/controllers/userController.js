@@ -57,6 +57,8 @@ const getCurrentUserRecommendations = async (req, res) => {
                 sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.website, sp.business_contact, 
                 sp.recommender_message, sp.images, sp.initial_rating, sp.visibility,
                 sp.service_id,
+                sp.average_rating,
+                sp.total_reviews,
                 s.display_name AS recommended_service_name,
                 c.name as category_name,
                 EXISTS (
@@ -71,7 +73,15 @@ const getCurrentUserRecommendations = async (req, res) => {
                         WHERE cs.service_provider_id = sp.id
                     ),
                     '{}'::uuid[]
-                ) AS trust_circle_ids
+                ) AS trust_circle_ids,
+                COALESCE(
+                    (SELECT ARRAY_AGG(DISTINCT u_rev.name)
+                     FROM unnest(sp.users_who_reviewed) AS user_uuid
+                     LEFT JOIN public.users u_rev ON user_uuid = u_rev.id
+                     WHERE u_rev.name IS NOT NULL
+                       AND user_uuid != sp.recommended_by
+                    ), ARRAY[]::text[]
+                ) AS users_who_reviewed
             FROM service_providers sp
             LEFT JOIN services s ON sp.service_id = s.service_id
             LEFT JOIN service_categories c ON s.category_id = c.service_id

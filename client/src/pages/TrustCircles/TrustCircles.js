@@ -329,54 +329,27 @@ const TrustCircles = () => {
                     data.message || "Failed to fetch recommendations."
                 );
             let fetchedProviders = data.providers || [];
-            const statsMap = {};
-            const allReviewsMap = {};
-            if (fetchedProviders.length > 0) {
-                await Promise.all(
-                    fetchedProviders.map(async (p) => {
-                        try {
-                            const statsRes = await fetch(
-                                `${API_URL}/api/reviews/stats/${p.id}`
-                            );
-                            statsMap[p.id] = statsRes.ok
-                                ? await statsRes.json()
-                                : { average_rating: 0, total_reviews: 0 };
-                        } catch (err) {
-                            statsMap[p.id] = {
-                                average_rating: p.average_rating || 0,
-                                total_reviews: p.total_reviews || 0,
-                            };
-                        }
-                        try {
-                            const reviewsRes = await fetch(
-                                `${API_URL}/api/reviews/${p.id}`
-                            );
-                            allReviewsMap[p.id] = reviewsRes.ok
-                                ? await reviewsRes.json()
-                                : [];
-                        } catch (err) {
-                            allReviewsMap[p.id] = [];
-                        }
-                    })
-                );
-            }
-            setMyRecReviewMap(allReviewsMap);
+            
+            // Data now comes directly from the backend, no need for individual API calls
             const enriched = fetchedProviders.map((p, idx) => ({
                 ...p,
                 originalIndex: idx,
-                average_rating:
-                    statsMap[p.id]?.average_rating || p.average_rating || 0,
-                total_reviews:
-                    statsMap[p.id]?.total_reviews || p.total_reviews || 0,
+                average_rating: parseFloat(p.average_rating) || 0,
+                total_reviews: parseInt(p.total_reviews, 10) || 0,
                 currentUserLiked: p.currentUserLiked || false,
                 num_likes: parseInt(p.num_likes, 10) || 0,
+                users_who_reviewed: p.users_who_reviewed || [],
             }));
+            
             const initialLikes = new Set();
             enriched.forEach((p) => {
                 if (p.currentUserLiked) initialLikes.add(p.id);
             });
             setMyRecLikedRecommendations(initialLikes);
             setMyRecRawProviders(enriched);
+            
+            // Clear the review map since we no longer fetch individual reviews
+            setMyRecReviewMap({});
         } catch (err) {
             setMyRecError(err.message);
             setMyRecProviders([]);
@@ -387,39 +360,38 @@ const TrustCircles = () => {
     }, [currentUserId, currentUserEmail, isLoaded, isSignedIn, navigate]);
 
     const fetchSingleMyRecProvider = useCallback(async (providerId) => {
-        if (!currentUserId) return;
+        if (!currentUserId || !currentUserEmail) return;
         try {
-            const params = new URLSearchParams({ user_id: currentUserId });
-            const response = await fetch(`${API_URL}/api/providers/single/${providerId}?${params.toString()}`);
-            if (!response.ok) throw new Error('Failed to fetch provider update.');
-            const updatedProviderData = await response.json();
-
-            const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
-            const statsData = statsRes.ok ? await statsRes.json() : {};
-
-            const reviewsRes = await fetch(`${API_URL}/api/reviews/${providerId}`);
-            const reviewsData = reviewsRes.ok ? await reviewsRes.json() : [];
-
-            setMyRecReviewMap(prevMap => ({ ...prevMap, [providerId]: reviewsData }));
-
-            setMyRecRawProviders(prevProviders => {
-                return prevProviders.map(p => {
-                    if (p.id === providerId) {
-                        return {
-                            ...p,
-                            ...updatedProviderData,
-                            average_rating: statsData.average_rating || p.average_rating,
-                            total_reviews: statsData.total_reviews || p.total_reviews,
-                        };
-                    }
-                    return p;
-                });
+            const params = new URLSearchParams({ 
+                user_id: currentUserId,
+                email: currentUserEmail 
             });
+            const response = await fetch(`${API_URL}/api/providers/${providerId}?${params.toString()}`);
+            if (!response.ok) throw new Error('Failed to fetch provider update.');
+            const data = await response.json();
+            
+            if (data.success && data.provider) {
+                const updatedProvider = data.provider;
+                setMyRecRawProviders(prevProviders => {
+                    return prevProviders.map(p => {
+                        if (p.id === providerId) {
+                            return {
+                                ...p,
+                                ...updatedProvider,
+                                average_rating: parseFloat(updatedProvider.average_rating) || 0,
+                                total_reviews: parseInt(updatedProvider.total_reviews, 10) || 0,
+                                users_who_reviewed: updatedProvider.users_who_reviewed || [],
+                            };
+                        }
+                        return p;
+                    });
+                });
+            }
         } catch (error) {
             console.error("Failed to refresh recommendation:", error);
             fetchMyVisibleRecommendations();
         }
-    }, [currentUserId, fetchMyVisibleRecommendations]);
+    }, [currentUserId, currentUserEmail, fetchMyVisibleRecommendations]);
 
     const fetchFollowingData = useCallback(async () => {
         if (!currentUserId || !currentUserEmail) return;
@@ -1492,8 +1464,6 @@ const TrustCircles = () => {
                     {sortedMyRecProviders.length > 0 && (
                         <ul className="provider-list">
                             {sortedMyRecProviders.map((provider) => {
-                                const currentReviews =
-                                    myRecReviewMap[provider.id] || [];
                                 const displayAvgRating = (
                                     parseFloat(provider.average_rating) || 0
                                 ).toFixed(1);
@@ -1709,52 +1679,19 @@ const TrustCircles = () => {
                                                         </span>
                                                     )}
                                                 </div>
-                                                {currentReviews.length > 0 &&
-                                                    [
-                                                        ...new Set(
-                                                            currentReviews
-                                                                .map(
-                                                                    (r) =>
-                                                                        r.user_name
-                                                                )
-                                                                .filter(
-                                                                    (name) =>
-                                                                        name &&
-                                                                        name !==
-                                                                            provider.recommender_name
-                                                                )
-                                                        ),
-                                                    ].filter((name) => name)
-                                                        .length > 0 && (
+                                                {provider.users_who_reviewed && 
+                                                    provider.users_who_reviewed.length > 0 &&
+                                                    provider.users_who_reviewed.filter(name => 
+                                                        name && name !== provider.recommender_name
+                                                    ).length > 0 && (
                                                         <div className="recommended-row">
                                                             <span className="recommended-label">
                                                                 Also used by:
                                                             </span>
                                                             <span className="used-by-names">
-                                                                {[
-                                                                    ...new Set(
-                                                                        currentReviews
-                                                                            .map(
-                                                                                (
-                                                                                    r
-                                                                                ) =>
-                                                                                    r.user_name
-                                                                            )
-                                                                            .filter(
-                                                                                (
-                                                                                    name
-                                                                                ) =>
-                                                                                    name &&
-                                                                                    name !==
-                                                                                        provider.recommender_name
-                                                                            )
-                                                                    ),
-                                                                ]
-                                                                    .filter(
-                                                                        (
-                                                                            name
-                                                                        ) =>
-                                                                            name
+                                                                {provider.users_who_reviewed
+                                                                    .filter(name => 
+                                                                        name && name !== provider.recommender_name
                                                                     )
                                                                     .join(", ")}
                                                             </span>

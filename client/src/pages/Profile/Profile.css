@@ -2864,12 +2864,10 @@
     position: relative;
     z-index: 1;
 }
-
 .profile-trust-score-wrapper .trust-score-wheel-container {
     margin: 0;
     width: 100%;
 }
-
 .profile-trust-score-wrapper .trust-score-card-horizontal {
     background: transparent;
     border: none;
@@ -2979,5 +2977,7 @@
     z-index: 10000 !important;
     position: relative !important;
 }
-
 /* Trust Points Wheel in Profile Stats */
+
+
+

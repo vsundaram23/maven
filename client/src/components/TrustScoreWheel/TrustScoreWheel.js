@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from "framer-motion";
 import React, { useState } from "react";
 import "./TrustScoreWheel.css";
 
@@ -75,7 +74,7 @@ const TrustScoreWheel = ({ score, showDebug = false }) => {
                   className="trust-score-bg-circle"
                 />
                 {/* Progress circle */}
-                <motion.circle
+                <circle
                   cx="65"
                   cy="65"
                   r="60"
@@ -84,9 +83,7 @@ const TrustScoreWheel = ({ score, showDebug = false }) => {
                   fill="none"
                   strokeLinecap="round"
                   strokeDasharray={strokeDasharray}
-                  initial={{ strokeDashoffset: circumference }}
-                  animate={{ strokeDashoffset }}
-                  transition={{ duration: 1.5, ease: "easeOut" }}
+                  strokeDashoffset={strokeDashoffset}
                   className="trust-score-progress-circle"
                   transform="rotate(-90 65 65)"
                 />
@@ -102,19 +99,10 @@ const TrustScoreWheel = ({ score, showDebug = false }) => {
 
               {/* Center content - Total Points */}
               <div className="trust-score-center">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={score}
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 1.2, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="trust-score-center-content"
-                  >
-                    <div className="trust-score-total-number">{score}</div>
-                    <div className="trust-score-total-label">TOTAL POINTS</div>
-                  </motion.div>
-                </AnimatePresence>
+                <div className="trust-score-center-content">
+                  <div className="trust-score-total-number">{score}</div>
+                  <div className="trust-score-total-label">TOTAL POINTS</div>
+                </div>
               </div>
             </div>
           </div>
@@ -122,36 +110,19 @@ const TrustScoreWheel = ({ score, showDebug = false }) => {
           {/* Right side - Level Info */}
           <div className="trust-score-info-section">
             <div className="trust-score-level-header">
-              <motion.div
-                initial={{ rotate: 0 }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, ease: "easeInOut" }}
-                className="trust-score-icon"
-              >
+              <div className="trust-score-icon">
                 {getTrustIcon()}
-              </motion.div>
-              <AnimatePresence mode="wait">
-                <motion.h3
-                  key={level}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -20, opacity: 0 }}
-                  className="trust-score-level-text"
-                >
-                  Level {level}
-                </motion.h3>
-              </AnimatePresence>
+              </div>
+              <h3 className="trust-score-level-text">
+                Level {level}
+              </h3>
             </div>
 
             <div className="trust-score-stats">
               {pointsToNextLevel > 0 && (
-                <motion.div 
-                  initial={{ opacity: 0 }} 
-                  animate={{ opacity: 1 }} 
-                  className="trust-score-next-level"
-                >
+                <div className="trust-score-next-level">
                   {pointsToNextLevel} points to Level {level + 1}
-                </motion.div>
+                </div>
               )}
             </div>
 

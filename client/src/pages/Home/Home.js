@@ -144,15 +144,35 @@ const PublicRecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrent
             </div>
 
             {rec.recommender_name && (
-                <div className="public-recommended-row">
-                    <span className="public-recommended-label">Recommended by:</span>
-                    <Link to={`/pro/${rec.recommender_username || 'user'}`} className="public-recommended-name">{rec.recommender_name}</Link>
-                    {rec.date_of_recommendation && (
-                        <span className="public-recommendation-date">
-                            ({new Date(rec.date_of_recommendation).toLocaleDateString("en-US", { year: "2-digit", month: "numeric", day: "numeric" })})
-                        </span>
-                    )}
-                </div>
+                <>
+                    <div className="public-recommended-row">
+                        <span className="public-recommended-label">Recommended by:</span>
+                        <Link to={`/pro/${rec.recommender_username || 'user'}`} className="public-recommended-name">{rec.recommender_name}</Link>
+                        {rec.date_of_recommendation && (
+                            <span className="public-recommendation-date">
+                                ({new Date(rec.date_of_recommendation).toLocaleDateString("en-US", { year: "2-digit", month: "numeric", day: "numeric" })})
+                            </span>
+                        )}
+                    </div>
+                    {rec.users_who_reviewed && 
+                        rec.users_who_reviewed.length > 0 &&
+                        rec.users_who_reviewed.filter(name => 
+                            name && name !== rec.recommender_name
+                        ).length > 0 && (
+                            <div className="recommended-row">
+                                <span className="recommended-label">
+                                    Also used by:
+                                </span>
+                                <span className="used-by-names">
+                                    {rec.users_who_reviewed
+                                        .filter(name => 
+                                            name && name !== rec.recommender_name
+                                        )
+                                        .join(", ")}
+                                </span>
+                            </div>
+                        )}
+                </>
             )}
 
             <div className="public-action-buttons">
@@ -357,29 +377,37 @@ const Home = () => {
 
     const updateRecommendation = async (providerId, reviewData) => {
         try {
-            const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
-            let newStats = {};
-            if (statsRes.ok) {
-                newStats = await statsRes.json();
-            }
-    
-            setRecentRecommendations(prevRecs => {
-                return prevRecs.map(rec => {
-                    if ((rec.provider_id || rec.id) === providerId) {
-                        const existingTags = Array.isArray(rec.tags) ? rec.tags : [];
-                        const newTags = Array.isArray(reviewData.tags) ? reviewData.tags : [];
-                        const allTags = [...new Set([...existingTags, ...newTags])];
-    
-                        return {
-                            ...rec,
-                            average_rating: newStats.average_rating || rec.average_rating,
-                            total_reviews: newStats.total_reviews || rec.total_reviews,
-                            tags: allTags
-                        };
-                    }
-                    return rec;
-                });
+            // Fetch the updated provider data that includes the new review stats
+            const params = new URLSearchParams({
+                user_id: dbUser?.clerkId,
+                email: user?.primaryEmailAddress?.emailAddress,
             });
+            const response = await fetch(`${API_URL}/api/providers/${providerId}?${params.toString()}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.provider) {
+                    const updatedProvider = data.provider;
+                    setRecentRecommendations(prevRecs => {
+                        return prevRecs.map(rec => {
+                            if ((rec.provider_id || rec.id) === providerId) {
+                                const existingTags = Array.isArray(rec.tags) ? rec.tags : [];
+                                const newTags = Array.isArray(reviewData.tags) ? reviewData.tags : [];
+                                const allTags = [...new Set([...existingTags, ...newTags])];
+        
+                                return {
+                                    ...rec,
+                                    average_rating: parseFloat(updatedProvider.average_rating) || rec.average_rating,
+                                    total_reviews: parseInt(updatedProvider.total_reviews, 10) || rec.total_reviews,
+                                    users_who_reviewed: updatedProvider.users_who_reviewed || rec.users_who_reviewed || [],
+                                    tags: allTags
+                                };
+                            }
+                            return rec;
+                        });
+                    });
+                }
+            }
         } catch (error) {
             console.error(`Failed to update recommendation ${providerId}:`, error);
             fetchRecentRecommendations();
@@ -728,42 +756,19 @@ const Home = () => {
                 return;
             }
 
-            const statsMap = {};
-            await Promise.all(
-                rawData.map(async (p) => {
-                    const providerId = p.provider_id || p.id;
-                    try {
-                        const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
-                        if (statsRes.ok) {
-                            statsMap[providerId] = await statsRes.json();
-                        } else {
-                            statsMap[providerId] = {
-                                average_rating: p.average_rating || 0,
-                                total_reviews: p.total_reviews || 0,
-                            };
-                        }
-                    } catch (err) {
-                        console.error(`Failed to fetch stats for provider ${providerId}`, err);
-                        statsMap[providerId] = {
-                            average_rating: p.average_rating || 0,
-                            total_reviews: p.total_reviews || 0,
-                        };
-                    }
-                })
-            );
-
+            // Data now comes directly from the backend with reviews and stats included
             const processedData = rawData.map(p => {
                 const providerId = p.provider_id || p.id;
                 if (p.currentUserLiked) {
                     newLikedSet.add(providerId);
                 }
-                const stats = statsMap[providerId] || { average_rating: p.average_rating, total_reviews: p.total_reviews };
 
                 return {
                     ...p,
                     id: providerId,
-                    average_rating: stats.average_rating || 0,
-                    total_reviews: stats.total_reviews || 0,
+                    average_rating: parseFloat(p.average_rating) || 0,
+                    total_reviews: parseInt(p.total_reviews, 10) || 0,
+                    users_who_reviewed: p.users_who_reviewed || [],
                 };
             });
 
@@ -899,42 +904,14 @@ const Home = () => {
                     return;
                 }
 
-                // Process the data similar to logged-in users
-                const statsMap = {};
-                await Promise.all(
-                    rawData.map(async (p) => {
-                        const providerId = p.id;
-                        try {
-                            const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
-                            if (statsRes.ok) {
-                                statsMap[providerId] = await statsRes.json();
-                            } else {
-                                statsMap[providerId] = {
-                                    average_rating: p.average_rating || 0,
-                                    total_reviews: p.total_reviews || 0,
-                                };
-                            }
-                        } catch (err) {
-                            console.error(`Failed to fetch stats for provider ${providerId}`, err);
-                            statsMap[providerId] = {
-                                average_rating: p.average_rating || 0,
-                                total_reviews: p.total_reviews || 0,
-                            };
-                        }
-                    })
-                );
-
-                const processedData = rawData.map(p => {
-                    const providerId = p.id;
-                    const stats = statsMap[providerId] || { average_rating: p.average_rating, total_reviews: p.total_reviews };
-
-                    return {
-                        ...p,
-                        provider_id: providerId,
-                        average_rating: stats.average_rating || 0,
-                        total_reviews: stats.total_reviews || 0,
-                    };
-                });
+                // Data now comes directly from the backend with reviews and stats included
+                const processedData = rawData.map(p => ({
+                    ...p,
+                    provider_id: p.id,
+                    average_rating: parseFloat(p.average_rating) || 0,
+                    total_reviews: parseInt(p.total_reviews, 10) || 0,
+                    users_who_reviewed: p.users_who_reviewed || [],
+                }));
 
                 setPublicRecommendations(processedData);
             } catch (error) {
