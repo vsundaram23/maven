@@ -15,8 +15,8 @@ import ReviewModal from "../../components/ReviewModal/ReviewModal";
 import SuccessModal from "../../components/SuccessModal/SuccessModal";
 import "./ApplianceServices.css"; // Ensure you have styles for .like-button.liked here
 
-// const API_URL = 'https://api.seanag-recommendations.org:8080';
-const API_URL = "http://localhost:3000";
+const API_URL = 'https://api.seanag-recommendations.org:8080';
+// const API_URL = "http://localhost:3000";
 
 const StarRating = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;
