@@ -281,29 +281,13 @@ const PublicProfile = () => {
                 setConnections([]);
             }
             const baseRecs = data.recommendations || [];
-            const enrichedRecs = await Promise.all(
-                baseRecs.map(async (rec) => {
-                    const providerId = rec.provider_id || rec.id;
-                    try {
-                        const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
-                        if (statsRes.ok) {
-                            const statsData = await statsRes.json();
-                            return {
-                                ...rec,
-                                average_rating: parseFloat(statsData.average_rating) || 0,
-                                total_reviews: parseInt(statsData.total_reviews, 10) || 0,
-                            };
-                        }
-                    } catch (e) {
-                        console.error(`Failed to fetch stats for provider ${providerId}`, e);
-                    }
-                    return {
-                        ...rec,
-                        average_rating: parseFloat(rec.average_rating) || 0,
-                        total_reviews: parseInt(rec.total_reviews, 10) || 0,
-                    };
-                })
-            );
+            // Use review data directly from service_providers table instead of individual API calls
+            const enrichedRecs = baseRecs.map(rec => ({
+                ...rec,
+                average_rating: parseFloat(rec.average_rating) || 0,
+                total_reviews: parseInt(rec.total_reviews, 10) || 0,
+                users_who_reviewed: rec.users_who_reviewed || []
+            }));
             setRecommendations(enrichedRecs);
             const initialLikes = new Map();
             enrichedRecs.forEach(r => {

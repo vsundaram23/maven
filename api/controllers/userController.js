@@ -207,13 +207,27 @@ const getPublicUserProfile = async (req, res) => {
                 sp.id, sp.business_name, sp.description, sp.city, sp.state, sp.zip_code, sp.service_scope,
                 sp.email, sp.phone_number, sp.tags, sp.date_of_recommendation, sp.num_likes, sp.website, sp.business_contact, 
                 sp.recommender_message, sp.images,
+                sp.average_rating, sp.total_reviews,
                 s.display_name AS recommended_service_name,
                 c.name as category_name,
                 u.phone_number AS recommender_phone,
                 u.email AS recommender_email,
                 u.name AS recommender_name,
                 sp.recommended_by AS recommender_user_id,
-                CASE WHEN l.user_id IS NOT NULL THEN true ELSE false END AS "currentUserLiked"
+                CASE WHEN l.user_id IS NOT NULL THEN true ELSE false END AS "currentUserLiked",
+                COALESCE(
+                    (SELECT json_agg(
+                        json_build_object(
+                            'id', reviewer_user.id,
+                            'name', reviewer_user.name,
+                            'email', reviewer_user.email
+                        )
+                    )
+                    FROM unnest(sp.users_who_reviewed) AS reviewer_id
+                    LEFT JOIN users reviewer_user ON reviewer_user.id = reviewer_id
+                    WHERE reviewer_user.id IS NOT NULL),
+                    '[]'::json
+                ) AS users_who_reviewed
             FROM service_providers sp
             LEFT JOIN services s ON sp.service_id = s.service_id
             LEFT JOIN service_categories c ON s.category_id = c.service_id
