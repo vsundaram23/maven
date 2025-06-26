@@ -9,6 +9,7 @@ import {
     FaThumbsUp
 } from "react-icons/fa";
 import { Link, useParams } from "react-router-dom";
+import ReviewModal from "../../components/ReviewModal/ReviewModal";
 import TrustScoreWheel from "../../components/TrustScoreWheel/TrustScoreWheel";
 import "../Profile/Profile.css";
 import "./PublicProfile.css";
@@ -30,90 +31,6 @@ const StarRatingDisplay = ({ rating }) => {
         </div>
     );
 };
-
-const ReviewModal = ({ isOpen, onClose, onSubmit, providerName }) => {
-    const [rating, setRating] = useState(0);
-    const [hover, setHover] = useState(0);
-    const [reviewText, setReviewText] = useState("");
-    const [tags, setTags] = useState([]);
-    const [tagInput, setTagInput] = useState("");
-    const [error, setError] = useState("");
-
-    useEffect(() => {
-        if (isOpen) { setRating(0); setHover(0); setReviewText(""); setTags([]); setTagInput(""); setError(""); }
-    }, [isOpen]);
-
-    const handleSubmit = (e) => {
-        e.preventDefault(); if (!rating) { setError("Please select a rating."); return; }
-        onSubmit({ rating, review: reviewText, tags }); onClose();
-    };
-
-    const handleTagKeyDown = (e) => {
-        if (e.key === "Enter" || e.key === ",") {
-            e.preventDefault();
-            processTagInput();
-        }
-    };
-
-    const processTagInput = () => {
-        if (!tagInput.trim()) return;
-        
-        // Split by comma and process each tag
-        const newTags = tagInput
-            .split(',')
-            .map(tag => tag.trim().toLowerCase())
-            .filter(tag => tag && !tags.includes(tag));
-        
-        if (newTags.length > 0) {
-            setTags([...tags, ...newTags]);
-        }
-        setTagInput("");
-    };
-
-    // Handle blur event to process comma-separated tags when user leaves input
-    const handleTagInputBlur = () => {
-        if (tagInput.includes(',')) {
-            processTagInput();
-        }
-    };
-
-    const removeTag = (tagToRemove) => setTags(tags.filter((tag) => tag !== tagToRemove));
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content review-modal-content">
-                <h2>Review {providerName}</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className="rating-container">
-                        <label>Rate your experience: <span className="required">*</span></label>
-                        <div className="stars">
-                            {[...Array(5)].map((_, index) => (
-                                <FaStar key={index} className={index < (hover || rating) ? "star active" : "star"} onClick={() => setRating(index + 1)} onMouseEnter={() => setHover(index + 1)} onMouseLeave={() => setHover(rating)} />
-                            ))}
-                        </div>
-                        {error && <div className="error-message">{error}</div>}
-                    </div>
-                    <div className="review-input">
-                        <label>Tell us about your experience:</label>
-                        <textarea value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Optional: Share your thoughts..." rows={4} />
-                    </div>
-                    <div className="tag-input-group">
-                        <label>Add tags (press Enter or comma to add):</label>
-                        <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={handleTagKeyDown} onBlur={handleTagInputBlur} placeholder="e.g. friendly, affordable" />
-                        <div className="tag-container modal-tag-container">{tags.map((tag, idx) => (<span key={idx} className="tag-badge">{tag} <span className="remove-tag" onClick={() => removeTag(tag)}>×</span></span>))}</div>
-                    </div>
-                    <div className="modal-buttons">
-                        <button type="button" onClick={onClose} className="cancel-button">Cancel</button>
-                        <button type="submit" className="submit-button">Submit Review</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-};
-
 
 const PublicRecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrentUser, loggedInUserId, recommenderName }) => {
     const providerIdForLink = rec.provider_id || rec.id;
@@ -1171,7 +1088,7 @@ const PublicProfile = () => {
                     isOpen={reviewModalOpen}
                     onClose={() => setReviewModalOpen(false)}
                     onSubmit={handleReviewSubmit}
-                    providerName={selectedProviderForReview.business_name}
+                    provider={selectedProviderForReview}
                 />
             )}
         </div>

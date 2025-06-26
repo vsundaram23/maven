@@ -2,7 +2,9 @@ import { useUser } from "@clerk/clerk-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     FaCheck,
+    FaChevronDown,
     FaEye,
+    FaFilter,
     FaHeart,
     FaPlusCircle,
     FaSearch,
@@ -15,6 +17,8 @@ import {
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import MemberCard from "../../components/MemberCard/MemberCard";
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
+import ReviewModal from "../../components/ReviewModal/ReviewModal";
+import SuccessModal from "../../components/SuccessModal/SuccessModal";
 import SuggestedFollowersModal from "../../components/SuggestedFollowersModal/SuggestedFollowersModal";
 import "./TrustCircles.css";
 
@@ -82,157 +86,16 @@ const MyRecStarRating = ({ rating }) => {
     const fullStars = Math.floor(numRating);
     const hasHalf = numRating - fullStars >= 0.5;
     const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
+
     return (
         <div className="star-rating">
             {[...Array(fullStars)].map((_, i) => (
                 <FaStar key={`full-${i}`} className="filled" />
             ))}
-            {hasHalf && (
-                <FaStar key={`half-${Date.now()}-sr`} className="half" />
-            )}
+            {hasHalf && <FaStar key="half" className="half" />}
             {[...Array(emptyStars)].map((_, i) => (
                 <FaStar key={`empty-${i}`} className="empty" />
             ))}
-        </div>
-    );
-};
-
-const MyRecReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
-    const [rating, setRating] = useState(0);
-    const [hover, setHover] = useState(0);
-    const [review, setReview] = useState("");
-    const [tags, setTags] = useState([]);
-    const [tagInput, setTagInput] = useState("");
-    const [error, setError] = useState("");
-
-    useEffect(() => {
-        if (isOpen) {
-            setRating(0);
-            setHover(0);
-            setReview("");
-            setTags([]);
-            setTagInput("");
-            setError("");
-        }
-    }, [isOpen]);
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!rating) {
-            setError("Please select a rating");
-            return;
-        }
-        onSubmit({ rating, review, tags });
-        onClose();
-    };
-
-    const handleTagKeyDown = (e) => {
-        if (e.key === "Enter" || e.key === ",") {
-            e.preventDefault();
-            processTagInput();
-        }
-    };
-
-    const processTagInput = () => {
-        if (!tagInput.trim()) return;
-        
-        // Split by comma and process each tag
-        const newTags = tagInput
-            .split(',')
-            .map(tag => tag.trim())
-            .filter(tag => tag && !tags.includes(tag));
-        
-        if (newTags.length > 0) {
-            setTags([...tags, ...newTags]);
-        }
-        setTagInput("");
-    };
-
-    // Handle blur event to process comma-separated tags when user leaves input
-    const handleTagInputBlur = () => {
-        if (tagInput.includes(',')) {
-            processTagInput();
-        }
-    };
-
-    const removeTag = (tagToRemove) =>
-        setTags(tags.filter((tag) => tag !== tagToRemove));
-    if (!isOpen || !provider) return null;
-
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content review-modal-content">
-                <h2>Review {provider?.business_name}</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className="rating-container">
-                        <label>
-                            Rate your experience:{" "}
-                            <span className="required">*</span>
-                        </label>
-                        <div className="stars">
-                            {[...Array(5)].map((_, index) => (
-                                <FaStar
-                                    key={index}
-                                    className={
-                                        index < (hover || rating)
-                                            ? "star active"
-                                            : "star"
-                                    }
-                                    onClick={() => setRating(index + 1)}
-                                    onMouseEnter={() => setHover(index + 1)}
-                                    onMouseLeave={() => setHover(rating)}
-                                />
-                            ))}
-                        </div>
-                        {error && <div className="error-message">{error}</div>}
-                    </div>
-                    <div className="review-input">
-                        <label>Tell us about your experience:</label>
-                        <textarea
-                            value={review}
-                            onChange={(e) => setReview(e.target.value)}
-                            placeholder="Optional: Share your thoughts..."
-                            rows={4}
-                        />
-                    </div>
-                    <div className="tag-input-group">
-                        <label>Add tags (press Enter or comma to add):</label>
-                        <input
-                            type="text"
-                            value={tagInput}
-                            onChange={(e) => setTagInput(e.target.value)}
-                            onKeyDown={handleTagKeyDown}
-                            onBlur={handleTagInputBlur}
-                            placeholder="e.g. friendly, affordable"
-                        />
-                        <div className="tag-container modal-tag-container">
-                            {tags.map((tag, idx) => (
-                                <span key={idx} className="tag-badge">
-                                    {tag}{" "}
-                                    <span
-                                        className="remove-tag"
-                                        onClick={() => removeTag(tag)}
-                                    >
-                                        ×
-                                    </span>
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="modal-buttons">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="cancel-button"
-                        >
-                            Cancel
-                        </button>
-                        <button type="submit" className="submit-button">
-                            Submit Review
-                        </button>
-                    </div>
-                </form>
-            </div>
         </div>
     );
 };
@@ -272,6 +135,9 @@ const TrustCircles = () => {
     const [myRecShowFeatureComingModal, setMyRecShowFeatureComingModal] =
         useState(false);
 
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
+
     const [showAddPersonModal, setShowAddPersonModal] = useState(false);
     const [newPersonPhone, setNewPersonPhone] = useState("");
     const [showProfileConfirmation, setShowProfileConfirmation] = useState(false);
@@ -287,6 +153,9 @@ const TrustCircles = () => {
 
     // Add search state for followers
     const [followersSearch, setFollowersSearch] = useState("");
+
+    const [isServiceFilterVisible, setIsServiceFilterVisible] = useState(false);
+    const [selectedServices, setSelectedServices] = useState([]);
 
     const [followingConnections, setFollowingConnections] = useState([]);
     const [followersTabActiveList, setFollowersTabActiveList] =
@@ -517,6 +386,41 @@ const TrustCircles = () => {
         }
     }, [currentUserId, currentUserEmail, isLoaded, isSignedIn, navigate]);
 
+    const fetchSingleMyRecProvider = useCallback(async (providerId) => {
+        if (!currentUserId) return;
+        try {
+            const params = new URLSearchParams({ user_id: currentUserId });
+            const response = await fetch(`${API_URL}/api/providers/single/${providerId}?${params.toString()}`);
+            if (!response.ok) throw new Error('Failed to fetch provider update.');
+            const updatedProviderData = await response.json();
+
+            const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
+            const statsData = statsRes.ok ? await statsRes.json() : {};
+
+            const reviewsRes = await fetch(`${API_URL}/api/reviews/${providerId}`);
+            const reviewsData = reviewsRes.ok ? await reviewsRes.json() : [];
+
+            setMyRecReviewMap(prevMap => ({ ...prevMap, [providerId]: reviewsData }));
+
+            setMyRecRawProviders(prevProviders => {
+                return prevProviders.map(p => {
+                    if (p.id === providerId) {
+                        return {
+                            ...p,
+                            ...updatedProviderData,
+                            average_rating: statsData.average_rating || p.average_rating,
+                            total_reviews: statsData.total_reviews || p.total_reviews,
+                        };
+                    }
+                    return p;
+                });
+            });
+        } catch (error) {
+            console.error("Failed to refresh recommendation:", error);
+            fetchMyVisibleRecommendations();
+        }
+    }, [currentUserId, fetchMyVisibleRecommendations]);
+
     const fetchFollowingData = useCallback(async () => {
         if (!currentUserId || !currentUserEmail) return;
         setLoadingFollowing(true);
@@ -584,14 +488,49 @@ const TrustCircles = () => {
         }
     }, [activeTab, currentUser, suggestedFollows.length, fetchSuggestedFollows]);
 
+    const availableServices = useMemo(() => {
+        const serviceMap = new Map();
+        myRecRawProviders.forEach((rec) => {
+            if (rec.recommended_service_id && rec.recommended_service_name) {
+                serviceMap.set(rec.recommended_service_id, {
+                    id: rec.recommended_service_id,
+                    name: rec.recommended_service_name,
+                });
+            }
+        });
+        return Array.from(serviceMap.values());
+    }, [myRecRawProviders]);
+
+    const serviceIdCounts = useMemo(() => {
+        return myRecRawProviders.reduce((acc, rec) => {
+            const serviceId = rec.recommended_service_id;
+            if (serviceId) {
+                acc[serviceId] = (acc[serviceId] || 0) + 1;
+            }
+            return acc;
+        }, {});
+    }, [myRecRawProviders]);
+
     const sortedMyRecProviders = useMemo(() => {
         if (!myRecRawProviders) return [];
         let list = [...myRecRawProviders];
-        
+
+        if (selectedServices.length > 0) {
+            list = list.filter(
+                (p) =>
+                    p.recommended_service_id &&
+                    selectedServices.includes(p.recommended_service_id)
+            );
+        }
+
         // Default sort by most recent recommendation date
         return list.sort((a, b) => {
-            const dateA = a.date_of_recommendation ? new Date(a.date_of_recommendation) : null;
-            const dateB = b.date_of_recommendation ? new Date(b.date_of_recommendation) : null;
+            const dateA = a.date_of_recommendation
+                ? new Date(a.date_of_recommendation)
+                : null;
+            const dateB = b.date_of_recommendation
+                ? new Date(b.date_of_recommendation)
+                : null;
 
             if (dateB && dateA) return dateB - dateA; // Most recent first
             if (dateB) return 1; // B has a date, A does not, so B comes first
@@ -599,7 +538,7 @@ const TrustCircles = () => {
 
             return (a.originalIndex || 0) - (b.originalIndex || 0); // Fallback for items without dates
         });
-    }, [myRecRawProviders]);
+    }, [myRecRawProviders, selectedServices]);
 
     // Sort communities by recommendation count (descending)
     const sortedMyCommunities = useMemo(() => {
@@ -659,7 +598,7 @@ const TrustCircles = () => {
             );
     }, [availableCommunities, discoverSearchTerm, currentUser]);
 
-    const handleMyRecReviewSubmit = async (reviewData) => {
+    const handleReviewSubmit = async (reviewData) => {
         if (
             !isSignedIn ||
             !myRecSelectedProvider ||
@@ -687,7 +626,10 @@ const TrustCircles = () => {
                 const errTxt = await response.text();
                 throw new Error(errTxt || "Failed to submit review");
             }
-            fetchMyVisibleRecommendations();
+            fetchSingleMyRecProvider(myRecSelectedProvider.id);
+            setMyRecIsReviewModalOpen(false);
+            setSuccessMessage("Your review has been submitted successfully. Thank you!");
+            setShowSuccessModal(true);
         } catch (err) {
             alert(`Error submitting review: ${err.message}`);
         }
@@ -889,6 +831,14 @@ const TrustCircles = () => {
         if (listType === "following" && followingConnections.length === 0) {
             fetchFollowingData();
         }
+    };
+
+    const handleServiceSelection = (serviceId) => {
+        setSelectedServices((prev) =>
+            prev.includes(serviceId)
+                ? prev.filter((id) => id !== serviceId)
+                : [...prev, serviceId]
+        );
     };
 
     const handleFollowUser = async (toUserId) => {
@@ -1188,7 +1138,7 @@ const TrustCircles = () => {
                                 }
                             >
                                 <FaUserFriends style={{ marginRight: "8px" }} />
-                                Followers ({individualConnections.length})
+                                Followers{individualConnections.length > 0 ? ` (${individualConnections.length})` : ""}
                             </button>
                             <button
                                 className={`toggle-button ${
@@ -1201,7 +1151,7 @@ const TrustCircles = () => {
                                 }
                             >
                                 <FaUserPlus style={{ marginRight: "8px" }} />
-                                Following ({followingConnections.length})
+                                Following{followingConnections.length > 0 ? ` (${followingConnections.length})` : ""}
                             </button>
                         </div>
                         <div className="search-filter-container">
@@ -1410,21 +1360,87 @@ const TrustCircles = () => {
                     <h1 className="section-heading">
                         Recommendations Shared With You
                     </h1>
-                    {/* <div className="sort-bar">
-                        Sort by:
-                        <select
-                            className="sort-dropdown"
-                            value={
-                                myRecSortOption.startsWith("force-refresh-")
-                                    ? "recommended"
-                                    : myRecSortOption
-                            }
-                            onChange={(e) => setMyRecSortOption(e.target.value)}
-                        >
-                            <option value="recommended">Recommended</option>
-                            <option value="topRated">Top Rated</option>
-                        </select>
-                    </div> */}
+                    {availableServices.length > 0 && (
+                        <div className="filters-container">
+                            <div className="profile-city-filter-toggle-section">
+                                <button
+                                    onClick={() =>
+                                        setIsServiceFilterVisible((prev) => !prev)
+                                    }
+                                    className="profile-city-filter-toggle"
+                                >
+                                    <FaFilter className="profile-filter-icon" />
+                                    <span className="filter-button-text">
+                                        Filter by Service
+                                    </span>
+                                    {selectedServices.length > 0 && (
+                                        <span className="profile-active-filters-badge">
+                                            {selectedServices.length}
+                                        </span>
+                                    )}
+                                    <FaChevronDown
+                                        className={`profile-filter-chevron ${
+                                            isServiceFilterVisible ? "rotated" : ""
+                                        }`}
+                                    />
+                                </button>
+                                {isServiceFilterVisible && (
+                                    <div className="profile-city-filter-wrapper">
+                                        <div className="profile-city-filter-checkboxes">
+                                            {availableServices
+                                                .sort(
+                                                    (a, b) =>
+                                                        (serviceIdCounts[b.id] || 0) -
+                                                        (serviceIdCounts[a.id] || 0)
+                                                )
+                                                .map((service) => (
+                                                    <div
+                                                        key={service.id}
+                                                        className="profile-city-checkbox-item"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            id={`service-${service.id}`}
+                                                            checked={selectedServices.includes(
+                                                                service.id
+                                                            )}
+                                                            onChange={() =>
+                                                                handleServiceSelection(
+                                                                    service.id
+                                                                )
+                                                            }
+                                                        />
+                                                        <label
+                                                            htmlFor={`service-${service.id}`}
+                                                            className="profile-city-checkbox-label"
+                                                        >
+                                                            {service.name}
+                                                        </label>
+                                                        <span className="profile-city-count">
+                                                            (
+                                                            {serviceIdCounts[
+                                                                service.id
+                                                            ] || 0}
+                                                            )
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            {selectedServices.length > 0 && (
+                                                <button
+                                                    onClick={() =>
+                                                        setSelectedServices([])
+                                                    }
+                                                    className="profile-city-clear-all"
+                                                >
+                                                    Clear
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                     {loadingMyRecommendations && (
                         <div className="loading-spinner">
                             Loading your recommendations...
@@ -1575,13 +1591,7 @@ const TrustCircles = () => {
                                         </div>
                                         <div className="review-summary">
                                             <span className="stars-and-score">
-                                                <MyRecStarRating
-                                                    rating={
-                                                        parseFloat(
-                                                            provider.average_rating
-                                                        ) || 0
-                                                    }
-                                                />{" "}
+                                                <MyRecStarRating rating={displayAvgRating} />{" "}
                                                 {displayAvgRating} (
                                                 {displayTotalReviews})
                                             </span>
@@ -1886,10 +1896,10 @@ const TrustCircles = () => {
             )}
 
             {myRecIsReviewModalOpen && myRecSelectedProvider && (
-                <MyRecReviewModal
+                <ReviewModal
                     isOpen={myRecIsReviewModalOpen}
                     onClose={() => setMyRecIsReviewModalOpen(false)}
-                    onSubmit={handleMyRecReviewSubmit}
+                    onSubmit={handleReviewSubmit}
                     provider={myRecSelectedProvider}
                 />
             )}
@@ -2064,6 +2074,16 @@ const TrustCircles = () => {
                     </div>
                 </div>
             )}
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => {
+                    setShowSuccessModal(false);
+                    if (myRecSelectedProvider) {
+                        fetchSingleMyRecProvider(myRecSelectedProvider.id);
+                    }
+                }}
+                message={successMessage}
+            />
         </div>
     );
 };

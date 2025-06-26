@@ -14,6 +14,8 @@ import {
 } from "@heroicons/react/24/solid";
 import { FaPlusCircle, FaStar, FaThumbsUp } from 'react-icons/fa';
 import NotificationModal from "../../components/NotificationModal/NotificationModal";
+import ReviewModal from "../../components/ReviewModal/ReviewModal";
+import SuccessModal from "../../components/SuccessModal/SuccessModal";
 import TrustScoreWheel from '../../components/TrustScoreWheel/TrustScoreWheel';
 import "./Home.css";
 
@@ -60,72 +62,6 @@ const StarRatingDisplay = ({ rating }) => {
             {[...Array(displayFullStars)].map((_, i) => <FaStar key={`full-${i}`} className="star-filled" />)}
             {displayHalfStar && <FaStar key="half" className="star-half" />}
             {[...Array(emptyStars < 0 ? 0 : emptyStars)].map((_, i) => <FaStar key={`empty-${i}`} className="star-empty" />)}
-        </div>
-    );
-};
-
-const ReviewModal = ({ isOpen, onClose, onSubmit, providerName }) => {
-    const [rating, setRating] = useState(0);
-    const [hover, setHover] = useState(0);
-    const [reviewText, setReviewText] = useState("");
-    const [tags, setTags] = useState([]);
-    const [tagInput, setTagInput] = useState("");
-    const [error, setError] = useState("");
-
-    useEffect(() => {
-        if (isOpen) { setRating(0); setHover(0); setReviewText(""); setTags([]); setTagInput(""); setError(""); }
-    }, [isOpen]);
-
-    const handleSubmit = (e) => {
-        e.preventDefault(); if (!rating) { setError("Please select a rating."); return; }
-        onSubmit({ rating, review: reviewText, tags }); onClose();
-    };
-
-    const handleTagKeyDown = (e) => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            const trimmed = tagInput.trim().toLowerCase();
-            if (trimmed && !tags.includes(trimmed) && tags.length < 5) {
-                setTags([...tags, trimmed]);
-            }
-            setTagInput("");
-        }
-    };
-
-    const removeTag = (tagToRemove) => setTags(tags.filter((tag) => tag !== tagToRemove));
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="modal-overlay review-modal-overlay">
-            <div className="modal-content review-modal-content">
-                <button className="modal-close-button" onClick={onClose}><XMarkIcon /></button>
-                <h2>Review {providerName}</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className="rating-container">
-                        <label>Rate your experience: <span className="required">*</span></label>
-                        <div className="stars-interactive">
-                            {[...Array(5)].map((_, index) => (
-                                <FaStar key={index} className={index < (hover || rating) ? "star-interactive active" : "star-interactive"} onClick={() => setRating(index + 1)} onMouseEnter={() => setHover(index + 1)} onMouseLeave={() => setHover(rating)} />
-                            ))}
-                        </div>
-                        {error && <div className="error-message">{error}</div>}
-                    </div>
-                    <div className="review-text-input">
-                        <label htmlFor="reviewTextArea">Tell us about your experience:</label>
-                        <textarea id="reviewTextArea" value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Share your thoughts..." rows={4} />
-                    </div>
-                    <div className="tag-input-group">
-                        <label htmlFor="tagReviewInput">Add tags (up to 5, press Enter):</label>
-                        <input id="tagReviewInput" type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={handleTagKeyDown} placeholder="e.g. friendly, affordable" />
-                        <div className="tag-container modal-tag-container">{tags.map((tag, idx) => (<span key={idx} className="tag-badge">{tag} <span className="remove-tag" onClick={() => removeTag(tag)}>×</span></span>))}</div>
-                    </div>
-                    <div className="modal-buttons">
-                        <button type="button" onClick={onClose} className="button-cancel">Cancel</button>
-                        <button type="submit" className="button-submit">Submit Review</button>
-                    </div>
-                </form>
-            </div>
         </div>
     );
 };
@@ -288,6 +224,8 @@ const Home = () => {
 
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [providerForReview, setProviderForReview] = useState(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
 
     // Notification modal state
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
@@ -417,19 +355,60 @@ const Home = () => {
     };
     const handleCloseReviewModal = () => setIsReviewModalOpen(false);
 
+    const updateRecommendation = async (providerId, reviewData) => {
+        try {
+            const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
+            let newStats = {};
+            if (statsRes.ok) {
+                newStats = await statsRes.json();
+            }
+    
+            setRecentRecommendations(prevRecs => {
+                return prevRecs.map(rec => {
+                    if ((rec.provider_id || rec.id) === providerId) {
+                        const existingTags = Array.isArray(rec.tags) ? rec.tags : [];
+                        const newTags = Array.isArray(reviewData.tags) ? reviewData.tags : [];
+                        const allTags = [...new Set([...existingTags, ...newTags])];
+    
+                        return {
+                            ...rec,
+                            average_rating: newStats.average_rating || rec.average_rating,
+                            total_reviews: newStats.total_reviews || rec.total_reviews,
+                            tags: allTags
+                        };
+                    }
+                    return rec;
+                });
+            });
+        } catch (error) {
+            console.error(`Failed to update recommendation ${providerId}:`, error);
+            fetchRecentRecommendations();
+        }
+    };
+
     const handleSubmitReview = async (reviewData) => {
         if (!providerForReview || !user || !dbUser) return;
         const session = window.Clerk.session;
-        if (!session) { console.error("Clerk session not available"); return; }
+        if (!session) {
+            console.error("Clerk session not available");
+            return;
+        }
         const token = await session.getToken();
-        if (!token) { console.error("Not authenticated, no token"); return; }
+        if (!token) {
+            console.error("Not authenticated, no token");
+            return;
+        }
 
         try {
             const response = await fetch(`${API_URL}/api/reviews`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
                 body: JSON.stringify({
-                    provider_id: providerForReview.provider_id || providerForReview.id,
+                    provider_id:
+                        providerForReview.provider_id || providerForReview.id,
                     provider_email: providerForReview.email || "",
                     user_id: dbUser.clerkId,
                     email: user.primaryEmailAddress?.emailAddress,
@@ -438,7 +417,15 @@ const Home = () => {
                     tags: reviewData.tags,
                 }),
             });
-            if (!response.ok) throw new Error('Failed to submit review');
+            if (!response.ok) throw new Error("Failed to submit review");
+
+            handleCloseReviewModal();
+            setSuccessMessage(
+                "Your review has been submitted successfully. Thank you!"
+            );
+            setShowSuccessModal(true);
+            const providerId = providerForReview.provider_id || providerForReview.id;
+            updateRecommendation(providerId, reviewData);
         } catch (error) {
             console.error("Error submitting review:", error);
         }
@@ -709,93 +696,93 @@ const Home = () => {
         fetchCounts();
     }, [isLoaded, isSignedIn, user, dbUser]);
 
-    useEffect(() => {
-        const fetchRecentRecommendations = async () => {
-            if (!isLoaded) return;
-            setIsLoadingRecentRecommendations(true);
-            setRecentRecommendationsError(null);
-            const newLikedSet = new Set();
+    const fetchRecentRecommendations = useCallback(async () => {
+        if (!isLoaded) return;
+        setIsLoadingRecentRecommendations(true);
+        setRecentRecommendationsError(null);
+        const newLikedSet = new Set();
 
-            try {
-                let rawData;
-                if (isSignedIn && user && dbUser) {
-                    const params = new URLSearchParams({
-                        user_id: dbUser.clerkId,
-                        email: user.primaryEmailAddress?.emailAddress,
-                        firstName: user.firstName || "",
-                        lastName: user.lastName || "",
-                        limit: '3',
-                        sortBy: 'date_of_recommendation',
-                        sortOrder: 'desc'
-                    });
-                    const response = await fetch(`${API_URL}/api/providers/newest-visible?${params.toString()}`);
-                    if (!response.ok) throw new Error(`API error: ${response.statusText}`);
-                    const jsonResponse = await response.json();
-                    rawData = jsonResponse.success && jsonResponse.providers ? jsonResponse.providers : [];
-                } else {
-                    rawData = [];
-                }
+        try {
+            let rawData;
+            if (isSignedIn && user && dbUser) {
+                const params = new URLSearchParams({
+                    user_id: dbUser.clerkId,
+                    email: user.primaryEmailAddress?.emailAddress,
+                    firstName: user.firstName || "",
+                    lastName: user.lastName || "",
+                    limit: '3',
+                    sortBy: 'date_of_recommendation',
+                    sortOrder: 'desc'
+                });
+                const response = await fetch(`${API_URL}/api/providers/newest-visible?${params.toString()}`);
+                if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+                const jsonResponse = await response.json();
+                rawData = jsonResponse.success && jsonResponse.providers ? jsonResponse.providers : [];
+            } else {
+                rawData = [];
+            }
 
-                if (rawData.length === 0) {
-                    setRecentRecommendations([]);
-                    setIsLoadingRecentRecommendations(false);
-                    return;
-                }
+            if (rawData.length === 0) {
+                setRecentRecommendations([]);
+                setIsLoadingRecentRecommendations(false);
+                return;
+            }
 
-                const statsMap = {};
-                await Promise.all(
-                    rawData.map(async (p) => {
-                        const providerId = p.provider_id || p.id;
-                        try {
-                            const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
-                            if (statsRes.ok) {
-                                statsMap[providerId] = await statsRes.json();
-                            } else {
-                                statsMap[providerId] = {
-                                    average_rating: p.average_rating || 0,
-                                    total_reviews: p.total_reviews || 0,
-                                };
-                            }
-                        } catch (err) {
-                            console.error(`Failed to fetch stats for provider ${providerId}`, err);
+            const statsMap = {};
+            await Promise.all(
+                rawData.map(async (p) => {
+                    const providerId = p.provider_id || p.id;
+                    try {
+                        const statsRes = await fetch(`${API_URL}/api/reviews/stats/${providerId}`);
+                        if (statsRes.ok) {
+                            statsMap[providerId] = await statsRes.json();
+                        } else {
                             statsMap[providerId] = {
                                 average_rating: p.average_rating || 0,
                                 total_reviews: p.total_reviews || 0,
                             };
                         }
-                    })
-                );
-
-                const processedData = rawData.map(p => {
-                    const providerId = p.provider_id || p.id;
-                    if (p.currentUserLiked) {
-                        newLikedSet.add(providerId);
+                    } catch (err) {
+                        console.error(`Failed to fetch stats for provider ${providerId}`, err);
+                        statsMap[providerId] = {
+                            average_rating: p.average_rating || 0,
+                            total_reviews: p.total_reviews || 0,
+                        };
                     }
-                    const stats = statsMap[providerId] || { average_rating: p.average_rating, total_reviews: p.total_reviews };
+                })
+            );
 
-                    return {
-                        ...p,
-                        id: providerId,
-                        average_rating: stats.average_rating || 0,
-                        total_reviews: stats.total_reviews || 0,
-                    };
-                });
+            const processedData = rawData.map(p => {
+                const providerId = p.provider_id || p.id;
+                if (p.currentUserLiked) {
+                    newLikedSet.add(providerId);
+                }
+                const stats = statsMap[providerId] || { average_rating: p.average_rating, total_reviews: p.total_reviews };
 
-                setRecentRecommendations(processedData);
-                setLikedRecommendations(newLikedSet);
+                return {
+                    ...p,
+                    id: providerId,
+                    average_rating: stats.average_rating || 0,
+                    total_reviews: stats.total_reviews || 0,
+                };
+            });
 
-            } catch (error) {
-                console.error("Error fetching recent recommendations:", error);
-                setRecentRecommendationsError(error.message);
-                setRecentRecommendations([]);
-                setLikedRecommendations(new Set());
-            } finally {
-                setIsLoadingRecentRecommendations(false);
-            }
-        };
+            setRecentRecommendations(processedData);
+            setLikedRecommendations(newLikedSet);
 
-        fetchRecentRecommendations();
+        } catch (error) {
+            console.error("Error fetching recent recommendations:", error);
+            setRecentRecommendationsError(error.message);
+            setRecentRecommendations([]);
+            setLikedRecommendations(new Set());
+        } finally {
+            setIsLoadingRecentRecommendations(false);
+        }
     }, [isLoaded, isSignedIn, user, dbUser, API_URL]);
+
+    useEffect(() => {
+        fetchRecentRecommendations();
+    }, [fetchRecentRecommendations]);
 
     // Fetch leaderboard data from connections
     useEffect(() => {
@@ -1396,7 +1383,13 @@ const Home = () => {
                     isOpen={isReviewModalOpen}
                     onClose={handleCloseReviewModal}
                     onSubmit={handleSubmitReview}
-                    providerName={providerForReview?.business_name}
+                    provider={providerForReview}
+                />
+
+                <SuccessModal
+                    isOpen={showSuccessModal}
+                    onClose={() => setShowSuccessModal(false)}
+                    message={successMessage}
                 />
 
                 <NotificationModal
@@ -1683,7 +1676,13 @@ const Home = () => {
                 isOpen={isReviewModalOpen}
                 onClose={handleCloseReviewModal}
                 onSubmit={handleSubmitReview}
-                providerName={providerForReview?.business_name}
+                provider={providerForReview}
+            />
+
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                message={successMessage}
             />
 
             <NotificationModal
