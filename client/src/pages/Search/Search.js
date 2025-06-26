@@ -1,8 +1,10 @@
 import { useUser } from "@clerk/clerk-react";
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FaBullhorn, FaEnvelope, FaEye, FaPaperPlane, FaPhone, FaStar, FaThumbsUp } from 'react-icons/fa';
+import { FaBullhorn, FaChevronDown, FaEnvelope, FaEye, FaMapMarkerAlt, FaPaperPlane, FaPhone, FaStar, FaThumbsUp } from 'react-icons/fa';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import QuoteModal from '../../components/QuoteModal/QuoteModal';
+import ReviewModal from '../../components/ReviewModal/ReviewModal';
+import SuccessModal from '../../components/SuccessModal/SuccessModal';
 import './Search.css';
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -30,137 +32,6 @@ const StarRatingDisplay = ({ rating }) => {
       {[...Array(fullStars)].map((_, i) => <FaStar key={`full-${i}`} className="filled" />)}
       {hasHalf && <FaStar key="half-star" className="half" />}
       {[...Array(emptyStars)].map((_, i) => <FaStar key={`empty-${i}`} className="empty" />)}
-    </div>
-  );
-};
-
-const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
-  const [rating, setRating]     = useState(0);
-  const [hover, setHover]       = useState(0);
-  const [review, setReview]     = useState('');
-  const [tags, setTags]         = useState([]);
-  const [tagInput, setTagInput] = useState('');
-  const [error, setError]       = useState('');
-
-  useEffect(() => {
-    if (isOpen) {
-        setRating(0);
-        setHover(0);
-        setReview('');
-        setTags([]);
-        setTagInput('');
-        setError('');
-    }
-  }, [isOpen]);
-
-  const handleTagKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      processTagInput();
-    }
-  };
-
-  const processTagInput = () => {
-    if (!tagInput.trim()) return;
-    
-    // Split by comma and process each tag
-    const newTags = tagInput
-      .split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag && !tags.includes(tag));
-    
-    if (newTags.length > 0) {
-      setTags([...tags, ...newTags]);
-    }
-    setTagInput('');
-  };
-
-  // Handle blur event to process comma-separated tags when user leaves input
-  const handleTagInputBlur = () => {
-    if (tagInput.includes(',')) {
-      processTagInput();
-    }
-  };
-
-  const removeTag = (tagToRemove) =>
-    setTags(tags.filter(tag => tag !== tagToRemove));
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!rating) {
-      setError('Please select a rating');
-      return;
-    }
-    onSubmit({ rating, review, tags });
-    onClose();
-  };
-
-  if (!isOpen || !provider) return null;
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <h2>Review {provider.business_name}</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="rating-container">
-            <label>
-              Rate your experience: <span className="required">*</span>
-            </label>
-            <div className="stars">
-              {[...Array(5)].map((_, idx) => (
-                <FaStar
-                  key={idx}
-                  className={idx < (hover || rating) ? 'star active' : 'star'}
-                  onClick={() => setRating(idx + 1)}
-                  onMouseEnter={() => setHover(idx + 1)}
-                  onMouseLeave={() => setHover(rating)}
-                />
-              ))}
-            </div>
-            {error && <div className="error-message">{error}</div>}
-          </div>
-          <div className="review-input">
-            <label>Tell us about your experience:</label>
-            <textarea
-              value={review}
-              onChange={e => setReview(e.target.value)}
-              placeholder="Optional: Share your thoughts..."
-              rows={4}
-            />
-          </div>
-          <div className="tag-input-group">
-            <label>Add tags (press Enter or comma to add):</label>
-            <input
-              type="text"
-              value={tagInput}
-              onChange={e => setTagInput(e.target.value)}
-              onKeyDown={handleTagKeyDown}
-              onBlur={handleTagInputBlur}
-              placeholder="e.g. fast, professional"
-            />
-            <div className="tag-container modal-tag-container">
-              {tags.map((tag, idx) => (
-                <span key={idx} className="tag-badge">
-                  {tag}
-                  <button
-                    type="button"
-                    className="remove-tag"
-                    onClick={() => removeTag(tag)}
-                  >×</button>
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="modal-buttons">
-            <button type="button" onClick={onClose} className="cancel-button">
-              Cancel
-            </button>
-            <button type="submit" className="submit-button">
-              Submit Review
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 };
@@ -293,7 +164,6 @@ const Search = () => {
   const [reviewStatsMap, setReviewStatsMap] = useState({});
   const [reviewMap, setReviewMap] = useState({});
   const [error, setError] = useState(null);
-  const [sortOption, setSortOption] = useState('mostRecent');
 
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
@@ -305,6 +175,10 @@ const Search = () => {
   const [dropdownOpenForId, setDropdownOpenForId] = useState(null);
   const [showLinkCopied, setShowLinkCopied] = useState(false);
   const [likedRecommendations, setLikedRecommendations] = useState(new Set());
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [selectedCities, setSelectedCities] = useState([]);
+  const [showCityFilter, setShowCityFilter] = useState(false);
   
   const [isLoading, setIsLoading] = useState(!!query);
 
@@ -458,57 +332,59 @@ const Search = () => {
     })();
   }, [query, stateParam, currentUserId, currentUserEmail, navigate, location.search, isClerkLoaded, isSignedIn]);
 
+  const handleCitySelection = (cityName) => {
+    setSelectedCities((prev) =>
+      prev.includes(cityName)
+        ? prev.filter((c) => c !== cityName)
+        : [...prev, cityName]
+    );
+  };
+
+  const availableCities = useMemo(() => {
+    if (!rawProviders || rawProviders.length === 0) return [];
+    const cityCounts = rawProviders.reduce((acc, rec) => {
+      const city = rec.city || "Other";
+      acc[city] = (acc[city] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(cityCounts).sort(
+      ([, countA], [, countB]) => countB - countA
+    );
+  }, [rawProviders]);
 
   const sortedProviders = useMemo(() => {
     if (!rawProviders || rawProviders.length === 0) return [];
-    const getBand = rating => {
-      if (rating >= 4) return 0;
-      if (rating >= 3) return 1;
-      if (rating >= 2) return 2;
-      if (rating >= 1) return 3;
-      return 4;
-    };
-    let providersToSort = [...rawProviders];
-    if (sortOption === 'topRated') {
-      return providersToSort
-        .filter(p => p.average_rating >= 4.5)
-        .sort((a, b) => {
-          if (b.average_rating !== a.average_rating) return b.average_rating - a.average_rating;
-          return (b.total_reviews || 0) - (a.total_reviews || 0);
-        });
-    } else if (sortOption === 'mostRecent') {
-      return providersToSort.sort((a, b) => {
-        const dateA = a.date_of_recommendation ? new Date(a.date_of_recommendation) : null;
-        const dateB = b.date_of_recommendation ? new Date(b.date_of_recommendation) : null;
-        
-        // If both have no date, maintain original order
-        if (!dateA && !dateB) return (a.originalIndex || 0) - (b.originalIndex || 0);
-        
-        // Items with no date go to the end
-        if (!dateA) return 1;
-        if (!dateB) return -1;
-        
-        // Sort by most recent date first (descending order)
-        return dateB - dateA;
-      });
-    } else {
-      return providersToSort.sort((a, b) => {
-        const bandA = getBand(a.average_rating);
-        const bandB = getBand(b.average_rating);
-        if (bandA !== bandB) return bandA - bandB;
-        const scoreA = (a.average_rating || 0) * (a.total_reviews || 0);
-        const scoreB = (b.average_rating || 0) * (b.total_reviews || 0);
-        if (scoreB !== scoreA) return scoreB - scoreA;
-        if (b.average_rating !== a.average_rating) return b.average_rating - a.average_rating;
-        if ((b.total_reviews || 0) !== (a.total_reviews || 0)) return (b.total_reviews || 0) - (a.total_reviews || 0);
-        return (a.originalIndex || 0) - (b.originalIndex || 0);
+    
+    let list = [...rawProviders];
+
+    // Apply city filter
+    if (selectedCities.length > 0) {
+      list = list.filter(p => {
+        const city = p.city || "Other";
+        return selectedCities.includes(city);
       });
     }
-  }, [rawProviders, sortOption]);
+    
+    // Sort by date of recommendation (newest first)
+    return list.sort((a, b) => {
+      const dateA = a.date_of_recommendation;
+      const dateB = b.date_of_recommendation;
+
+      if (dateA && dateB) return new Date(dateB) - new Date(dateA);
+      if (dateA) return -1;
+      if (dateB) return 1;
+      return (a.originalIndex || 0) - (b.originalIndex || 0);
+    });
+  }, [rawProviders, selectedCities]);
 
   const handleReviewSubmit = async ({ rating, review, tags }) => {
     if (!currentUserEmail) {
       alert("User email not found. Cannot submit review.");
+      return;
+    }
+    if (!currentUserId) {
+      alert("User ID not found. Cannot submit review.");
       return;
     }
     if (!selectedProvider) {
@@ -522,6 +398,7 @@ const Search = () => {
         body: JSON.stringify({
           provider_id: selectedProvider.id,
           provider_email: selectedProvider.email || '',
+          user_id: currentUserId,
           email: currentUserEmail,
           rating,
           content: review,
@@ -532,8 +409,13 @@ const Search = () => {
         const errText = await response.text();
         throw new Error(errText || "Failed to submit review");
       }
+      
+      // Show success modal
+      setSuccessMessage(`Thank you for reviewing ${selectedProvider.business_name}! Your feedback helps others make better decisions.`);
+      setIsSuccessModalOpen(true);
+      
       const currentRawProviders = JSON.parse(JSON.stringify(rawProviders));
-      await processAndSetProviders(currentRawProviders); 
+      await processAndSetProviders(currentRawProviders);
     } catch (err) {
       alert(`Error submitting review: ${err.message}`);
     }
@@ -697,18 +579,81 @@ const Search = () => {
     <div className="search-results-container">
       <h1 className="section-heading">Search Results for "{query}"</h1>
 
-      <div className="sort-bar">
-        Sort by:
-        <select
-          className="sort-dropdown"
-          value={sortOption}
-          onChange={e => setSortOption(e.target.value)}
-        >
-          <option value="recommended">Recommended</option>
-          <option value="topRated">Top Rated</option>
-          <option value="mostRecent">Most Recent</option>
-        </select>
-      </div>
+      {availableCities.length > 0 && (
+        <div className="profile-city-filter-toggle-section">
+          <button
+            className="profile-city-filter-toggle"
+            onClick={() =>
+              setShowCityFilter(!showCityFilter)
+            }
+          >
+            <FaMapMarkerAlt className="profile-filter-icon" />
+            <span className="filter-button-text">
+              <span className="filter-button-text-long">
+                Filter by{" "}
+              </span>
+              <span>City</span>
+            </span>
+            {selectedCities.length > 0 && (
+              <span className="profile-active-filters-badge">
+                {selectedCities.length}
+              </span>
+            )}
+            <FaChevronDown
+              className={`profile-filter-chevron ${
+                showCityFilter ? "rotated" : ""
+              }`}
+            />
+          </button>
+          {showCityFilter && (
+            <div className="profile-city-filter-wrapper">
+              <div className="profile-city-filter-checkboxes">
+                {availableCities.map(
+                  ([cityName, count]) => (
+                    <div
+                      key={cityName}
+                      className="profile-city-checkbox-item"
+                    >
+                      <input
+                        type="checkbox"
+                        id={`city-${cityName.replace(/\s+/g, '-')}`}
+                        name={cityName}
+                        checked={selectedCities.includes(
+                          cityName
+                        )}
+                        onChange={() =>
+                          handleCitySelection(
+                            cityName
+                          )
+                        }
+                      />
+                      <label
+                        htmlFor={`city-${cityName.replace(/\s+/g, '-')}`}
+                        className="profile-city-checkbox-label"
+                      >
+                        {cityName}
+                      </label>
+                      <span className="profile-city-count">
+                        ({count})
+                      </span>
+                    </div>
+                  )
+                )}
+                {selectedCities.length > 0 && (
+                  <button
+                    onClick={() =>
+                      setSelectedCities([])
+                    }
+                    className="profile-city-clear-all"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       
       {isLoading && query && <div className="loading-spinner" style={{paddingTop: '1rem'}}>Updating results...</div>}
 
@@ -908,6 +853,12 @@ const Search = () => {
             onClose={() => setIsQuoteModalOpen(false)}
         />
       )}
+      <SuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        message={successMessage}
+        title="Review Submitted!"
+      />
       {clickedRecommender && (
         <div className="modal-overlay">
           <div className="simple-modal">
