@@ -1,16 +1,20 @@
 import { useUser } from "@clerk/clerk-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
+    FaChevronDown,
     FaEnvelope,
     FaEye,
+    FaMapMarkerAlt,
     FaPhone,
     FaPlusCircle,
     FaStar,
     FaThumbsUp,
-    FaUsers,
+    FaUsers
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
+import ReviewModal from "../../components/ReviewModal/ReviewModal";
+import SuccessModal from "../../components/SuccessModal/SuccessModal";
 import "./FinancialServices.css"; // Ensure you have styles for .like-button.liked here
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -31,148 +35,6 @@ const StarRating = ({ rating }) => {
             {[...Array(emptyStars)].map((_, i) => (
                 <FaStar key={`empty-${i}`} className="empty" />
             ))}
-        </div>
-    );
-};
-
-const ReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
-    const [rating, setRating] = useState(0);
-    const [hover, setHover] = useState(0);
-    const [review, setReview] = useState("");
-    const [tags, setTags] = useState([]);
-    const [tagInput, setTagInput] = useState("");
-    const [error, setError] = useState("");
-
-    useEffect(() => {
-        if (isOpen) {
-            setRating(0);
-            setHover(0);
-            setReview("");
-            setTags([]);
-            setTagInput("");
-            setError("");
-        }
-    }, [isOpen]);
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!rating) {
-            setError("Please select a rating");
-            return;
-        }
-        onSubmit({ rating, review, tags });
-        onClose();
-    };
-
-    const handleTagKeyDown = (e) => {
-        if (e.key === "Enter" || e.key === ",") {
-            e.preventDefault();
-            processTagInput();
-        }
-    };
-
-    const processTagInput = () => {
-        if (!tagInput.trim()) return;
-        
-        // Split by comma and process each tag
-        const newTags = tagInput
-            .split(',')
-            .map(tag => tag.trim())
-            .filter(tag => tag && !tags.includes(tag));
-        
-        if (newTags.length > 0) {
-            setTags([...tags, ...newTags]);
-        }
-        setTagInput("");
-    };
-
-    // Handle blur event to process comma-separated tags when user leaves input
-    const handleTagInputBlur = () => {
-        if (tagInput.includes(',')) {
-            processTagInput();
-        }
-    };
-
-    const removeTag = (tagToRemove) => {
-        setTags(tags.filter((tag) => tag !== tagToRemove));
-    };
-
-    if (!isOpen || !provider) return null;
-
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content">
-                <h2>Review {provider.business_name}</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className="rating-container">
-                        <label>
-                            Rate your experience:{" "}
-                            <span className="required">*</span>
-                        </label>
-                        <div className="stars">
-                            {[...Array(5)].map((_, index) => (
-                                <FaStar
-                                    key={index}
-                                    className={
-                                        index < (hover || rating)
-                                            ? "star active"
-                                            : "star"
-                                    }
-                                    onClick={() => setRating(index + 1)}
-                                    onMouseEnter={() => setHover(index + 1)}
-                                    onMouseLeave={() => setHover(rating)}
-                                />
-                            ))}
-                        </div>
-                        {error && <div className="error-message">{error}</div>}
-                    </div>
-                    <div className="review-input">
-                        <label>Tell us about your experience:</label>
-                        <textarea
-                            value={review}
-                            onChange={(e) => setReview(e.target.value)}
-                            placeholder="Optional: Share your thoughts..."
-                            rows={4}
-                        />
-                    </div>
-                    <div className="tag-input-group">
-                        <label>Add tags (press Enter or comma to add):</label>
-                        <input
-                            type="text"
-                            value={tagInput}
-                            onChange={(e) => setTagInput(e.target.value)}
-                            onKeyDown={handleTagKeyDown}
-                            onBlur={handleTagInputBlur}
-                            placeholder="e.g. fast, professional"
-                        />
-                        <div className="tag-container modal-tag-container">
-                            {tags.map((tag, idx) => (
-                                <span key={idx} className="tag-badge">
-                                    {tag}
-                                    <span
-                                        className="remove-tag"
-                                        onClick={() => removeTag(tag)}
-                                    >
-                                        ×
-                                    </span>
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="modal-buttons">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="cancel-button"
-                        >
-                            Cancel
-                        </button>
-                        <button type="submit" className="submit-button">
-                            Submit Review
-                        </button>
-                    </div>
-                </form>
-            </div>
         </div>
     );
 };
@@ -334,7 +196,6 @@ const FinancialServices = () => {
     const { isLoaded, isSignedIn, user } = useUser();
     const navigate = useNavigate();
 
-    const [providers, setProviders] = useState([]);
     const [rawProviders, setRawProviders] = useState([]);
     const [reviewMap, setReviewMap] = useState({});
     const [loading, setLoading] = useState(true);
@@ -343,7 +204,6 @@ const FinancialServices = () => {
     const [selectedProvider, setSelectedProvider] = useState(null);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
-    const [sortOption, setSortOption] = useState("recommended");
     const [currentUserId, setCurrentUserId] = useState(null);
     const [currentUserEmail, setCurrentUserEmail] = useState(null);
     const [likedRecommendations, setLikedRecommendations] = useState(new Set());
@@ -351,6 +211,52 @@ const FinancialServices = () => {
     const [showFeatureComingModal, setShowFeatureComingModal] = useState(false);
     const [dropdownOpenForId, setDropdownOpenForId] = useState(null);
     const [showLinkCopied, setShowLinkCopied] = useState(false);
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
+    const [selectedCities, setSelectedCities] = useState([]);
+    const [showCityFilter, setShowCityFilter] = useState(false);
+
+    const handleCitySelection = (cityName) => {
+        setSelectedCities((prev) =>
+            prev.includes(cityName)
+                ? prev.filter((c) => c !== cityName)
+                : [...prev, cityName]
+        );
+    };
+
+    const availableCities = useMemo(() => {
+        if (!rawProviders || rawProviders.length === 0) return [];
+        const cityCounts = rawProviders.reduce((acc, rec) => {
+            const city = rec.city || "Other";
+            acc[city] = (acc[city] || 0) + 1;
+            return acc;
+        }, {});
+
+        return Object.entries(cityCounts).sort(
+            ([, countA], [, countB]) => countB - countA
+        );
+    }, [rawProviders]);
+
+    const providers = useMemo(() => {
+        let list = [...rawProviders];
+
+        if (selectedCities.length > 0) {
+            list = list.filter(p => {
+                const city = p.city || "Other";
+                return selectedCities.includes(city);
+            });
+        }
+        
+        return list.sort((a, b) => {
+            const dateA = a.date_of_recommendation;
+            const dateB = b.date_of_recommendation;
+
+            if (dateA && dateB) return new Date(dateB) - new Date(dateA);
+            if (dateA) return -1;
+            if (dateB) return 1;
+            return (a.originalIndex || 0) - (b.originalIndex || 0);
+        });
+    }, [rawProviders, selectedCities]);
 
     useEffect(() => {
         if (isLoaded && isSignedIn && user) {
@@ -368,7 +274,6 @@ const FinancialServices = () => {
         if (!isSignedIn) {
             setError("Please log in to view financial service providers.");
             setLoading(false);
-            setProviders([]);
             setRawProviders([]);
             return;
         }
@@ -461,43 +366,8 @@ const FinancialServices = () => {
                 setLikedRecommendations(newInitialUserLikes);
                 
                 setRawProviders(enrichedProviders);
-
-                const getBand = (rating) => {
-                    if (rating >= 4) return 0;
-                    if (rating >= 3) return 1;
-                    if (rating >= 2) return 2;
-                    if (rating >= 1) return 3;
-                    return 4;
-                };
-
-                let sortedProvidersList;
-                if (sortOption === "topRated") {
-                    sortedProvidersList = [...enrichedProviders]
-                        .filter((p) => p.average_rating >= 4.5)
-                        .sort((a, b) => {
-                            if (b.average_rating !== a.average_rating)
-                                return b.average_rating - a.average_rating;
-                            return (b.total_reviews || 0) - (a.total_reviews || 0);
-                        });
-                } else {
-                    sortedProvidersList = [...enrichedProviders].sort((a, b) => {
-                        const bandA = getBand(a.average_rating);
-                        const bandB = getBand(b.average_rating);
-                        if (bandA !== bandB) return bandA - bandB;
-                        const scoreA = (a.average_rating || 0) * (a.total_reviews || 0);
-                        const scoreB = (b.average_rating || 0) * (b.total_reviews || 0);
-                        if (scoreB !== scoreA) return scoreB - scoreA;
-                        if (b.average_rating !== a.average_rating)
-                            return b.average_rating - a.average_rating;
-                        if ((b.total_reviews || 0) !== (a.total_reviews || 0))
-                            return (b.total_reviews || 0) - (a.total_reviews || 0);
-                        return (a.originalIndex || 0) - (b.originalIndex || 0);
-                    });
-                }
-                setProviders(sortedProvidersList);
             } catch (err) {
                 setError(err.message || "Failed to fetch providers");
-                setProviders([]);
                 setRawProviders([]);
             } finally {
                 setLoading(false);
@@ -509,10 +379,9 @@ const FinancialServices = () => {
         } else if (isLoaded && !isSignedIn) {
             setError("Please log in to view financial service providers.");
             setLoading(false);
-            setProviders([]);
             setRawProviders([]);
         }
-    }, [sortOption, isLoaded, isSignedIn, user, currentUserId, currentUserEmail]);
+    }, [isLoaded, isSignedIn, user, currentUserId, currentUserEmail]);
 
     const handleReviewSubmit = async (reviewData) => {
         if (!isSignedIn || !selectedProvider || !currentUserId || !currentUserEmail) {
@@ -537,9 +406,13 @@ const FinancialServices = () => {
                 const errText = await response.text();
                 throw new Error(errText || "Failed to submit review");
             }
-            const currentSort = sortOption;
-            setSortOption("force-refresh-" + Date.now());
-            setTimeout(() => setSortOption(currentSort), 0);
+            
+            // Show success modal
+            setSuccessMessage(`Thank you for reviewing ${selectedProvider.business_name}! Your feedback helps others make better decisions.`);
+            setIsSuccessModalOpen(true);
+            
+            // Refresh the data by reloading
+            setTimeout(() => window.location.reload(), 1000);
         } catch (err) {
             alert(`Error submitting review: ${err.message}`);
         }
@@ -558,7 +431,6 @@ const FinancialServices = () => {
         }
 
         const originalRawProviders = JSON.parse(JSON.stringify(rawProviders));
-        const originalProviders = JSON.parse(JSON.stringify(providers));
         const originalLikedRecommendations = new Set(likedRecommendations);
 
         const newCurrentUserLikedState = !providerToUpdate.currentUserLiked;
@@ -574,7 +446,6 @@ const FinancialServices = () => {
             );
 
         setRawProviders(optimisticUpdate(rawProviders));
-        setProviders(optimisticUpdate(providers));
 
         if (newCurrentUserLikedState) {
             setLikedRecommendations(prevLiked => new Set(prevLiked).add(providerId));
@@ -607,7 +478,6 @@ const FinancialServices = () => {
                 );
 
             setRawProviders(prevRaw => finalUpdate(prevRaw));
-            setProviders(prevSorted => finalUpdate(prevSorted));
             
             if (result.currentUserLiked) {
                 setLikedRecommendations(prev => new Set(prev).add(providerId));
@@ -622,7 +492,6 @@ const FinancialServices = () => {
         } catch (error) {
             console.error("Error updating like status:", error.message);
             setRawProviders(originalRawProviders);
-            setProviders(originalProviders);
             setLikedRecommendations(originalLikedRecommendations);
             alert(`Failed to update like status: ${error.message}`);
         }
@@ -650,17 +519,81 @@ const FinancialServices = () => {
     return (
         <div className="financial-services-container">
             <h1 className="section-heading">Top Financial Service Providers</h1>
-            <div className="sort-bar">
-                Sort by:
-                <select
-                    className="sort-dropdown"
-                    value={sortOption.startsWith("force-refresh-") ? "recommended" : sortOption}
-                    onChange={(e) => setSortOption(e.target.value)}
-                >
-                    <option value="recommended">Recommended</option>
-                    <option value="topRated">Top Rated</option>
-                </select>
-            </div>
+            {availableCities.length > 0 && (
+                <div className="profile-city-filter-toggle-section">
+                    <button
+                        className="profile-city-filter-toggle"
+                        onClick={() =>
+                            setShowCityFilter(!showCityFilter)
+                        }
+                    >
+                        <FaMapMarkerAlt className="profile-filter-icon" />
+                        <span className="filter-button-text">
+                            <span className="filter-button-text-long">
+                                Filter by{" "}
+                            </span>
+                            <span>City</span>
+                        </span>
+                        {selectedCities.length > 0 && (
+                            <span className="profile-active-filters-badge">
+                                {selectedCities.length}
+                            </span>
+                        )}
+                        <FaChevronDown
+                            className={`profile-filter-chevron ${
+                                showCityFilter ? "rotated" : ""
+                            }`}
+                        />
+                    </button>
+                    {showCityFilter && (
+                        <div className="profile-city-filter-wrapper">
+                            <div className="profile-city-filter-checkboxes">
+                                {availableCities.map(
+                                    ([cityName, count]) => (
+                                        <div
+                                            key={cityName}
+                                            className="profile-city-checkbox-item"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                id={`city-${cityName.replace(/\s+/g, '-')}`}
+                                                name={cityName}
+                                                checked={selectedCities.includes(
+                                                    cityName
+                                                )}
+                                                onChange={() =>
+                                                    handleCitySelection(
+                                                        cityName
+                                                    )
+                                                }
+                                            />
+                                            <label
+                                                htmlFor={`city-${cityName.replace(/\s+/g, '-')}`}
+                                                className="profile-city-checkbox-label"
+                                            >
+                                                {cityName}
+                                            </label>
+                                            <span className="profile-city-count">
+                                                ({count})
+                                            </span>
+                                        </div>
+                                    )
+                                )}
+                                {selectedCities.length > 0 && (
+                                    <button
+                                        onClick={() =>
+                                            setSelectedCities([])
+                                        }
+                                        className="profile-city-clear-all"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {!loading && !error && providers.length === 0 && (
                 <div className="no-providers-message">
@@ -963,6 +896,12 @@ const FinancialServices = () => {
                     onClose={() => setIsQuoteModalOpen(false)}
                 />
             )}
+            <SuccessModal
+                isOpen={isSuccessModalOpen}
+                onClose={() => setIsSuccessModalOpen(false)}
+                message={successMessage}
+                title="Review Submitted!"
+            />
             {clickedRecommender && (
                 <div className="modal-overlay">
                     <div className="simple-modal">
