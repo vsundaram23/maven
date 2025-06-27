@@ -1623,9 +1623,27 @@
         justify-content: center;
     }
     .profile-stats-bar {
-        flex-direction: column;
-        gap: 1.5rem;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 1.5rem 2rem;
         margin: 0 1rem 1.5rem 1rem;
+        padding: 1rem;
+    }
+    
+    /* Keep recommendation and follower stats in a row */
+    .profile-stats-bar .stat-item:not(.profile-stat-achievement) {
+        flex: 0 1 auto;
+        min-width: 120px;
+    }
+    
+    /* Trust score takes full width below the numbers */
+    .profile-stats-bar .profile-stat-achievement {
+        flex: 1 1 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 0.5rem;
     }
     .profile-main-content {
         padding: 1rem;
@@ -2260,9 +2278,28 @@
 /* Mobile responsive */
 @media (max-width: 768px) {
     .profile-stats-wrapper {
-        flex-direction: column;
-        gap: 1.5rem;
-        align-items: center;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        align-items: flex-start !important;
+        gap: 1.5rem 2rem !important;
+        border-top: none !important;
+        padding-top: 1rem !important;
+    }
+    
+    /* Keep recommendation and follower stats in a row */
+    .profile-stats-wrapper .profile-stat-item:nth-child(1),
+    .profile-stats-wrapper .profile-stat-item:nth-child(2) {
+        flex: 0 1 auto !important;
+        min-width: 120px !important;
+    }
+    
+    /* Trust score takes full width below the numbers */
+    .profile-stats-wrapper .profile-stat-item:nth-child(3) {
+        flex: 1 1 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        margin-top: 0.5rem !important;
     }
     
     .profile-stat-achievement {
@@ -2334,6 +2371,7 @@
 /* City filtering styles */
 .profile-city-filter-toggle-section {
     margin-bottom: 1rem;
+    position: relative;
 }
 
 .profile-city-filter-toggle {
@@ -2391,12 +2429,16 @@
 }
 
 .profile-city-filter-wrapper {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 0.5rem);
     background-color: var(--profile-bg-gray);
     border: 1px solid var(--profile-border-color);
     border-radius: 0.5rem;
     padding: 1rem;
-    margin-top: 0.5rem;
     animation: slideDown 0.2s ease-out;
+    z-index: 20;
 }
 
 @keyframes slideDown {
@@ -2419,15 +2461,17 @@
 
 .profile-city-checkbox-item {
     display: flex;
-    align-items: left;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 0.4rem;
     cursor: pointer;
-    padding: 0.5rem 0.75rem;
+    padding: 0.4rem 0.6rem;
     border-radius: 0.375rem;
     background-color: var(--profile-bg-white);
     border: 1px solid var(--profile-border-color);
     transition: all 0.2s ease;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .profile-city-checkbox-item:hover {
@@ -2441,7 +2485,6 @@
 }
 
 .profile-city-checkbox-label {
-    align-items: left;
     font-weight: 500;
     color: var(--profile-text-primary);
 }
@@ -2639,6 +2682,34 @@
     position: relative !important;
 }
 
+/* MOBILE LAYOUT FIX - FORCE HORIZONTAL STATS */
+@media (max-width: 768px) {
+    .profile-page .profile-hero-content .profile-stats-wrapper {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        align-items: flex-start !important;
+        gap: 1.5rem 2rem !important;
+        border-top: none !important;
+        padding-top: 1rem !important;
+    }
+    
+    .profile-page .profile-hero-content .profile-stats-wrapper .profile-stat-item:nth-child(1),
+    .profile-page .profile-hero-content .profile-stats-wrapper .profile-stat-item:nth-child(2) {
+        flex: 0 1 auto !important;
+        min-width: 120px !important;
+        margin-bottom: 0 !important;
+    }
+    
+    .profile-page .profile-hero-content .profile-stats-wrapper .profile-stat-item:nth-child(3) {
+        flex: 1 1 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        margin-top: 0.5rem !important;
+        width: 100% !important;
+    }
+}
+
 /* Trust Points Wheel in Profile Stats */
 
 .filters-container {
@@ -2646,10 +2717,7 @@
     gap: 1rem;
     align-items: flex-start;
     margin-bottom: 1rem;
-}
-
-.filters-container.filters-container--open {
-    flex-direction: column;
+    position: relative;
 }
 
 .filters-container .profile-city-filter-toggle-section {
@@ -2671,141 +2739,6 @@
     .filter-button-text-long {
         display: inline;
     }
-}
-
-/* City filtering styles */
-.profile-city-filter-toggle-section {
-    margin-bottom: 1rem;
-}
-
-.profile-city-filter-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    background-color: var(--profile-bg-white);
-    border: 1px solid var(--profile-border-color);
-    border-radius: 0.5rem;
-    color: var(--profile-text-primary);
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    width: 100%;
-    justify-content: flex-start;
-}
-
-.profile-city-filter-toggle:hover {
-    background-color: #f8fafc;
-    border-color: var(--profile-secondary-color);
-}
-
-.profile-filter-icon {
-    width: 1.1rem;
-    height: 1.1rem;
-    color: var(--profile-text-muted);
-    flex-shrink: 0;
-}
-
-.profile-active-filters-badge {
-    background-color: var(--profile-secondary-color);
-    color: white;
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.2rem 0.5rem;
-    border-radius: 9999px;
-    min-width: 1.25rem;
-    text-align: center;
-    margin-left: auto;
-    margin-right: 0.5rem;
-}
-
-.profile-filter-chevron {
-    width: 1rem;
-    height: 1rem;
-    color: var(--profile-text-muted);
-    transition: transform 0.2s ease;
-    flex-shrink: 0;
-}
-
-.profile-filter-chevron.rotated {
-    transform: rotate(180deg);
-}
-
-.profile-city-filter-wrapper {
-    background-color: var(--profile-bg-gray);
-    border: 1px solid var(--profile-border-color);
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-top: 0.5rem;
-    animation: slideDown 0.2s ease-out;
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.profile-city-filter-checkboxes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    align-items: center;
-}
-
-.profile-city-checkbox-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.375rem;
-    background-color: var(--profile-bg-white);
-    border: 1px solid var(--profile-border-color);
-    transition: all 0.2s ease;
-    font-size: 0.9rem;
-}
-
-.profile-city-checkbox-item:hover {
-    background-color: #f8fafc;
-    border-color: var(--profile-secondary-color);
-}
-
-.profile-city-checkbox-item input[type="checkbox"] {
-    margin: 0;
-    cursor: pointer;
-}
-
-.profile-city-checkbox-label {
-    font-weight: 500;
-    color: var(--profile-text-primary);
-}
-
-.profile-city-count {
-    color: var(--profile-text-muted);
-    font-size: 0.8rem;
-}
-
-.profile-city-clear-all {
-    background-color: var(--profile-secondary-color);
-    color: white;
-    border: none;
-    padding: 0.4rem 0.8rem;
-    border-radius: 0.375rem;
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.profile-city-clear-all:hover {
-    background-color: #1d4ed8;
 }
 
 .profile-recommendations-count {
@@ -2838,12 +2771,7 @@
     }
     
     .profile-city-filter-checkboxes {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .profile-city-checkbox-item {
-        justify-content: flex-start;
+        grid-template-columns: 1fr;
     }
     
     .profile-filter-clear-buttons {
@@ -2851,133 +2779,6 @@
         align-items: center;
     }
 }
-
-/* Trust Points Wheel in Profile Stats */
-.profile-trust-score-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transform: scale(0.9);
-    transform-origin: center;
-    margin: -15px 0;
-    max-width: 400px;
-    position: relative;
-    z-index: 1;
-}
-.profile-trust-score-wrapper .trust-score-wheel-container {
-    margin: 0;
-    width: 100%;
-}
-.profile-trust-score-wrapper .trust-score-card-horizontal {
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    padding: 0;
-    margin: 0;
-}
-
-.profile-trust-score-wrapper .trust-score-content-horizontal {
-    gap: 1rem;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-}
-
-.profile-trust-score-wrapper .trust-score-circle-section {
-    flex-shrink: 0;
-}
-
-.profile-trust-score-wrapper .trust-score-info-section {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    text-align: left;
-}
-
-.profile-trust-score-wrapper .trust-score-level-header {
-    text-align: left;
-}
-
-.profile-trust-score-wrapper .trust-score-level-text {
-    font-size: 1rem;
-    font-weight: 600;
-    text-align: left;
-}
-
-.profile-trust-score-wrapper .trust-score-next-level {
-    font-size: 0.85rem;
-    opacity: 0.8;
-    text-align: left;
-}
-
-.profile-trust-score-wrapper .trust-score-stats {
-    text-align: left;
-}
-
-.profile-trust-score-wrapper .trust-score-info-button {
-    text-align: left;
-    justify-content: flex-start;
-    z-index: 1;
-    position: relative;
-}
-
-/* Hide achievement badge but keep code */
-.profile-achievement-hidden {
-    display: none !important;
-}
-
-@media (max-width: 768px) {
-    .profile-trust-score-wrapper {
-        transform: scale(0.75);
-        margin: -20px 0;
-    }
-    
-    .profile-trust-score-wrapper .trust-score-content-horizontal {
-        flex-direction: column;
-        gap: 0.75rem;
-        text-align: left;
-        align-items: flex-start;
-    }
-    
-    .profile-trust-score-wrapper .trust-score-level-text {
-        font-size: 0.9rem;
-    }
-    
-    .profile-trust-score-wrapper .trust-score-next-level {
-        font-size: 0.8rem;
-    }
-    
-    .profile-trust-score-wrapper .trust-score-circle-section {
-        align-self: center;
-    }
-}
-
-@media (max-width: 480px) {
-    .profile-trust-score-wrapper {
-        transform: scale(0.65);
-        margin: -25px 0;
-    }
-    
-    .profile-trust-score-wrapper .trust-score-level-text {
-        font-size: 0.85rem;
-    }
-    
-    .profile-trust-score-wrapper .trust-score-next-level {
-        font-size: 0.75rem;
-    }
-}
-
-/* Trust Points Modal z-index fix */
-.profile-trust-score-wrapper .trust-score-modal-wrapper {
-    z-index: 9999 !important;
-    position: fixed !important;
-}
-
-.profile-trust-score-wrapper .trust-score-modal {
-    z-index: 10000 !important;
-    position: relative !important;
-}
-/* Trust Points Wheel in Profile Stats */
 
 
 

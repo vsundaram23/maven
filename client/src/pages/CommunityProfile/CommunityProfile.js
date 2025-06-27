@@ -1,8 +1,8 @@
 import { useUser } from "@clerk/clerk-react";
+import { ChevronDownIcon } from "@heroicons/react/24/solid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     FaCalendarAlt,
-    FaChevronDown,
     FaConciergeBell,
     FaEdit,
     FaEnvelope,
@@ -778,7 +778,6 @@ const CommunityProfile = () => {
 
     const handleRequestToJoin = async () => {
         if (!currentUserId) {
-            alert("You must be logged in to request to join.");
             navigate("/sign-in", { state: { from: location.pathname } });
             return;
         }
@@ -800,11 +799,9 @@ const CommunityProfile = () => {
                     errData.error || "Failed to send join request."
                 );
             }
-            alert("Request to join community sent!");
             fetchCommunityDetails();
         } catch (err) {
             setCommunityError(err.message);
-            alert(`Error: ${err.message}`);
         } finally {
             setIsRequestingJoin(false);
         }
@@ -998,13 +995,7 @@ const CommunityProfile = () => {
 
                 {activeTab === "recommendations" && (
                     <div className="recommendations-section appliance-services-container">
-                        <div
-                            className={`community-filters-container ${
-                                showCityFilter || showServiceFilter
-                                    ? "community-filters-container--open"
-                                    : ""
-                            }`}
-                        >
+                        <div className="filters-container">
                             <div className="profile-city-filter-toggle-section">
                                 <button
                                     className="profile-city-filter-toggle"
@@ -1024,59 +1015,12 @@ const CommunityProfile = () => {
                                             {selectedCities.length}
                                         </span>
                                     )}
-                                    <FaChevronDown
+                                    <ChevronDownIcon
                                         className={`profile-filter-chevron ${
                                             showCityFilter ? "rotated" : ""
                                         }`}
                                     />
                                 </button>
-                                {showCityFilter && (
-                                    <div className="profile-city-filter-wrapper">
-                                        <div className="profile-city-filter-checkboxes">
-                                            {availableCities.map(
-                                                ([cityName, count]) => (
-                                                    <div
-                                                        key={cityName}
-                                                        className="profile-city-checkbox-item"
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            id={`city-${cityName.replace(/\s+/g, '-')}`}
-                                                            name={cityName}
-                                                            checked={selectedCities.includes(
-                                                                cityName
-                                                            )}
-                                                            onChange={() =>
-                                                                handleCitySelection(
-                                                                    cityName
-                                                                )
-                                                            }
-                                                        />
-                                                        <label
-                                                            htmlFor={`city-${cityName.replace(/\s+/g, '-')}`}
-                                                            className="profile-city-checkbox-label"
-                                                        >
-                                                            {cityName}
-                                                        </label>
-                                                        <span className="profile-city-count">
-                                                            ({count})
-                                                        </span>
-                                                    </div>
-                                                )
-                                            )}
-                                            {selectedCities.length > 0 && (
-                                                <button
-                                                    onClick={() =>
-                                                        setSelectedCities([])
-                                                    }
-                                                    className="profile-city-clear-all"
-                                                >
-                                                    Clear
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                             {availableServices.length > 0 && (
                                 <div className="profile-city-filter-toggle-section">
@@ -1100,7 +1044,7 @@ const CommunityProfile = () => {
                                                 {selectedServices.length}
                                             </span>
                                         )}
-                                        <FaChevronDown
+                                        <ChevronDownIcon
                                             className={`profile-filter-chevron ${
                                                 showServiceFilter
                                                     ? "rotated"
@@ -1108,53 +1052,101 @@ const CommunityProfile = () => {
                                             }`}
                                         />
                                     </button>
-                                    {showServiceFilter && (
-                                        <div className="profile-city-filter-wrapper">
-                                            <div className="profile-city-filter-checkboxes">
-                                                {availableServices.map(
-                                                    ([serviceName, count]) => (
-                                                        <div
-                                                            key={serviceName}
-                                                            className="profile-city-checkbox-item"
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                id={`service-${serviceName.replace(/\s+/g, '-')}`}
-                                                                name={serviceName}
-                                                                checked={selectedServices.includes(
-                                                                    serviceName
-                                                                )}
-                                                                onChange={() =>
-                                                                    handleServiceSelection(
-                                                                        serviceName
-                                                                    )
-                                                                }
-                                                            />
-                                                            <label
-                                                                htmlFor={`service-${serviceName.replace(/\s+/g, '-')}`}
-                                                                className="profile-city-checkbox-label"
-                                                            >
-                                                                {serviceName}
-                                                            </label>
-                                                            <span className="profile-city-count">
-                                                                ({count})
-                                                            </span>
-                                                        </div>
-                                                    )
-                                                )}
-                                                {selectedServices.length > 0 && (
-                                                    <button
-                                                        onClick={() =>
-                                                            setSelectedServices([])
+                                </div>
+                            )}
+
+                            {showCityFilter && (
+                                <div className="profile-city-filter-wrapper">
+                                    <div className="profile-city-filter-checkboxes">
+                                        {availableCities.map(
+                                            ([cityName, count]) => (
+                                                <div
+                                                    key={cityName}
+                                                    className="profile-city-checkbox-item"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`city-${cityName.replace(/\s+/g, '-')}`}
+                                                        name={cityName}
+                                                        checked={selectedCities.includes(
+                                                            cityName
+                                                        )}
+                                                        onChange={() =>
+                                                            handleCitySelection(
+                                                                cityName
+                                                            )
                                                         }
-                                                        className="profile-city-clear-all"
+                                                    />
+                                                    <label
+                                                        htmlFor={`city-${cityName.replace(/\s+/g, '-')}`}
+                                                        className="profile-city-checkbox-label"
                                                     >
-                                                        Clear
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
+                                                        {cityName}
+                                                    </label>
+                                                    <span className="profile-city-count">
+                                                        ({count})
+                                                    </span>
+                                                </div>
+                                            )
+                                        )}
+                                        {selectedCities.length > 0 && (
+                                            <button
+                                                onClick={() =>
+                                                    setSelectedCities([])
+                                                }
+                                                className="profile-city-clear-all"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            {showServiceFilter && availableServices.length > 0 && (
+                                <div className="profile-city-filter-wrapper">
+                                    <div className="profile-city-filter-checkboxes">
+                                        {availableServices.map(
+                                            ([serviceName, count]) => (
+                                                <div
+                                                    key={serviceName}
+                                                    className="profile-city-checkbox-item"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`service-${serviceName.replace(/\s+/g, '-')}`}
+                                                        name={serviceName}
+                                                        checked={selectedServices.includes(
+                                                            serviceName
+                                                        )}
+                                                        onChange={() =>
+                                                            handleServiceSelection(
+                                                                serviceName
+                                                            )
+                                                        }
+                                                    />
+                                                    <label
+                                                        htmlFor={`service-${serviceName.replace(/\s+/g, '-')}`}
+                                                        className="profile-city-checkbox-label"
+                                                    >
+                                                        {serviceName}
+                                                    </label>
+                                                    <span className="profile-city-count">
+                                                        ({count})
+                                                    </span>
+                                                </div>
+                                            )
+                                        )}
+                                        {selectedServices.length > 0 && (
+                                            <button
+                                                onClick={() =>
+                                                    setSelectedServices([])
+                                                }
+                                                className="profile-city-clear-all"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>
