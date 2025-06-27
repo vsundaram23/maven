@@ -1,64 +1,55 @@
 // CommentModal.js
-import React, { useState, useEffect } from 'react';
-import { FaComment, FaTimes, FaUser } from 'react-icons/fa';
+import React, { useEffect, useState } from 'react';
 import './CommentModal.css';
 
-const CommentModal = ({ isOpen, onClose, provider }) => {
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
+const CommentModal = ({ isOpen, onClose, onSubmit, provider }) => {
+  const [commentText, setCommentText] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchReviews = async () => {
-      try {
-        const response = await fetch(`http://localhost:3000/api/reviews/${provider.id}`);
-        const data = await response.json();
-        setReviews(data);
-      } catch (error) {
-        console.error('Error fetching reviews:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (isOpen) {
-      fetchReviews();
+      setCommentText('');
+      setError('');
     }
-  }, [isOpen, provider.id]);
+  }, [isOpen]);
 
-  if (!isOpen) return null;
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!commentText.trim()) {
+      setError('Please enter a comment');
+      return;
+    }
+
+    onSubmit({ commentText: commentText.trim() });
+    onClose();
+  };
+
+  if (!isOpen || !provider) return null;
 
   return (
     <div className="comment-modal-overlay">
       <div className="comment-modal-content">
-        <div className="comment-modal-header">
-          <h2>Reviews for {provider.business_name}</h2>
-          <FaTimes className="close-icon" onClick={onClose} />
-        </div>
-        <div className="comments-container">
-          {loading ? (
-            <div className="loading">Loading reviews...</div>
-          ) : reviews.length === 0 ? (
-            <div className="no-reviews">No reviews yet</div>
-          ) : (
-            reviews.map((review) => (
-              <div key={review.id} className="comment-card">
-                <div className="comment-header">
-                  <div className="user-info">
-                    <FaUser className="user-icon" />
-                    <span className="username">{review.user_name}</span>
-                  </div>
-                  <div className="review-date">
-                    {new Date(review.created_at).toLocaleDateString()}
-                  </div>
-                </div>
-                <div className="rating">
-                  {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
-                </div>
-                <div className="comment-content">{review.content}</div>
-              </div>
-            ))
-          )}
-        </div>
+        <h2>Add Comment for {provider.business_name || provider.name}</h2>
+        <form onSubmit={handleSubmit}>
+          <div className="comment-input">
+            <label>Your comment: <span className="required">*</span></label>
+            <textarea
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Share your thoughts about this recommendation..."
+              rows={4}
+              maxLength={1000}
+            />
+            <div className="character-count">
+              {commentText.length}/1000 characters
+            </div>
+            {error && <div className="error-message">{error}</div>}
+          </div>
+          <div className="comment-modal-buttons">
+            <button type="button" onClick={onClose} className="comment-cancel-button">Cancel</button>
+            <button type="submit" className="comment-submit-button">Add Comment</button>
+          </div>
+        </form>
       </div>
     </div>
   );

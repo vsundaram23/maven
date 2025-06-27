@@ -2,7 +2,7 @@ import { SignUpButton, useClerk, useUser } from "@clerk/clerk-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import CountUp from "react-countup";
 import { useMediaQuery } from "react-responsive";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
 import useNotifications from "../../hooks/useNotifications";
@@ -12,8 +12,8 @@ import {
     MapPinIcon,
     XMarkIcon
 } from "@heroicons/react/24/solid";
-import { FaPlusCircle, FaStar, FaThumbsUp } from 'react-icons/fa';
 import NotificationModal from "../../components/NotificationModal/NotificationModal";
+import RecommendationCard from "../../components/RecommendationCard/RecommendationCard";
 import ReviewModal from "../../components/ReviewModal/ReviewModal";
 import SuccessModal from "../../components/SuccessModal/SuccessModal";
 import TrustScoreWheel from '../../components/TrustScoreWheel/TrustScoreWheel';
@@ -47,146 +47,6 @@ const getFullStateName = (input) => {
 };
 
 const BRAND_PHRASE = "Tried & Trusted.";
-
-const StarRatingDisplay = ({ rating }) => {
-    const numRating = parseFloat(rating) || 0;
-    const fullStars = Math.floor(numRating);
-    const hasHalfStar = numRating - fullStars >= 0.25 && numRating - fullStars < 0.75;
-    const effectivelyFullStars = numRating - fullStars >= 0.75 ? fullStars + 1 : fullStars;
-    const displayFullStars = hasHalfStar ? fullStars : effectivelyFullStars;
-    const displayHalfStar = hasHalfStar;
-    const emptyStars = 5 - displayFullStars - (displayHalfStar ? 1 : 0);
-
-    return (
-        <div className="star-rating-display">
-            {[...Array(displayFullStars)].map((_, i) => <FaStar key={`full-${i}`} className="star-filled" />)}
-            {displayHalfStar && <FaStar key="half" className="star-half" />}
-            {[...Array(emptyStars < 0 ? 0 : emptyStars)].map((_, i) => <FaStar key={`empty-${i}`} className="star-empty" />)}
-        </div>
-    );
-};
-
-const PublicRecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrentUser, loggedInUserId, currentUserName }) => {
-    const providerIdForLink = rec.provider_id || rec.id;
-    const displayAvgRating = (parseFloat(rec.average_rating) || 0).toFixed(1);
-    const displayTotalReviews = parseInt(rec.total_reviews, 10) || 0;
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-    const [linkCopied, setLinkCopied] = useState(false);
-    const dropdownRef = React.useRef(null);
-
-    const shareLink = () => {
-        navigator.clipboard.writeText(`${window.location.origin}/provider/${providerIdForLink}`);
-        setDropdownOpen(false);
-        setLinkCopied(true);
-        setTimeout(() => setLinkCopied(false), 2000);
-    };
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setDropdownOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [dropdownRef]);
-
-
-    return (
-        <div className="public-provider-card">
-            <div className="public-card-header">
-                <h3 className="public-card-title">
-                    <Link to={`/provider/${providerIdForLink}`} className="public-provider-name-link" onClick={() => localStorage.setItem("selectedProvider", JSON.stringify(rec))}>
-                        {rec.business_name || "Unknown Business"}
-                    </Link>
-                </h3>
-                <div className="public-badge-wrapper-with-menu">
-                    {(parseFloat(rec.average_rating) || 0) >= 4.5 && (<span className="public-badge top-rated-badge">Top Rated</span>)}
-                    <div className="public-dropdown-wrapper" ref={dropdownRef}>
-                        <button className="public-three-dots-button" onClick={() => setDropdownOpen(!dropdownOpen)} title="Options">⋮</button>
-                        {dropdownOpen && (
-                            <div className="public-dropdown-menu">
-                                <button className="public-dropdown-item" onClick={shareLink}>Share this Rec</button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            <div className="public-review-summary">
-                <StarRatingDisplay rating={rec.average_rating || 0} />
-                <span className="public-review-score">{displayAvgRating}</span>
-                <span className="public-review-count">({displayTotalReviews} {displayTotalReviews === 1 ? "review" : "reviews"})</span>
-                {loggedInUserId && (
-                    <button className="public-write-review-link" onClick={() => onWriteReview(rec)}>Write a Review</button>
-                )}
-                <button
-                    className={`public-like-button ${isLikedByCurrentUser ? 'liked' : ''}`}
-                    onClick={() => onLike(providerIdForLink)}
-                    title={isLikedByCurrentUser ? "Unlike" : "Like"}
-                    disabled={!loggedInUserId}
-                >
-                    <FaThumbsUp /> <span className="public-like-count">{rec.num_likes || 0}</span>
-                </button>
-            </div>
-
-            <p className="public-card-description">{rec.recommender_message || "No specific message provided for this recommendation."}</p>
-
-            <div className="public-tag-container">
-                {Array.isArray(rec.tags) && rec.tags.slice(0, 3).map((tag, idx) => (
-                    <span key={idx} className="public-tag-badge">{tag}</span>
-                ))}
-                {loggedInUserId && (
-                    <button className="public-add-tag-button" onClick={() => onWriteReview(rec)} aria-label="Add or edit tags">
-                        <FaPlusCircle />
-                    </button>
-                )}
-            </div>
-
-            {rec.recommender_name && (
-                <>
-                    <div className="public-recommended-row">
-                        <span className="public-recommended-label">Recommended by:</span>
-                        <Link to={`/pro/${rec.recommender_username || 'user'}`} className="public-recommended-name">{rec.recommender_name}</Link>
-                        {rec.date_of_recommendation && (
-                            <span className="public-recommendation-date">
-                                ({new Date(rec.date_of_recommendation).toLocaleDateString("en-US", { year: "2-digit", month: "numeric", day: "numeric" })})
-                            </span>
-                        )}
-                    </div>
-                    {rec.users_who_reviewed && 
-                        rec.users_who_reviewed.length > 0 &&
-                        rec.users_who_reviewed.filter(name => 
-                            name && name !== rec.recommender_name
-                        ).length > 0 && (
-                            <div className="recommended-row">
-                                <span className="recommended-label">
-                                    Also used by:
-                                </span>
-                                <span className="used-by-names">
-                                    {rec.users_who_reviewed
-                                        .filter(name => 
-                                            name && name !== rec.recommender_name
-                                        )
-                                        .join(", ")}
-                                </span>
-                            </div>
-                        )}
-                </>
-            )}
-
-            <div className="public-action-buttons">
-                {loggedInUserId && (rec.recommender_phone || rec.recommender_email) && (
-                    <button className="card-connect-button" onClick={() => {
-                        if (rec.recommender_phone) window.location.href = `sms:${rec.recommender_phone.replace(/\D/g, '')}`;
-                        else if (rec.recommender_email) window.location.href = `mailto:${rec.recommender_email}`;
-                    }}>Connect with Recommender</button>
-                )}
-            </div>
-            {linkCopied && (<div className="public-toast">Link copied to clipboard!</div>)}
-        </div>
-    );
-};
 
 const Home = () => {
     const { user, isLoaded, isSignedIn } = useUser();
@@ -1229,7 +1089,7 @@ const Home = () => {
                                 {!isLoadingRecentRecommendations && !recentRecommendationsError && recentRecommendations.length > 0 ? (
                                     <>
                                         {recentRecommendations.map((rec) => (
-                                            <PublicRecommendationCard
+                                            <RecommendationCard
                                                 key={rec.id}
                                                 rec={rec}
                                                 onWriteReview={handleOpenReviewModal}
@@ -1468,7 +1328,7 @@ const Home = () => {
                             {!isLoadingPublicRecommendations && !publicRecommendationsError && publicRecommendations.length > 0 ? (
                                 <>
                                     {publicRecommendations.map((rec) => (
-                                        <PublicRecommendationCard
+                                        <RecommendationCard
                                             key={rec.id}
                                             rec={rec}
                                             onWriteReview={handleOpenReviewModal}
