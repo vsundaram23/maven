@@ -10,6 +10,7 @@ import {
     FaEnvelope,
     FaExternalLinkAlt,
     FaMapMarkerAlt,
+    FaMoneyBillWave,
     FaPhone,
     FaQuestionCircle,
     FaRegBookmark,
@@ -19,10 +20,11 @@ import {
     FaStar,
 } from "react-icons/fa";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import "./ProviderProfile.css";
 
-const API_URL = "https://api.seanag-recommendations.org:8080";
-// const API_URL = "http://localhost:3000";
+// const API_URL = "https://api.seanag-recommendations.org:8080";
+const API_URL = "http://localhost:3000";
 
 const ProviderProfile = () => {
     const { isLoaded, isSignedIn, user } = useUser();
@@ -41,6 +43,7 @@ const ProviderProfile = () => {
     const [loadingReviews, setLoadingReviews] = useState(true);
     const [loadingStats, setLoadingStats] = useState(true);
     const [error, setError] = useState(null);
+    const [showQuoteModal, setShowQuoteModal] = useState(false);
 
     const [currentIndex, setCurrentIndex] = useState(0);
     const [selectedImage, setSelectedImage] = useState(null);
@@ -310,6 +313,14 @@ const ProviderProfile = () => {
 
     return (
         <div id="provider-profile-page">
+            {showQuoteModal && (
+                <QuoteModal
+                    providerName={provider.business_name}
+                    providerEmail={provider.email}
+                    providerPhoneNumber={provider.phone_number}
+                    onClose={() => setShowQuoteModal(false)}
+                />
+            )}
             <div className="profile-wrapper">
                 <div className="profile-content">
                     <div className="core-info">
@@ -371,6 +382,14 @@ const ProviderProfile = () => {
                                 >
                                     <FaSms /> Text
                                 </a>
+                            )}
+                            {(provider.email || provider.phone_number) && (
+                                <button
+                                    onClick={() => setShowQuoteModal(true)}
+                                    className="action-button"
+                                >
+                                    <FaMoneyBillWave /> Get a Quote
+                                </button>
                             )}
                             {provider.email && (
                                 <a
