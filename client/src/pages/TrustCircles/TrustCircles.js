@@ -10,16 +10,16 @@ import {
     FaPlusCircle,
     FaSearch,
     FaStar,
-    FaThumbsUp,
     FaUserFriends,
     FaUserPlus,
     FaUsers
 } from "react-icons/fa";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import MemberCard from "../../components/MemberCard/MemberCard";
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import ReviewModal from "../../components/ReviewModal/ReviewModal";
 import SuccessModal from "../../components/SuccessModal/SuccessModal";
+import RecommendationCard from "../../components/RecommendationCard/RecommendationCard";
 import SuggestedFollowersModal from "../../components/SuggestedFollowersModal/SuggestedFollowersModal";
 import "./TrustCircles.css";
 
@@ -82,24 +82,7 @@ const HourglassTopIcon = () => (
     </svg>
 );
 
-const MyRecStarRating = ({ rating }) => {
-    const numRating = parseFloat(rating) || 0;
-    const fullStars = Math.floor(numRating);
-    const hasHalf = numRating - fullStars >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
 
-    return (
-        <div className="star-rating">
-            {[...Array(fullStars)].map((_, i) => (
-                <FaStar key={`full-${i}`} className="filled" />
-            ))}
-            {hasHalf && <FaStar key="half" className="half" />}
-            {[...Array(emptyStars)].map((_, i) => (
-                <FaStar key={`empty-${i}`} className="empty" />
-            ))}
-        </div>
-    );
-};
 
 const TrustCircles = () => {
     const { isLoaded, isSignedIn, user } = useUser();
@@ -117,16 +100,12 @@ const TrustCircles = () => {
     const [loadingTrustCircle, setLoadingTrustCircle] = useState(true);
     const [trustCircleError, setTrustCircleError] = useState("");
 
-    const [myRecProviders, setMyRecProviders] = useState([]);
     const [myRecRawProviders, setMyRecRawProviders] = useState([]);
-    const [myRecReviewMap, setMyRecReviewMap] = useState({});
     const [loadingMyRecommendations, setLoadingMyRecommendations] =
         useState(true);
     const [myRecError, setMyRecError] = useState(null);
     const [myRecIsReviewModalOpen, setMyRecIsReviewModalOpen] = useState(false);
     const [myRecSelectedProvider, setMyRecSelectedProvider] = useState(null);
-    const [myRecDropdownOpenForId, setMyRecDropdownOpenForId] = useState(null);
-    const [myRecShowLinkCopied, setMyRecShowLinkCopied] = useState(false);
     const [myRecIsQuoteModalOpen, setMyRecIsQuoteModalOpen] = useState(false);
     const [myRecLikedRecommendations, setMyRecLikedRecommendations] = useState(
         new Set()
@@ -169,13 +148,20 @@ const TrustCircles = () => {
     const [userSearchResults, setUserSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
 
+    // Comment system state
+    const [commentsMap, setCommentsMap] = useState(new Map());
+    const [isLoadingComments, setIsLoadingComments] = useState(false);
+    const [currentUserName, setCurrentUserName] = useState(null);
+
     useEffect(() => {
         if (isLoaded && isSignedIn && user) {
             setCurrentUserId(user.id);
             setCurrentUserEmail(user.primaryEmailAddress?.emailAddress);
+            setCurrentUserName(user.firstName || user.lastName || "User");
         } else if (isLoaded && !isSignedIn) {
             setCurrentUserId(null);
             setCurrentUserEmail(null);
+            setCurrentUserName(null);
         }
     }, [isLoaded, isSignedIn, user]);
 
@@ -350,12 +336,8 @@ const TrustCircles = () => {
             });
             setMyRecLikedRecommendations(initialLikes);
             setMyRecRawProviders(enriched);
-            
-            // Clear the review map since we no longer fetch individual reviews
-            setMyRecReviewMap({});
         } catch (err) {
             setMyRecError(err.message);
-            setMyRecProviders([]);
             setMyRecRawProviders([]);
         } finally {
             setLoadingMyRecommendations(false);
@@ -395,6 +377,51 @@ const TrustCircles = () => {
             fetchMyVisibleRecommendations();
         }
     }, [currentUserId, currentUserEmail, fetchMyVisibleRecommendations]);
+
+    // Batch fetch comments for multiple recommendations
+    const fetchBatchComments = useCallback(async (recommendations) => {
+        if (!recommendations || recommendations.length === 0) return;
+        
+        setIsLoadingComments(true);
+        try {
+            const serviceIds = recommendations.map(rec => rec.provider_id || rec.id).filter(Boolean);
+            
+            if (serviceIds.length === 0) return;
+
+            const response = await fetch(`${API_URL}/api/comments/batch`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ service_ids: serviceIds }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.comments) {
+                    const newCommentsMap = new Map();
+                    Object.entries(data.comments).forEach(([serviceId, comments]) => {
+                        newCommentsMap.set(String(serviceId), comments || []);
+                    });
+                    setCommentsMap(newCommentsMap);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching batch comments:', error);
+        } finally {
+            setIsLoadingComments(false);
+        }
+    }, []);
+
+    // Handle comment added callback
+    const handleCommentAdded = useCallback((serviceId, newComment) => {
+        setCommentsMap(prevMap => {
+            const newMap = new Map(prevMap);
+            const existingComments = newMap.get(String(serviceId)) || [];
+            newMap.set(String(serviceId), [newComment, ...existingComments]);
+            return newMap;
+        });
+    }, []);
 
     const fetchFollowingData = useCallback(async () => {
         if (!currentUserId || !currentUserEmail) return;
@@ -462,6 +489,13 @@ const TrustCircles = () => {
             fetchSuggestedFollows();
         }
     }, [activeTab, currentUser, suggestedFollows.length, fetchSuggestedFollows]);
+
+    // Fetch batch comments when raw providers are available
+    useEffect(() => {
+        if (!loadingMyRecommendations && myRecRawProviders.length > 0) {
+            fetchBatchComments(myRecRawProviders);
+        }
+    }, [myRecRawProviders, loadingMyRecommendations, fetchBatchComments]);
 
     const availableCities = useMemo(() => {
         const cityMap = new Map();
@@ -601,6 +635,7 @@ const TrustCircles = () => {
             console.warn("Please sign in to submit a review");
             return;
         }
+        setMyRecIsReviewModalOpen(false);
         try {
             const response = await fetch(`${API_URL}/api/reviews`, {
                 method: "POST",
@@ -620,7 +655,6 @@ const TrustCircles = () => {
                 throw new Error(errTxt || "Failed to submit review");
             }
             fetchSingleMyRecProvider(myRecSelectedProvider.id);
-            setMyRecIsReviewModalOpen(false);
             setSuccessMessage("Your review has been submitted successfully. Thank you!");
             setShowSuccessModal(true);
         } catch (err) {
@@ -1569,279 +1603,24 @@ const TrustCircles = () => {
                             </div>
                         )}
                     {sortedMyRecProviders.length > 0 && (
-                        <ul className="provider-list">
-                            {sortedMyRecProviders.map((provider) => {
-                                const displayAvgRating = (
-                                    parseFloat(provider.average_rating) || 0
-                                ).toFixed(1);
-                                const displayTotalReviews =
-                                    parseInt(provider.total_reviews, 10) || 0;
-                                return (
-                                    <li
-                                        key={provider.id}
-                                        className="provider-card"
-                                    >
-                                        <div className="card-header">
-                                            <h2 className="card-title">
-                                                <Link
-                                                    to={`/provider/${provider.id}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="clickable provider-name-link"
-                                                    onClick={() =>
-                                                        localStorage.setItem(
-                                                            "selectedProvider",
-                                                            JSON.stringify(
-                                                                provider
-                                                            )
-                                                        )
-                                                    }
-                                                >
-                                                    {provider.business_name}
-                                                </Link>
-                                            </h2>
-                                            <div className="badge-wrapper-with-menu">
-                                                <div className="badge-group">
-                                                    {(parseFloat(
-                                                        provider.average_rating
-                                                    ) || 0) >= 4.5 && (
-                                                        <span className="top-rated-badge">
-                                                            Top Rated
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="right-actions">
-                                                    <div className="dropdown-wrapper">
-                                                        <button
-                                                            className="three-dots-button"
-                                                            onClick={() =>
-                                                                setMyRecDropdownOpenForId(
-                                                                    myRecDropdownOpenForId ===
-                                                                        provider.id
-                                                                        ? null
-                                                                        : provider.id
-                                                                )
-                                                            }
-                                                            title="Options"
-                                                        >
-                                                            ⋮
-                                                        </button>
-                                                        {myRecDropdownOpenForId ===
-                                                            provider.id && (
-                                                            <div className="dropdown-menu">
-                                                                <button
-                                                                    className="dropdown-item"
-                                                                    onClick={() => {
-                                                                        navigator.clipboard.writeText(
-                                                                            `${window.location.origin}/provider/${provider.id}`
-                                                                        );
-                                                                        setMyRecDropdownOpenForId(
-                                                                            null
-                                                                        );
-                                                                        setMyRecShowLinkCopied(
-                                                                            true
-                                                                        );
-                                                                        setTimeout(
-                                                                            () =>
-                                                                                setMyRecShowLinkCopied(
-                                                                                    false
-                                                                                ),
-                                                                            2000
-                                                                        );
-                                                                    }}
-                                                                >
-                                                                    Share this
-                                                                    Rec
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    {myRecShowLinkCopied &&
-                                                        myRecDropdownOpenForId !==
-                                                            provider.id && (
-                                                            <div className="toast">
-                                                                Link copied!
-                                                            </div>
-                                                        )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="review-summary">
-                                            <span className="stars-and-score">
-                                                <MyRecStarRating rating={displayAvgRating} />{" "}
-                                                {displayAvgRating} (
-                                                {displayTotalReviews})
-                                            </span>
-                                            <button
-                                                className="see-all-button"
-                                                onClick={() => {
-                                                    setMyRecSelectedProvider(
-                                                        provider
-                                                    );
-                                                    setMyRecIsReviewModalOpen(
-                                                        true
-                                                    );
-                                                }}
-                                            >
-                                                Write a Review
-                                            </button>
-                                            <button
-                                                className={`like-button ${
-                                                    myRecLikedRecommendations.has(
-                                                        provider.id
-                                                    )
-                                                        ? "liked"
-                                                        : ""
-                                                }`}
-                                                onClick={() =>
-                                                    handleMyRecLike(provider.id)
-                                                }
-                                                title={
-                                                    myRecLikedRecommendations.has(
-                                                        provider.id
-                                                    )
-                                                        ? "Unlike"
-                                                        : "Like"
-                                                }
-                                            >
-                                                <FaThumbsUp />{" "}
-                                                <span className="like-count">
-                                                    {provider.num_likes || 0}
-                                                </span>
-                                            </button>
-                                        </div>
-                                        <p className="card-description">
-                                            {provider.description ||
-                                                provider.recommender_message ||
-                                                "No description available"}
-                                        </p>
-                                        {Array.isArray(provider.tags) &&
-                                            provider.tags.length > 0 && (
-                                                <div className="tag-container">
-                                                    {provider.tags.map(
-                                                        (tag, idx) => (
-                                                            <span
-                                                                key={idx}
-                                                                className="tag-badge"
-                                                            >
-                                                                {tag}
-                                                            </span>
-                                                        )
-                                                    )}
-                                                    <button
-                                                        className="add-tag-button"
-                                                        onClick={() => {
-                                                            setMyRecSelectedProvider(
-                                                                provider
-                                                            );
-                                                            setMyRecIsReviewModalOpen(
-                                                                true
-                                                            );
-                                                        }}
-                                                        aria-label="Add a tag"
-                                                    >
-                                                        +
-                                                    </button>
-                                                </div>
-                                            )}
-                                        {provider.recommender_name && (
-                                            <>
-                                                <div className="recommended-row">
-                                                    <span className="recommended-label">
-                                                        Recommended by:
-                                                    </span>
-                                                    {provider.recommender_user_id ? (
-                                                        <Link
-                                                            to={`/pro/${provider.recommender_username}`}
-                                                            className="recommended-name clickable"
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                        >
-                                                            {
-                                                                provider.recommender_name
-                                                            }
-                                                        </Link>
-                                                    ) : (
-                                                        <span className="recommended-name">
-                                                            {
-                                                                provider.recommender_name
-                                                            }
-                                                        </span>
-                                                    )}
-                                                    {provider.date_of_recommendation && (
-                                                        <span className="recommendation-date">
-                                                            {" "}
-                                                            (
-                                                            {new Date(
-                                                                provider.date_of_recommendation
-                                                            ).toLocaleDateString(
-                                                                "en-US",
-                                                                {
-                                                                    year: "2-digit",
-                                                                    month: "numeric",
-                                                                    day: "numeric",
-                                                                }
-                                                            )}
-                                                            )
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                {provider.users_who_reviewed && 
-                                                    provider.users_who_reviewed.length > 0 &&
-                                                    provider.users_who_reviewed.filter(name => 
-                                                        name && name !== provider.recommender_name
-                                                    ).length > 0 && (
-                                                        <div className="recommended-row">
-                                                            <span className="recommended-label">
-                                                                Also used by:
-                                                            </span>
-                                                            <span className="used-by-names">
-                                                                {provider.users_who_reviewed
-                                                                    .filter(name => 
-                                                                        name && name !== provider.recommender_name
-                                                                    )
-                                                                    .join(", ")}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                            </>
-                                        )}
-                                        <div className="action-buttons">
-                                            <button
-                                                className="primary-button"
-                                                onClick={() => {
-                                                    setMyRecSelectedProvider(
-                                                        provider
-                                                    );
-                                                    setMyRecIsQuoteModalOpen(
-                                                        true
-                                                    );
-                                                }}
-                                            >
-                                                Request a Quote
-                                            </button>
-                                            <button
-                                                className="secondary-button"
-                                                onClick={() => {
-                                                    if (
-                                                        provider.recommender_phone
-                                                    )
-                                                        window.location.href = `sms:${provider.recommender_phone}`;
-                                                    else if (
-                                                        provider.recommender_email
-                                                    )
-                                                        window.location.href = `mailto:${provider.recommender_email}`;
-                                                    else
-                                                        console.warn("Recommender contact info not available.");
-                                                }}
-                                            >
-                                                Connect with Recommender
-                                            </button>
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                        <div className="provider-list" style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                            {sortedMyRecProviders.map((provider) => (
+                                <RecommendationCard
+                                    key={provider.id}
+                                    rec={provider}
+                                    onWriteReview={(rec) => {
+                                        setMyRecSelectedProvider(rec);
+                                        setMyRecIsReviewModalOpen(true);
+                                    }}
+                                    onLike={handleMyRecLike}
+                                    isLikedByCurrentUser={myRecLikedRecommendations.has(provider.id)}
+                                    loggedInUserId={currentUserId}
+                                    currentUserName={currentUserName}
+                                    comments={commentsMap.get(String(provider.provider_id || provider.id)) || []}
+                                    onCommentAdded={handleCommentAdded}
+                                />
+                            ))}
+                        </div>
                     )}
                 </div>
             )}

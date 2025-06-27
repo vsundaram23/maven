@@ -84,8 +84,8 @@ const getBatchComments = async (req, res) => {
   }
 
   // Limit to reasonable batch size to prevent abuse
-  if (service_ids.length > 100) {
-    return res.status(400).json({ error: 'Maximum 100 service_ids allowed per batch request' });
+  if (service_ids.length > 500) {
+    return res.status(400).json({ error: 'Maximum 500 service_ids allowed per batch request' });
   }
 
   try {
