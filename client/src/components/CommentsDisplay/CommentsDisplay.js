@@ -72,83 +72,94 @@ const CommentsDisplay = ({
     };
 
     return (
-        <div className="comments-modal-overlay">
-            <div className="comments-modal">
-                <div className="comments-modal-header">
-                    <h3>Comments for {provider.business_name}</h3>
-                    <button 
-                        className="comments-modal-close" 
+        <div className="comments-display-overlay">
+            <div className="comments-display-content">
+                <div className="comments-display-header">
+                    <h2>Comments for {provider.business_name}</h2>
+                    <span 
+                        className="close-icon" 
                         onClick={onClose}
                         aria-label="Close comments"
                     >
                         ×
-                    </button>
+                    </span>
                 </div>
                 
-                <div className="comments-modal-content">
-                    <div className="comments-list">
-                        {comments.length > 0 ? (
-                            comments.map((comment) => (
-                                <div key={comment.id} className="comment-item">
-                                    <div className="comment-header">
-                                        <div className="comment-avatar">
-                                            {(comment.preferred_name || comment.user_name || 'U').charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="comment-meta">
-                                            <span className="comment-author">
-                                                {comment.preferred_name || comment.user_name || 'Anonymous'}
-                                            </span>
-                                            <span className="comment-date">
-                                                {new Date(comment.created_at).toLocaleDateString('en-US', { 
-                                                    year: 'numeric',
-                                                    month: 'short', 
-                                                    day: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </span>
-                                        </div>
+                <div className="comments-container">
+                    {comments.length > 0 ? (
+                        comments.map((comment) => (
+                            <div key={comment.id} className="comment-card">
+                                <div className="comment-header">
+                                    <div className="user-info">
+                                        <svg className="user-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                        </svg>
+                                        <span className="username">
+                                            {comment.preferred_name || comment.user_name || 'Anonymous'}
+                                        </span>
                                     </div>
-                                    <p className="comment-text">{comment.comment_text}</p>
+                                    <div className="comment-actions">
+                                        <span className="comment-date">
+                                            {new Date(comment.created_at).toLocaleDateString('en-US', { 
+                                                month: 'short', 
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </span>
+                                    </div>
                                 </div>
-                            ))
-                        ) : (
-                            <div className="no-comments">
-                                <p>No comments yet. Be the first to comment!</p>
+                                <div className="comment-content">{comment.comment_text}</div>
                             </div>
-                        )}
-                    </div>
-                    
-                    {/* Comment Input Section */}
-                    {currentUserId && (
-                        <div className="comment-input-section">
-                            <form onSubmit={handleSubmit} className="comment-form">
-                                <div className="comment-input-wrapper">
-                                    <div className="comment-user-avatar">
-                                        {currentUserName ? currentUserName.charAt(0).toUpperCase() : 'U'}
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={newComment}
-                                        onChange={(e) => setNewComment(e.target.value)}
-                                        placeholder="Add a comment..."
-                                        className="comment-input"
-                                        disabled={isSubmitting}
-                                    />
-                                    <button 
-                                        type="submit" 
-                                        className="comment-submit-btn"
-                                        disabled={!newComment.trim() || isSubmitting}
-                                    >
-                                        {isSubmitting ? 'Posting...' : 'Post'}
-                                    </button>
-                                </div>
-                            </form>
-                            {error && (
-                                <div className="comment-error">{error}</div>
-                            )}
+                        ))
+                    ) : (
+                        <div className="no-comments">
+                            <div className="no-comments-icon">💬</div>
+                            <p>No comments yet</p>
+                            <p>Be the first to share your thoughts!</p>
                         </div>
                     )}
+                </div>
+                
+                {/* Add Comment Section */}
+                {currentUserId && (
+                    <div className="add-comment-section">
+                        <form onSubmit={handleSubmit} className="modal-comment-form">
+                            <div className="modal-comment-input-wrapper">
+                                <div className="modal-user-avatar">
+                                    {currentUserName ? currentUserName.charAt(0).toUpperCase() : 'U'}
+                                </div>
+                                <input
+                                    type="text"
+                                    value={newComment}
+                                    onChange={(e) => setNewComment(e.target.value)}
+                                    placeholder="Add a comment..."
+                                    className="modal-comment-input"
+                                    disabled={isSubmitting}
+                                />
+                                <button 
+                                    type="submit" 
+                                    className="modal-post-button"
+                                    disabled={!newComment.trim() || isSubmitting}
+                                >
+                                    {isSubmitting ? 'Posting...' : 'Post'}
+                                </button>
+                            </div>
+                        </form>
+                        {error && (
+                            <div className="comment-error">{error}</div>
+                        )}
+                    </div>
+                )}
+                
+                {/* Mobile Close Button */}
+                <div className="mobile-close-section">
+                    <button 
+                        className="mobile-close-button"
+                        onClick={onClose}
+                    >
+                        Done
+                    </button>
                 </div>
             </div>
         </div>

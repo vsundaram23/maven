@@ -137,31 +137,57 @@
   /* Mobile responsive */
   @media (max-width: 768px) {
     .comment-modal-overlay {
-      padding: 1rem;
+      padding: 0;
+      padding-top: 60px; /* Add space to avoid main header */
       align-items: flex-start;
-      padding-top: 2rem;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
   
     .comment-modal-content {
       padding: 1.5rem;
-      max-height: calc(100vh - 4rem);
+      max-height: calc(100vh - 120px); /* Account for header and bottom space */
+      height: auto;
       width: calc(100% - 2rem);
-      margin: 0;
+      margin: 1rem;
+      border-radius: 12px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
     }
   
     .comment-modal-content h2 {
-      font-size: 1.25rem;
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      line-height: 1.3;
+    }
+
+    .comment-input {
+      margin-bottom: 1rem;
+    }
+
+    .comment-input textarea {
+      min-height: 80px;
+      font-size: 16px; /* Prevents zoom on iOS */
+      padding: 0.75rem;
     }
   
     .comment-modal-buttons {
       flex-direction: column-reverse;
-      gap: 0.5rem;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      position: sticky;
+      bottom: 0;
+      background: white;
+      padding-top: 1rem;
     }
   
     .comment-cancel-button,
     .comment-submit-button {
       width: 100%;
       justify-content: center;
+      height: 44px; /* Better touch target */
+      font-size: 1rem;
     }
   }
   

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FaPlusCircle, FaStar } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import CommentModal from '../CommentModal/CommentModal';
 import CommentsDisplay from '../CommentsDisplay/CommentsDisplay';
 import './RecommendationCard.css';
 
@@ -38,11 +39,14 @@ const RecommendationCard = ({
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [linkCopied, setLinkCopied] = useState(false);
     const [isCommentsDisplayOpen, setIsCommentsDisplayOpen] = useState(false);
-    const [newComment, setNewComment] = useState('');
+    const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+    const [showInlineCommentForm, setShowInlineCommentForm] = useState(false);
+    const [inlineCommentText, setInlineCommentText] = useState('');
+    const [isSubmittingInlineComment, setIsSubmittingInlineComment] = useState(false);
     const [commentsError, setCommentsError] = useState(null);
-    const [showCommentForm, setShowCommentForm] = useState(false);
-    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
     const dropdownRef = useRef(null);
+    const inlineCommentRef = useRef(null);
+    const textareaRef = useRef(null);
 
     const API_URL = 'https://api.seanag-recommendations.org:8080';
     // const API_URL = "http://localhost:3000";
@@ -56,12 +60,10 @@ const RecommendationCard = ({
 
     const commentCount = comments.length;
 
-    // Handle comment submission
-    const handleCommentSubmit = async (e) => {
-        e.preventDefault();
-        if (!loggedInUserId || !newComment.trim() || isSubmittingComment) return;
+    // Handle comment submission from CommentModal
+    const handleCommentSubmit = async ({ commentText }) => {
+        if (!loggedInUserId || !commentText.trim()) return;
 
-        setIsSubmittingComment(true);
         setCommentsError(null);
 
         try {
@@ -75,7 +77,7 @@ const RecommendationCard = ({
                 body: JSON.stringify({
                     user_id: loggedInUserId,
                     service_id: providerIdForLink,
-                    comment_text: newComment.trim()
+                    comment_text: commentText.trim()
                 })
             });
 
@@ -85,16 +87,68 @@ const RecommendationCard = ({
                 // Create new comment object
                 const newCommentObj = {
                     id: result.comment.id || Date.now(),
-                    comment_text: newComment.trim(),
+                    comment_text: commentText.trim(),
                     user_id: loggedInUserId,
                     preferred_name: currentUserName,
                     created_at: new Date().toISOString(),
                     service_id: providerIdForLink
                 };
                 
-                // Clear form
-                setNewComment('');
-                setShowCommentForm(false);
+                // Close modal
+                setIsCommentModalOpen(false);
+                setShowInlineCommentForm(false);
+                
+                // Notify parent component about the new comment
+                if (onCommentAdded) {
+                    onCommentAdded(providerIdForLink, newCommentObj);
+                }
+            } else {
+                throw new Error('Failed to submit comment');
+            }
+        } catch (error) {
+            console.error('Error submitting comment:', error);
+            setCommentsError('Failed to submit comment. Please try again.');
+        }
+    };
+
+    // Handle inline comment submission
+    const handleInlineCommentSubmit = async () => {
+        if (!loggedInUserId || !inlineCommentText.trim() || isSubmittingInlineComment) return;
+
+        setIsSubmittingInlineComment(true);
+        setCommentsError(null);
+
+        try {
+            const session = await window.Clerk.session.getToken();
+            const response = await fetch(`${API_URL}/api/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session}`
+                },
+                body: JSON.stringify({
+                    user_id: loggedInUserId,
+                    service_id: providerIdForLink,
+                    comment_text: inlineCommentText.trim()
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                // Create new comment object
+                const newCommentObj = {
+                    id: result.comment.id || Date.now(),
+                    comment_text: inlineCommentText.trim(),
+                    user_id: loggedInUserId,
+                    preferred_name: currentUserName,
+                    created_at: new Date().toISOString(),
+                    service_id: providerIdForLink
+                };
+                
+                // Reset form
+                setInlineCommentText('');
+                setShowInlineCommentForm(false);
                 
                 // Notify parent component about the new comment
                 if (onCommentAdded) {
@@ -107,7 +161,7 @@ const RecommendationCard = ({
             console.error('Error submitting comment:', error);
             setCommentsError('Failed to submit comment. Please try again.');
         } finally {
-            setIsSubmittingComment(false);
+            setIsSubmittingInlineComment(false);
         }
     };
 
@@ -121,6 +175,32 @@ const RecommendationCard = ({
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [dropdownRef]);
 
+    // Scroll to comment form when it becomes visible
+    useEffect(() => {
+        if (showInlineCommentForm && inlineCommentRef.current) {
+            setTimeout(() => {
+                inlineCommentRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'end',
+                    inline: 'nearest'
+                });
+            }, 100); // Small delay to ensure the form is rendered
+        }
+    }, [showInlineCommentForm]);
+
+    // Auto-resize textarea function
+    const autoResizeTextarea = (textarea) => {
+        if (textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+    };
+
+    // Handle textarea change with auto-resize
+    const handleTextareaChange = (e) => {
+        setInlineCommentText(e.target.value);
+        autoResizeTextarea(e.target);
+    };
 
     return (
         <div className="public-provider-card">
@@ -216,12 +296,12 @@ const RecommendationCard = ({
                     </button>
                     
                     <button
-                        className={`public-comment-button ${showCommentForm ? 'active' : ''}`}
+                        className="public-comment-button"
                         onClick={() => {
                             if (commentCount > 0 && !loggedInUserId) {
                                 setIsCommentsDisplayOpen(true);
                             } else if (loggedInUserId) {
-                                setShowCommentForm(!showCommentForm);
+                                setShowInlineCommentForm(!showInlineCommentForm);
                             }
                         }}
                         title={commentCount > 0 ? `${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}` : 'Comments'}
@@ -268,38 +348,54 @@ const RecommendationCard = ({
                 </div>
             )}
 
-            {/* Comment Form */}
-            {showCommentForm && loggedInUserId && (
-                <div className="comment-form-section">
-                    <form onSubmit={handleCommentSubmit} className="comment-form">
-                        <div className="comment-input-wrapper">
-                            <div className="comment-user-avatar">
-                                {currentUserName ? currentUserName.charAt(0).toUpperCase() : 'U'}
-                            </div>
-                            <input
-                                type="text"
-                                value={newComment}
-                                onChange={(e) => setNewComment(e.target.value)}
-                                placeholder="Add a comment..."
-                                className="comment-input"
-                                disabled={isSubmittingComment}
-                            />
-                            <button 
-                                type="submit" 
-                                className="comment-submit-btn"
-                                disabled={!newComment.trim() || isSubmittingComment}
-                            >
-                                {isSubmittingComment ? 'Posting...' : 'Post'}
-                            </button>
+            {/* Inline Comment Form */}
+            {loggedInUserId && showInlineCommentForm && (
+                <div className="inline-comment-section" ref={inlineCommentRef}>
+                    <div className="inline-comment-input-wrapper">
+                        <div className="user-avatar">
+                            {currentUserName ? currentUserName.charAt(0).toUpperCase() : 'U'}
                         </div>
-                    </form>
+                        <textarea
+                            placeholder="Add a comment, @ to mention"
+                            className="inline-comment-textarea"
+                            value={inlineCommentText}
+                            onChange={handleTextareaChange}
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey && inlineCommentText.trim()) {
+                                    e.preventDefault();
+                                    handleInlineCommentSubmit();
+                                }
+                            }}
+                            disabled={isSubmittingInlineComment}
+                            autoFocus
+                            rows="1"
+                            ref={textareaRef}
+                        />
+                        <button 
+                            className="inline-post-button"
+                            onClick={handleInlineCommentSubmit}
+                            disabled={!inlineCommentText.trim() || isSubmittingInlineComment}
+                        >
+                            {isSubmittingInlineComment ? 'Posting...' : 'Post'}
+                        </button>
+                    </div>
                     {commentsError && (
-                        <div className="comment-error">{commentsError}</div>
+                        <div className="inline-comment-error">{commentsError}</div>
                     )}
                 </div>
             )}
 
             {linkCopied && (<div className="toast">Link copied!</div>)}
+
+            {/* Comment Modal */}
+            {isCommentModalOpen && (
+                <CommentModal
+                    isOpen={isCommentModalOpen}
+                    onClose={() => setIsCommentModalOpen(false)}
+                    onSubmit={handleCommentSubmit}
+                    provider={rec}
+                />
+            )}
 
             {/* Comments Display Modal */}
             {isCommentsDisplayOpen && (

@@ -950,14 +950,14 @@ const ImageCarousel = ({ images, onImageClick }) => {
                     ))}
                 </div>
             )}
-            {isReviewModalOpen && providerForReview && (
+            {/* {isReviewModalOpen && providerForReview && (
                 <ReviewModal
                     isOpen={isReviewModalOpen}
                     onClose={handleCloseReviewModal}
                     onSubmit={handleSubmitReview}
                     provider={providerForReview}
                 />
-            )}
+            )} */}
         </div>
     );
 };
