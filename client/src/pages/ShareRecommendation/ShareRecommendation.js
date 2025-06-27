@@ -12,7 +12,8 @@ import {
     UserCircleIcon,
     UsersIcon,
     XCircleIcon,
-    XMarkIcon
+    XMarkIcon,
+    PlusCircleIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
 import Papa from "papaparse";
@@ -54,51 +55,12 @@ const processTags = (tagString) => {
     return [...new Set(processedTags)];
 };
 
-// const StarDisplay = ({ active, onClick, onMouseEnter, onMouseLeave }) => {
-//     if (active) {
-//         return (
-//             <SolidStarIcon
-//                 className="star-icon filled"
-//                 onClick={onClick}
-//                 onMouseEnter={onMouseEnter}
-//                 onMouseLeave={onMouseLeave}
-//                 aria-hidden="true"
-//             />
-//         );
-//     }
-//     return (
-//         <OutlineStarIcon
-//             className="star-icon"
-//             onClick={onClick}
-//             onMouseEnter={onMouseEnter}
-//             onMouseLeave={onMouseLeave}
-//             aria-hidden="true"
-//         />
-//     );
-// };
-// const StarDisplay = ({ active, onClick }) => {
-//     if (active) {
-//         return (
-//             <SolidStarIcon
-//                 className="star-icon filled"
-//                 onClick={onClick}
-//                 aria-hidden="true"
-//             />
-//         );
-//     }
-//     return (
-//         <OutlineStarIcon
-//             className="star-icon"
-//             onClick={onClick}
-//             aria-hidden="true"
-//         />
-//     );
-// };
 const StarDisplay = ({ active, onClick }) => {
     // The event handler will be passed in via the 'onClick' prop
     const eventHandlers = {
-        onClick: onClick,       // For desktop clicks and accessibility
-        onTouchEnd: (e) => {    // For mobile taps
+        onClick: onClick, // For desktop clicks and accessibility
+        onTouchEnd: (e) => {
+            // For mobile taps
             // We prevent the default action to avoid a "ghost click"
             // where BOTH onTouchEnd and onClick fire.
             e.preventDefault();
@@ -173,6 +135,22 @@ export default function ShareRecommendation() {
         isUploading: false,
         progress: 0,
     });
+
+    const [listTitle, setListTitle] = useState("");
+    const [listRecommendations, setListRecommendations] = useState([
+        {
+            businessName: "",
+            recommendationBlurb: "",
+            rating: 0,
+            providerContactName: "",
+            website: "",
+            phoneNumber: "",
+            tagInput: "",
+            tags: [],
+            showOptional: false,
+        },
+    ]);
+    const [dragActive, setDragActive] = useState(false);
 
     useEffect(() => {
         if (!isLoaded) return;
@@ -282,12 +260,33 @@ export default function ShareRecommendation() {
 
     const handleStarClick = (n) => setRating(n);
 
+    const handleTagInputChange = (e) => {
+        const value = e.target.value;
+        if (value.includes(",")) {
+            const parts = value.split(",");
+            const lastPart = parts.pop();
+            const tagsToAdd = parts
+                .map((tag) => tag.trim().toLowerCase())
+                .filter((tag) => tag && !tags.includes(tag));
+            if (tagsToAdd.length > 0) {
+                setTags([...tags, ...tagsToAdd]);
+            }
+            setTagInput(lastPart);
+        } else {
+            setTagInput(value);
+        }
+    };
+
     const handleTagKeyDown = (e) => {
-        if (e.key === "Enter" && tagInput.trim()) {
+        if (e.key === "Enter") {
             e.preventDefault();
-            const newTag = tagInput.trim().toLowerCase();
-            if (newTag && !tags.includes(newTag)) {
-                setTags((prevTags) => [...prevTags, newTag]);
+            if (!tagInput.trim()) return;
+            const newTags = tagInput
+                .split(",")
+                .map((tag) => tag.trim().toLowerCase())
+                .filter((tag) => tag && !tags.includes(tag));
+            if (newTags.length > 0) {
+                setTags([...tags, ...newTags]);
             }
             setTagInput("");
         }
@@ -674,6 +673,143 @@ export default function ShareRecommendation() {
         }
     };
 
+    const handleListRecChange = (idx, field, value) => {
+        setListRecommendations((prev) =>
+            prev.map((rec, i) => (i === idx ? { ...rec, [field]: value } : rec))
+        );
+    };
+
+    const handleListTagInputChange = (idx, e) => {
+        const value = e.target.value;
+        if (value.includes(",")) {
+            const parts = value.split(",");
+            const lastPart = parts.pop();
+            const tagsToAdd = parts
+                .map((tag) => tag.trim().toLowerCase())
+                .filter(
+                    (tag) => tag && !listRecommendations[idx].tags.includes(tag)
+                );
+            setListRecommendations((prev) =>
+                prev.map((rec, i) =>
+                    i === idx
+                        ? {
+                              ...rec,
+                              tags: [...rec.tags, ...tagsToAdd],
+                              tagInput: lastPart,
+                          }
+                        : rec
+                )
+            );
+        } else {
+            setListRecommendations((prev) =>
+                prev.map((rec, i) =>
+                    i === idx ? { ...rec, tagInput: value } : rec
+                )
+            );
+        }
+    };
+
+    const handleListTagKeyDown = (idx, e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            if (!listRecommendations[idx].tagInput.trim()) return;
+            const newTags = listRecommendations[idx].tagInput
+                .split(",")
+                .map((tag) => tag.trim().toLowerCase())
+                .filter(
+                    (tag) => tag && !listRecommendations[idx].tags.includes(tag)
+                );
+            setListRecommendations((prev) =>
+                prev.map((rec, i) =>
+                    i === idx
+                        ? {
+                              ...rec,
+                              tags: [...rec.tags, ...newTags],
+                              tagInput: "",
+                          }
+                        : rec
+                )
+            );
+        }
+    };
+
+    const removeListTag = (idx, tagToRemove) => {
+        setListRecommendations((prev) =>
+            prev.map((rec, i) =>
+                i === idx
+                    ? {
+                          ...rec,
+                          tags: rec.tags.filter((tag) => tag !== tagToRemove),
+                      }
+                    : rec
+            )
+        );
+    };
+
+    const addListRecommendation = () => {
+        setListRecommendations((prev) => [
+            ...prev,
+            {
+                businessName: "",
+                recommendationBlurb: "",
+                rating: 0,
+                providerContactName: "",
+                website: "",
+                phoneNumber: "",
+                tagInput: "",
+                tags: [],
+                showOptional: false,
+            },
+        ]);
+    };
+
+    const removeListRecommendation = (idx) => {
+        setListRecommendations((prev) => prev.filter((_, i) => i !== idx));
+    };
+
+    const handleListDrop = (e) => {
+        e.preventDefault();
+        setDragActive(false);
+        // TODO: handle dropped file
+    };
+
+    const handleListDragOver = (e) => {
+        e.preventDefault();
+        setDragActive(true);
+    };
+
+    const handleListDragLeave = (e) => {
+        e.preventDefault();
+        setDragActive(false);
+    };
+
+    const handleSubmitList = async (e) => {
+        e.preventDefault();
+        if (!listTitle.trim()) {
+            setMessage("error:Please provide a name for your list.");
+            return;
+        }
+        // Example validation: require all required fields for each rec
+        for (const rec of listRecommendations) {
+            if (
+                !rec.businessName.trim() ||
+                !rec.recommendationBlurb.trim() ||
+                !rec.rating
+            ) {
+                setMessage(
+                    "error:Please fill out all required fields for each recommendation."
+                );
+                return;
+            }
+        }
+        setIsSubmitting(true);
+        setMessage("");
+        // TODO: Submit all recommendations in listRecommendations to your API
+        // Example: await Promise.all(listRecommendations.map(...));
+        setIsSubmitting(false);
+        setShowSuccessModal(true);
+    };
+
     const renderSingleForm = () => (
         <>
             <div className="intro-typewriter">
@@ -686,8 +822,7 @@ export default function ShareRecommendation() {
             <form onSubmit={handleSubmit} className="recommendation-form">
                 <section className="form-section required-section">
                     <h2 className="section-title">
-                        <span className="section-number">1</span>Core
-                        Details
+                        <span className="section-number">1</span>Core Details
                     </h2>
                     <div className="form-grid">
                         <div className="form-group span-2">
@@ -747,7 +882,9 @@ export default function ShareRecommendation() {
                                 onChange={(e) =>
                                     setRecommendationBlurb(e.target.value)
                                 }
-                                onBlur={(e) => setRecommendationBlurb(e.target.value)}
+                                onBlur={(e) =>
+                                    setRecommendationBlurb(e.target.value)
+                                }
                                 required
                                 rows={5}
                                 className={
@@ -825,9 +962,7 @@ export default function ShareRecommendation() {
                                     id="tags"
                                     type="text"
                                     value={tagInput}
-                                    onChange={(e) =>
-                                        setTagInput(e.target.value)
-                                    }
+                                    onChange={handleTagInputChange}
                                     onKeyDown={handleTagKeyDown}
                                     placeholder="e.g., reliable, fast, good value"
                                 />
@@ -1049,6 +1184,346 @@ export default function ShareRecommendation() {
         </>
     );
 
+    const renderListForm = () => (
+        <form onSubmit={handleSubmitList}>
+            <div className="list-form">
+                <h2>Share Recommendations as a List</h2>
+                <p>
+                    You can upload a document or create a list manually. Each
+                    list can contain up to 10 recommendations.
+                </p>
+
+                {/* Drag & Drop Area */}
+                <div
+                    className={`list-dropzone${dragActive ? " active" : ""}`}
+                    onDrop={handleListDrop}
+                    onDragOver={handleListDragOver}
+                    onDragLeave={handleListDragLeave}
+                    tabIndex={0}
+                >
+                    <DocumentTextIcon className="csv-icon" />
+                    <span>
+                        Drag &amp; drop your document here, or{" "}
+                        <label htmlFor="listFile" className="file-upload-label">
+                            <span className="file-upload-link">
+                                choose a file
+                            </span>
+                            <input
+                                type="file"
+                                id="listFile"
+                                style={{ display: "none" }}
+                                // onChange={handleListFile}
+                            />
+                        </label>
+                    </span>
+                </div>
+
+                <div className="list-divider">
+                    <span>OR</span>
+                </div>
+
+                {/* Manual List Creation */}
+                <div className="manual-list-section">
+                    <label className="list-title-label">
+                        List Title
+                        <input
+                            type="text"
+                            className="list-title-input"
+                            placeholder="e.g., My Favorite Home Pros"
+                            value={listTitle}
+                            onChange={(e) => setListTitle(e.target.value)}
+                        />
+                    </label>
+
+                    <div className="list-recommendations-list">
+                        {listRecommendations.map((rec, idx) => {
+                            const requiredComplete =
+                                rec.businessName.trim() &&
+                                rec.recommendationBlurb.trim() &&
+                                rec.rating > 0;
+                            return (
+                                <div
+                                    className="list-recommendation-card"
+                                    key={idx}
+                                >
+                                    <div
+                                        className="form-section required-section"
+                                        style={{
+                                            padding: 0,
+                                            boxShadow: "none",
+                                            border: "none",
+                                            background: "none",
+                                        }}
+                                    >
+                                        <div className="form-group">
+                                            <label>
+                                                Recommendation Name *
+                                                <input
+                                                    type="text"
+                                                    value={rec.businessName}
+                                                    onChange={(e) =>
+                                                        handleListRecChange(
+                                                            idx,
+                                                            "businessName",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    placeholder="e.g., Stellar Plumbing Co."
+                                                    required
+                                                />
+                                            </label>
+                                        </div>
+                                        <div className="form-group rating-group">
+                                            <label>Your Rating *</label>
+                                            <div className="star-rating">
+                                                {[1, 2, 3, 4, 5].map((n) => (
+                                                    <StarDisplay
+                                                        key={n}
+                                                        active={n <= rec.rating}
+                                                        onClick={() =>
+                                                            handleListRecChange(
+                                                                idx,
+                                                                "rating",
+                                                                n
+                                                            )
+                                                        }
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>
+                                                Your Experience *
+                                                <textarea
+                                                    value={
+                                                        rec.recommendationBlurb
+                                                    }
+                                                    onChange={(e) =>
+                                                        handleListRecChange(
+                                                            idx,
+                                                            "recommendationBlurb",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    placeholder="What made them great?"
+                                                    required
+                                                    rows={3}
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div
+                                        className={`optional-section-wrapper ${
+                                            requiredComplete ? "visible" : ""
+                                        }`}
+                                    >
+                                        <div className="optional-section-intro">
+                                            <SparklesIcon className="intro-icon mini" />{" "}
+                                            Nicely done! Add extra details?
+                                            (Optional)
+                                        </div>
+                                        <section
+                                            className="form-section optional-section"
+                                            style={{
+                                                padding: 0,
+                                                boxShadow: "none",
+                                                border: "none",
+                                                background: "none",
+                                            }}
+                                        >
+                                            <div className="form-grid">
+                                                <div className="form-group">
+                                                    <label>
+                                                        <UserCircleIcon />{" "}
+                                                        Provider Contact Name
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={
+                                                            rec.providerContactName
+                                                        }
+                                                        onChange={(e) =>
+                                                            handleListRecChange(
+                                                                idx,
+                                                                "providerContactName",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="e.g., Jane Doe"
+                                                    />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label>
+                                                        <GlobeAltIcon /> Website
+                                                    </label>
+                                                    <input
+                                                        type="url"
+                                                        value={rec.website}
+                                                        onChange={(e) =>
+                                                            handleListRecChange(
+                                                                idx,
+                                                                "website",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="https://provider.com"
+                                                    />
+                                                </div>
+                                                <div className="form-group span-2">
+                                                    <label>
+                                                        <PhoneIcon /> Phone
+                                                        Number
+                                                    </label>
+                                                    <input
+                                                        type="tel"
+                                                        value={rec.phoneNumber}
+                                                        onChange={(e) =>
+                                                            handleListRecChange(
+                                                                idx,
+                                                                "phoneNumber",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="(555) 123-4567"
+                                                    />
+                                                </div>
+                                                <div className="form-group span-2 tag-input-group">
+                                                    <label>
+                                                        <TagIcon /> Tags (Press
+                                                        Enter)
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={
+                                                            rec.tagInput || ""
+                                                        }
+                                                        onChange={(e) =>
+                                                            handleListTagInputChange(
+                                                                idx,
+                                                                e
+                                                            )
+                                                        }
+                                                        onKeyDown={(e) =>
+                                                            handleListTagKeyDown(
+                                                                idx,
+                                                                e
+                                                            )
+                                                        }
+                                                        placeholder="e.g., reliable, fast, good value"
+                                                    />
+                                                    <div className="tag-container">
+                                                        {rec.tags.map(
+                                                            (tag, i) => (
+                                                                <span
+                                                                    key={i}
+                                                                    className="tag-pill"
+                                                                >
+                                                                    {tag}
+                                                                    <span
+                                                                        className="remove-tag"
+                                                                        onClick={() =>
+                                                                            removeListTag(
+                                                                                idx,
+                                                                                tag
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        ×
+                                                                    </span>
+                                                                </span>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </section>
+                                    </div>
+                                    {listRecommendations.length > 1 && (
+                                        <button
+                                            type="button"
+                                            className="remove-list-rec-btn"
+                                            style={{
+                                                position: "absolute",
+                                                bottom: "1rem",
+                                                right: "1rem",
+                                                background: "none",
+                                                border: "none",
+                                                color: "#e11d48",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.25rem",
+                                                zIndex: 2,
+                                            }}
+                                            onClick={() =>
+                                                removeListRecommendation(idx)
+                                            }
+                                            aria-label="Remove Recommendation"
+                                        >
+                                            <XCircleIcon className="w-5 h-5" />{" "}
+                                            Remove
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                    {listRecommendations.length < 10 && (
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                            }}
+                        >
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{
+                                    marginTop: "1rem",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.5rem",
+                                    maxWidth: 350,
+                                }}
+                                onClick={addListRecommendation}
+                            >
+                                <PlusCircleIcon
+                                    style={{ width: 20, height: 20 }}
+                                />
+                                Add Another Recommendation
+                            </button>
+                        </div>
+                    )}
+                </div>
+                <div className="button-row">
+                    <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={isSubmitting || showSuccessModal}
+                    >
+                        {isSubmitting ? "Sharing..." : "Share List"}
+                        <CheckCircleIcon />
+                    </button>
+                </div>
+                {message && !showSuccessModal && (
+                    <div
+                        className={`message ${
+                            message.startsWith("error") ? "error" : "success"
+                        } ${message ? "visible" : ""}`}
+                    >
+                        {message.startsWith("error") ? (
+                            <XCircleIcon />
+                        ) : (
+                            <CheckCircleIcon />
+                        )}
+                        <span>
+                            {message.substring(message.indexOf(":") + 1)}
+                        </span>
+                    </div>
+                )}
+            </div>
+        </form>
+    );
+
     const renderCsvImport = () => (
         <div className="csv-import-section">
             {" "}
@@ -1231,6 +1706,14 @@ export default function ShareRecommendation() {
                         </button>
                         <button
                             className={`mode-button ${
+                                mode === "list" ? "active" : ""
+                            }`}
+                            onClick={() => setMode("list")}
+                        >
+                            <UsersIcon /> Add List
+                        </button>
+                        <button
+                            className={`mode-button ${
                                 mode === "csv" ? "active" : ""
                             }`}
                             onClick={() => setMode("csv")}
@@ -1238,7 +1721,11 @@ export default function ShareRecommendation() {
                             <DocumentTextIcon /> Import CSV
                         </button>
                     </div>
-                    {mode === "single" ? renderSingleForm() : renderCsvImport()}
+                    {mode === "single"
+                        ? renderSingleForm()
+                        : mode === "list"
+                        ? renderListForm()
+                        : renderCsvImport()}
                 </div>
             </div>
 

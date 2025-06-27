@@ -812,6 +812,73 @@
     animation: spin 1s linear infinite;
 }
 
+.list-dropzone {
+    border: 2px dashed #b3b3b3;
+    padding: 2rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    background: #fafbfc;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+.list-dropzone.active {
+    border-color: #2563eb;
+    background: #e0e7ff;
+}
+.list-divider {
+    text-align: center;
+    margin: 1.5rem 0;
+    font-weight: 600;
+    color: #888;
+}
+.manual-list-section {
+    margin-top: 1.5rem;
+}
+.list-title-label {
+    display: block;
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+.list-title-input {
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.25rem;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+.list-recommendations-list {
+    margin-top: 1rem;
+}
+.list-recommendation-card {
+    background: #ffffff; /* Match single card */
+    border-radius: 0.7rem; /* Match .form-section */
+    padding: 1.5rem;      /* Match .form-section */
+    margin-bottom: 1.5rem;
+    border: 1px solid #f3f4f6; /* Match .form-section */
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07),
+        0 2px 4px -2px rgb(0 0 0 / 0.07); /* Match .form-section */
+    position: relative;
+    transition: all 0.25s cubic-bezier(0.215, 0.61, 0.355, 1);
+    animation: fadeInUp 0.5s cubic-bezier(0.215, 0.61, 0.355, 1) backwards;
+}
+
+/* Optional: If you want to match the section title style for each list card, you can add: */
+.list-recommendation-card .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #111827;
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* ...keep the rest of your styles... */
+
 @media (max-width: 768px) {
     #share-recommendation-page .recommendation-wrapper.modern-ui {
         padding-top: calc(60px + 1rem);
@@ -1428,4 +1495,25 @@
 .ReactCrop__image {
     max-height: 70vh;
     width: auto;
+}
+
+.list-recommendation-card {
+    position: relative;
+}
+.remove-list-rec-btn {
+    position: absolute !important;
+    bottom: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    color: #e11d48;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    z-index: 2;
+    padding: 0;
+}
+.remove-list-rec-btn:hover {
+    color: #be123c;
+    background: none;
 }
