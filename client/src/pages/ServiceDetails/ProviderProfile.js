@@ -1,25 +1,25 @@
 import { useUser } from "@clerk/clerk-react";
-import React, { useEffect, useState, useMemo, useRef } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
-import {
-    FaStar,
-    FaPhone,
-    FaEnvelope,
-    FaMapMarkerAlt,
-    FaQuestionCircle,
-    FaShareAlt,
-    FaRegBookmark,
-    FaBookmark,
-    FaSms,
-    FaExternalLinkAlt,
-    FaRegHandshake,
-} from "react-icons/fa";
-import "./ProviderProfile.css";
 import {
     ChevronLeftIcon,
     ChevronRightIcon,
     XMarkIcon,
 } from "@heroicons/react/24/outline";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+    FaBookmark,
+    FaEnvelope,
+    FaExternalLinkAlt,
+    FaMapMarkerAlt,
+    FaPhone,
+    FaQuestionCircle,
+    FaRegBookmark,
+    FaRegHandshake,
+    FaShareAlt,
+    FaSms,
+    FaStar,
+} from "react-icons/fa";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import "./ProviderProfile.css";
 
 const API_URL = "https://api.seanag-recommendations.org:8080";
 // const API_URL = "http://localhost:3000";

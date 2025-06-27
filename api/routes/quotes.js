@@ -7,7 +7,7 @@ const {
 } = require('../controllers/quoteController');
 
 // POST /api/quotes
-// body: { provider_email, email, message }
+// body: { provider_email?, provider_phone_number?, email, message }
 router.post('/', createQuoteRequest);
 
 // GET /api/quotes/provider/:providerId

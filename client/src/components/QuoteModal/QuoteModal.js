@@ -1,5 +1,5 @@
 // src/components/QuoteModal.js
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './QuoteModal.css';
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -8,6 +8,7 @@ const API_URL = 'https://api.seanag-recommendations.org:8080';
 const QuoteModal = ({
   providerName,
   providerEmail,           // ← new!
+  providerPhoneNumber,
   providerPhotoUrl = null,
   onClose
 }) => {
@@ -55,6 +56,7 @@ const QuoteModal = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider_email: providerEmail,
+          provider_phone_number: providerPhoneNumber,
           email:          userEmail,
           message:        userInput.trim()
         })

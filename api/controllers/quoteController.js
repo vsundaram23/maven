@@ -2,7 +2,13 @@
 const pool = require('../config/db.config');
 
 const createQuoteRequest = async (req, res) => {
-  const { provider_email, email, message } = req.body;
+  const { provider_email, provider_phone_number, email, message } = req.body;
+
+  if (!provider_email && !provider_phone_number) {
+    return res
+      .status(400)
+      .json({ error: "A provider email or phone number is required" });
+  }
 
   try {
     // 1) lookup user_id
@@ -16,11 +22,20 @@ const createQuoteRequest = async (req, res) => {
     const user_id = userResult.rows[0].id;
 
     // 2) lookup provider_id
-    const provResult = await pool.query(
-      'SELECT id FROM service_providers WHERE email = $1',
-      [provider_email]
-    );
-    if (provResult.rows.length === 0) {
+    let provResult;
+    if (provider_email) {
+      provResult = await pool.query(
+        'SELECT id FROM service_providers WHERE email = $1',
+        [provider_email]
+      );
+    } else if (provider_phone_number) {
+      provResult = await pool.query(
+        'SELECT id FROM service_providers WHERE phone_number = $1',
+        [provider_phone_number]
+      );
+    }
+
+    if (!provResult || provResult.rows.length === 0) {
       return res.status(404).json({ error: 'Service provider not found' });
     }
     const provider_id = provResult.rows[0].id;
