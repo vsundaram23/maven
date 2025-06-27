@@ -75,6 +75,57 @@ const getComments = async (req, res) => {
   }
 };
 
+// New function to get comments for multiple services in one call
+const getBatchComments = async (req, res) => {
+  const { service_ids } = req.body;
+
+  if (!service_ids || !Array.isArray(service_ids) || service_ids.length === 0) {
+    return res.status(400).json({ error: 'service_ids array is required' });
+  }
+
+  // Limit to reasonable batch size to prevent abuse
+  if (service_ids.length > 100) {
+    return res.status(400).json({ error: 'Maximum 100 service_ids allowed per batch request' });
+  }
+
+  try {
+    const placeholders = service_ids.map((_, index) => `$${index + 1}`).join(',');
+    const commentsQuery = `
+      SELECT 
+        c.*,
+        u.name as user_name,
+        u.preferred_name,
+        u.username
+      FROM comments c
+      JOIN users u ON c.user_id = u.id
+      WHERE c.service_id IN (${placeholders})
+      ORDER BY c.service_id, c.created_at DESC
+    `;
+    
+    const result = await pool.query(commentsQuery, service_ids);
+
+    // Group comments by service_id
+    const commentsByService = {};
+    service_ids.forEach(id => {
+      commentsByService[id] = [];
+    });
+
+    result.rows.forEach(comment => {
+      if (commentsByService[comment.service_id]) {
+        commentsByService[comment.service_id].push(comment);
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      comments: commentsByService
+    });
+  } catch (error) {
+    console.error('Error fetching batch comments:', error);
+    res.status(500).json({ error: 'Failed to fetch batch comments' });
+  }
+};
+
 const deleteComment = async (req, res) => {
   const { comment_id } = req.params;
   const { user_id: clerk_id } = req.body;
@@ -139,6 +190,7 @@ const getCommentCount = async (req, res) => {
 module.exports = {
   createComment,
   getComments,
+  getBatchComments,
   deleteComment,
   getCommentCount
 };

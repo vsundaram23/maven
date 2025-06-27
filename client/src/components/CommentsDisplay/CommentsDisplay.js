@@ -1,203 +1,158 @@
-import React, { useEffect, useState } from 'react';
-import { FaComment, FaTimes, FaTrash, FaUser } from 'react-icons/fa';
+import React, { useState } from 'react';
 import './CommentsDisplay.css';
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = "http://localhost:3000";
+const CommentsDisplay = ({ 
+    isOpen, 
+    onClose, 
+    provider, 
+    currentUserId,
+    currentUserName,
+    comments = [], // Comments passed as props
+    onCommentAdded // Callback when comment is added
+}) => {
+    const [newComment, setNewComment] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState(null);
 
-const CommentsDisplay = ({ isOpen, onClose, provider, currentUserId }) => {
-  const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [newComment, setNewComment] = useState('');
+    const API_URL = 'https://api.seanag-recommendations.org:8080';
+    // const API_URL = "http://localhost:3000";
 
-  useEffect(() => {
-    const fetchComments = async () => {
-      if (!isOpen || !provider) return;
-      
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const providerId = provider.provider_id || provider.id;
-        const response = await fetch(`${API_URL}/api/comments/${providerId}`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch comments');
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!newComment.trim() || !currentUserId || isSubmitting) return;
+
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            const session = await window.Clerk.session.getToken();
+            const response = await fetch(`${API_URL}/api/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session}`
+                },
+                body: JSON.stringify({
+                    user_id: currentUserId,
+                    service_id: provider.provider_id || provider.id,
+                    comment_text: newComment.trim()
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                // Create new comment object
+                const newCommentObj = {
+                    id: result.comment.id || Date.now(),
+                    comment_text: newComment.trim(),
+                    user_id: currentUserId,
+                    preferred_name: currentUserName,
+                    created_at: new Date().toISOString(),
+                    service_id: provider.provider_id || provider.id
+                };
+                
+                setNewComment('');
+                
+                // Notify parent component about the new comment
+                if (onCommentAdded) {
+                    onCommentAdded(provider.provider_id || provider.id, newCommentObj);
+                }
+            } else {
+                throw new Error('Failed to submit comment');
+            }
+        } catch (err) {
+            console.error('Error submitting comment:', err);
+            setError('Failed to submit comment. Please try again.');
+        } finally {
+            setIsSubmitting(false);
         }
-        
-        const data = await response.json();
-        setComments(data.success ? data.comments : []);
-      } catch (error) {
-        console.error('Error fetching comments:', error);
-        setError('Failed to load comments');
-        setComments([]);
-      } finally {
-        setLoading(false);
-      }
     };
 
-    fetchComments();
-  }, [isOpen, provider]);
-
-  const handleDeleteComment = async (commentId) => {
-    if (!currentUserId || !window.confirm('Are you sure you want to delete this comment?')) {
-      return;
-    }
-
-    try {
-      const session = await window.Clerk.session.getToken();
-      const response = await fetch(`${API_URL}/api/comments/${commentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session}`
-        },
-        body: JSON.stringify({
-          user_id: currentUserId
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete comment');
-      }
-
-      // Remove the comment from the local state
-      setComments(comments.filter(comment => comment.id !== commentId));
-    } catch (error) {
-      console.error('Error deleting comment:', error);
-      alert('Failed to delete comment. Please try again.');
-    }
-  };
-
-  const handleAddComment = async (e) => {
-    e.preventDefault();
-    if (!currentUserId || !newComment.trim()) return;
-
-    try {
-      const session = await window.Clerk.session.getToken();
-      const providerId = provider.provider_id || provider.id;
-      const response = await fetch(`${API_URL}/api/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session}`
-        },
-        body: JSON.stringify({
-          user_id: currentUserId,
-          service_id: providerId,
-          comment_text: newComment.trim()
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        // Add new comment to the beginning of the list
-        const newCommentObj = {
-          id: result.comment_id || Date.now(),
-          comment_text: newComment.trim(),
-          user_id: currentUserId,
-          preferred_name: 'You', // Will be replaced by actual name from API
-          created_at: new Date().toISOString()
-        };
-        setComments(prev => [newCommentObj, ...prev]);
-        setNewComment('');
-      } else {
-        throw new Error('Failed to submit comment');
-      }
-    } catch (error) {
-      console.error('Error submitting comment:', error);
-      alert('Failed to submit comment. Please try again.');
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="comments-display-overlay">
-      <div className="comments-display-content">
-        <div className="comments-display-header">
-          <h2><FaComment /> Comments for {provider?.business_name || provider?.name}</h2>
-          <FaTimes className="close-icon" onClick={onClose} />
-        </div>
-        <div className="comments-container">
-          {loading ? (
-            <div className="loading">Loading comments...</div>
-          ) : error ? (
-            <div className="error-state">{error}</div>
-          ) : comments.length === 0 ? (
-            <div className="no-comments">
-              <FaComment className="no-comments-icon" />
-              <p>No comments yet</p>
-              <p>Be the first to share your thoughts!</p>
-            </div>
-          ) : (
-            comments.map((comment) => (
-              <div key={comment.id} className="comment-card">
-                <div className="comment-header">
-                  <div className="user-info">
-                    <FaUser className="user-icon" />
-                    <span className="username">
-                      {comment.preferred_name || comment.user_name || 'Anonymous'}
-                    </span>
-                  </div>
-                  <div className="comment-actions">
-                    <div className="comment-date">
-                      {new Date(comment.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+    return (
+        <div className="comments-modal-overlay">
+            <div className="comments-modal">
+                <div className="comments-modal-header">
+                    <h3>Comments for {provider.business_name}</h3>
+                    <button 
+                        className="comments-modal-close" 
+                        onClick={onClose}
+                        aria-label="Close comments"
+                    >
+                        ×
+                    </button>
+                </div>
+                
+                <div className="comments-modal-content">
+                    <div className="comments-list">
+                        {comments.length > 0 ? (
+                            comments.map((comment) => (
+                                <div key={comment.id} className="comment-item">
+                                    <div className="comment-header">
+                                        <div className="comment-avatar">
+                                            {(comment.preferred_name || comment.user_name || 'U').charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="comment-meta">
+                                            <span className="comment-author">
+                                                {comment.preferred_name || comment.user_name || 'Anonymous'}
+                                            </span>
+                                            <span className="comment-date">
+                                                {new Date(comment.created_at).toLocaleDateString('en-US', { 
+                                                    year: 'numeric',
+                                                    month: 'short', 
+                                                    day: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p className="comment-text">{comment.comment_text}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="no-comments">
+                                <p>No comments yet. Be the first to comment!</p>
+                            </div>
+                        )}
                     </div>
-                    {currentUserId && comment.user_id && currentUserId === comment.user_id && (
-                      <button 
-                        className="delete-comment-btn"
-                        onClick={() => handleDeleteComment(comment.id)}
-                        title="Delete comment"
-                      >
-                        <FaTrash />
-                      </button>
+                    
+                    {/* Comment Input Section */}
+                    {currentUserId && (
+                        <div className="comment-input-section">
+                            <form onSubmit={handleSubmit} className="comment-form">
+                                <div className="comment-input-wrapper">
+                                    <div className="comment-user-avatar">
+                                        {currentUserName ? currentUserName.charAt(0).toUpperCase() : 'U'}
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={newComment}
+                                        onChange={(e) => setNewComment(e.target.value)}
+                                        placeholder="Add a comment..."
+                                        className="comment-input"
+                                        disabled={isSubmitting}
+                                    />
+                                    <button 
+                                        type="submit" 
+                                        className="comment-submit-btn"
+                                        disabled={!newComment.trim() || isSubmitting}
+                                    >
+                                        {isSubmitting ? 'Posting...' : 'Post'}
+                                    </button>
+                                </div>
+                            </form>
+                            {error && (
+                                <div className="comment-error">{error}</div>
+                            )}
+                        </div>
                     )}
-                  </div>
                 </div>
-                <div className="comment-content">{comment.comment_text}</div>
-              </div>
-            ))
-          )}
+            </div>
         </div>
-        
-        {/* Add Comment Form at Bottom */}
-        {currentUserId && (
-          <div className="add-comment-section">
-            <form onSubmit={handleAddComment} className="modal-comment-form">
-              <div className="modal-comment-input-wrapper">
-                <div className="modal-user-avatar">
-                  <FaUser />
-                </div>
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Add a comment, @ to mention"
-                  maxLength={1000}
-                  className="modal-comment-input"
-                />
-                <button 
-                  type="submit" 
-                  disabled={!newComment.trim()} 
-                  className="modal-post-button"
-                >
-                  Post
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
 };
 
 export default CommentsDisplay; 

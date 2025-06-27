@@ -950,6 +950,14 @@ const ImageCarousel = ({ images, onImageClick }) => {
                     ))}
                 </div>
             )}
+            {isReviewModalOpen && providerForReview && (
+                <ReviewModal
+                    isOpen={isReviewModalOpen}
+                    onClose={handleCloseReviewModal}
+                    onSubmit={handleSubmitReview}
+                    provider={providerForReview}
+                />
+            )}
         </div>
     );
 };
@@ -1445,6 +1453,12 @@ const Profile = () => {
     const [selectedServices, setSelectedServices] = useState([]);
     const [showServiceFilter, setShowServiceFilter] = useState(false);
     const [userScore, setUserScore] = useState(0);
+    // Review modal state for writing reviews
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [providerForReview, setProviderForReview] = useState(null);
+    // Batch comments state
+    const [commentsMap, setCommentsMap] = useState(new Map());
+    const [isLoadingComments, setIsLoadingComments] = useState(false);
     const ASPECT_RATIO = 1;
     const MIN_DIMENSION = 150;
 
@@ -1557,6 +1571,13 @@ const Profile = () => {
             if (!loading) setStatsLoading(false);
         }
     }, [baseRecommendations, loading, user]);
+
+    // Fetch comments for recommendations
+    useEffect(() => {
+        if (!loading && !statsLoading && enrichedRecommendations.length > 0) {
+            fetchBatchComments(enrichedRecommendations);
+        }
+    }, [enrichedRecommendations, loading, statsLoading]);
 
     const handleProviderLikeFromProfile = async (providerIdToLike) => {
         if (!user?.id || !user.primaryEmailAddress?.emailAddress) {
@@ -1731,6 +1752,102 @@ const Profile = () => {
     };
     const handleUpdateRecommendationSuccess = (responseData) => {
         fetchProfileData();
+    };
+
+    // Review modal handlers
+    const handleOpenReviewModal = (provider) => {
+        setProviderForReview(provider);
+        setIsReviewModalOpen(true);
+    };
+
+    const handleCloseReviewModal = () => {
+        setIsReviewModalOpen(false);
+        setProviderForReview(null);
+    };
+
+    const handleSubmitReview = async (reviewData) => {
+        if (!providerForReview || !user) return;
+        const session = window.Clerk.session;
+        if (!session) {
+            console.error("Clerk session not available");
+            return;
+        }
+        const token = await session.getToken();
+        if (!token) {
+            console.error("Not authenticated, no token");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/api/reviews`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    provider_id: providerForReview.provider_id || providerForReview.id,
+                    provider_email: providerForReview.email || "",
+                    user_id: user.id,
+                    email: user.primaryEmailAddress?.emailAddress,
+                    rating: reviewData.rating,
+                    content: reviewData.review,
+                    tags: reviewData.tags,
+                }),
+            });
+            if (!response.ok) throw new Error("Failed to submit review");
+
+            handleCloseReviewModal();
+            // Refresh recommendations to show updated stats
+            fetchProfileData();
+        } catch (error) {
+            console.error("Error submitting review:", error);
+        }
+    };
+
+    // Batch fetch comments for multiple recommendations
+    const fetchBatchComments = async (recommendations) => {
+        if (!recommendations || recommendations.length === 0) return;
+        
+        setIsLoadingComments(true);
+        try {
+            const serviceIds = recommendations.map(rec => rec.provider_id || rec.id).filter(Boolean);
+            
+            if (serviceIds.length === 0) return;
+
+            const response = await fetch(`${API_URL}/api/comments/batch`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ service_ids: serviceIds })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.comments) {
+                    const commentsMap = new Map();
+                    Object.entries(data.comments).forEach(([serviceId, comments]) => {
+                        commentsMap.set(serviceId, comments || []);
+                    });
+                    setCommentsMap(commentsMap);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching batch comments:', error);
+        } finally {
+            setIsLoadingComments(false);
+        }
+    };
+
+    // Handle new comment added
+    const handleCommentAdded = (serviceId, newComment) => {
+        setCommentsMap(prev => {
+            const newMap = new Map(prev);
+            const existingComments = newMap.get(serviceId) || [];
+            newMap.set(serviceId, [newComment, ...existingComments]);
+            return newMap;
+        });
     };
 
     const handleServiceSelection = (service) => {

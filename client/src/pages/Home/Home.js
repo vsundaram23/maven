@@ -102,6 +102,11 @@ const Home = () => {
     const [isLoadingPublicRecommendations, setIsLoadingPublicRecommendations] = useState(true);
     const [publicRecommendationsError, setPublicRecommendationsError] = useState(null);
 
+    // Batch comments state
+    const [recentCommentsMap, setRecentCommentsMap] = useState(new Map());
+    const [publicCommentsMap, setPublicCommentsMap] = useState(new Map());
+    const [isLoadingComments, setIsLoadingComments] = useState(false);
+
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [providerForReview, setProviderForReview] = useState(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -786,6 +791,20 @@ const Home = () => {
         fetchPublicRecommendations();
     }, [isSignedIn, API_URL]);
 
+    // Fetch comments for recent recommendations
+    useEffect(() => {
+        if (!isLoadingRecentRecommendations && recentRecommendations.length > 0) {
+            fetchBatchComments(recentRecommendations, setRecentCommentsMap);
+        }
+    }, [recentRecommendations, isLoadingRecentRecommendations]);
+
+    // Fetch comments for public recommendations
+    useEffect(() => {
+        if (!isLoadingPublicRecommendations && publicRecommendations.length > 0) {
+            fetchBatchComments(publicRecommendations, setPublicCommentsMap);
+        }
+    }, [publicRecommendations, isLoadingPublicRecommendations]);
+
     const handleSearch = async (e) => {
         if (e) e.preventDefault();
         const q = searchQuery.trim();
@@ -831,6 +850,59 @@ const Home = () => {
         if (user.username) {
             navigate(`/pro/${user.username}`);
         }
+    };
+
+    // Batch fetch comments for multiple recommendations
+    const fetchBatchComments = async (recommendations, setCommentsMap) => {
+        if (!recommendations || recommendations.length === 0) return;
+        
+        setIsLoadingComments(true);
+        try {
+            const serviceIds = recommendations.map(rec => rec.provider_id || rec.id).filter(Boolean);
+            
+            if (serviceIds.length === 0) return;
+
+            const response = await fetch(`${API_URL}/api/comments/batch`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ service_ids: serviceIds })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.comments) {
+                    const commentsMap = new Map();
+                    Object.entries(data.comments).forEach(([serviceId, comments]) => {
+                        commentsMap.set(serviceId, comments || []);
+                    });
+                    setCommentsMap(commentsMap);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching batch comments:', error);
+        } finally {
+            setIsLoadingComments(false);
+        }
+    };
+
+    // Handle new comment added
+    const handleCommentAdded = (serviceId, newComment) => {
+        // Update both maps in case the service appears in both lists
+        setRecentCommentsMap(prev => {
+            const newMap = new Map(prev);
+            const existingComments = newMap.get(serviceId) || [];
+            newMap.set(serviceId, [newComment, ...existingComments]);
+            return newMap;
+        });
+        
+        setPublicCommentsMap(prev => {
+            const newMap = new Map(prev);
+            const existingComments = newMap.get(serviceId) || [];
+            newMap.set(serviceId, [newComment, ...existingComments]);
+            return newMap;
+        });
     };
     
     // Calculate user level and progress
@@ -1097,6 +1169,8 @@ const Home = () => {
                                                 isLikedByCurrentUser={likedRecommendations.has(rec.id)}
                                                 loggedInUserId={dbUser?.clerkId}
                                                 currentUserName={user?.firstName}
+                                                comments={recentCommentsMap.get(String(rec.provider_id || rec.id)) || []}
+                                                onCommentAdded={handleCommentAdded}
                                             />
                                         ))}
                                     </>
@@ -1336,6 +1410,8 @@ const Home = () => {
                                             isLikedByCurrentUser={false}
                                             loggedInUserId={null}
                                             currentUserName={null}
+                                            comments={publicCommentsMap.get(String(rec.provider_id || rec.id)) || []}
+                                            onCommentAdded={handleCommentAdded}
                                         />
                                     ))}
                                 </>

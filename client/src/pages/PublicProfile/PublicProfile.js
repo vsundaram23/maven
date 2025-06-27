@@ -4,11 +4,10 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     FaConciergeBell,
     FaMapMarkerAlt,
-    FaPlusCircle,
-    FaStar,
-    FaThumbsUp
+    FaStar
 } from "react-icons/fa";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import RecommendationCard from "../../components/RecommendationCard/RecommendationCard";
 import ReviewModal from "../../components/ReviewModal/ReviewModal";
 import TrustScoreWheel from "../../components/TrustScoreWheel/TrustScoreWheel";
 import "../Profile/Profile.css";
@@ -32,92 +31,7 @@ const StarRatingDisplay = ({ rating }) => {
     );
 };
 
-const PublicRecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrentUser, loggedInUserId, recommenderName }) => {
-    const providerIdForLink = rec.provider_id || rec.id;
-    const displayAvgRating = (parseFloat(rec.average_rating) || 0).toFixed(1);
-    const displayTotalReviews = parseInt(rec.total_reviews, 10) || 0;
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-    const [linkCopied, setLinkCopied] = useState(false);
-
-    const shareLink = () => {
-        navigator.clipboard.writeText(`${window.location.origin}/provider/${providerIdForLink}`);
-        setDropdownOpen(false);
-        setLinkCopied(true);
-        setTimeout(() => setLinkCopied(false), 2000);
-    };
-
-    return (
-        <div className="public-profile-scope">
-        <li className="provider-card">
-            <div className="card-header">
-                <h3 className="card-title">
-                    <Link to={`/provider/${providerIdForLink}`} target="_blank" rel="noopener noreferrer" className="clickable provider-name-link" onClick={() => localStorage.setItem("selectedProvider", JSON.stringify(rec))}>
-                        {rec.business_name || "Unknown Business"}
-                    </Link>
-                </h3>
-                <div className="badge-wrapper-with-menu">
-                    {(parseFloat(rec.average_rating) || 0) >= 4.5 && (<span className="badge top-rated-badge">Top Rated</span>)}
-                    <div className="dropdown-wrapper">
-                        <button className="three-dots-button" onClick={() => setDropdownOpen(!dropdownOpen)} title="Options">⋮</button>
-                        {dropdownOpen && (
-                            <div className="dropdown-menu">
-                                <button className="dropdown-item" onClick={shareLink}>Share this Rec</button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            <div className="review-summary">
-                <StarRatingDisplay rating={rec.average_rating || 0} />
-                <span className="review-score">{displayAvgRating}</span>
-                <span className="review-count">({displayTotalReviews} {displayTotalReviews === 1 ? "review" : "reviews"})</span>
-                {loggedInUserId && (
-                    <button className="write-review-link" onClick={() => onWriteReview(rec)}>Write a Review</button>
-                )}
-                <button className={`like-button ${isLikedByCurrentUser ? 'liked' : ''}`} onClick={() => onLike(providerIdForLink)} title={isLikedByCurrentUser ? "Unlike" : "Like"} disabled={!loggedInUserId}>
-                    <FaThumbsUp /> <span className="like-count">{rec.num_likes || 0}</span>
-                </button>
-            </div>
-
-            <p className="card-description">{rec.recommender_message || "No description available"}</p>
-
-            <div className="tag-container">
-                {Array.isArray(rec.tags) && rec.tags.map((tag, idx) => (
-                    <span key={idx} className="tag-badge">{tag}</span>
-                ))}
-                {loggedInUserId && (
-                    <button className="add-tag-button" onClick={() => onWriteReview(rec)} aria-label="Add or edit tags">
-                        <FaPlusCircle />
-                    </button>
-                )}
-            </div>
-
-            {recommenderName && (
-              <div className="recommended-row">
-                  <span className="recommended-label">Recommended by:</span>
-                  <span className="recommended-name">{recommenderName}</span>
-                  {rec.date_of_recommendation && (
-                      <span className="recommendation-date">
-                          ({new Date(rec.date_of_recommendation).toLocaleDateString("en-US", { year: "2-digit", month: "numeric", day: "numeric" })})
-                      </span>
-                  )}
-              </div>
-            )}
-
-            <div className="action-buttons">
-                {loggedInUserId && (rec.recommender_phone || rec.recommender_email) && (
-                    <button className="secondary-button" onClick={() => {
-                        if (rec.recommender_phone) window.location.href = `sms:${rec.recommender_phone.replace(/\D/g, '')}`;
-                        else if (rec.recommender_email) window.location.href = `mailto:${rec.recommender_email}`;
-                    }}>Connect with Recommender</button>
-                )}
-            </div>
-            {linkCopied && (<div className="toast">Link copied!</div>)}
-        </li>
-        </div>
-    );
-};
+// Component removed - now using shared RecommendationCard component
 
 // Add this badge component after the existing components but before PublicProfile component
 const AchievementBadge = ({ recCount }) => {
@@ -235,6 +149,9 @@ const PublicProfile = () => {
     const [selectedServices, setSelectedServices] = useState([]);
     const [showServiceFilter, setShowServiceFilter] = useState(false);
     const [userScore, setUserScore] = useState(0);
+    // Batch comments state
+    const [commentsMap, setCommentsMap] = useState(new Map());
+    const [isLoadingComments, setIsLoadingComments] = useState(false);
 
 
     useEffect(() => {
@@ -453,6 +370,13 @@ const PublicProfile = () => {
         }
     }, [profileInfo, currentUserId, fetchConnectionStatus]);
 
+    // Fetch comments for recommendations
+    useEffect(() => {
+        if (!loading && recommendations.length > 0) {
+            fetchBatchComments(recommendations);
+        }
+    }, [recommendations, loading]);
+
     const getInitials = (name, email) => {
         if (name) {
             const names = name.split(' ').filter(n => n);
@@ -615,6 +539,51 @@ const PublicProfile = () => {
         setSelectedCities((prev) =>
             prev.includes(cityName) ? prev.filter((c) => c !== cityName) : [...prev, cityName]
         );
+    };
+
+    // Batch fetch comments for multiple recommendations
+    const fetchBatchComments = async (recommendations) => {
+        if (!recommendations || recommendations.length === 0) return;
+        
+        setIsLoadingComments(true);
+        try {
+            const serviceIds = recommendations.map(rec => rec.provider_id || rec.id).filter(Boolean);
+            
+            if (serviceIds.length === 0) return;
+
+            const response = await fetch(`${API_URL}/api/comments/batch`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ service_ids: serviceIds })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.comments) {
+                    const commentsMap = new Map();
+                    Object.entries(data.comments).forEach(([serviceId, comments]) => {
+                        commentsMap.set(serviceId, comments || []);
+                    });
+                    setCommentsMap(commentsMap);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching batch comments:', error);
+        } finally {
+            setIsLoadingComments(false);
+        }
+    };
+
+    // Handle new comment added
+    const handleCommentAdded = (serviceId, newComment) => {
+        setCommentsMap(prev => {
+            const newMap = new Map(prev);
+            const existingComments = newMap.get(serviceId) || [];
+            newMap.set(serviceId, [newComment, ...existingComments]);
+            return newMap;
+        });
     };
 
     if (loading) {
@@ -958,19 +927,21 @@ const PublicProfile = () => {
                     )}
                 </div>
                  {sortedRecommendations.length > 0 ? (
-                    <ul className="provider-list">
+                    <div className="recommendations-feed">
                         {sortedRecommendations.map((rec) => (
-                            <PublicRecommendationCard
+                            <RecommendationCard
                                 key={rec.id || rec.provider_id}
                                 rec={rec}
                                 onWriteReview={handleOpenReviewModal}
                                 onLike={handleLikeToggle}
                                 isLikedByCurrentUser={likedMap.get(rec.id || rec.provider_id) || false}
                                 loggedInUserId={currentUserId}
-                                recommenderName={userName}
+                                currentUserName={userName}
+                                comments={commentsMap.get(String(rec.provider_id || rec.id)) || []}
+                                onCommentAdded={handleCommentAdded}
                             />
                         ))}
-                    </ul>
+                    </div>
                 ) : (
                     (searchQuery.trim() || selectedCities.length > 0 || selectedServices.length > 0) ? (
                         <div className="profile-empty-state no-search-results">

@@ -22,18 +22,26 @@ const StarRatingDisplay = ({ rating }) => {
     );
 };
 
-const RecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrentUser, loggedInUserId, currentUserName }) => {
+const RecommendationCard = ({ 
+    rec, 
+    onWriteReview, 
+    onLike, 
+    isLikedByCurrentUser, 
+    loggedInUserId, 
+    currentUserName,
+    comments = [], // Comments passed as props instead of fetching individually
+    onCommentAdded // Callback when a new comment is added
+}) => {
     const providerIdForLink = rec.provider_id || rec.id;
     const displayAvgRating = (parseFloat(rec.average_rating) || 0).toFixed(1);
     const displayTotalReviews = parseInt(rec.total_reviews, 10) || 0;
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [linkCopied, setLinkCopied] = useState(false);
     const [isCommentsDisplayOpen, setIsCommentsDisplayOpen] = useState(false);
-    const [commentCount, setCommentCount] = useState(0);
-    const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState('');
     const [commentsError, setCommentsError] = useState(null);
     const [showCommentForm, setShowCommentForm] = useState(false);
+    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
     const dropdownRef = useRef(null);
 
     const API_URL = 'https://api.seanag-recommendations.org:8080';
@@ -46,36 +54,15 @@ const RecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrentUser, 
         setTimeout(() => setLinkCopied(false), 2000);
     };
 
-    // Fetch comments and count
-    useEffect(() => {
-        const fetchComments = async () => {
-            try {
-                const response = await fetch(`${API_URL}/api/comments/${providerIdForLink}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    const fetchedComments = data.success ? data.comments : [];
-                    setComments(fetchedComments);
-                    setCommentCount(fetchedComments.length);
-                } else {
-                    setComments([]);
-                    setCommentCount(0);
-                }
-            } catch (error) {
-                console.error('Error fetching comments:', error);
-                setComments([]);
-                setCommentCount(0);
-            }
-        };
-
-        if (providerIdForLink) {
-            fetchComments();
-        }
-    }, [providerIdForLink, API_URL]);
+    const commentCount = comments.length;
 
     // Handle comment submission
     const handleCommentSubmit = async (e) => {
         e.preventDefault();
-        if (!loggedInUserId || !newComment.trim()) return;
+        if (!loggedInUserId || !newComment.trim() || isSubmittingComment) return;
+
+        setIsSubmittingComment(true);
+        setCommentsError(null);
 
         try {
             const session = await window.Clerk.session.getToken();
@@ -94,25 +81,33 @@ const RecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrentUser, 
 
             if (response.ok) {
                 const result = await response.json();
-                // Add new comment to the beginning of the list
+                
+                // Create new comment object
                 const newCommentObj = {
-                    id: result.comment_id || Date.now(),
+                    id: result.comment.id || Date.now(),
                     comment_text: newComment.trim(),
                     user_id: loggedInUserId,
                     preferred_name: currentUserName,
-                    created_at: new Date().toISOString()
+                    created_at: new Date().toISOString(),
+                    service_id: providerIdForLink
                 };
-                setComments(prev => [newCommentObj, ...prev]);
-                setCommentCount(prev => prev + 1);
+                
+                // Clear form
                 setNewComment('');
                 setShowCommentForm(false);
-                setCommentsError(null);
+                
+                // Notify parent component about the new comment
+                if (onCommentAdded) {
+                    onCommentAdded(providerIdForLink, newCommentObj);
+                }
             } else {
                 throw new Error('Failed to submit comment');
             }
         } catch (error) {
             console.error('Error submitting comment:', error);
             setCommentsError('Failed to submit comment. Please try again.');
+        } finally {
+            setIsSubmittingComment(false);
         }
     };
 
@@ -183,8 +178,8 @@ const RecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrentUser, 
                     </div>
                     {rec.users_who_reviewed && 
                         rec.users_who_reviewed.length > 0 &&
-                        rec.users_who_reviewed.filter(name => 
-                            name && name !== rec.recommender_name
+                        rec.users_who_reviewed.filter(user => 
+                            user && user.name && user.name !== rec.recommender_name
                         ).length > 0 && (
                             <div className="public-recommended-row">
                                 <span className="public-recommended-label">
@@ -192,9 +187,10 @@ const RecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrentUser, 
                                 </span>
                                 <span className="public-used-by-names">
                                     {rec.users_who_reviewed
-                                        .filter(name => 
-                                            name && name !== rec.recommender_name
+                                        .filter(user => 
+                                            user && user.name && user.name !== rec.recommender_name
                                         )
+                                        .map(user => user.name)
                                         .join(", ")}
                                 </span>
                             </div>
@@ -242,78 +238,81 @@ const RecommendationCard = ({ rec, onWriteReview, onLike, isLikedByCurrentUser, 
             {/* Recent Comments Section */}
             {comments.length > 0 && (
                 <div className="recent-comments-section">
-                    {comments.slice(0, 2).map((comment) => (
-                        <div key={comment.id} className="comment-preview">
-                            <div className="comment-preview-header">
-                                <span className="comment-preview-author">
-                                    {comment.preferred_name || comment.user_name || 'Anonymous'}
-                                </span>
-                                <span className="comment-preview-date">
-                                    {new Date(comment.created_at).toLocaleDateString()}
-                                </span>
+                    <div className="recent-comments-list">
+                        {comments.slice(0, 2).map((comment) => (
+                            <div key={comment.id} className="recent-comment-item">
+                                <div className="recent-comment-header">
+                                    <span className="recent-comment-author">
+                                        {comment.preferred_name || comment.user_name || 'Anonymous'}
+                                    </span>
+                                    <span className="recent-comment-date">
+                                        {new Date(comment.created_at).toLocaleDateString('en-US', { 
+                                            month: 'short', 
+                                            day: 'numeric' 
+                                        })}
+                                    </span>
+                                </div>
+                                <p className="recent-comment-text">{comment.comment_text}</p>
                             </div>
-                            <div className="comment-preview-text">{comment.comment_text}</div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                     
                     {comments.length > 2 && (
                         <button 
-                            className="view-all-comments-inline"
+                            className="view-all-comments-link"
                             onClick={() => setIsCommentsDisplayOpen(true)}
                         >
-                            View all {commentCount} comments
+                            View all {comments.length} comments
                         </button>
                     )}
                 </div>
             )}
 
-            {/* Add Comment Form */}
+            {/* Comment Form */}
             {showCommentForm && loggedInUserId && (
-                <form onSubmit={handleCommentSubmit} className="inline-comment-form">
-                    <div className="inline-comment-input-wrapper">
-                        <div className="user-avatar">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                        </div>
-                        <div className="inline-comment-input-container">
-                            <textarea
+                <div className="comment-form-section">
+                    <form onSubmit={handleCommentSubmit} className="comment-form">
+                        <div className="comment-input-wrapper">
+                            <div className="comment-user-avatar">
+                                {currentUserName ? currentUserName.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                            <input
+                                type="text"
                                 value={newComment}
                                 onChange={(e) => setNewComment(e.target.value)}
-                                placeholder="Add a comment, @ to mention"
-                                rows={2}
-                                maxLength={1000}
+                                placeholder="Add a comment..."
+                                className="comment-input"
+                                disabled={isSubmittingComment}
                             />
-                            <div className="inline-comment-actions">
-                                <button 
-                                    type="button" 
-                                    onClick={() => setShowCommentForm(false)}
-                                    className="cancel-comment-button"
-                                >
-                                    Cancel
-                                </button>
-                                <button 
-                                    type="submit" 
-                                    disabled={!newComment.trim()} 
-                                    className="post-comment-button"
-                                >
-                                    Post
-                                </button>
-                            </div>
+                            <button 
+                                type="submit" 
+                                className="comment-submit-btn"
+                                disabled={!newComment.trim() || isSubmittingComment}
+                            >
+                                {isSubmittingComment ? 'Posting...' : 'Post'}
+                            </button>
                         </div>
-                    </div>
-                </form>
+                    </form>
+                    {commentsError && (
+                        <div className="comment-error">{commentsError}</div>
+                    )}
+                </div>
             )}
-            {linkCopied && (<div className="public-toast">Link copied to clipboard!</div>)}
-            {commentsError && (<div className="public-toast error">{commentsError}</div>)}
 
-            <CommentsDisplay
-                isOpen={isCommentsDisplayOpen}
-                onClose={() => setIsCommentsDisplayOpen(false)}
-                provider={rec}
-                currentUserId={loggedInUserId}
-            />
+            {linkCopied && (<div className="toast">Link copied!</div>)}
+
+            {/* Comments Display Modal */}
+            {isCommentsDisplayOpen && (
+                <CommentsDisplay
+                    isOpen={isCommentsDisplayOpen}
+                    onClose={() => setIsCommentsDisplayOpen(false)}
+                    provider={rec}
+                    currentUserId={loggedInUserId}
+                    currentUserName={currentUserName}
+                    comments={comments}
+                    onCommentAdded={onCommentAdded}
+                />
+            )}
         </div>
     );
 };
