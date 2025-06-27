@@ -23,8 +23,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import "./ProviderProfile.css";
 
-// const API_URL = "https://api.seanag-recommendations.org:8080";
-const API_URL = "http://localhost:3000";
+const API_URL = "https://api.seanag-recommendations.org:8080";
+// const API_URL = "http://localhost:3000";
 
 const ProviderProfile = () => {
     const { isLoaded, isSignedIn, user } = useUser();
