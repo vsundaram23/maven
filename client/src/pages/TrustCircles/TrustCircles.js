@@ -1,11 +1,12 @@
 import { useUser } from "@clerk/clerk-react";
+import { ChevronDownIcon } from "@heroicons/react/24/solid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     FaCheck,
-    FaChevronDown,
+    FaConciergeBell,
     FaEye,
-    FaFilter,
     FaHeart,
+    FaMapMarkerAlt,
     FaPlusCircle,
     FaSearch,
     FaStar,
@@ -156,6 +157,8 @@ const TrustCircles = () => {
 
     const [isServiceFilterVisible, setIsServiceFilterVisible] = useState(false);
     const [selectedServices, setSelectedServices] = useState([]);
+    const [isCityFilterVisible, setIsCityFilterVisible] = useState(false);
+    const [selectedCities, setSelectedCities] = useState([]);
 
     const [followingConnections, setFollowingConnections] = useState([]);
     const [followersTabActiveList, setFollowersTabActiveList] =
@@ -460,6 +463,17 @@ const TrustCircles = () => {
         }
     }, [activeTab, currentUser, suggestedFollows.length, fetchSuggestedFollows]);
 
+    const availableCities = useMemo(() => {
+        const cityMap = new Map();
+        myRecRawProviders.forEach((rec) => {
+            const city = rec.city || "Other";
+            if (city) {
+                cityMap.set(city, (cityMap.get(city) || 0) + 1);
+            }
+        });
+        return Array.from(cityMap.entries()).sort((a, b) => b[1] - a[1]);
+    }, [myRecRawProviders]);
+
     const availableServices = useMemo(() => {
         const serviceMap = new Map();
         myRecRawProviders.forEach((rec) => {
@@ -495,6 +509,13 @@ const TrustCircles = () => {
             );
         }
 
+        if (selectedCities.length > 0) {
+            list = list.filter((p) => {
+                const city = p.city || "Other";
+                return selectedCities.includes(city);
+            });
+        }
+
         // Default sort by most recent recommendation date
         return list.sort((a, b) => {
             const dateA = a.date_of_recommendation
@@ -510,7 +531,7 @@ const TrustCircles = () => {
 
             return (a.originalIndex || 0) - (b.originalIndex || 0); // Fallback for items without dates
         });
-    }, [myRecRawProviders, selectedServices]);
+    }, [myRecRawProviders, selectedServices, selectedCities]);
 
     // Sort communities by recommendation count (descending)
     const sortedMyCommunities = useMemo(() => {
@@ -577,7 +598,7 @@ const TrustCircles = () => {
             !currentUserId ||
             !currentUserEmail
         ) {
-            alert("Please sign in to submit a review");
+            console.warn("Please sign in to submit a review");
             return;
         }
         try {
@@ -603,13 +624,13 @@ const TrustCircles = () => {
             setSuccessMessage("Your review has been submitted successfully. Thank you!");
             setShowSuccessModal(true);
         } catch (err) {
-            alert(`Error submitting review: ${err.message}`);
+            console.error(`Error submitting review: ${err.message}`);
         }
     };
 
     const handleMyRecLike = async (providerId) => {
         if (!currentUserId || !currentUserEmail) {
-            alert("Please log in to like/unlike.");
+            console.warn("Please log in to like/unlike.");
             return;
         }
         const provToUpdate = myRecRawProviders.find((p) => p.id === providerId);
@@ -682,7 +703,7 @@ const TrustCircles = () => {
                 else revertedSet.delete(providerId);
                 return revertedSet;
             });
-            alert(`Failed to update like: ${error.message}`);
+            console.error(`Failed to update like: ${error.message}`);
         }
     };
 
@@ -706,7 +727,7 @@ const TrustCircles = () => {
                     setProfileToNavigate(data.username);
                     setShowProfileConfirmation(true);
                 } else {
-                    alert("This user is already on Tried & Trusted, but their profile could not be found.");
+                    console.warn("This user is already on Tried & Trusted, but their profile could not be found.");
                 }
             } else if (res.ok && !data.exists) {
                 const message = `Hey! I've started sharing my Recs on Tried & Trusted and would love for you to join. You can join here: https://triedandtrusted.ai/`;
@@ -716,7 +737,7 @@ const TrustCircles = () => {
                 throw new Error(data.error || 'Failed to check phone number.');
             }
         } catch (err) {
-            alert(`An error occurred: ${err.message}`);
+            console.error(`An error occurred: ${err.message}`);
         }
     };
 
@@ -737,13 +758,13 @@ const TrustCircles = () => {
                 const data = await res.json();
                 throw new Error(data.error || "Failed to create community.");
             }
-            alert("Community created!");
+            console.log("Community created!");
             setNewCommunityName("");
             setNewCommunityDescription("");
             setShowCreateCommunityModal(false);
             fetchMyTrustCircleData();
         } catch (err) {
-            alert(`Error creating community: ${err.message}`);
+            console.error(`Error creating community: ${err.message}`);
         }
     };
     const handleRequestToJoinCommunity = async (commId) => {
@@ -764,10 +785,10 @@ const TrustCircles = () => {
                 const data = await res.json();
                 throw new Error(data.error || "Failed to request join.");
             }
-            alert("Request to join sent!");
+            console.log("Request to join sent!");
             fetchMyTrustCircleData();
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            console.error(`Error: ${err.message}`);
         }
     };
     const handleApproveMembership = async (commId, targetUId) => {
@@ -786,10 +807,10 @@ const TrustCircles = () => {
                 const data = await res.json();
                 throw new Error(data.error || "Failed to approve.");
             }
-            alert("Membership approved!");
+            console.log("Membership approved!");
             fetchMyTrustCircleData();
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            console.error(`Error: ${err.message}`);
         }
     };
     const navigateToCommunity = (commId) => navigate(`/community/${commId}`);
@@ -805,6 +826,14 @@ const TrustCircles = () => {
         }
     };
 
+    const handleCitySelection = (cityName) => {
+        setSelectedCities((prev) =>
+            prev.includes(cityName)
+                ? prev.filter((c) => c !== cityName)
+                : [...prev, cityName]
+        );
+    };
+
     const handleServiceSelection = (serviceId) => {
         setSelectedServices((prev) =>
             prev.includes(serviceId)
@@ -815,7 +844,7 @@ const TrustCircles = () => {
 
     const handleFollowUser = async (toUserId) => {
         if (!currentUserId) {
-            alert("You must be logged in to follow users.");
+            console.warn("You must be logged in to follow users.");
             return;
         }
 
@@ -850,7 +879,7 @@ const TrustCircles = () => {
                 }
                 setFollowingConnections(prev => prev.filter(f => f.id !== toUserId));
             }
-            alert('An error occurred while trying to follow the user. Please try again.');
+            console.error('An error occurred while trying to follow the user. Please try again.');
         }
     };
 
@@ -1332,7 +1361,7 @@ const TrustCircles = () => {
                     <h1 className="section-heading">
                         Recommendations Shared With You
                     </h1>
-                    {availableServices.length > 0 && (
+                    {(availableServices.length > 0 || availableCities.length > 0) && (
                         <div className="filters-container">
                             <div className="profile-city-filter-toggle-section">
                                 <button
@@ -1341,76 +1370,154 @@ const TrustCircles = () => {
                                     }
                                     className="profile-city-filter-toggle"
                                 >
-                                    <FaFilter className="profile-filter-icon" />
+                                    <FaConciergeBell className="profile-filter-icon" />
                                     <span className="filter-button-text">
-                                        Filter by Service
+                                        <span className="filter-button-text-long">
+                                            Filter by{" "}
+                                        </span>
+                                        <span>Service</span>
                                     </span>
                                     {selectedServices.length > 0 && (
                                         <span className="profile-active-filters-badge">
                                             {selectedServices.length}
                                         </span>
                                     )}
-                                    <FaChevronDown
+                                    <ChevronDownIcon
                                         className={`profile-filter-chevron ${
                                             isServiceFilterVisible ? "rotated" : ""
                                         }`}
                                     />
                                 </button>
-                                {isServiceFilterVisible && (
-                                    <div className="profile-city-filter-wrapper">
-                                        <div className="profile-city-filter-checkboxes">
-                                            {availableServices
-                                                .sort(
-                                                    (a, b) =>
-                                                        (serviceIdCounts[b.id] || 0) -
-                                                        (serviceIdCounts[a.id] || 0)
-                                                )
-                                                .map((service) => (
-                                                    <div
-                                                        key={service.id}
-                                                        className="profile-city-checkbox-item"
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            id={`service-${service.id}`}
-                                                            checked={selectedServices.includes(
-                                                                service.id
-                                                            )}
-                                                            onChange={() =>
-                                                                handleServiceSelection(
-                                                                    service.id
-                                                                )
-                                                            }
-                                                        />
-                                                        <label
-                                                            htmlFor={`service-${service.id}`}
-                                                            className="profile-city-checkbox-label"
-                                                        >
-                                                            {service.name}
-                                                        </label>
-                                                        <span className="profile-city-count">
-                                                            (
-                                                            {serviceIdCounts[
-                                                                service.id
-                                                            ] || 0}
-                                                            )
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            {selectedServices.length > 0 && (
-                                                <button
-                                                    onClick={() =>
-                                                        setSelectedServices([])
-                                                    }
-                                                    className="profile-city-clear-all"
-                                                >
-                                                    Clear
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
+                            {availableCities.length > 0 && (
+                                <div className="profile-city-filter-toggle-section">
+                                    <button
+                                        onClick={() =>
+                                            setIsCityFilterVisible((prev) => !prev)
+                                        }
+                                        className="profile-city-filter-toggle"
+                                    >
+                                        <FaMapMarkerAlt className="profile-filter-icon" />
+                                        <span className="filter-button-text">
+                                            <span className="filter-button-text-long">
+                                                Filter by{" "}
+                                            </span>
+                                            <span>City</span>
+                                        </span>
+                                        {selectedCities.length > 0 && (
+                                            <span className="profile-active-filters-badge">
+                                                {selectedCities.length}
+                                            </span>
+                                        )}
+                                        <ChevronDownIcon
+                                            className={`profile-filter-chevron ${
+                                                isCityFilterVisible ? "rotated" : ""
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+                            )}
+
+                            {isServiceFilterVisible && (
+                                <div className="profile-city-filter-wrapper">
+                                    <div className="profile-city-filter-checkboxes">
+                                        {availableServices
+                                            .sort(
+                                                (a, b) =>
+                                                    (serviceIdCounts[b.id] || 0) -
+                                                    (serviceIdCounts[a.id] || 0)
+                                            )
+                                            .map((service) => (
+                                                <div
+                                                    key={service.id}
+                                                    className="profile-city-checkbox-item"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`service-${service.id}`}
+                                                        checked={selectedServices.includes(
+                                                            service.id
+                                                        )}
+                                                        onChange={() =>
+                                                            handleServiceSelection(
+                                                                service.id
+                                                            )
+                                                        }
+                                                    />
+                                                    <label
+                                                        htmlFor={`service-${service.id}`}
+                                                        className="profile-city-checkbox-label"
+                                                    >
+                                                        {service.name}
+                                                    </label>
+                                                    <span className="profile-city-count">
+                                                        (
+                                                        {serviceIdCounts[
+                                                            service.id
+                                                        ] || 0}
+                                                        )
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        {selectedServices.length > 0 && (
+                                            <button
+                                                onClick={() =>
+                                                    setSelectedServices([])
+                                                }
+                                                className="profile-city-clear-all"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            {isCityFilterVisible && availableCities.length > 0 && (
+                                <div className="profile-city-filter-wrapper">
+                                    <div className="profile-city-filter-checkboxes">
+                                        {availableCities.map(
+                                            ([cityName, count]) => (
+                                                <div
+                                                    key={cityName}
+                                                    className="profile-city-checkbox-item"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`city-${cityName.replace(/\s+/g, '-')}`}
+                                                        checked={selectedCities.includes(
+                                                            cityName
+                                                        )}
+                                                        onChange={() =>
+                                                            handleCitySelection(
+                                                                cityName
+                                                            )
+                                                        }
+                                                    />
+                                                    <label
+                                                        htmlFor={`city-${cityName.replace(/\s+/g, '-')}`}
+                                                        className="profile-city-checkbox-label"
+                                                    >
+                                                        {cityName}
+                                                    </label>
+                                                    <span className="profile-city-count">
+                                                        ({count})
+                                                    </span>
+                                                </div>
+                                            )
+                                        )}
+                                        {selectedCities.length > 0 && (
+                                            <button
+                                                onClick={() =>
+                                                    setSelectedCities([])
+                                                }
+                                                className="profile-city-clear-all"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                     {loadingMyRecommendations && (
@@ -1725,9 +1832,7 @@ const TrustCircles = () => {
                                                     )
                                                         window.location.href = `mailto:${provider.recommender_email}`;
                                                     else
-                                                        alert(
-                                                            "Recommender contact info not available."
-                                                        );
+                                                        console.warn("Recommender contact info not available.");
                                                 }}
                                             >
                                                 Connect with Recommender

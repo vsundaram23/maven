@@ -67,9 +67,9 @@ const getVisibleProvidersBaseQuery = (currentInternalUserId) => {
         sp.recommender_message,
         sp.visibility,
         sp.images,
-        sp.category_id AS recommended_service_id,
-        sc.name AS recommended_service_name,
-        sc.name AS category,
+        sp.service_id AS recommended_service_id,
+        s.display_name AS recommended_service_name,
+        sc.name as category,
         sp.recommended_by AS recommender_user_id,
         rec_user.username as recommender_username,
         rec_user.name AS recommender_name,
@@ -92,7 +92,9 @@ const getVisibleProvidersBaseQuery = (currentInternalUserId) => {
     FROM
         public.service_providers sp
     LEFT JOIN
-        public.service_categories sc ON sp.service_id = sc.service_id
+        public.services s ON sp.service_id = s.service_id
+    LEFT JOIN
+        public.service_categories sc ON s.category_id = sc.service_id
     LEFT JOIN
         public.users rec_user ON sp.recommended_by = rec_user.id
     LEFT JOIN
@@ -685,8 +687,8 @@ const getPublicRecommendations = async (req, res) => {
                 sp.visibility,
                 sp.images,
                 sp.service_id AS recommended_service_id,
-                sc.name AS recommended_service_name,
-                sc.name AS category,
+                s.display_name AS recommended_service_name,
+                sc.name as category,
                 sp.recommended_by AS recommender_user_id,
                 rec_user.username as recommender_username,
                 rec_user.name AS recommender_name,
@@ -703,7 +705,9 @@ const getPublicRecommendations = async (req, res) => {
             FROM
                 public.service_providers sp
             LEFT JOIN
-                public.service_categories sc ON sp.service_id = sc.service_id
+                public.services s ON sp.service_id = s.service_id
+            LEFT JOIN
+                public.service_categories sc ON s.category_id = sc.service_id
             LEFT JOIN
                 public.users rec_user ON sp.recommended_by = rec_user.id
             WHERE

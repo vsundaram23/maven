@@ -1265,205 +1265,49 @@ body {
 
 /* Trust Points Wheel in Profile Stats */
 .filters-container {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
-    margin-bottom: 1rem;
-}
-
-.filters-container.filters-container--open {
-    flex-direction: column;
-}
-
-.filters-container .profile-city-filter-toggle-section {
-    flex: 1;
-    margin-bottom: 0 !important;
-}
-
-.profile-city-filter-toggle .filter-button-text {
-    flex-grow: 1;
-    text-align: left;
-    white-space: nowrap;
-}
-
-.filter-button-text-long {
-    display: none;
-}
-
-@media (min-width: 520px) {
-    .filter-button-text-long {
-        display: inline;
-    }
-}
-
-/* City filtering styles */
-.profile-city-filter-toggle-section {
-    margin-bottom: 1rem;
-}
-
-.profile-city-filter-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    background-color: var(--profile-bg-white);
-    border: 1px solid var(--profile-border-color);
-    border-radius: 0.5rem;
-    color: var(--profile-text-primary);
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    width: 100%;
-    justify-content: flex-start;
-}
-
-.profile-city-filter-toggle:hover {
-    background-color: #f8fafc;
-    border-color: var(--profile-secondary-color);
-}
-
-.profile-filter-icon {
-    width: 1.1rem;
-    height: 1.1rem;
-    color: var(--profile-text-muted);
-    flex-shrink: 0;
-}
-
-.profile-active-filters-badge {
-    background-color: var(--profile-secondary-color);
-    color: white;
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.2rem 0.5rem;
-    border-radius: 9999px;
-    min-width: 1.25rem;
-    text-align: center;
-    margin-left: auto;
-    margin-right: 0.5rem;
-}
-
-.profile-filter-chevron {
-    width: 1rem;
-    height: 1rem;
-    color: var(--profile-text-muted);
-    transition: transform 0.2s ease;
-    flex-shrink: 0;
-}
-
-.profile-filter-chevron.rotated {
-    transform: rotate(180deg);
+    position: relative;
 }
 
 .profile-city-filter-wrapper {
-    background-color: var(--profile-bg-gray);
-    border: 1px solid var(--profile-border-color);
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    background-color: var(--profile-bg-gray, #f8f9fa);
+    border: 1px solid var(--profile-border-color, #e9ecef);
     border-radius: 0.5rem;
     padding: 1rem;
-    margin-top: 0.5rem;
     animation: slideDown 0.2s ease-out;
+    z-index: 20;
 }
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
 .profile-city-filter-checkboxes {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 0.5rem;
     align-items: center;
 }
 .profile-city-checkbox-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     cursor: pointer;
-    padding: 0.5rem 0.75rem;
+    padding: 0.4rem 0.6rem;
     border-radius: 0.375rem;
-    background-color: var(--profile-bg-white);
-    border: 1px solid var(--profile-border-color);
+    background-color: var(--profile-bg-white, #ffffff);
+    border: 1px solid var(--profile-border-color, #e9ecef);
     transition: all 0.2s ease;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    flex: 0 0 auto;
 }
-.profile-city-checkbox-item:hover {
-    background-color: #f8fafc;
-    border-color: var(--profile-secondary-color);
-}
-.profile-city-checkbox-item input[type="checkbox"] {
-    margin: 0;
-    cursor: pointer;
-}
-.profile-city-checkbox-label {
-    font-weight: 500;
-    color: var(--profile-text-primary);
-}
-.profile-city-count {
-    color: var(--profile-text-muted);
-    font-size: 0.8rem;
-}
-.profile-city-clear-all {
-    background-color: var(--profile-secondary-color);
-    color: white;
-    border: none;
-    padding: 0.4rem 0.8rem;
-    border-radius: 0.375rem;
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-.profile-city-clear-all:hover {
-    background-color: #1d4ed8;
-}
-
-.profile-recommendations-count {
-    display: block;
-    font-size: 0.9rem;
-    color: var(--profile-text-muted);
-    text-align: center;
-    font-style: italic;
-}
-
-/* Filter clear buttons for empty states */
-.profile-filter-clear-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    justify-content: center;
-    margin-top: 1rem;
-}
-
 @media (max-width: 768px) {
-    .profile-city-filter-toggle {
-        font-size: 0.85rem;
-        padding: 0.6rem 0.85rem;
-    }
-    
-    .profile-filter-icon {
-        width: 1rem;
-        height: 1rem;
-    }
-    
     .profile-city-filter-checkboxes {
         flex-direction: column;
         align-items: stretch;
     }
     
     .profile-city-checkbox-item {
-        justify-content: flex-start;
-    }
-    
-    .profile-filter-clear-buttons {
-        flex-direction: column;
-        align-items: center;
+        justify-content: space-between;
     }
 }
 .category-filter-bar {
