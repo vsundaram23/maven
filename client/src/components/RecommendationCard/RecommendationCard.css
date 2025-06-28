@@ -2,22 +2,22 @@
     background-color: #ffffff;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
-    padding: 20px 24px;
+    padding: 16px 18px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     width: 100%;
     text-align: left;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 6px;
     box-sizing: border-box;
-  }
+}
   
   .public-card-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 10px;
-  }
+    gap: 8px;
+}
   
   .public-card-title {
     font-size: 1.4rem;
@@ -114,7 +114,8 @@
     gap: 8px;
     font-size: 0.9rem;
     color: #495057;
-  }
+    margin: 0;
+}
   
   .star-rating-display {
     display: flex;
@@ -272,17 +273,18 @@
     font-size: 0.95rem;
     line-height: 1.6;
     color: #343a40;
-    margin: 4px 0;
+    margin: 2px 0 0.25rem 0;
     flex-grow: 1;
-    min-height: 60px;
-  }
+    min-height: 40px;
+}
   
   .public-tag-container {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     align-items: center;
-  }
+    margin: 0.25rem 0;
+}
   
   .public-tag-badge {
     background-color: #e7f5ff;
@@ -320,9 +322,9 @@
     flex-wrap: wrap;
     gap: 6px;
     border-top: 1px solid #f1f3f5;
-    padding-top: 10px;
-    margin-top: auto;
-  }
+    padding-top: 6px;
+    margin-top: 0.25rem;
+}
   
   .public-recommended-label {
     font-weight: 500;
@@ -348,10 +350,10 @@
   }
   
   /* Bottom Action Bar */
-  .public-bottom-actions {
-    margin-top: 12px;
-    padding-top: 12px;
-  }
+.public-bottom-actions {
+    margin-top: 8px;
+    padding-top: 8px;
+}
 
   .public-bottom-actions-left {
     display: flex;
@@ -363,11 +365,11 @@
   }
 
   /* Recent Comments Section */
-  .recent-comments-section {
-    margin-top: 12px;
+.recent-comments-section {
+    margin-top: 8px;
     border-top: 1px solid #f1f3f5;
-    padding-top: 12px;
-  }
+    padding-top: 8px;
+}
 
   .recent-comments-list {
     margin-bottom: 8px;
@@ -473,12 +475,12 @@
   }
 
   /* Inline Comment Form */
-  .inline-comment-section {
-    margin-top: 12px;
+.inline-comment-section {
+    margin-top: 8px;
     border-top: 1px solid #f1f3f5;
-    padding-top: 12px;
-    margin-bottom: 20px;
-  }
+    padding-top: 8px;
+    margin-bottom: 16px;
+}
 
   .inline-comment-input-wrapper {
     display: flex;
@@ -679,8 +681,8 @@
   /* Mobile responsive - ensure proper centering */
   @media (max-width: 768px) {
     .public-provider-card {
-      margin-left: 16px;
-      margin-right: 16px;
+      margin-left: auto;
+      margin-right: auto;
       width: calc(100% - 32px);
       max-width: none;
     }
