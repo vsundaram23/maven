@@ -114,15 +114,15 @@ const createRecommendation = async (req, res) => {
             const actualDateOfRecommendation = new Date();
 
             const providerInsertQuery = `
-                INSERT INTO service_providers (
-                    id, business_name, description, category_id, service_id, recommended_by, date_of_recommendation,
-                    email, phone_number, website, tags, city, state, zip_code, service_scope, price_range,
-                    business_contact, provider_message, recommender_message, visibility, num_likes, notes, price_paid,
-                    created_at, updated_at, images, initial_rating
-                ) VALUES (
-                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 0, $21, $22, $23, $24, $25, $26
-                ) RETURNING id;
-            `;
+      INSERT INTO service_providers (
+        id, business_name, description, category_id, service_id, recommended_by, date_of_recommendation,
+        email, phone_number, website, tags, city, state, zip_code, service_scope, price_range,
+        business_contact, provider_message, recommender_message, visibility, num_likes, notes, price_paid,
+        created_at, updated_at, images, initial_rating
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 0, $21, $22, $23, $24, $25, $26
+      ) RETURNING id;
+    `;
 
             const providerValues = [
                 newProviderId,
@@ -155,17 +155,20 @@ const createRecommendation = async (req, res) => {
 
             await client.query(providerInsertQuery, providerValues);
 
+            // After inserting into reviews:
             const reviewInsertQuery = `
-                INSERT INTO reviews (id, provider_id, user_id, rating, content, created_at)
-                VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP);
-                `;
-            await client.query(reviewInsertQuery, [
+  INSERT INTO reviews (id, provider_id, user_id, rating, content, created_at)
+  VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+  RETURNING id;
+`;
+            const reviewResult = await client.query(reviewInsertQuery, [
                 uuidv4(),
                 newProviderId,
                 recommenderUserId,
                 rating,
                 recommender_message,
             ]);
+            const newReviewId = reviewResult.rows[0].id;
 
             if (
                 publish_scope === "Specific Trust Circles" &&
@@ -211,6 +214,7 @@ const createRecommendation = async (req, res) => {
                 success: true,
                 message: "Recommendation submitted for review successfully!",
                 providerId: newProviderId,
+                reviewId: newReviewId, // <-- add this
             });
         } catch (err) {
             if (client) await client.query("ROLLBACK");
@@ -454,8 +458,9 @@ const updateRecommendation = async (req, res) => {
 
             // Update the corresponding review if rating is provided
             if (rating !== undefined && rating !== null) {
-                const recommenderUserId = updatedServiceProvider.rows[0].recommended_by;
-                
+                const recommenderUserId =
+                    updatedServiceProvider.rows[0].recommended_by;
+
                 // Update the review rating to match the updated initial_rating
                 await client.query(
                     `UPDATE reviews SET 
@@ -463,7 +468,12 @@ const updateRecommendation = async (req, res) => {
                         content = COALESCE($2, content),
                         updated_at = NOW()
                     WHERE provider_id = $3 AND user_id = $4`,
-                    [rating, recommender_message, serviceProviderId, recommenderUserId]
+                    [
+                        rating,
+                        recommender_message,
+                        serviceProviderId,
+                        recommenderUserId,
+                    ]
                 );
             }
 
@@ -931,6 +941,116 @@ const deleteRecommendation = async (req, res) => {
     }
 };
 
+const createList = async (req, res) => {
+    const { title, description, reviewIds, user_id, email, community_id } =
+        req.body;
+
+    if (!title || !Array.isArray(reviewIds) || reviewIds.length === 0) {
+        return res
+            .status(400)
+            .json({
+                success: false,
+                message: "Title and at least one review are required.",
+            });
+    }
+
+    let client;
+    try {
+        client = await pool.connect();
+        await client.query("BEGIN");
+
+        // Get internal user id from Clerk ID or email
+        const userResult = await client.query(
+            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
+            [user_id, email]
+        );
+        if (userResult.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found." });
+        }
+        const creatorUserId = userResult.rows[0].id;
+
+        // Use provided community_id or set to a default/null if needed
+        const commId = community_id || null;
+
+        // Create list
+        const listId = uuidv4();
+        await client.query(
+            `INSERT INTO lists (id, title, description, user_id, community_id) VALUES ($1, $2, $3, $4, $5)`,
+            [listId, title, description || null, creatorUserId, commId]
+        );
+
+        // Link reviews
+        for (const reviewId of reviewIds) {
+            await client.query(
+                `INSERT INTO list_reviews (list_id, review_id) VALUES ($1, $2)`,
+                [listId, reviewId]
+            );
+        }
+
+        await client.query("COMMIT");
+        res.status(201).json({ success: true, listId });
+    } catch (err) {
+        if (client) await client.query("ROLLBACK");
+        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        if (client) client.release();
+    }
+};
+
+const getList = async (req, res) => {
+    const { listId } = req.params;
+    try {
+        const listRes = await pool.query(`SELECT * FROM lists WHERE id = $1`, [
+            listId,
+        ]);
+        if (listRes.rows.length === 0) {
+            return res
+                .status(404)
+                .json({ success: false, message: "List not found." });
+        }
+        const list = listRes.rows[0];
+
+        const recsRes = await pool.query(
+            `SELECT sp.* FROM list_reviews lr
+             JOIN service_providers sp ON lr.review_id = sp.id
+             WHERE lr.list_id = $1`,
+            [listId]
+        );
+
+        res.json({ success: true, list, recommendations: recsRes.rows });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+const getUserLists = async (req, res) => {
+    const { user_id: clerkUserId, email: userEmail } = req.query;
+    try {
+        const userResult = await pool.query(
+            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
+            [clerkUserId, userEmail]
+        );
+        if (userResult.rows.length === 0) {
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found." });
+        }
+        const creatorUserId = userResult.rows[0].id;
+
+        const listRes = await pool.query(
+            `SELECT * FROM lists WHERE user_id = $1 ORDER BY created_at DESC`,
+            [creatorUserId]
+        );
+        res.json({ success: true, lists: listRes.rows });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
 module.exports = {
     createRecommendation,
     addReviewToProvider,
@@ -943,4 +1063,7 @@ module.exports = {
     getReviewStats,
     getReviewsForProvider,
     deleteRecommendation,
+    createList,
+    getList,
+    getUserLists,
 };

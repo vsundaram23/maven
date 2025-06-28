@@ -331,6 +331,8 @@ export default function ListRecommendationForm({
                 images: [],
             },
         ]);
+        setPublishScope("Entire Trust Circle");
+        setSelectedTrustCircles([]);
         setMessage("");
     };
 
@@ -739,114 +741,114 @@ export default function ListRecommendationForm({
                                             </div>
                                         </section>
                                     </div>
-                                    {/* Image Upload Section */}
-                                    <section className="form-section optional-section">
-                                        <h2
-                                            className="section-title"
-                                            style={{ marginTop: "1rem" }}
-                                        >
-                                            <span className="section-number">
-                                                3
-                                            </span>
-                                            Upload Images
-                                        </h2>
-                                        <div className="image-upload-section">
-                                            <div
-                                                className="image-dropzone"
-                                                onClick={() =>
-                                                    document
-                                                        .getElementById(
-                                                            `image-upload-list-${idx}`
-                                                        )
-                                                        .click()
-                                                }
-                                            >
-                                                <div className="image-dropzone-content">
-                                                    <PhotoIcon className="image-dropzone-icon" />
-                                                    <span className="image-dropzone-text">
-                                                        Click to upload images
-                                                        (up to 5)
-                                                    </span>
-                                                    <span className="image-dropzone-text secondary">
-                                                        JPG, PNG or WebP (max.
-                                                        5MB each)
-                                                    </span>
-                                                </div>
-                                                <input
-                                                    type="file"
-                                                    id={`image-upload-list-${idx}`}
-                                                    accept="image/jpeg,image/png,image/webp"
-                                                    onChange={(e) =>
-                                                        handleListImageSelect(
-                                                            idx,
-                                                            e
-                                                        )
-                                                    }
-                                                    multiple
-                                                    style={{ display: "none" }}
-                                                />
-                                            </div>
-                                            {rec.images &&
-                                                rec.images.length > 0 && (
-                                                    <div className="image-preview-grid">
-                                                        {rec.images.map(
-                                                            (image) => (
-                                                                <div
-                                                                    key={
-                                                                        image.id
-                                                                    }
-                                                                    className="image-preview-item"
-                                                                >
-                                                                    <img
-                                                                        src={
-                                                                            image.preview
-                                                                        }
-                                                                        alt="Upload preview"
-                                                                    />
-                                                                    <button
-                                                                        className="image-preview-remove"
-                                                                        onClick={(
-                                                                            e
-                                                                        ) => {
-                                                                            e.preventDefault();
-                                                                            removeListImage(
-                                                                                idx,
-                                                                                image.id
-                                                                            );
-                                                                        }}
-                                                                        type="button"
-                                                                    >
-                                                                        <XCircleIcon className="w-4 h-4" />
-                                                                    </button>
-                                                                </div>
+                                    {requiredComplete && (
+                                        <section className="form-section optional-section">
+                                            <h2 className="section-title">
+                                                
+                                                Upload Images
+                                            </h2>
+                                            <div className="image-upload-section">
+                                                <div
+                                                    className="image-dropzone"
+                                                    onClick={() =>
+                                                        document
+                                                            .getElementById(
+                                                                `image-upload-list-${idx}`
                                                             )
-                                                        )}
+                                                            .click()
+                                                    }
+                                                >
+                                                    <div className="image-dropzone-content">
+                                                        <PhotoIcon className="image-dropzone-icon" />
+                                                        <span className="image-dropzone-text">
+                                                            Click to upload
+                                                            images (up to 5)
+                                                        </span>
+                                                        <span className="image-dropzone-text secondary">
+                                                            JPG, PNG or WebP
+                                                            (max. 5MB each)
+                                                        </span>
                                                     </div>
-                                                )}
-                                            {rec.images &&
-                                                rec.images.length > 0 && (
-                                                    <p className="upload-limit-text">
-                                                        {5 - rec.images.length}{" "}
-                                                        more image
-                                                        {5 -
-                                                            rec.images
-                                                                .length !==
-                                                        1
-                                                            ? "s"
-                                                            : ""}{" "}
-                                                        allowed
-                                                    </p>
-                                                )}
-                                        </div>
-                                    </section>
+                                                    <input
+                                                        type="file"
+                                                        id={`image-upload-list-${idx}`}
+                                                        accept="image/jpeg,image/png,image/webp"
+                                                        onChange={(e) =>
+                                                            handleListImageSelect(
+                                                                idx,
+                                                                e
+                                                            )
+                                                        }
+                                                        multiple
+                                                        style={{
+                                                            display: "none",
+                                                        }}
+                                                    />
+                                                </div>
+                                                {rec.images &&
+                                                    rec.images.length > 0 && (
+                                                        <div className="image-preview-grid">
+                                                            {rec.images.map(
+                                                                (image) => (
+                                                                    <div
+                                                                        key={
+                                                                            image.id
+                                                                        }
+                                                                        className="image-preview-item"
+                                                                    >
+                                                                        <img
+                                                                            src={
+                                                                                image.preview
+                                                                            }
+                                                                            alt="Upload preview"
+                                                                        />
+                                                                        <button
+                                                                            className="image-preview-remove"
+                                                                            onClick={(
+                                                                                e
+                                                                            ) => {
+                                                                                e.preventDefault();
+                                                                                removeListImage(
+                                                                                    idx,
+                                                                                    image.id
+                                                                                );
+                                                                            }}
+                                                                            type="button"
+                                                                        >
+                                                                            <XCircleIcon className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
+                                                                )
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                {rec.images &&
+                                                    rec.images.length > 0 && (
+                                                        <p className="upload-limit-text">
+                                                            {5 -
+                                                                rec.images
+                                                                    .length}{" "}
+                                                            more image
+                                                            {5 -
+                                                                rec.images
+                                                                    .length !==
+                                                            1
+                                                                ? "s"
+                                                                : ""}{" "}
+                                                            allowed
+                                                        </p>
+                                                    )}
+                                            </div>
+                                        </section>
+                                    )}
                                     {listRecommendations.length > 1 && (
                                         <button
                                             type="button"
                                             className="remove-list-rec-btn"
                                             style={{
-                                                position: "absolute",
-                                                bottom: "1rem",
-                                                right: "1rem",
+                                                // position: "absolute",
+                                                // bottom: "0rem",
+                                                // right: "1rem",
                                                 background: "none",
                                                 border: "none",
                                                 color: "#e11d48",
@@ -854,6 +856,8 @@ export default function ListRecommendationForm({
                                                 alignItems: "center",
                                                 gap: "0.25rem",
                                                 zIndex: 2,
+                                                marginTop: "1.5rem",
+                                                marginLeft: "auto",
                                             }}
                                             onClick={() =>
                                                 removeListRecommendation(idx)
@@ -946,7 +950,7 @@ export default function ListRecommendationForm({
             {/* Publish Scope Section */}
             <section className="form-section publish-section">
                 <h2 className="section-title">
-                    <span className="section-number">4</span>Share With
+                    Share With
                 </h2>
                 <div className="publish-options-grid">
                     {[
