@@ -942,16 +942,14 @@ const deleteRecommendation = async (req, res) => {
 };
 
 const createList = async (req, res) => {
-    const { title, description, reviewIds, user_id, email, community_id } =
+    const { title, description, reviewIds, user_id, email } =
         req.body;
 
     if (!title || !Array.isArray(reviewIds) || reviewIds.length === 0) {
-        return res
-            .status(400)
-            .json({
-                success: false,
-                message: "Title and at least one review are required.",
-            });
+        return res.status(400).json({
+            success: false,
+            message: "Title and at least one review are required.",
+        });
     }
 
     let client;
@@ -972,14 +970,14 @@ const createList = async (req, res) => {
         }
         const creatorUserId = userResult.rows[0].id;
 
-        // Use provided community_id or set to a default/null if needed
-        const commId = community_id || null;
+        // // Use provided community_id or set to a default/null if needed
+        // const commId = community_id || null;
 
         // Create list
         const listId = uuidv4();
         await client.query(
-            `INSERT INTO lists (id, title, description, user_id, community_id) VALUES ($1, $2, $3, $4, $5)`,
-            [listId, title, description || null, creatorUserId, commId]
+            `INSERT INTO lists (id, title, description, user_id) VALUES ($1, $2, $3, $4)`,
+            [listId, title, description || null, creatorUserId]
         );
 
         // Link reviews
@@ -1002,7 +1000,13 @@ const createList = async (req, res) => {
 
 const getList = async (req, res) => {
     const { listId } = req.params;
+    const { user_id: clerkUserId, email: userEmail } = req.query;
     try {
+        const creatorUserId = await getInternalUserId({
+            clerkUserId,
+            userEmail,
+        });
+
         const listRes = await pool.query(`SELECT * FROM lists WHERE id = $1`, [
             listId,
         ]);
@@ -1013,6 +1017,13 @@ const getList = async (req, res) => {
         }
         const list = listRes.rows[0];
 
+        // Only allow access if the requesting user owns the list
+        if (list.user_id !== creatorUserId) {
+            return res
+                .status(403)
+                .json({ success: false, message: "Forbidden" });
+        }
+
         const recsRes = await pool.query(
             `SELECT sp.* FROM list_reviews lr
              JOIN service_providers sp ON lr.review_id = sp.id
@@ -1022,23 +1033,24 @@ const getList = async (req, res) => {
 
         res.json({ success: true, list, recommendations: recsRes.rows });
     } catch (err) {
+        if (err.message === "User not found.") {
+            return res
+                .status(404)
+                .json({ success: false, message: err.message });
+        }
         res.status(500).json({ success: false, error: err.message });
     }
 };
 
 const getUserLists = async (req, res) => {
     const { user_id: clerkUserId, email: userEmail } = req.query;
+    console.log("Fetching user lists");
     try {
-        const userResult = await pool.query(
-            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
-            [clerkUserId, userEmail]
-        );
-        if (userResult.rows.length === 0) {
-            return res
-                .status(404)
-                .json({ success: false, message: "User not found." });
-        }
-        const creatorUserId = userResult.rows[0].id;
+        const creatorUserId = await getInternalUserId({
+            clerkUserId,
+            userEmail,
+        });
+
 
         const listRes = await pool.query(
             `SELECT * FROM lists WHERE user_id = $1 ORDER BY created_at DESC`,
@@ -1046,9 +1058,108 @@ const getUserLists = async (req, res) => {
         );
         res.json({ success: true, lists: listRes.rows });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        if (err.message === "User not found.") {
+            return res
+                .status(404)
+                .json({ success: false, message: err.message });
+        }
         res.status(500).json({ success: false, error: err.message });
     }
+};
+
+async function getInternalUserId({ clerkUserId, userEmail }) {
+    const userResult = await pool.query(
+        "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
+        [clerkUserId, userEmail]
+    );
+    if (userResult.rows.length === 0) {
+        throw new Error("User not found.");
+    }
+    return userResult.rows[0].id;
+}
+
+// New code for document upload and extraction
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const pdfParse = require("pdf-parse");
+const mammoth = require("mammoth");
+
+// Single file upload for document extraction
+const uploadSingleDoc = multer({ storage: multer.memoryStorage() }).single("file");
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+async function extractTextFromFile(file) {
+    const { originalname, mimetype, buffer } = file;
+    if (mimetype === "application/pdf" || originalname.endsWith(".pdf")) {
+        const data = await pdfParse(buffer);
+        return data.text;
+    } else if (
+        mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        originalname.endsWith(".docx")
+    ) {
+        const result = await mammoth.extractRawText({ buffer });
+        return result.value;
+    } else if (mimetype === "text/plain" || originalname.endsWith(".txt")) {
+        return buffer.toString("utf8");
+    } else if (mimetype === "text/csv" || originalname.endsWith(".csv")) {
+        return buffer.toString("utf8");
+    } else {
+        throw new Error("Unsupported file type");
+    }
+}
+
+async function extractRecommendationsWithGemini(text) {
+    const prompt = `
+Extract up to 10 recommendations from the following text. For each, return a JSON array of objects with these fields:
+- businessName
+- recommendationBlurb
+- rating (1-5, if available)
+- providerContactName
+- website
+- phoneNumber
+- tags (array of strings)
+
+Text:
+"""${text}"""
+Return ONLY the JSON array.
+    `.trim();
+
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const content = response.text();
+
+    let recommendations = [];
+    try {
+        recommendations = JSON.parse(content);
+    } catch (err) {
+        // Try to extract JSON substring if Gemini added extra text
+        const match = content.match(/\[.*\]/s);
+        if (match) {
+            recommendations = JSON.parse(match[0]);
+        } else {
+            throw new Error("Could not parse Gemini output as JSON");
+        }
+    }
+    return recommendations;
+}
+
+const listFileUpload = async (req, res) => {
+    uploadSingleDoc(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({ success: false, message: "Upload error", detail: err.message });
+        }
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "No file uploaded" });
+        }
+        try {
+            const text = await extractTextFromFile(req.file);
+            const recommendations = await extractRecommendationsWithGemini(text);
+            res.json({ success: true, recommendations: recommendations.slice(0, 10) });
+        } catch (error) {
+            res.status(500).json({ success: false, message: "Failed to extract recommendations", detail: error.message });
+        }
+    });
 };
 
 module.exports = {
@@ -1066,4 +1177,5 @@ module.exports = {
     createList,
     getList,
     getUserLists,
+    listFileUpload, // <-- new export for file upload
 };

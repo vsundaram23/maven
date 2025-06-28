@@ -1,6 +1,6 @@
 // src/components/ShareRecommendation/ListRecommendationForm.jsx
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
     ArrowPathIcon,
     CheckCircleIcon,
@@ -20,7 +20,6 @@ import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
 import { API_URL } from "../../utils/constants";
 import { useNavigate } from "react-router-dom";
 
-// Helper function (moved here as per your request)
 const processTags = (tagString) => {
     if (!tagString) return [];
     const processedTags = tagString
@@ -30,7 +29,6 @@ const processTags = (tagString) => {
     return [...new Set(processedTags)];
 };
 
-// StarDisplay component (moved here as per your request)
 const StarDisplay = ({ active, onClick }) => {
     const eventHandlers = {
         onClick: onClick,
@@ -58,7 +56,6 @@ const StarDisplay = ({ active, onClick }) => {
     );
 };
 
-// MessageDisplay component (moved here as per your request)
 const MessageDisplay = ({ message }) => {
     if (!message) return null;
 
@@ -91,7 +88,7 @@ export default function ListRecommendationForm({
             tagInput: "",
             tags: [],
             showOptional: false,
-            images: [], // Images not supported for list items in original code
+            images: [],
         },
     ]);
     const [dragActive, setDragActive] = useState(false);
@@ -103,6 +100,19 @@ export default function ListRecommendationForm({
     const [userTrustCircles, setUserTrustCircles] = useState([]);
     const [trustCirclesLoading, setTrustCirclesLoading] = useState(false);
     const [trustCirclesError, setTrustCirclesError] = useState("");
+
+    const [uploadedFile, setUploadedFile] = useState(null);
+    const [filePreviewRecs, setFilePreviewRecs] = useState(null);
+    const [filePreviewFilename, setFilePreviewFilename] = useState("");
+
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [previewEdits, setPreviewEdits] = useState([]);
+    const [modalListTitle, setModalListTitle] = useState("");
+    const [modalListDescription, setModalListDescription] = useState("");
+
+    const [isExtracting, setIsExtracting] = useState(false);
+
+    const fileInputRef = useRef(null);
 
     const handleListRecChange = (idx, field, value) => {
         setListRecommendations((prev) =>
@@ -199,12 +209,149 @@ export default function ListRecommendationForm({
         setListRecommendations((prev) => prev.filter((_, i) => i !== idx));
     };
 
+    // File selection handler (does NOT extract yet)
+    const handleFileSelect = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadedFile(file);
+        setFilePreviewRecs(null);
+        setFilePreviewFilename(file.name);
+        setMessage("");
+    };
+
+    // Remove file handler
+    const handleRemoveFile = () => {
+        setUploadedFile(null);
+        setFilePreviewRecs(null);
+        setFilePreviewFilename("");
+        setMessage("");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
+    // File upload handler
+    const handleListFile = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setFilePreviewFilename(file.name);
+        setMessage("Processing file...");
+        const allowedTypes = [
+            "text/plain",
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/msword",
+            "text/csv",
+            ".csv",
+            ".pdf",
+            ".docx",
+            ".txt",
+        ];
+        // Optionally check file.type or extension here
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("user_id", userId);
+        formData.append("email", userEmail);
+
+        try {
+            const res = await fetch(
+                `${API_URL}/api/recommendations/list-file-upload`,
+                {
+                    method: "POST",
+                    body: formData,
+                }
+            );
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || "Failed to process file.");
+            }
+            setFilePreviewRecs(data.recommendations.slice(0, 10));
+            setMessage("");
+        } catch (err) {
+            setMessage("error:" + (err.message || "Could not process file."));
+            setFilePreviewRecs(null);
+        }
+    };
+
+    const handleExtractRecommendations = async () => {
+        if (!uploadedFile) return;
+        setIsExtracting(true);
+        setMessage("Processing file...");
+        const formData = new FormData();
+        formData.append("file", uploadedFile);
+        formData.append("user_id", userId);
+        formData.append("email", userEmail);
+        try {
+            const res = await fetch(
+                `${API_URL}/api/recommendations/list-file-upload`,
+                {
+                    method: "POST",
+                    body: formData,
+                }
+            );
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || "Failed to process file.");
+            }
+            setFilePreviewRecs(data.recommendations.slice(0, 10));
+            setPreviewEdits(
+                data.recommendations.slice(0, 10).map((rec) => ({
+                    businessName: rec.businessName || "",
+                    recommendationBlurb: rec.recommendationBlurb || "",
+                    rating: rec.rating || 0,
+                    providerContactName: rec.providerContactName || "",
+                    website: rec.website || "",
+                    phoneNumber: rec.phoneNumber || "",
+                    tagInput: "",
+                    tags: rec.tags || [],
+                    showOptional: false,
+                    images: [],
+                }))
+            );
+            setShowPreviewModal(true);
+            setMessage("");
+        } catch (err) {
+            setMessage("error:" + (err.message || "Could not process file."));
+            setFilePreviewRecs(null);
+        } finally {
+            setIsExtracting(false);
+        }
+    };
+
+    // Accept previewed recommendations
+    const handleAcceptPreview = () => {
+        if (filePreviewRecs && filePreviewRecs.length > 0) {
+            setListRecommendations(
+                filePreviewRecs.map((rec) => ({
+                    businessName: rec.businessName || "",
+                    recommendationBlurb: rec.recommendationBlurb || "",
+                    rating: rec.rating || 0,
+                    providerContactName: rec.providerContactName || "",
+                    website: rec.website || "",
+                    phoneNumber: rec.phoneNumber || "",
+                    tagInput: "",
+                    tags: rec.tags || [],
+                    showOptional: false,
+                    images: [],
+                }))
+            );
+            setFilePreviewRecs(null);
+            setFilePreviewFilename("");
+        }
+    };
+
+    // Remove preview and let user try again
+    const handleRemovePreview = () => {
+        setFilePreviewRecs(null);
+        setFilePreviewFilename("");
+    };
+
+    // Drag & drop handler
     const handleListDrop = (e) => {
         e.preventDefault();
         setDragActive(false);
-        setMessage(
-            "info:CSV import for lists is not yet implemented. Please use the CSV Import tab."
-        );
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleListFile({ target: { files: e.dataTransfer.files } });
+        }
     };
 
     const handleListDragOver = (e) => {
@@ -475,6 +622,25 @@ export default function ListRecommendationForm({
         );
     };
 
+    useEffect(() => {
+        if (showPreviewModal) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
+        }
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, [showPreviewModal]);
+
+    useEffect(() => {
+        if (showPreviewModal) {
+            setModalListTitle(listTitle);
+            setModalListDescription(listDescription);
+        }
+        // eslint-disable-next-line
+    }, [showPreviewModal]);
+
     return (
         <form onSubmit={handleSubmitList}>
             <div className="list-form">
@@ -490,24 +656,81 @@ export default function ListRecommendationForm({
                     onDrop={handleListDrop}
                     onDragOver={handleListDragOver}
                     onDragLeave={handleListDragLeave}
+                    onClick={() =>
+                        !uploadedFile &&
+                        fileInputRef.current &&
+                        fileInputRef.current.click()
+                    }
                     tabIndex={0}
+                    style={{ cursor: uploadedFile ? "default" : "pointer" }}
                 >
                     <DocumentTextIcon className="csv-icon" />
-                    <span>
-                        Drag &amp; drop your document here, or{" "}
-                        <label htmlFor="listFile" className="file-upload-label">
-                            <span className="file-upload-link">
-                                choose a file
+                    {!uploadedFile ? (
+                        <span>
+                            Drag &amp; drop your document here, or{" "}
+                            <label
+                                htmlFor="listFile"
+                                className="file-upload-label"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <span className="file-upload-link">
+                                    choose a file
+                                </span>
+                                <input
+                                    type="file"
+                                    id="listFile"
+                                    ref={fileInputRef}
+                                    accept=".csv,.pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,text/csv,text/plain"
+                                    style={{ display: "none" }}
+                                    onChange={handleFileSelect}
+                                />
+                            </label>
+                        </span>
+                    ) : (
+                        <div className="file-actions">
+                            <span className="file-name">
+                                <DocumentTextIcon
+                                    style={{
+                                        width: 18,
+                                        height: 18,
+                                        marginRight: 6,
+                                    }}
+                                />
+                                {uploadedFile.name}
                             </span>
-                            <input
-                                type="file"
-                                id="listFile"
-                                style={{ display: "none" }}
-                                // onChange={handleListFile}
-                            />
-                        </label>
-                    </span>
+                            <button
+                                type="button"
+                                className="btn btn-danger"
+                                style={{
+                                    marginLeft: 12,
+                                    padding: "0.4rem 1rem",
+                                }}
+                                onClick={handleRemoveFile}
+                            >
+                                Remove file
+                            </button>
+                        </div>
+                    )}
                 </div>
+                {uploadedFile && !filePreviewRecs && (
+                    <div style={{ margin: "1rem 0" }}>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={handleExtractRecommendations}
+                            disabled={isExtracting}
+                        >
+                            {isExtracting ? (
+                                <>
+                                    <ArrowPathIcon className="animate-spin h-5 w-5 inline mr-2" />
+                                    Extracting...
+                                </>
+                            ) : (
+                                "Extract recommendations"
+                            )}
+                        </button>
+                    </div>
+                )}
 
                 <div className="list-divider">
                     <span>OR</span>
@@ -744,7 +967,6 @@ export default function ListRecommendationForm({
                                     {requiredComplete && (
                                         <section className="form-section optional-section">
                                             <h2 className="section-title">
-                                                
                                                 Upload Images
                                             </h2>
                                             <div className="image-upload-section">
@@ -949,9 +1171,7 @@ export default function ListRecommendationForm({
 
             {/* Publish Scope Section */}
             <section className="form-section publish-section">
-                <h2 className="section-title">
-                    Share With
-                </h2>
+                <h2 className="section-title">Share With</h2>
                 <div className="publish-options-grid">
                     {[
                         "Entire Trust Circle",
@@ -1075,6 +1295,597 @@ export default function ListRecommendationForm({
             </div>
             {message && !showSuccessModal && (
                 <MessageDisplay message={message} />
+            )}
+            {showPreviewModal && (
+                <div className="modal-overlay">
+                    <div
+                        className="csv-preview-modal"
+                        style={{
+                            maxWidth: 900,
+                            width: "98%",
+                            maxHeight: "90vh",
+                            overflowY: "auto",
+                        }}
+                    >
+                        <div className="modal-header">
+                            <h3>Edit Extracted Recommendations</h3>
+                            <button
+                                className="close-button"
+                                onClick={() => setShowPreviewModal(false)}
+                            >
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div
+                            className="modal-info"
+                            style={{ padding: "1.5rem" }}
+                        >
+                            {previewEdits.length === 0 && (
+                                <div
+                                    style={{
+                                        textAlign: "center",
+                                        color: "#888",
+                                    }}
+                                >
+                                    No recommendations extracted.
+                                </div>
+                            )}
+                            <div
+                                className="modal-list-fields"
+                                style={{ marginBottom: "2rem" }}
+                            >
+                                <label
+                                    style={{
+                                        display: "block",
+                                        marginBottom: "1rem",
+                                    }}
+                                >
+                                    <span style={{ fontWeight: 600 }}>
+                                        List Title *
+                                    </span>
+                                    <input
+                                        type="text"
+                                        value={modalListTitle}
+                                        onChange={(e) =>
+                                            setModalListTitle(e.target.value)
+                                        }
+                                        placeholder="e.g., My Favorite Home Pros"
+                                        required
+                                        style={{
+                                            width: "100%",
+                                            padding: "0.5rem",
+                                            borderRadius: "0.4rem",
+                                            border: "1px solid #cbd5e1",
+                                            marginTop: "0.3rem",
+                                        }}
+                                    />
+                                </label>
+                                <label style={{ display: "block" }}>
+                                    <span style={{ fontWeight: 600 }}>
+                                        List Description (optional)
+                                    </span>
+                                    <textarea
+                                        value={modalListDescription}
+                                        onChange={(e) =>
+                                            setModalListDescription(
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="Describe this list (optional)"
+                                        rows={2}
+                                        style={{
+                                            width: "100%",
+                                            padding: "0.5rem",
+                                            borderRadius: "0.4rem",
+                                            border: "1px solid #cbd5e1",
+                                            marginTop: "0.3rem",
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                            {previewEdits.map((rec, idx) => {
+                                const requiredComplete =
+                                    rec.businessName.trim() &&
+                                    rec.recommendationBlurb.trim() &&
+                                    rec.rating > 0;
+                                return (
+                                    <div
+                                        className="list-recommendation-card"
+                                        key={idx}
+                                        style={{ marginBottom: "2rem" }}
+                                    >
+                                        <div
+                                            className="form-section required-section"
+                                            style={{
+                                                padding: 0,
+                                                boxShadow: "none",
+                                                border: "none",
+                                                background: "none",
+                                            }}
+                                        >
+                                            <div className="form-group">
+                                                <label>
+                                                    Recommendation Name *
+                                                    <input
+                                                        type="text"
+                                                        value={rec.businessName}
+                                                        onChange={(e) =>
+                                                            setPreviewEdits(
+                                                                (prev) =>
+                                                                    prev.map(
+                                                                        (
+                                                                            r,
+                                                                            i
+                                                                        ) =>
+                                                                            i ===
+                                                                            idx
+                                                                                ? {
+                                                                                      ...r,
+                                                                                      businessName:
+                                                                                          e
+                                                                                              .target
+                                                                                              .value,
+                                                                                  }
+                                                                                : r
+                                                                    )
+                                                            )
+                                                        }
+                                                        placeholder="e.g., Stellar Plumbing Co."
+                                                        required
+                                                    />
+                                                </label>
+                                            </div>
+                                            <div className="form-group rating-group">
+                                                <label>Your Rating *</label>
+                                                <div className="star-rating">
+                                                    {[1, 2, 3, 4, 5].map(
+                                                        (n) => (
+                                                            <StarDisplay
+                                                                key={n}
+                                                                active={
+                                                                    n <=
+                                                                    rec.rating
+                                                                }
+                                                                onClick={() =>
+                                                                    setPreviewEdits(
+                                                                        (
+                                                                            prev
+                                                                        ) =>
+                                                                            prev.map(
+                                                                                (
+                                                                                    r,
+                                                                                    i
+                                                                                ) =>
+                                                                                    i ===
+                                                                                    idx
+                                                                                        ? {
+                                                                                              ...r,
+                                                                                              rating: n,
+                                                                                          }
+                                                                                        : r
+                                                                            )
+                                                                    )
+                                                                }
+                                                            />
+                                                        )
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="form-group">
+                                                <label>
+                                                    Your Experience *
+                                                    <textarea
+                                                        value={
+                                                            rec.recommendationBlurb
+                                                        }
+                                                        onChange={(e) =>
+                                                            setPreviewEdits(
+                                                                (prev) =>
+                                                                    prev.map(
+                                                                        (
+                                                                            r,
+                                                                            i
+                                                                        ) =>
+                                                                            i ===
+                                                                            idx
+                                                                                ? {
+                                                                                      ...r,
+                                                                                      recommendationBlurb:
+                                                                                          e
+                                                                                              .target
+                                                                                              .value,
+                                                                                  }
+                                                                                : r
+                                                                    )
+                                                            )
+                                                        }
+                                                        placeholder="What made them great?"
+                                                        required
+                                                        rows={3}
+                                                    />
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div
+                                            className={`optional-section-wrapper ${
+                                                requiredComplete
+                                                    ? "visible"
+                                                    : ""
+                                            }`}
+                                        >
+                                            <div className="optional-section-intro">
+                                                <SparklesIcon className="intro-icon mini" />{" "}
+                                                Nicely done! Add extra details?
+                                                (Optional)
+                                            </div>
+                                            <section
+                                                className="form-section optional-section"
+                                                style={{
+                                                    padding: 0,
+                                                    boxShadow: "none",
+                                                    border: "none",
+                                                    background: "none",
+                                                }}
+                                            >
+                                                <div className="form-grid">
+                                                    <div className="form-group">
+                                                        <label>
+                                                            <UserCircleIcon />{" "}
+                                                            Provider Contact
+                                                            Name
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={
+                                                                rec.providerContactName
+                                                            }
+                                                            onChange={(e) =>
+                                                                setPreviewEdits(
+                                                                    (prev) =>
+                                                                        prev.map(
+                                                                            (
+                                                                                r,
+                                                                                i
+                                                                            ) =>
+                                                                                i ===
+                                                                                idx
+                                                                                    ? {
+                                                                                          ...r,
+                                                                                          providerContactName:
+                                                                                              e
+                                                                                                  .target
+                                                                                                  .value,
+                                                                                      }
+                                                                                    : r
+                                                                        )
+                                                                )
+                                                            }
+                                                            placeholder="e.g., Jane Doe"
+                                                        />
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label>
+                                                            <GlobeAltIcon />{" "}
+                                                            Website
+                                                        </label>
+                                                        <input
+                                                            type="url"
+                                                            value={rec.website}
+                                                            onChange={(e) =>
+                                                                setPreviewEdits(
+                                                                    (prev) =>
+                                                                        prev.map(
+                                                                            (
+                                                                                r,
+                                                                                i
+                                                                            ) =>
+                                                                                i ===
+                                                                                idx
+                                                                                    ? {
+                                                                                          ...r,
+                                                                                          website:
+                                                                                              e
+                                                                                                  .target
+                                                                                                  .value,
+                                                                                      }
+                                                                                    : r
+                                                                        )
+                                                                )
+                                                            }
+                                                            placeholder="https://provider.com"
+                                                        />
+                                                    </div>
+                                                    <div className="form-group span-2">
+                                                        <label>
+                                                            <PhoneIcon /> Phone
+                                                            Number
+                                                        </label>
+                                                        <input
+                                                            type="tel"
+                                                            value={
+                                                                rec.phoneNumber
+                                                            }
+                                                            onChange={(e) =>
+                                                                setPreviewEdits(
+                                                                    (prev) =>
+                                                                        prev.map(
+                                                                            (
+                                                                                r,
+                                                                                i
+                                                                            ) =>
+                                                                                i ===
+                                                                                idx
+                                                                                    ? {
+                                                                                          ...r,
+                                                                                          phoneNumber:
+                                                                                              e
+                                                                                                  .target
+                                                                                                  .value,
+                                                                                      }
+                                                                                    : r
+                                                                        )
+                                                                )
+                                                            }
+                                                            placeholder="(555) 123-4567"
+                                                        />
+                                                    </div>
+                                                    <div className="form-group span-2 tag-input-group">
+                                                        <label>
+                                                            <TagIcon /> Tags
+                                                            (Press Enter)
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={
+                                                                rec.tagInput ||
+                                                                ""
+                                                            }
+                                                            onChange={(e) =>
+                                                                setPreviewEdits(
+                                                                    (prev) =>
+                                                                        prev.map(
+                                                                            (
+                                                                                r,
+                                                                                i
+                                                                            ) =>
+                                                                                i ===
+                                                                                idx
+                                                                                    ? {
+                                                                                          ...r,
+                                                                                          tagInput:
+                                                                                              e
+                                                                                                  .target
+                                                                                                  .value,
+                                                                                      }
+                                                                                    : r
+                                                                        )
+                                                                )
+                                                            }
+                                                            onKeyDown={(e) => {
+                                                                if (
+                                                                    e.key ===
+                                                                    "Enter"
+                                                                ) {
+                                                                    e.preventDefault();
+                                                                    const newTags =
+                                                                        (
+                                                                            rec.tagInput ||
+                                                                            ""
+                                                                        )
+                                                                            .split(
+                                                                                ","
+                                                                            )
+                                                                            .map(
+                                                                                (
+                                                                                    tag
+                                                                                ) =>
+                                                                                    tag
+                                                                                        .trim()
+                                                                                        .toLowerCase()
+                                                                            )
+                                                                            .filter(
+                                                                                (
+                                                                                    tag
+                                                                                ) =>
+                                                                                    tag &&
+                                                                                    !rec.tags.includes(
+                                                                                        tag
+                                                                                    )
+                                                                            );
+                                                                    setPreviewEdits(
+                                                                        (
+                                                                            prev
+                                                                        ) =>
+                                                                            prev.map(
+                                                                                (
+                                                                                    r,
+                                                                                    i
+                                                                                ) =>
+                                                                                    i ===
+                                                                                    idx
+                                                                                        ? {
+                                                                                              ...r,
+                                                                                              tags: [
+                                                                                                  ...r.tags,
+                                                                                                  ...newTags,
+                                                                                              ],
+                                                                                              tagInput:
+                                                                                                  "",
+                                                                                          }
+                                                                                        : r
+                                                                            )
+                                                                    );
+                                                                }
+                                                            }}
+                                                            placeholder="e.g., reliable, fast, good value"
+                                                        />
+                                                        <div className="tag-container">
+                                                            {rec.tags.map(
+                                                                (tag, i) => (
+                                                                    <span
+                                                                        key={i}
+                                                                        className="tag-pill"
+                                                                    >
+                                                                        {tag}
+                                                                        <span
+                                                                            className="remove-tag"
+                                                                            onClick={() =>
+                                                                                setPreviewEdits(
+                                                                                    (
+                                                                                        prev
+                                                                                    ) =>
+                                                                                        prev.map(
+                                                                                            (
+                                                                                                r,
+                                                                                                j
+                                                                                            ) =>
+                                                                                                j ===
+                                                                                                idx
+                                                                                                    ? {
+                                                                                                          ...r,
+                                                                                                          tags: r.tags.filter(
+                                                                                                              (
+                                                                                                                  t
+                                                                                                              ) =>
+                                                                                                                  t !==
+                                                                                                                  tag
+                                                                                                          ),
+                                                                                                      }
+                                                                                                    : r
+                                                                                        )
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            ×
+                                                                        </span>
+                                                                    </span>
+                                                                )
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </section>
+                                        </div>
+                                        {previewEdits.length > 1 && (
+                                            <button
+                                                type="button"
+                                                className="remove-list-rec-btn"
+                                                style={{
+                                                    background: "none",
+                                                    border: "none",
+                                                    color: "#e11d48",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "0.25rem",
+                                                    zIndex: 2,
+                                                    marginTop: "1.5rem",
+                                                    marginLeft: "auto",
+                                                }}
+                                                onClick={() =>
+                                                    setPreviewEdits((prev) =>
+                                                        prev.filter(
+                                                            (_, i) => i !== idx
+                                                        )
+                                                    )
+                                                }
+                                                aria-label="Remove Recommendation"
+                                            >
+                                                <XCircleIcon className="w-5 h-5" />{" "}
+                                                Remove
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="modal-footer">
+                            {previewEdits.length > 0 && (
+                                <div
+                                    style={{
+                                        color: "#dc2626",
+                                        background: "#fef2f2",
+                                        border: "1px solid #fecaca",
+                                        borderRadius: "0.5rem",
+                                        padding: "0.7rem 1rem",
+                                        marginBottom: "1rem",
+                                        fontWeight: 500,
+                                        fontSize: "0.96rem",
+                                        display:
+                                            !modalListTitle.trim() ||
+                                            previewEdits.some(
+                                                (rec) =>
+                                                    !rec.businessName.trim() ||
+                                                    !rec.recommendationBlurb.trim() ||
+                                                    !rec.rating
+                                            )
+                                                ? "block"
+                                                : "none",
+                                    }}
+                                >
+                                    Please complete all required fields (list
+                                    title, recommendation name, experience, and
+                                    rating) before continuing.
+                                </div>
+                            )}
+                            <button
+                                className="modal-btn primary"
+                                type="button"
+                                disabled={
+                                    previewEdits.length === 0 ||
+                                    !modalListTitle.trim() ||
+                                    previewEdits.some(
+                                        (rec) =>
+                                            !rec.businessName.trim() ||
+                                            !rec.recommendationBlurb.trim() ||
+                                            !rec.rating
+                                    )
+                                }
+                                onClick={async () => {
+                                    // Validate all required fields
+                                    if (!modalListTitle.trim()) {
+                                        setMessage(
+                                            "error:Please provide a name for your list."
+                                        );
+                                        return;
+                                    }
+                                    for (const rec of previewEdits) {
+                                        if (
+                                            !rec.businessName.trim() ||
+                                            !rec.recommendationBlurb.trim() ||
+                                            !rec.rating
+                                        ) {
+                                            setMessage(
+                                                "error:Please fill out all required fields for each recommendation."
+                                            );
+                                            return;
+                                        }
+                                    }
+                                    // Set main form state and close modal
+                                    setListTitle(modalListTitle);
+                                    setListDescription(modalListDescription);
+                                    setListRecommendations(previewEdits);
+                                    setShowPreviewModal(false);
+                                    setFilePreviewRecs(null);
+                                    setFilePreviewFilename("");
+                                    setMessage("");
+                                }}
+                            >
+                                Use These Recommendations
+                            </button>
+                            <button
+                                className="modal-btn secondary"
+                                type="button"
+                                onClick={() => {
+                                    setShowPreviewModal(false);
+                                    setFilePreviewRecs(null);
+                                    setFilePreviewFilename("");
+                                }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </form>
     );
