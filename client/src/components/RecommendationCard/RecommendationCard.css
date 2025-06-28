@@ -110,7 +110,7 @@
   .public-review-summary {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
     font-size: 0.9rem;
     color: #495057;
@@ -178,9 +178,13 @@
     font-weight: 500;
     border-radius: 8px;
     transition: all 0.2s ease;
-    margin-left: 0;
+    margin: 0;
     min-width: 44px;
+    height: 36px;
     justify-content: center;
+    vertical-align: baseline;
+    box-sizing: border-box;
+    position: relative;
   }
   
   .public-bottom-actions .public-like-button:hover,
@@ -353,6 +357,9 @@
     display: flex;
     align-items: center;
     gap: 16px;
+    height: auto;
+    margin: 0;
+    padding: 0;
   }
 
   /* Recent Comments Section */
@@ -697,13 +704,29 @@
     .public-review-summary {
       flex-direction: row;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 6px;
+      flex-wrap: nowrap;
+      gap: 4px;
+      font-size: 0.8rem;
+    }
+  
+    .public-review-summary .star-rating-display svg {
+      width: 0.85em; /* Smaller stars on mobile */
+      height: 0.85em;
+    }
+  
+    .public-review-summary .public-review-score {
+      font-size: 0.8rem; /* Smaller score text */
+    }
+  
+    .public-review-summary .public-review-count {
+      font-size: 0.75rem; /* Smaller review count text */
     }
   
     .public-write-review-link {
       margin-left: 0;
       margin-top: 0;
+      font-size: 0.7rem; /* Smaller button text */
+      white-space: nowrap; /* Prevent text wrapping */
     }
   
     .public-like-button {

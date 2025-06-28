@@ -1,34 +1,40 @@
 import { useClerk, useUser } from "@clerk/clerk-react";
 import {
-    ChevronLeftIcon,
-    ChevronRightIcon, StarIcon as OutlineStarIcon, TrashIcon, XMarkIcon
-} from "@heroicons/react/24/outline";
-import {
     ArrowPathIcon,
     CalendarDaysIcon,
     CameraIcon,
     ChatBubbleLeftEllipsisIcon,
     CheckCircleIcon,
     ChevronDownIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
     EnvelopeIcon,
     ExclamationTriangleIcon,
     GlobeAltIcon,
+    StarIcon as OutlineStarIcon,
     PencilSquareIcon,
     PhoneIcon,
     PhotoIcon,
     PlusCircleIcon,
     ShareIcon,
-    StarIcon as SolidStarIcon,
     TagIcon,
+    TrashIcon,
     UserCircleIcon,
     UsersIcon as UsersIconSolid,
-    XCircleIcon
+    XCircleIcon,
+    XMarkIcon,
+} from "@heroicons/react/24/outline";
+import {
+    StarIcon as SolidStarIcon,
 } from "@heroicons/react/24/solid";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FaConciergeBell, FaMapMarkerAlt, FaStar, FaStarHalfAlt } from "react-icons/fa";
 import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Link, useNavigate } from "react-router-dom";
+import RecommendationCard from "../../components/RecommendationCard/RecommendationCard";
+import ReviewModal from "../../components/ReviewModal/ReviewModal";
+import SuccessModal from "../../components/SuccessModal/SuccessModal";
 import ShareProfileModal from "../../components/ShareProfileModal/ShareProfileModal";
 import TrustScoreWheel from "../../components/TrustScoreWheel/TrustScoreWheel";
 import "./Profile.css";
@@ -1018,6 +1024,263 @@ const ImageModal = ({ image, onClose }) => {
     );
 };
 
+// Enhanced RecommendationCard for Profile with edit functionality
+const ProfileRecommendationCard = ({
+    rec,
+    onEdit,
+    onLikeRecommendation,
+    onRefreshList,
+    user,
+    comments = [],
+    onCommentAdded,
+    currentUserName,
+    onWriteReview, // Add this prop
+}) => {
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState(null);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const dropdownRef = useRef(null);
+
+    const formatDate = (dateString) =>
+        !dateString
+            ? "Date not available"
+            : new Date(dateString).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+              });
+
+    const handleShare = () => {
+        alert("Share functionality for individual recommendations coming soon!");
+        setDropdownOpen(false);
+    };
+
+    const handleDeleteClick = () => {
+        setShowDeleteModal(true);
+        setDropdownOpen(false);
+    };
+
+    const handleDelete = async (e) => {
+        e.preventDefault();
+        setIsDeleting(true);
+        setDeleteError(null);
+
+        try {
+            const response = await fetch(
+                `${API_URL}/api/recommendations/${rec.id}?user_id=${user?.id}&email=${user?.emailAddresses[0].emailAddress}`,
+                {
+                    method: "DELETE",
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to delete recommendation");
+            }
+
+            setShowDeleteModal(false);
+            setTimeout(() => {
+                onRefreshList();
+            }, 500);
+        } catch (error) {
+            setDeleteError("Failed to delete recommendation. Please try again.");
+            console.log("Error deleting recommendation:", error);
+            setIsDeleting(false);
+        }
+    };
+
+    // Handle click outside dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Parse images if they're stored as a string
+    const parsedImages = useMemo(() => {
+        if (!rec.images) return [];
+        if (Array.isArray(rec.images)) return rec.images;
+        try {
+            return JSON.parse(rec.images);
+        } catch (e) {
+            console.error("Error parsing images:", e);
+            return [];
+        }
+    }, [rec.images]);
+
+    return (
+        <li className="profile-recommendation-card-wrapper">
+            {/* Use the original MyRecommendationCard structure but with RecommendationCard base */}
+            <div className="profile-my-rec-card">
+                <div className="profile-my-rec-card-header">
+                    <h2 className="profile-my-rec-card-title">
+                        <Link to={`/provider/${rec.provider_id || rec.id}`} target="_blank" rel="noopener noreferrer" className="clickable provider-name-link" onClick={() => localStorage.setItem("selectedProvider", JSON.stringify(rec))}>
+                            {rec.business_name || "Unknown Business"}
+                        </Link>
+                    </h2>
+                    <div className="profile-my-rec-badge-wrapper-with-menu">
+                        <div className="profile-my-rec-badge-group">
+                            {(parseFloat(rec.average_rating) || 0) >= 4.5 && (
+                                <span className="profile-my-rec-top-rated-badge">
+                                    Top Rated
+                                </span>
+                            )}
+                        </div>
+                        <div className="profile-my-rec-right-actions">
+                            <div className="profile-my-rec-dropdown-wrapper" ref={dropdownRef}>
+                                <button
+                                    className="profile-my-rec-three-dots-button"
+                                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                                    title="Options"
+                                >
+                                    ⋮
+                                </button>
+                                {dropdownOpen && (
+                                    <div className="profile-my-rec-dropdown-menu">
+                                        <button
+                                            className="profile-my-rec-dropdown-item"
+                                            onClick={() => {
+                                                onEdit(rec);
+                                                setDropdownOpen(false);
+                                            }}
+                                        >
+                                            <PencilSquareIcon /> Edit Recommendation
+                                        </button>
+                                        <button
+                                            className="profile-my-rec-dropdown-item"
+                                            onClick={handleShare}
+                                        >
+                                            <ShareIcon /> Share Recommendation
+                                        </button>
+                                        <button
+                                            className="profile-my-rec-dropdown-item delete-action"
+                                            onClick={handleDeleteClick}
+                                        >
+                                            <TrashIcon />
+                                            <span className="delete-text">Delete Recommendation</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Use RecommendationCard for the main content */}
+                <div className="profile-recommendation-content">
+                    <RecommendationCard
+                        rec={rec}
+                        onWriteReview={onWriteReview} // Pass the review handler
+                        onLike={onLikeRecommendation}
+                        isLikedByCurrentUser={rec.currentUserLiked}
+                        loggedInUserId={user?.id}
+                        currentUserName={currentUserName}
+                        comments={comments}
+                        onCommentAdded={onCommentAdded}
+                    />
+                </div>
+
+                                 {/* Profile-specific footer with images only */}
+                 {parsedImages.length > 0 && (
+                     <div className="profile-my-rec-images">
+                         <ImageCarousel
+                             images={parsedImages}
+                             onImageClick={(image) => setSelectedImage(image)}
+                         />
+                     </div>
+                 )}
+
+                <div className="profile-my-rec-card-footer">
+                    <div className="profile-my-rec-date">
+                        <CalendarDaysIcon className="inline-icon" />
+                        Recommended on: {formatDate(rec.date_of_recommendation || rec.created_at)}
+                    </div>
+                    <div className="profile-my-rec-action-buttons">
+                        <button
+                            className="profile-my-rec-primary-action-button"
+                            onClick={() => onEdit(rec)}
+                        >
+                            <PencilSquareIcon className="btn-icon" /> Edit My Rec
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Image Modal */}
+            {selectedImage && (
+                <ImageModal
+                    image={selectedImage}
+                    onClose={() => setSelectedImage(null)}
+                />
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="profile-edit-modal-overlay">
+                    <div className="profile-edit-modal-content">
+                        <button
+                            onClick={() => setShowDeleteModal(false)}
+                            className="profile-edit-modal-close-btn"
+                        >
+                            &times;
+                        </button>
+                        <h2 className="profile-edit-modal-title">
+                            Delete Recommendation
+                        </h2>
+                        <div className="profile-delete-modal-body">
+                            <div className="profile-delete-modal-warning">
+                                <ExclamationTriangleIcon className="warning-icon" />
+                                <p>
+                                    Are you sure you want to delete this
+                                    recommendation? This action cannot be
+                                    undone.
+                                </p>
+                            </div>
+                            {deleteError && (
+                                <div className="profile-edit-modal-message error">
+                                    <XCircleIcon />
+                                    <span>{deleteError}</span>
+                                </div>
+                            )}
+                            <div className="profile-edit-modal-button-row">
+                                <button
+                                    className="profile-edit-modal-btn cancel-btn"
+                                    onClick={() => setShowDeleteModal(false)}
+                                    disabled={isDeleting}
+                                >
+                                    <XCircleIcon /> Cancel
+                                </button>
+                                <button
+                                    className="profile-edit-modal-btn delete-btn"
+                                    onClick={handleDelete}
+                                    disabled={isDeleting}
+                                >
+                                    {isDeleting ? (
+                                        <>
+                                            <ArrowPathIcon className="animate-spin" />
+                                            Deleting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <TrashIcon />
+                                            Delete
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </li>
+    );
+};
+
 const MyRecommendationCard = ({
     rec,
     onEdit,
@@ -1459,6 +1722,7 @@ const Profile = () => {
     // Batch comments state
     const [commentsMap, setCommentsMap] = useState(new Map());
     const [isLoadingComments, setIsLoadingComments] = useState(false);
+    const [currentUserName, setCurrentUserName] = useState(null);
     const ASPECT_RATIO = 1;
     const MIN_DIMENSION = 150;
 
@@ -1571,6 +1835,15 @@ const Profile = () => {
             if (!loading) setStatsLoading(false);
         }
     }, [baseRecommendations, loading, user]);
+
+    // Set current user name when user loads
+    useEffect(() => {
+        if (isLoaded && isSignedIn && user) {
+            setCurrentUserName(user.firstName || user.lastName || "User");
+        } else if (isLoaded && !isSignedIn) {
+            setCurrentUserName(null);
+        }
+    }, [isLoaded, isSignedIn, user]);
 
     // Fetch comments for recommendations
     useEffect(() => {
@@ -2607,7 +2880,7 @@ const Profile = () => {
                     sortedRecommendations.length > 0 && (
                         <ul className="provider-list">
                             {sortedRecommendations.map((rec) => (
-                                <MyRecommendationCard
+                                <ProfileRecommendationCard
                                     key={rec.id}
                                     rec={rec}
                                     onEdit={(rec) => {
@@ -2619,6 +2892,10 @@ const Profile = () => {
                                     }
                                     onRefreshList={fetchProfileData}
                                     user={user}
+                                    comments={commentsMap.get(rec.provider_id || rec.id) || []}
+                                    onCommentAdded={handleCommentAdded}
+                                    currentUserName={currentUserName}
+                                    onWriteReview={handleOpenReviewModal}
                                 />
                             ))}
                         </ul>
@@ -2738,6 +3015,14 @@ const Profile = () => {
                     onClose={() => setIsShareModalOpen(false)}
                     profileData={profileUserData}
                     userEmail={user?.primaryEmailAddress?.emailAddress}
+                />
+            )}
+            {isReviewModalOpen && providerForReview && (
+                <ReviewModal
+                    isOpen={isReviewModalOpen}
+                    onClose={handleCloseReviewModal}
+                    onSubmit={handleSubmitReview}
+                    provider={providerForReview}
                 />
             )}
         </div>

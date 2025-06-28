@@ -175,18 +175,7 @@ const RecommendationCard = ({
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [dropdownRef]);
 
-    // Scroll to comment form when it becomes visible
-    useEffect(() => {
-        if (showInlineCommentForm && inlineCommentRef.current) {
-            setTimeout(() => {
-                inlineCommentRef.current.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'end',
-                    inline: 'nearest'
-                });
-            }, 100); // Small delay to ensure the form is rendered
-        }
-    }, [showInlineCommentForm]);
+    // Note: Removed automatic scrolling to comment form to avoid unwanted page jumps
 
     // Auto-resize textarea function
     const autoResizeTextarea = (textarea) => {
@@ -356,7 +345,7 @@ const RecommendationCard = ({
                             {currentUserName ? currentUserName.charAt(0).toUpperCase() : 'U'}
                         </div>
                         <textarea
-                            placeholder="Add a comment, @ to mention"
+                            placeholder="Add a comment"
                             className="inline-comment-textarea"
                             value={inlineCommentText}
                             onChange={handleTextareaChange}

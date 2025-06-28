@@ -938,13 +938,32 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 2rem; /* Desktop spacing */
+    flex-shrink: 0; /* Prevent footer from shrinking */
 }
+
+/* Mobile responsive spacing */
+@media (max-width: 768px) {
+    .profile-my-rec-card-footer {
+        gap: 1rem; /* Reduced spacing for mobile */
+        flex-wrap: wrap; /* Allow wrapping if needed */
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-my-rec-card-footer {
+        gap: 0.75rem; /* Even smaller spacing for very small screens */
+        padding-top: 0.75rem; /* Slightly reduced padding */
+    }
+}
+
 .profile-my-rec-date {
     font-size: 0.8rem;
     color: var(--profile-text-light);
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    flex-shrink: 0; /* Prevent date from shrinking */
 }
 .profile-my-rec-date .inline-icon {
     width: 1em;
@@ -953,6 +972,7 @@
 .profile-my-rec-action-buttons {
     display: flex;
     gap: 0.75rem;
+    flex-shrink: 0; /* Prevent button from shrinking */
 }
 .profile-my-rec-primary-action-button {
     background-color: var(--profile-primary-color);
@@ -2780,5 +2800,170 @@
     }
 }
 
+/* Profile Recommendation Card Wrapper Styles */
+.profile-recommendation-card-wrapper {
+    margin-bottom: 1.5rem;
+    width: 100%;
+    list-style: none;
+}
+
+/* Embed RecommendationCard content within Profile structure */
+.profile-recommendation-content {
+    margin: 1rem 0;
+}
+
+/* Hide the header and some elements from RecommendationCard to avoid duplication */
+.profile-recommendation-content .public-provider-card {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    background: transparent;
+    margin: 0;
+    width: 100%;
+}
+
+.profile-recommendation-content .public-card-header {
+    display: none; /* Hide RecommendationCard header since we use Profile header */
+}
+
+.profile-recommendation-content .public-recommended-row {
+    display: none; /* Hide recommender info since this is the user's own recommendation */
+}
+
+/* Ensure Profile RecommendationCard comment styling matches standard RecommendationCard */
+.profile-recommendation-content .inline-comment-section,
+.profile-recommendation-content .inline-comment-input-wrapper,
+.profile-recommendation-content .inline-comment-textarea,
+.profile-recommendation-content .inline-post-button,
+.profile-recommendation-content .recent-comments-section,
+.profile-recommendation-content .public-bottom-actions {
+    /* Reset any Profile-specific styles that might interfere */
+    all: unset;
+    /* Re-apply RecommendationCard styles */
+    font-family: inherit;
+}
+
+/* Re-establish the proper comment input styling for Profile cards */
+.profile-recommendation-content .inline-comment-section {
+    margin-top: 12px;
+    border-top: 1px solid #f1f3f5;
+    padding-top: 12px;
+    margin-bottom: 20px;
+}
+
+.profile-recommendation-content .inline-comment-input-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    background: white;
+    border: 1px solid #e1e5e9;
+    border-radius: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.profile-recommendation-content .inline-comment-textarea {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+    padding: 8px 8px;
+    color: #495057;
+    cursor: text;
+    resize: none;
+    font-family: inherit;
+    line-height: 1.3;
+    min-height: 20px;
+    max-height: 120px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: nowrap;
+    /* Hide scrollbar to match standard RecommendationCard */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.profile-recommendation-content .inline-comment-textarea::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+}
+
+.profile-recommendation-content .inline-post-button {
+    background: #1A365D;
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 1px;
+    height: fit-content;
+}
+
+.profile-recommendation-content .inline-post-button:hover {
+    background: #12264a;
+}
+
+.profile-recommendation-content .inline-post-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Mobile-specific fixes for ProfileRecommendationCard centering */
+@media (max-width: 768px) {
+    .profile-recommendation-card-wrapper {
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
+        max-width: none;
+    }
+    
+    .profile-recommendation-card-wrapper .profile-my-rec-card {
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
+        max-width: none;
+    }
+    
+    .profile-recommendation-content .public-provider-card {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+    
+    /* Make Edit My Rec button text smaller on mobile */
+    .profile-recommendation-card-wrapper .profile-my-rec-primary-action-button {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.8rem;
+    }
+}
+
+/* Ensure embedded RecommendationCard bottom actions are properly aligned */
+.profile-recommendation-content .public-bottom-actions-left {
+    display: flex;
+    align-items: center; /* Ensure buttons are centered vertically */
+    gap: 16px;
+    height: auto; /* Allow natural height */
+    margin: 0; /* Reset margins */
+    padding: 0; /* Reset padding */
+}
+
+.profile-recommendation-content .public-bottom-actions .public-like-button,
+.profile-recommendation-content .public-bottom-actions .public-comment-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0; /* Reset all margins */
+    height: 36px; /* Fixed height instead of min-height */
+    vertical-align: baseline; /* Use baseline for consistent alignment */
+    box-sizing: border-box; /* Ensure padding is included in height */
+    position: relative; /* Ensure consistent positioning context */
+}
 
 

@@ -1393,7 +1393,7 @@ const TrustCircles = () => {
             {activeTab === "for-you" && (
                 <div className="tab-content appliance-services-container my-recommendations-tab-content">
                     <h1 className="section-heading">
-                        Recommendations Shared With You
+                        Recommendations For You
                     </h1>
                     {(availableServices.length > 0 || availableCities.length > 0) && (
                         <div className="filters-container">
