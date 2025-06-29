@@ -467,48 +467,39 @@ export default function ListRecommendationForm({
     const handleListImageSelect = (idx, event) => {
         const files = Array.from(event.target.files);
 
-        setListRecommendations((prev) =>
-            prev.map((rec, i) => {
-                if (i !== idx) return rec;
-                if ((rec.images?.length || 0) + files.length > 5) {
-                    setMessage(
-                        "error:Maximum 5 images allowed per recommendation"
-                    );
-                    return rec;
-                }
-                const newImages = [];
-                files.forEach((file) => {
-                    if (file.size > 5 * 1024 * 1024) {
-                        setMessage("error:Images must be under 5MB");
-                        return;
-                    }
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        setListRecommendations((prev2) =>
-                            prev2.map((r2, j) =>
-                                j === idx
-                                    ? {
-                                          ...r2,
-                                          images: [
-                                              ...(r2.images || []),
-                                              {
-                                                  id:
-                                                      Date.now() +
-                                                      Math.random(),
-                                                  preview: reader.result,
-                                                  file: file,
-                                              },
-                                          ],
-                                      }
-                                    : r2
-                            )
-                        );
-                    };
-                    reader.readAsDataURL(file);
-                });
-                return rec;
-            })
-        );
+        // Check for image count limit before reading files
+        if ((listRecommendations[idx].images?.length || 0) + files.length > 5) {
+            setMessage("error:Maximum 5 images allowed per recommendation");
+            return;
+        }
+
+        files.forEach((file) => {
+            if (file.size > 5 * 1024 * 1024) {
+                setMessage("error:Images must be under 5MB");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setListRecommendations((prev) =>
+                    prev.map((rec, i) =>
+                        i === idx
+                            ? {
+                                  ...rec,
+                                  images: [
+                                      ...(rec.images || []),
+                                      {
+                                          id: Date.now() + Math.random(),
+                                          preview: reader.result,
+                                          file: file,
+                                      },
+                                  ],
+                              }
+                            : rec
+                    )
+                );
+            };
+            reader.readAsDataURL(file);
+        });
     };
 
     const removeListImage = (idx, imageId) => {
