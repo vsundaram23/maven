@@ -34,7 +34,6 @@ import "react-image-crop/dist/ReactCrop.css";
 import { Link, useNavigate } from "react-router-dom";
 import RecommendationCard from "../../components/RecommendationCard/RecommendationCard";
 import ReviewModal from "../../components/ReviewModal/ReviewModal";
-import SuccessModal from "../../components/SuccessModal/SuccessModal";
 import ShareProfileModal from "../../components/ShareProfileModal/ShareProfileModal";
 import TrustScoreWheel from "../../components/TrustScoreWheel/TrustScoreWheel";
 import "./Profile.css";
@@ -1052,8 +1051,135 @@ const ProfileRecommendationCard = ({
                   day: "numeric",
               });
 
-    const handleShare = () => {
-        alert("Share functionality for individual recommendations coming soon!");
+    const handleShare = async () => {
+        const providerIdForLink = rec.provider_id || rec.id;
+        const url = `${window.location.origin}/provider/${providerIdForLink}`;
+        
+        try {
+            await navigator.clipboard.writeText(url);
+            
+            // Show a temporary success message on button
+            const button = document.querySelector('.profile-my-rec-dropdown-menu .profile-my-rec-dropdown-item:nth-child(2)');
+            if (button) {
+                const originalContent = button.innerHTML;
+                button.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Link Copied!';
+                button.style.color = '#28a745';
+                setTimeout(() => {
+                    button.innerHTML = originalContent;
+                    button.style.color = '';
+                }, 2000);
+            }
+
+            // Show a prominent success notification
+            const notification = document.createElement('div');
+            notification.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #28a745;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    z-index: 10000;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 14px;
+                    font-weight: 500;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    animation: slideInFromRight 0.3s ease-out;
+                ">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                    Recommendation link copied to clipboard!
+                </div>
+            `;
+            
+            // Add CSS animation if not already present
+            if (!document.querySelector('#copy-link-animation-styles')) {
+                const style = document.createElement('style');
+                style.id = 'copy-link-animation-styles';
+                style.textContent = `
+                    @keyframes slideInFromRight {
+                        from {
+                            opacity: 0;
+                            transform: translateX(100%);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateX(0);
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideInFromRight 0.3s ease-out reverse';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }
+            }, 3000);
+            
+        } catch (err) {
+            // Fallback for browsers that don't support clipboard API
+            const textArea = document.createElement('textarea');
+            textArea.value = url;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                
+                // Show success notification for fallback method too
+                const notification = document.createElement('div');
+                notification.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #28a745;
+                        color: white;
+                        padding: 12px 20px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        z-index: 10000;
+                        font-family: 'Inter', sans-serif;
+                        font-size: 14px;
+                        font-weight: 500;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    ">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                        </svg>
+                        Recommendation link copied to clipboard!
+                    </div>
+                `;
+                document.body.appendChild(notification);
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 3000);
+                
+                console.log('Link copied to clipboard (fallback)');
+            } catch (fallbackErr) {
+                console.error('Failed to copy link:', fallbackErr);
+                alert(`Copy this link: ${url}`);
+            }
+            document.body.removeChild(textArea);
+        }
         setDropdownOpen(false);
     };
 
@@ -1119,7 +1245,26 @@ const ProfileRecommendationCard = ({
             <div className="profile-my-rec-card">
                 <div className="profile-my-rec-card-header">
                     <h2 className="profile-my-rec-card-title">
-                        <Link to={`/provider/${rec.provider_id || rec.id}`} target="_blank" rel="noopener noreferrer" className="clickable provider-name-link" onClick={() => localStorage.setItem("selectedProvider", JSON.stringify(rec))}>
+                        <Link to={`/provider/${rec.provider_id || rec.id}`} target="_blank" rel="noopener noreferrer" className="clickable provider-name-link" onClick={() => {
+                            const essentialProviderData = {
+                                id: rec.id,
+                                provider_id: rec.provider_id,
+                                business_name: rec.business_name,
+                                recommender_message: rec.recommender_message,
+                                rating: rec.rating,
+                                average_rating: rec.average_rating,
+                                total_reviews: rec.total_reviews,
+                                tags: rec.tags,
+                                provider_contact_name: rec.provider_contact_name,
+                                website: rec.website,
+                                phone_number: rec.phone_number,
+                                city: rec.city,
+                                recommended_service_name: rec.recommended_service_name,
+                                date_of_recommendation: rec.date_of_recommendation,
+                                created_at: rec.created_at
+                            };
+                            localStorage.setItem("selectedProvider", JSON.stringify(essentialProviderData));
+                        }}>
                             {rec.business_name || "Unknown Business"}
                         </Link>
                     </h2>
@@ -1303,10 +1448,135 @@ const MyRecommendationCard = ({
                   month: "long",
                   day: "numeric",
               });
-    const handleShare = () => {
-        alert(
-            "Share functionality for individual recommendations coming soon!"
-        );
+    const handleShare = async () => {
+        const providerIdForLink = rec.provider_id || rec.id;
+        const url = `${window.location.origin}/provider/${providerIdForLink}`;
+        
+        try {
+            await navigator.clipboard.writeText(url);
+            
+            // Show a temporary success message on button
+            const button = document.querySelector('.profile-my-rec-dropdown-menu .profile-my-rec-dropdown-item:nth-child(2)');
+            if (button) {
+                const originalContent = button.innerHTML;
+                button.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Link Copied!';
+                button.style.color = '#28a745';
+                setTimeout(() => {
+                    button.innerHTML = originalContent;
+                    button.style.color = '';
+                }, 2000);
+            }
+
+            // Show a prominent success notification
+            const notification = document.createElement('div');
+            notification.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #28a745;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    z-index: 10000;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 14px;
+                    font-weight: 500;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    animation: slideInFromRight 0.3s ease-out;
+                ">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                    Recommendation link copied to clipboard!
+                </div>
+            `;
+            
+            // Add CSS animation if not already present
+            if (!document.querySelector('#copy-link-animation-styles')) {
+                const style = document.createElement('style');
+                style.id = 'copy-link-animation-styles';
+                style.textContent = `
+                    @keyframes slideInFromRight {
+                        from {
+                            opacity: 0;
+                            transform: translateX(100%);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateX(0);
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideInFromRight 0.3s ease-out reverse';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }
+            }, 3000);
+            
+        } catch (err) {
+            // Fallback for browsers that don't support clipboard API
+            const textArea = document.createElement('textarea');
+            textArea.value = url;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                
+                // Show success notification for fallback method too
+                const notification = document.createElement('div');
+                notification.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #28a745;
+                        color: white;
+                        padding: 12px 20px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        z-index: 10000;
+                        font-family: 'Inter', sans-serif;
+                        font-size: 14px;
+                        font-weight: 500;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    ">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                        </svg>
+                        Recommendation link copied to clipboard!
+                    </div>
+                `;
+                document.body.appendChild(notification);
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 3000);
+                
+                console.log('Link copied to clipboard (fallback)');
+            } catch (fallbackErr) {
+                console.error('Failed to copy link:', fallbackErr);
+                alert(`Copy this link: ${url}`);
+            }
+            document.body.removeChild(textArea);
+        }
         setDropdownOpen(false);
     };
     const displayCommunityAvgRatingVal = (
@@ -1376,7 +1646,26 @@ const MyRecommendationCard = ({
         <li className="profile-my-rec-card">
             <div className="profile-my-rec-card-header">
                 <h2 className="profile-my-rec-card-title">
-                    <Link to={`/provider/${providerIdForLink}`} target="_blank" rel="noopener noreferrer" className="clickable provider-name-link" onClick={() => localStorage.setItem("selectedProvider", JSON.stringify(rec))}>
+                    <Link to={`/provider/${providerIdForLink}`} target="_blank" rel="noopener noreferrer" className="clickable provider-name-link" onClick={() => {
+                        const essentialProviderData = {
+                            id: rec.id,
+                            provider_id: rec.provider_id,
+                            business_name: rec.business_name,
+                            recommender_message: rec.recommender_message,
+                            rating: rec.rating,
+                            average_rating: rec.average_rating,
+                            total_reviews: rec.total_reviews,
+                            tags: rec.tags,
+                            provider_contact_name: rec.provider_contact_name,
+                            website: rec.website,
+                            phone_number: rec.phone_number,
+                            city: rec.city,
+                            recommended_service_name: rec.recommended_service_name,
+                            date_of_recommendation: rec.date_of_recommendation,
+                            created_at: rec.created_at
+                        };
+                        localStorage.setItem("selectedProvider", JSON.stringify(essentialProviderData));
+                    }}>
                         {rec.business_name || "Unknown Business"}
                     </Link>
                 </h2>

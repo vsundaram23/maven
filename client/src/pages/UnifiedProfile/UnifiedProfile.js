@@ -1,29 +1,19 @@
 import { useUser } from "@clerk/clerk-react";
-import {
-    PencilSquareIcon,
-    ShareIcon
-} from "@heroicons/react/24/outline";
-import {
-    ChevronDownIcon, EnvelopeIcon
-} from "@heroicons/react/24/solid";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDownIcon, EnvelopeIcon } from "@heroicons/react/24/solid";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     FaConciergeBell,
     FaMapMarkerAlt,
     FaStar
 } from "react-icons/fa";
-import { centerCrop, makeAspectCrop } from "react-image-crop";
-import "react-image-crop/dist/ReactCrop.css";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import RecommendationCard from "../../components/RecommendationCard/RecommendationCard";
 import ReviewModal from "../../components/ReviewModal/ReviewModal";
 import TrustScoreWheel from "../../components/TrustScoreWheel/TrustScoreWheel";
-import Profile from "../Profile/Profile";
 import "../Profile/Profile.css";
-import "./PublicProfile.css";
+import "../PublicProfile/PublicProfile.css";
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = "http://localhost:3000";
 
 const StarRatingDisplay = ({ rating }) => {
     const numRating = parseFloat(rating) || 0;
@@ -40,9 +30,6 @@ const StarRatingDisplay = ({ rating }) => {
     );
 };
 
-// Component removed - now using shared RecommendationCard component
-
-// Add this badge component after the existing components but before PublicProfile component
 const AchievementBadge = ({ recCount }) => {
     const getBadgeInfo = (count) => {
         if (count >= 100) {
@@ -92,7 +79,6 @@ const AchievementBadge = ({ recCount }) => {
     const badge = getBadgeInfo(recCount);
 
     if (!badge) {
-        // Show placeholder for users with 0 recommendations (in public view)
         return (
             <div className="achievement-badge-starter" title="This user hasn't shared any recommendations yet">
                 <div className="achievement-badge-icon">🌟</div>
@@ -135,41 +121,7 @@ const UnfollowConfirmationModal = ({ isOpen, onClose, onConfirm, userName, isLoa
     );
 };
 
-function getCroppedImg(image, crop, fileName) {
-    const canvas = document.createElement("canvas");
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    canvas.width = crop.width * scaleX;
-    canvas.height = crop.height * scaleY;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(
-        image,
-        crop.x * scaleX,
-        crop.y * scaleY,
-        crop.width * scaleX,
-        crop.height * scaleY,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
-    return new Promise((resolve, reject) => {
-        canvas.toBlob(
-            (blob) => {
-                if (!blob) {
-                    reject(new Error("Canvas is empty"));
-                    return;
-                }
-                blob.name = fileName;
-                resolve(blob);
-            },
-            "image/jpeg",
-            0.95
-        );
-    });
-}
-
-const PublicProfile = () => {
+const UnifiedProfile = () => {
     const { username } = useParams();
     const { user, isLoaded, isSignedIn } = useUser();
     const [currentUserId, setCurrentUserId] = useState(null);
@@ -192,34 +144,12 @@ const PublicProfile = () => {
     const [selectedServices, setSelectedServices] = useState([]);
     const [showServiceFilter, setShowServiceFilter] = useState(false);
     const [userScore, setUserScore] = useState(0);
-    // Batch comments state
     const [commentsMap, setCommentsMap] = useState(new Map());
     const [isLoadingComments, setIsLoadingComments] = useState(false);
     
     // Check if this is the current user's own profile
     const [isOwnProfile, setIsOwnProfile] = useState(false);
     const [currentUserUsername, setCurrentUserUsername] = useState(null);
-
-    // Profile editing state
-    const [isEditing, setIsEditing] = useState(false);
-    const [editingBio, setEditingBio] = useState("");
-    const [saving, setSaving] = useState(false);
-    const [imgSrcForCropper, setImgSrcForCropper] = useState("");
-    const [crop, setCrop] = useState();
-    const [completedCrop, setCompletedCrop] = useState(null);
-    const [originalFile, setOriginalFile] = useState(null);
-    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [selectedRecForEdit, setSelectedRecForEdit] = useState(null);
-    
-    // Refs for cropping
-    const imgRef = useRef(null);
-    
-    // Constants for cropping
-    const ASPECT_RATIO = 1;
-    const MIN_DIMENSION = 150;
-
-    const navigate = useNavigate();
 
     useEffect(() => {
         if (isLoaded && user) {
@@ -273,8 +203,6 @@ const PublicProfile = () => {
             if (!profileRes.ok) throw new Error("Failed to fetch profile data");
             const data = await profileRes.json();
             
-            let processedRecommendations = [];
-            
             if (isOwnProfile) {
                 // Transform the data structure to match what the component expects
                 setProfileInfo({
@@ -286,8 +214,7 @@ const PublicProfile = () => {
                     clerkId: user.id,
                     recommendations: data.recommendations
                 });
-                processedRecommendations = data.recommendations || [];
-                setRecommendations(processedRecommendations);
+                setRecommendations(data.recommendations || []);
             } else {
                 setProfileInfo(data);
                 const enrichedRecs = (data.recommendations || []).map(rec => ({
@@ -296,7 +223,6 @@ const PublicProfile = () => {
                     total_reviews: parseInt(rec.total_reviews, 10) || 0,
                     users_who_reviewed: rec.users_who_reviewed || []
                 }));
-                processedRecommendations = enrichedRecs;
                 setRecommendations(enrichedRecs);
             }
             
@@ -327,12 +253,14 @@ const PublicProfile = () => {
             
             // Set up liked map
             const initialLikes = new Map();
-            processedRecommendations.forEach(r => {
+            const recs = isOwnProfile ? (data.recommendations || []) : enrichedRecs;
+            recs.forEach(r => {
                 if (r.currentUserLiked) {
                     initialLikes.set(r.id || r.provider_id, true);
                 }
             });
             setLikedMap(initialLikes);
+            
         } catch (err) {
             setError(err.message);
         } finally {
@@ -340,29 +268,28 @@ const PublicProfile = () => {
         }
     }, [username, isLoaded, user, isOwnProfile]);
 
-    // Add this function to fetch connection status
     const fetchConnectionStatus = useCallback(async () => {
-    if (!currentUserId || !profileInfo?.userId || currentUserId === profileInfo.userId || isOwnProfile) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`${API_URL}/api/connections/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            fromUserId: currentUserId,
-            toUserId: profileInfo.userId
-        })
-        });
-
-        if (response.ok) {
-        const data = await response.json();
-        setConnectionStatus(data.status);
+        if (!currentUserId || !profileInfo?.userId || currentUserId === profileInfo.userId || isOwnProfile) {
+            return;
         }
-    } catch (error) {
-        console.error('Error fetching connection status:', error);
-    }
+
+        try {
+            const response = await fetch(`${API_URL}/api/connections/status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fromUserId: currentUserId,
+                    toUserId: profileInfo.userId
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setConnectionStatus(data.status);
+            }
+        } catch (error) {
+            console.error('Error fetching connection status:', error);
+        }
     }, [currentUserId, profileInfo?.userId, isOwnProfile]);
 
     const handleConfirmUnfollow = async () => {
@@ -381,7 +308,7 @@ const PublicProfile = () => {
     
             if (response.ok) {
                 setConnectionStatus('not_connected');
-                fetchPageData(); // Refresh data to update follower count, etc.
+                fetchPageData();
             } else {
                 alert('Failed to unfollow user. Please try again.');
             }
@@ -390,94 +317,89 @@ const PublicProfile = () => {
             alert('An error occurred while trying to unfollow.');
         } finally {
             setIsFollowLoading(false);
-            setIsUnfollowModalOpen(false); // Close the modal regardless of outcome
+            setIsUnfollowModalOpen(false);
         }
     };
 
-    // Add this function to handle follow/unfollow
     const handleFollowToggle = async () => {
-    if (!currentUserId || !profileInfo?.userId || isFollowLoading) return;
+        if (!currentUserId || !profileInfo?.userId || isFollowLoading || isOwnProfile) return;
 
-    if (connectionStatus === 'connected') {
-        // Open the confirmation modal instead of directly unfollowing
-        setIsUnfollowModalOpen(true);
-        return; 
-    }
-
-    setIsFollowLoading(true);
-    try {
-        // Follow logic remains the same
-        const response = await fetch(`${API_URL}/api/connections/send`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-            fromUserId: currentUserId,
-            toUserId: profileInfo.userId
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            setConnectionStatus(data.status === 'accepted' ? 'connected' : 'pending_outbound');
-            // Refresh connections count
-            fetchPageData();
+        if (connectionStatus === 'connected') {
+            setIsUnfollowModalOpen(true);
+            return; 
         }
-    } catch (error) {
-        console.error('Error toggling follow status:', error);
-        alert('Failed to update follow status');
-    } finally {
-        setIsFollowLoading(false);
-    }
+
+        setIsFollowLoading(true);
+        try {
+            const response = await fetch(`${API_URL}/api/connections/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fromUserId: currentUserId,
+                    toUserId: profileInfo.userId
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setConnectionStatus(data.status === 'accepted' ? 'connected' : 'pending_outbound');
+                fetchPageData();
+            }
+        } catch (error) {
+            console.error('Error toggling follow status:', error);
+            alert('Failed to update follow status');
+        } finally {
+            setIsFollowLoading(false);
+        }
     };
 
-    // Add this function to render the follow button
     const renderFollowButton = () => {
-    if (!isSignedIn || !currentUserId || isOwnProfile) {
-        return null;
-    }
-
-    const getButtonText = () => {
-        switch (connectionStatus) {
-            case 'connected':
-                return <span className="follow-text">Following</span>;
-            case 'pending_outbound':
-                return <span className="follow-text">Requested</span>;
-            case 'pending_inbound':
-                return <span className="follow-text">Accept Request</span>;
-            default:
-                return <span className="follow-text">Follow</span>;
+        if (!isSignedIn || !currentUserId || isOwnProfile) {
+            return null;
         }
-    };
 
-    const getButtonClass = () => {
-        switch (connectionStatus) {
-            case 'connected':
-                return 'follow-button following';
-            case 'pending_outbound':
-                return 'follow-button pending';
-            case 'pending_inbound':
-                return 'follow-button accept';
-            default:
-                return 'follow-button';
-        }
-    };
+        const getButtonText = () => {
+            switch (connectionStatus) {
+                case 'connected':
+                    return <span className="follow-text">Following</span>;
+                case 'pending_outbound':
+                    return <span className="follow-text">Requested</span>;
+                case 'pending_inbound':
+                    return <span className="follow-text">Accept Request</span>;
+                default:
+                    return <span className="follow-text">Follow</span>;
+            }
+        };
 
-    return (
-        <button
-            className={getButtonClass()}
-            onClick={handleFollowToggle}
-            disabled={isFollowLoading}
-        >
-            {isFollowLoading ? (
-                <>
-                    <span>⏳</span>
-                    <span>Loading...</span>
-                </>
-            ) : (
-                getButtonText()
-            )}
-        </button>
-            );
+        const getButtonClass = () => {
+            switch (connectionStatus) {
+                case 'connected':
+                    return 'follow-button following';
+                case 'pending_outbound':
+                    return 'follow-button pending';
+                case 'pending_inbound':
+                    return 'follow-button accept';
+                default:
+                    return 'follow-button';
+            }
+        };
+
+        return (
+            <button
+                className={getButtonClass()}
+                onClick={handleFollowToggle}
+                disabled={isFollowLoading}
+            >
+                {isFollowLoading ? (
+                    <>
+                        <span>⏳</span>
+                        <span>Loading...</span>
+                    </>
+                ) : (
+                    getButtonText()
+                )}
+            </button>
+        );
     };
 
     // Add New Recommendation button for own profile
@@ -509,7 +431,6 @@ const PublicProfile = () => {
         }
     }, [profileInfo, currentUserId, fetchConnectionStatus, isOwnProfile]);
 
-    // Fetch comments for recommendations
     useEffect(() => {
         if (!loading && recommendations.length > 0) {
             fetchBatchComments(recommendations);
@@ -531,19 +452,6 @@ const PublicProfile = () => {
         setImageFailed(true);
     };
 
-    const onAvatarOrPreviewError = (e) => {
-        e.target.style.display = "none";
-        const fallbackParent =
-            e.target.closest(".profile-avatar-display-wrapper") ||
-            e.target.closest(".profile-avatar-cropper-wrapper");
-        if (fallbackParent) {
-            const fallbackIcon = fallbackParent.querySelector(
-                ".profile-avatar-icon-fallback, .profile-avatar-icon-editing"
-            );
-            if (fallbackIcon) fallbackIcon.style.display = "flex";
-        }
-    };
-
     const handleOpenReviewModal = (provider) => {
         setSelectedProviderForReview(provider);
         setReviewModalOpen(true);
@@ -557,13 +465,16 @@ const PublicProfile = () => {
         const providerIdToUse = selectedProviderForReview.provider_id || selectedProviderForReview.id;
         try {
             const response = await fetch(`${API_URL}/api/reviews`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
+                method: "POST", 
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     provider_id: providerIdToUse,
                     provider_email: selectedProviderForReview.email || "",
                     user_id: currentUserId,
                     email: currentUserEmail,
-                    rating: reviewData.rating, content: reviewData.review, tags: reviewData.tags,
+                    rating: reviewData.rating, 
+                    content: reviewData.review, 
+                    tags: reviewData.tags,
                 }),
             });
             if (!response.ok) throw new Error("Failed to submit review.");
@@ -582,6 +493,7 @@ const PublicProfile = () => {
         const originalRecs = JSON.parse(JSON.stringify(recommendations));
         const originalLikedMap = new Map(likedMap);
         const isCurrentlyLiked = likedMap.get(providerId) || false;
+        
         setRecommendations(prev => prev.map(rec => {
             const currentRecId = rec.id || rec.provider_id;
             if (currentRecId === providerId) {
@@ -594,6 +506,7 @@ const PublicProfile = () => {
             return rec;
         }));
         setLikedMap(prev => new Map(prev).set(providerId, !isCurrentlyLiked));
+        
         try {
             const response = await fetch(`${API_URL}/api/providers/${providerId}/like`, {
                 method: 'POST',
@@ -622,7 +535,6 @@ const PublicProfile = () => {
     const sortedRecommendations = useMemo(() => {
         let sortableItems = [...recommendations];
         
-        // Apply search filter
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase().trim();
             sortableItems = sortableItems.filter(item => {
@@ -638,7 +550,6 @@ const PublicProfile = () => {
             });
         }
         
-        // Apply service filter
         if (selectedServices.length > 0) {
             sortableItems = sortableItems.filter(item => {
                 const itemService = item.recommended_service_name || "Other";
@@ -646,7 +557,6 @@ const PublicProfile = () => {
             });
         }
         
-        // Apply city filter
         if (selectedCities.length > 0) {
             sortableItems = sortableItems.filter(item => {
                 const itemCity = item.city || "Other";
@@ -693,7 +603,6 @@ const PublicProfile = () => {
         );
     };
 
-    // Batch fetch comments for multiple recommendations
     const fetchBatchComments = async (recommendations) => {
         if (!recommendations || recommendations.length === 0) return;
         
@@ -728,7 +637,6 @@ const PublicProfile = () => {
         }
     };
 
-    // Handle new comment added
     const handleCommentAdded = (serviceId, newComment) => {
         setCommentsMap(prev => {
             const newMap = new Map(prev);
@@ -737,137 +645,6 @@ const PublicProfile = () => {
             return newMap;
         });
     };
-
-    // Initialize editing bio when profile info loads
-    useEffect(() => {
-        if (profileInfo?.userBio && !editingBio) {
-            setEditingBio(profileInfo.userBio);
-        }
-    }, [profileInfo?.userBio, editingBio]);
-
-    const getClerkUserQueryParams = useCallback(() => {
-        if (!user) return "";
-        return new URLSearchParams({
-            user_id: user.id,
-            email: user.primaryEmailAddress?.emailAddress,
-            firstName: user.firstName || "",
-            lastName: user.lastName || "",
-            phoneNumber: user.primaryPhoneNumber?.phoneNumber || "",
-        }).toString();
-    }, [user]);
-
-    // Profile editing functions
-    const handleEditToggle = () => {
-        if (isEditing) {
-            setEditingBio(profileInfo?.userBio || "");
-            setImgSrcForCropper("");
-            setCompletedCrop(null);
-            setOriginalFile(null);
-            setCrop(undefined);
-        } else {
-            setEditingBio(profileInfo?.userBio || "");
-        }
-        setIsEditing(!isEditing);
-    };
-
-    const onImageLoad = (e) => {
-        const { width, height } = e.currentTarget;
-        const cropWidthInPercent = (MIN_DIMENSION / width) * 100;
-        const cropVal = makeAspectCrop(
-            { unit: "%", width: cropWidthInPercent },
-            ASPECT_RATIO,
-            width,
-            height
-        );
-        const centeredCrop = centerCrop(cropVal, width, height);
-        setCrop(centeredCrop);
-    };
-
-    const handleFileChange = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            setOriginalFile(file);
-            setCrop(undefined);
-            const reader = new FileReader();
-            reader.addEventListener("load", () =>
-                setImgSrcForCropper(reader.result?.toString() || "")
-            );
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleSaveProfile = async () => {
-        if (!user) {
-            setError("User not found.");
-            return;
-        }
-        setError(null);
-        setSaving(true);
-        const formData = new FormData();
-        formData.append("bio", editingBio);
-        formData.append("firstName", user.firstName || "");
-        formData.append("lastName", user.lastName || "");
-        
-        let fileToUpload = null;
-        if (completedCrop && imgRef.current && originalFile) {
-            try {
-                const croppedImageBlob = await getCroppedImg(
-                    imgRef.current,
-                    completedCrop,
-                    originalFile.name
-                );
-                fileToUpload = new File([croppedImageBlob], originalFile.name, {
-                    type: croppedImageBlob.type,
-                });
-            } catch (cropError) {
-                setError("Failed to crop image.");
-                setSaving(false);
-                return;
-            }
-        }
-        if (fileToUpload) formData.append("profileImageFile", fileToUpload);
-        
-        try {
-            const queryParams = getClerkUserQueryParams();
-            if (!queryParams)
-                throw new Error("User details not available for API query.");
-            const response = await fetch(
-                `${API_URL}/api/users/me/profile?${queryParams}`,
-                { method: "PUT", body: formData }
-            );
-            const data = await response.json();
-            if (!response.ok || !data.success)
-                throw new Error(data.message || "Failed to update profile.");
-            
-            // Update local state
-            setProfileInfo(prev => ({
-                ...prev,
-                userBio: data.user.bio || "",
-                userName: data.user.name
-            }));
-            setEditingBio(data.user.bio || "");
-            
-            // Force refresh profile image
-            const imageQuery = getClerkUserQueryParams();
-            if (imageQuery) {
-                const newImageUrl = `${API_URL}/api/users/me/profile/image?${imageQuery}&timestamp=${new Date().getTime()}`;
-                setProfileInfo(prev => ({...prev, profileImageUrl: newImageUrl}));
-            }
-            
-            setImgSrcForCropper("");
-            setCompletedCrop(null);
-            setOriginalFile(null);
-            setIsEditing(false);
-        } catch (err) {
-            setError(`Failed to save profile: ${err.message}`);
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    if (isOwnProfile) {
-        return <Profile />;
-    }
 
     if (loading) {
         return <div className="profile-loading-container"><div className="profile-spinner"></div><p>Loading Profile...</p></div>;
@@ -886,147 +663,23 @@ const PublicProfile = () => {
             <header className="profile-hero-header">
                 <div className="profile-hero-content">
                     <div className="profile-avatar-wrapper">
-                        {isOwnProfile && isEditing ? (
-                            <div className="profile-avatar-cropper-wrapper">
-                                <input
-                                    type="file"
-                                    id="profileImageUploadInput"
-                                    style={{ display: "none" }}
-                                    accept="image/*"
-                                    onChange={handleFileChange}
-                                />
-                                {!imgSrcForCropper && (
-                                    <div
-                                        className="profile-avatar-container"
-                                        onClick={() =>
-                                            document
-                                                .getElementById(
-                                                    "profileImageUploadInput"
-                                                )
-                                                ?.click()
-                                        }
-                                        style={{ cursor: "pointer" }}
-                                    >
-                                        {profileImage && !imageFailed ? (
-                                            <img
-                                                src={`${API_URL}${profileImage}`}
-                                                alt="Current profile"
-                                                className="profile-avatar-image"
-                                                onError={onAvatarOrPreviewError}
-                                            />
-                                        ) : (
-                                            <div className="profile-avatar-initials">
-                                                <span>{getInitials(userName, profileUserEmail)}</span>
-                                            </div>
-                                        )}
-                                        <div className="profile-avatar-edit-overlay">
-                                            <CameraIcon
-                                                style={{
-                                                    width: "24px",
-                                                    height: "24px",
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                                {imgSrcForCropper && (
-                                    <div className="cropper-container">
-                                        <ReactCrop
-                                            crop={crop}
-                                            onChange={(pc, p) => setCrop(p)}
-                                            onComplete={(c) => setCompletedCrop(c)}
-                                            aspect={ASPECT_RATIO}
-                                            minWidth={MIN_DIMENSION}
-                                            minHeight={MIN_DIMENSION}
-                                            circularCrop={true}
-                                        >
-                                            <img
-                                                ref={imgRef}
-                                                src={imgSrcForCropper}
-                                                alt="Crop me"
-                                                onLoad={onImageLoad}
-                                                style={{ maxHeight: "300px" }}
-                                            />
-                                        </ReactCrop>
-                                        <button
-                                            className="profile-change-photo-btn-cropper"
-                                            onClick={() =>
-                                                document
-                                                    .getElementById(
-                                                        "profileImageUploadInput"
-                                                    )
-                                                    ?.click()
-                                            }
-                                        >
-                                            <CameraIcon className="btn-icon" />{" "}
-                                            Change Photo
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                         {profileImage && !imageFailed ? (
+                            <img
+                                src={`${API_URL}${profileImage}`}
+                                alt={userName || profileUserEmail}
+                                className="profile-avatar-image"
+                                onError={handleImageError}
+                            />
                         ) : (
-                            <>
-                                {profileImage && !imageFailed ? (
-                                    <img
-                                        src={`${API_URL}${profileImage}`}
-                                        alt={userName || profileUserEmail}
-                                        className="profile-avatar-image"
-                                        onError={handleImageError}
-                                    />
-                                ) : (
-                                    <div className="profile-avatar-initials">
-                                        <span>{getInitials(userName, profileUserEmail)}</span>
-                                    </div>
-                                )}
-                            </>
+                            <div className="profile-avatar-initials">
+                                <span>{getInitials(userName, profileUserEmail)}</span>
+                            </div>
                         )}
                     </div>
                     <div className="profile-details-wrapper">
                         <div className="profile-header-top">
                             <h1 className="profile-user-name">{userName || "User Profile"}</h1>
-                            <div className="profile-header-actions">
-                                {isOwnProfile ? (
-                                    isEditing ? (
-                                        <>
-                                            <button
-                                                className="profile-save-btn"
-                                                onClick={handleSaveProfile}
-                                                disabled={saving}
-                                            >
-                                                <CheckCircleIcon className="btn-icon" />{" "}
-                                                {saving ? "Saving..." : "Save Changes"}
-                                            </button>
-                                            <button
-                                                className="profile-cancel-btn"
-                                                onClick={handleEditToggle}
-                                                disabled={saving}
-                                            >
-                                                <XCircleIcon className="btn-icon" /> Cancel
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button
-                                                className="profile-edit-btn"
-                                                onClick={handleEditToggle}
-                                            >
-                                                <PencilSquareIcon className="btn-icon" /> Edit
-                                                Profile
-                                            </button>
-                                            <button
-                                                className="profile-share-btn-header"
-                                                onClick={() => setIsShareModalOpen(true)}
-                                                disabled={saving || isEditing}
-                                            >
-                                                <ShareIcon className="btn-icon" />{" "}
-                                                Share Profile
-                                            </button>
-                                        </>
-                                    )
-                                ) : (
-                                    renderFollowButton()
-                                )}
-                            </div>
+                            {renderFollowButton()}
                         </div>
                         
                         <div className="profile-contact-info">
@@ -1055,20 +708,10 @@ const PublicProfile = () => {
                             )}
                         </div>
                         
-                        {isOwnProfile && isEditing ? (
-                            <textarea
-                                className="profile-bio-textarea"
-                                value={editingBio}
-                                onChange={(e) => setEditingBio(e.target.value)}
-                                placeholder="Tell us about yourself..."
-                                rows={3}
-                            />
-                        ) : (
-                            userBio && (
-                                <blockquote className="profile-user-bio">
-                                    <p>{userBio}</p>
-                                </blockquote>
-                            )
+                        {userBio && (
+                            <blockquote className="profile-user-bio">
+                                <p>{userBio}</p>
+                            </blockquote>
                         )}
                     </div>
                     <div className="profile-stats-wrapper">
@@ -1094,44 +737,6 @@ const PublicProfile = () => {
                             <div className="profile-stat-achievement">
                                 <AchievementBadge recCount={recommendations.length} />
                             </div>
-                            <span className="profile-stat-label">
-                                {(() => {
-                                    const count = recommendations.length;
-                                    if (count >= 100) return 'Diamond Recommender';
-                                    if (count >= 50) return 'Platinum Recommender';
-                                    if (count >= 25) return 'Gold Recommender';
-                                    if (count >= 10) return 'Silver Recommender';
-                                    if (count >= 1) return 'Bronze Recommender';
-                                    return 'Getting Started';
-                                })()}
-                            </span>
-                            {(() => {
-                                const count = recommendations.length;
-                                let nextTier, remaining;
-                                if (count < 1) {
-                                    nextTier = 'Bronze';
-                                    remaining = 1 - count;
-                                } else if (count < 10) {
-                                    nextTier = 'Silver';
-                                    remaining = 10 - count;
-                                } else if (count < 25) {
-                                    nextTier = 'Gold';
-                                    remaining = 25 - count;
-                                } else if (count < 50) {
-                                    nextTier = 'Platinum';
-                                    remaining = 50 - count;
-                                } else if (count < 100) {
-                                    nextTier = 'Diamond';
-                                    remaining = 100 - count;
-                                } else {
-                                    return null; // Max tier reached
-                                }
-                                return (
-                                    <span className="profile-stat-progress">
-                                        {count === 0 ? 'No recommendations yet' : `${remaining} more to reach ${nextTier}`}
-                                    </span>
-                                );
-                            })()}
                         </div>
                     </div>
                 </div>
@@ -1143,6 +748,7 @@ const PublicProfile = () => {
                         <h2>{isOwnProfile ? "My Recommendations" : `${userName ? `${userName}'s` : ""} Recommendations`}</h2>
                         {renderAddNewButton()}
                     </div>
+                    
                     {recommendations.length > 0 && (
                         <div className="profile-search-wrapper">
                             <div className="profile-search-container">
@@ -1168,24 +774,17 @@ const PublicProfile = () => {
                                     </button>
                                 )}
                             </div>
-                            <div
-                                className="filters-container"
-                            >
+                            
+                            <div className="filters-container">
                                 {availableServices.length > 0 && (
                                     <div className="profile-city-filter-toggle-section">
                                         <button
                                             className="profile-city-filter-toggle"
-                                            onClick={() =>
-                                                setShowServiceFilter(
-                                                    !showServiceFilter
-                                                )
-                                            }
+                                            onClick={() => setShowServiceFilter(!showServiceFilter)}
                                         >
                                             <FaConciergeBell className="profile-filter-icon" />
                                             <span className="filter-button-text">
-                                                <span className="filter-button-text-long">
-                                                    Filter by{" "}
-                                                </span>
+                                                <span className="filter-button-text-long">Filter by </span>
                                                 <span>Service</span>
                                             </span>
                                             {selectedServices.length > 0 && (
@@ -1194,30 +793,21 @@ const PublicProfile = () => {
                                                 </span>
                                             )}
                                             <ChevronDownIcon
-                                                className={`profile-filter-chevron ${
-                                                    showServiceFilter
-                                                        ? "rotated"
-                                                        : ""
-                                                }`}
+                                                className={`profile-filter-chevron ${showServiceFilter ? "rotated" : ""}`}
                                             />
                                         </button>
                                     </div>
                                 )}
+                                
                                 {availableCities.length > 1 && (
                                     <div className="profile-city-filter-toggle-section">
                                         <button
                                             className="profile-city-filter-toggle"
-                                            onClick={() =>
-                                                setShowCityFilter(
-                                                    !showCityFilter
-                                                )
-                                            }
+                                            onClick={() => setShowCityFilter(!showCityFilter)}
                                         >
                                             <FaMapMarkerAlt className="profile-filter-icon" />
                                             <span className="filter-button-text">
-                                                <span className="filter-button-text-long">
-                                                    Filter by{" "}
-                                                </span>
+                                                <span className="filter-button-text-long">Filter by </span>
                                                 <span>City</span>
                                             </span>
                                             {selectedCities.length > 0 && (
@@ -1226,54 +816,41 @@ const PublicProfile = () => {
                                                 </span>
                                             )}
                                             <ChevronDownIcon
-                                                className={`profile-filter-chevron ${
-                                                    showCityFilter
-                                                        ? "rotated"
-                                                        : ""
-                                                }`}
+                                                className={`profile-filter-chevron ${showCityFilter ? "rotated" : ""}`}
                                             />
                                         </button>
                                     </div>
                                 )}
+                                
                                 {showServiceFilter && availableServices.length > 0 && (
                                     <div className="profile-city-filter-wrapper">
                                         <div className="profile-city-filter-checkboxes">
-                                            {availableServices.map(
-                                                ([service, count]) => (
-                                                    <div
-                                                        key={service}
-                                                        className="profile-city-checkbox-item"
+                                            {availableServices.map(([service, count]) => (
+                                                <div
+                                                    key={service}
+                                                    className="profile-city-checkbox-item"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`service-${service.replace(/\s+/g, '-')}`}
+                                                        name={service}
+                                                        checked={selectedServices.includes(service)}
+                                                        onChange={() => handleServiceSelection(service)}
+                                                    />
+                                                    <label
+                                                        htmlFor={`service-${service.replace(/\s+/g, '-')}`}
+                                                        className="profile-city-checkbox-label"
                                                     >
-                                                        <input
-                                                            type="checkbox"
-                                                            id={`service-${service.replace(/\s+/g, '-')}`}
-                                                            name={service}
-                                                            checked={selectedServices.includes(
-                                                                service
-                                                            )}
-                                                            onChange={() =>
-                                                                handleServiceSelection(
-                                                                    service
-                                                                )
-                                                            }
-                                                        />
-                                                        <label
-                                                            htmlFor={`service-${service.replace(/\s+/g, '-')}`}
-                                                            className="profile-city-checkbox-label"
-                                                        >
-                                                            {service}
-                                                        </label>
-                                                        <span className="profile-city-count">
-                                                            ({count})
-                                                        </span>
-                                                    </div>
-                                                )
-                                            )}
+                                                        {service}
+                                                    </label>
+                                                    <span className="profile-city-count">
+                                                        ({count})
+                                                    </span>
+                                                </div>
+                                            ))}
                                             {selectedServices.length > 0 && (
                                                 <button
-                                                    onClick={() =>
-                                                        setSelectedServices([])
-                                                    }
+                                                    onClick={() => setSelectedServices([])}
                                                     className="profile-city-clear-all"
                                                 >
                                                     Clear
@@ -1282,51 +859,36 @@ const PublicProfile = () => {
                                         </div>
                                     </div>
                                 )}
+                                
                                 {showCityFilter && availableCities.length > 1 && (
                                     <div className="profile-city-filter-wrapper">
                                         <div className="profile-city-filter-checkboxes">
-                                            {availableCities.map(
-                                                ([city, count]) => (
-                                                    <div
-                                                        key={city}
-                                                        className="profile-city-checkbox-item"
+                                            {availableCities.map(([city, count]) => (
+                                                <div
+                                                    key={city}
+                                                    className="profile-city-checkbox-item"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`city-${city.replace(/\s+/g, '-')}`}
+                                                        name={city}
+                                                        checked={selectedCities.includes(city)}
+                                                        onChange={() => handleCitySelection(city)}
+                                                    />
+                                                    <label
+                                                        htmlFor={`city-${city.replace(/\s+/g, '-')}`}
+                                                        className="profile-city-checkbox-label"
                                                     >
-                                                        <input
-                                                            type="checkbox"
-                                                            id={`city-${city.replace(
-                                                                /\s+/g,
-                                                                '-'
-                                                            )}`}
-                                                            name={city}
-                                                            checked={selectedCities.includes(
-                                                                city
-                                                            )}
-                                                            onChange={() =>
-                                                                handleCitySelection(
-                                                                    city
-                                                                )
-                                                            }
-                                                        />
-                                                        <label
-                                                            htmlFor={`city-${city.replace(
-                                                                /\s+/g,
-                                                                '-'
-                                                            )}`}
-                                                            className="profile-city-checkbox-label"
-                                                        >
-                                                            {city}
-                                                        </label>
-                                                        <span className="profile-city-count">
-                                                            ({count})
-                                                        </span>
-                                                    </div>
-                                                )
-                                            )}
+                                                        {city}
+                                                    </label>
+                                                    <span className="profile-city-count">
+                                                        ({count})
+                                                    </span>
+                                                </div>
+                                            ))}
                                             {selectedCities.length > 0 && (
                                                 <button
-                                                    onClick={() =>
-                                                        setSelectedCities([])
-                                                    }
+                                                    onClick={() => setSelectedCities([])}
                                                     className="profile-city-clear-all"
                                                 >
                                                     Clear
@@ -1336,6 +898,7 @@ const PublicProfile = () => {
                                     </div>
                                 )}
                             </div>
+                            
                             {sortedRecommendations.length > 0 && (
                                 <span className="profile-recommendations-count">
                                     {searchQuery.trim() ||
@@ -1346,7 +909,8 @@ const PublicProfile = () => {
                         </div>
                     )}
                 </div>
-                 {sortedRecommendations.length > 0 ? (
+                
+                {sortedRecommendations.length > 0 ? (
                     <div className="recommendations-feed">
                         {sortedRecommendations.map((rec) => (
                             <RecommendationCard
@@ -1360,9 +924,9 @@ const PublicProfile = () => {
                                 comments={commentsMap.get(String(rec.provider_id || rec.id)) || []}
                                 onCommentAdded={handleCommentAdded}
                                 showEditDelete={isOwnProfile}
-                                onEdit={isOwnProfile ? (rec) => {
-                                    setSelectedRecForEdit(rec);
-                                    setIsEditModalOpen(true);
+                                onEdit={isOwnProfile ? () => {
+                                    // TODO: Implement edit functionality
+                                    console.log('Edit clicked for rec:', rec);
                                 } : undefined}
                                 onRefreshList={fetchPageData}
                             />
@@ -1458,51 +1022,8 @@ const PublicProfile = () => {
                     provider={selectedProviderForReview}
                 />
             )}
-
-            {isShareModalOpen && (
-                <ShareProfileModal
-                    isOpen={isShareModalOpen}
-                    onClose={() => setIsShareModalOpen(false)}
-                    profileData={profileInfo}
-                    userEmail={user?.primaryEmailAddress?.emailAddress}
-                />
-            )}
-
-            {isEditModalOpen && selectedRecForEdit && user && (
-                <div className="profile-edit-modal-overlay">
-                    <div className="profile-edit-modal-content">
-                        <button
-                            onClick={() => {
-                                setIsEditModalOpen(false);
-                                setSelectedRecForEdit(null);
-                            }}
-                            className="profile-edit-modal-close-btn"
-                        >
-                            &times;
-                        </button>
-                        <h2 className="profile-edit-modal-title">
-                            Edit Your Recommendation
-                        </h2>
-                        <p style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-                            Edit recommendation functionality will be available soon. 
-                            For now, you can delete and recreate your recommendation.
-                        </p>
-                        <div className="profile-edit-modal-button-row">
-                            <button
-                                className="profile-edit-modal-btn cancel-btn"
-                                onClick={() => {
-                                    setIsEditModalOpen(false);
-                                    setSelectedRecForEdit(null);
-                                }}
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
 
-export default PublicProfile;
+export default UnifiedProfile; 
