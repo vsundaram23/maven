@@ -73,7 +73,10 @@ const ListDetail = () => {
                     Back to Profile
                 </button>
                 {loading ? (
-                    <div>Loading list...</div>
+                    <div className="profile-loading-container small-spinner">
+                        <div className="profile-spinner"></div>
+                        <p>Loading list...</p>
+                    </div>
                 ) : error ? (
                     <div className="profile-error-banner">{error}</div>
                 ) : (
