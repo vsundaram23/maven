@@ -30,6 +30,7 @@ import OnboardingModal from "./components/OnboardingModal/OnboardingModal";
 import InvitePage from "./pages/InvitePage/InvitePage";
 import PWAInterface from './pages/PWAInterface/PWAInterface';
 import UsernameRedirector from "./pages/UsernameRedirector/UsernameRedirector";
+import ListDetail from "./pages/ListDetail/ListDetail";
 import "./styles/global.css";
 import "./App.css";
 
@@ -240,14 +241,23 @@ const AppWrapper = () => {
                             </ProtectedRoute>
                         }
                     />
-                    <Route 
-                        path="/pro/:username" 
-                        element={<PublicProfile 
-                    />} />
+                    <Route
+                        path="/lists/:listId"
+                        element={
+                            <ProtectedRoute>
+                                <ListDetail />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/pro/:username"
+                        element={<PublicProfile />}
+                    />
                     <Route
                         path="/invite/:tokenString"
                         element={<InvitePage />}
                     />
+
                     {/* <Route
                         path="/pro/:username"
                         element={<UsernameRedirector />}

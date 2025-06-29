@@ -45,10 +45,12 @@ import RecommendationCard from "../../components/RecommendationCard/Recommendati
 import ReviewModal from "../../components/ReviewModal/ReviewModal";
 import ShareProfileModal from "../../components/ShareProfileModal/ShareProfileModal";
 import TrustScoreWheel from "../../components/TrustScoreWheel/TrustScoreWheel";
+import ListCard from "../../components/Profile/ListCard";
+import ProfileRecommendationCard from "../../components/Profile/ProfileRecommendationCard";
 import "./Profile.css";
 
-const API_URL = "https://api.seanag-recommendations.org:8080";
-// const API_URL = "http://localhost:3000";
+// const API_URL = "https://api.seanag-recommendations.org:8080";
+const API_URL = "http://localhost:3000";
 
 function getCroppedImg(image, crop, fileName) {
     const canvas = document.createElement("canvas");
@@ -1043,427 +1045,6 @@ const ImageModal = ({ image, onClose }) => {
     );
 };
 
-// Enhanced RecommendationCard for Profile with edit functionality
-const ProfileRecommendationCard = ({
-    rec,
-    onEdit,
-    onLikeRecommendation,
-    onRefreshList,
-    user,
-    comments = [],
-    onCommentAdded,
-    currentUserName,
-    onWriteReview, // Add this prop
-}) => {
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [deleteError, setDeleteError] = useState(null);
-    const [selectedImage, setSelectedImage] = useState(null);
-    const dropdownRef = useRef(null);
-
-    const formatDate = (dateString) =>
-        !dateString
-            ? "Date not available"
-            : new Date(dateString).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-              });
-
-    const handleShare = async () => {
-        const providerIdForLink = rec.provider_id || rec.id;
-        const url = `${window.location.origin}/provider/${providerIdForLink}`;
-        
-        try {
-            await navigator.clipboard.writeText(url);
-            
-            // Show a temporary success message on button
-            const button = document.querySelector('.profile-my-rec-dropdown-menu .profile-my-rec-dropdown-item:nth-child(2)');
-            if (button) {
-                const originalContent = button.innerHTML;
-                button.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Link Copied!';
-                button.style.color = '#28a745';
-                setTimeout(() => {
-                    button.innerHTML = originalContent;
-                    button.style.color = '';
-                }, 2000);
-            }
-
-            // Show a prominent success notification
-            const notification = document.createElement('div');
-            notification.innerHTML = `
-                <div style="
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    background: #28a745;
-                    color: white;
-                    padding: 12px 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                    z-index: 10000;
-                    font-family: 'Inter', sans-serif;
-                    font-size: 14px;
-                    font-weight: 500;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    animation: slideInFromRight 0.3s ease-out;
-                ">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                    </svg>
-                    Recommendation link copied to clipboard!
-                </div>
-            `;
-            
-            // Add CSS animation if not already present
-            if (!document.querySelector('#copy-link-animation-styles')) {
-                const style = document.createElement('style');
-                style.id = 'copy-link-animation-styles';
-                style.textContent = `
-                    @keyframes slideInFromRight {
-                        from {
-                            opacity: 0;
-                            transform: translateX(100%);
-                        }
-                        to {
-                            opacity: 1;
-                            transform: translateX(0);
-                        }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
-            document.body.appendChild(notification);
-            
-            // Remove notification after 3 seconds
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.style.animation = 'slideInFromRight 0.3s ease-out reverse';
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.parentNode.removeChild(notification);
-                        }
-                    }, 300);
-                }
-            }, 3000);
-            
-        } catch (err) {
-            // Fallback for browsers that don't support clipboard API
-            const textArea = document.createElement('textarea');
-            textArea.value = url;
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                
-                // Show success notification for fallback method too
-                const notification = document.createElement('div');
-                notification.innerHTML = `
-                    <div style="
-                        position: fixed;
-                        top: 20px;
-                        right: 20px;
-                        background: #28a745;
-                        color: white;
-                        padding: 12px 20px;
-                        border-radius: 8px;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                        z-index: 10000;
-                        font-family: 'Inter', sans-serif;
-                        font-size: 14px;
-                        font-weight: 500;
-                        display: flex;
-                        align-items: center;
-                        gap: 8px;
-                    ">
-                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                        </svg>
-                        Recommendation link copied to clipboard!
-                    </div>
-                `;
-                document.body.appendChild(notification);
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 3000);
-                
-                console.log('Link copied to clipboard (fallback)');
-            } catch (fallbackErr) {
-                console.error('Failed to copy link:', fallbackErr);
-                alert(`Copy this link: ${url}`);
-            }
-            document.body.removeChild(textArea);
-        }
-        setDropdownOpen(false);
-    };
-
-    const handleDeleteClick = () => {
-        setShowDeleteModal(true);
-        setDropdownOpen(false);
-    };
-
-    const handleDelete = async (e) => {
-        e.preventDefault();
-        setIsDeleting(true);
-        setDeleteError(null);
-
-        try {
-            const response = await fetch(
-                `${API_URL}/api/recommendations/${rec.id}?user_id=${user?.id}&email=${user?.emailAddresses[0].emailAddress}`,
-                {
-                    method: "DELETE",
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error("Failed to delete recommendation");
-            }
-
-            setShowDeleteModal(false);
-            setTimeout(() => {
-                onRefreshList();
-            }, 500);
-        } catch (error) {
-            setDeleteError(
-                "Failed to delete recommendation. Please try again."
-            );
-            console.log("Error deleting recommendation:", error);
-            setIsDeleting(false);
-        }
-    };
-
-    // Handle click outside dropdown
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (
-                dropdownRef.current &&
-                !dropdownRef.current.contains(event.target)
-            ) {
-                setDropdownOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    // Parse images if they're stored as a string
-    const parsedImages = useMemo(() => {
-        if (!rec.images) return [];
-        if (Array.isArray(rec.images)) return rec.images;
-        try {
-            return JSON.parse(rec.images);
-        } catch (e) {
-            console.error("Error parsing images:", e);
-            return [];
-        }
-    }, [rec.images]);
-
-    return (
-        <li className="profile-recommendation-card-wrapper">
-            {/* Use the original MyRecommendationCard structure but with RecommendationCard base */}
-            <div className="profile-my-rec-card">
-                <div className="profile-my-rec-card-header">
-                    <h2 className="profile-my-rec-card-title">
-                        <Link to={`/provider/${rec.provider_id || rec.id}`} target="_blank" rel="noopener noreferrer" className="clickable provider-name-link" onClick={() => {
-                            const essentialProviderData = {
-                                id: rec.id,
-                                provider_id: rec.provider_id,
-                                business_name: rec.business_name,
-                                recommender_message: rec.recommender_message,
-                                rating: rec.rating,
-                                average_rating: rec.average_rating,
-                                total_reviews: rec.total_reviews,
-                                tags: rec.tags,
-                                provider_contact_name: rec.provider_contact_name,
-                                website: rec.website,
-                                phone_number: rec.phone_number,
-                                city: rec.city,
-                                recommended_service_name: rec.recommended_service_name,
-                                date_of_recommendation: rec.date_of_recommendation,
-                                created_at: rec.created_at
-                            };
-                            localStorage.setItem("selectedProvider", JSON.stringify(essentialProviderData));
-                        }}>
-                            {rec.business_name || "Unknown Business"}
-                        </Link>
-                    </h2>
-                    <div className="profile-my-rec-badge-wrapper-with-menu">
-                        <div className="profile-my-rec-badge-group">
-                            {(parseFloat(rec.average_rating) || 0) >= 4.5 && (
-                                <span className="profile-my-rec-top-rated-badge">
-                                    Top Rated
-                                </span>
-                            )}
-                        </div>
-                        <div className="profile-my-rec-right-actions">
-                            <div
-                                className="profile-my-rec-dropdown-wrapper"
-                                ref={dropdownRef}
-                            >
-                                <button
-                                    className="profile-my-rec-three-dots-button"
-                                    onClick={() =>
-                                        setDropdownOpen(!dropdownOpen)
-                                    }
-                                    title="Options"
-                                >
-                                    ⋮
-                                </button>
-                                {dropdownOpen && (
-                                    <div className="profile-my-rec-dropdown-menu">
-                                        <button
-                                            className="profile-my-rec-dropdown-item"
-                                            onClick={() => {
-                                                onEdit(rec);
-                                                setDropdownOpen(false);
-                                            }}
-                                        >
-                                            <PencilSquareIcon /> Edit
-                                            Recommendation
-                                        </button>
-                                        <button
-                                            className="profile-my-rec-dropdown-item"
-                                            onClick={handleShare}
-                                        >
-                                            <ShareIcon /> Share Recommendation
-                                        </button>
-                                        <button
-                                            className="profile-my-rec-dropdown-item delete-action"
-                                            onClick={handleDeleteClick}
-                                        >
-                                            <TrashIcon />
-                                            <span className="delete-text">
-                                                Delete Recommendation
-                                            </span>
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Use RecommendationCard for the main content */}
-                <div className="profile-recommendation-content">
-                    <RecommendationCard
-                        rec={rec}
-                        onWriteReview={onWriteReview} // Pass the review handler
-                        onLike={onLikeRecommendation}
-                        isLikedByCurrentUser={rec.currentUserLiked}
-                        loggedInUserId={user?.id}
-                        currentUserName={currentUserName}
-                        comments={comments}
-                        onCommentAdded={onCommentAdded}
-                    />
-                </div>
-
-                {/* Profile-specific footer with images only */}
-                {parsedImages.length > 0 && (
-                    <div className="profile-my-rec-images">
-                        <ImageCarousel
-                            images={parsedImages}
-                            onImageClick={(image) => setSelectedImage(image)}
-                        />
-                    </div>
-                )}
-
-                <div className="profile-my-rec-card-footer">
-                    <div className="profile-my-rec-date">
-                        <CalendarDaysIcon className="inline-icon" />
-                        Recommended on:{" "}
-                        {formatDate(
-                            rec.date_of_recommendation || rec.created_at
-                        )}
-                    </div>
-                    <div className="profile-my-rec-action-buttons">
-                        <button
-                            className="profile-my-rec-primary-action-button"
-                            onClick={() => onEdit(rec)}
-                        >
-                            <PencilSquareIcon className="btn-icon" /> Edit My
-                            Rec
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Image Modal */}
-            {selectedImage && (
-                <ImageModal
-                    image={selectedImage}
-                    onClose={() => setSelectedImage(null)}
-                />
-            )}
-
-            {/* Delete Confirmation Modal */}
-            {showDeleteModal && (
-                <div className="profile-edit-modal-overlay">
-                    <div className="profile-edit-modal-content">
-                        <button
-                            onClick={() => setShowDeleteModal(false)}
-                            className="profile-edit-modal-close-btn"
-                        >
-                            &times;
-                        </button>
-                        <h2 className="profile-edit-modal-title">
-                            Delete Recommendation
-                        </h2>
-                        <div className="profile-delete-modal-body">
-                            <div className="profile-delete-modal-warning">
-                                <ExclamationTriangleIcon className="warning-icon" />
-                                <p>
-                                    Are you sure you want to delete this
-                                    recommendation? This action cannot be
-                                    undone.
-                                </p>
-                            </div>
-                            {deleteError && (
-                                <div className="profile-edit-modal-message error">
-                                    <XCircleIcon />
-                                    <span>{deleteError}</span>
-                                </div>
-                            )}
-                            <div className="profile-edit-modal-button-row">
-                                <button
-                                    className="profile-edit-modal-btn cancel-btn"
-                                    onClick={() => setShowDeleteModal(false)}
-                                    disabled={isDeleting}
-                                >
-                                    <XCircleIcon /> Cancel
-                                </button>
-                                <button
-                                    className="profile-edit-modal-btn delete-btn"
-                                    onClick={handleDelete}
-                                    disabled={isDeleting}
-                                >
-                                    {isDeleting ? (
-                                        <>
-                                            <ArrowPathIcon className="animate-spin" />
-                                            Deleting...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <TrashIcon />
-                                            Delete
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </li>
-    );
-};
-
 const MyRecommendationCard = ({
     rec,
     onEdit,
@@ -1489,24 +1070,27 @@ const MyRecommendationCard = ({
     const handleShare = async () => {
         const providerIdForLink = rec.provider_id || rec.id;
         const url = `${window.location.origin}/provider/${providerIdForLink}`;
-        
+
         try {
             await navigator.clipboard.writeText(url);
-            
+
             // Show a temporary success message on button
-            const button = document.querySelector('.profile-my-rec-dropdown-menu .profile-my-rec-dropdown-item:nth-child(2)');
+            const button = document.querySelector(
+                ".profile-my-rec-dropdown-menu .profile-my-rec-dropdown-item:nth-child(2)"
+            );
             if (button) {
                 const originalContent = button.innerHTML;
-                button.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Link Copied!';
-                button.style.color = '#28a745';
+                button.innerHTML =
+                    '<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Link Copied!';
+                button.style.color = "#28a745";
                 setTimeout(() => {
                     button.innerHTML = originalContent;
-                    button.style.color = '';
+                    button.style.color = "";
                 }, 2000);
             }
 
             // Show a prominent success notification
-            const notification = document.createElement('div');
+            const notification = document.createElement("div");
             notification.innerHTML = `
                 <div style="
                     position: fixed;
@@ -1532,11 +1116,11 @@ const MyRecommendationCard = ({
                     Recommendation link copied to clipboard!
                 </div>
             `;
-            
+
             // Add CSS animation if not already present
-            if (!document.querySelector('#copy-link-animation-styles')) {
-                const style = document.createElement('style');
-                style.id = 'copy-link-animation-styles';
+            if (!document.querySelector("#copy-link-animation-styles")) {
+                const style = document.createElement("style");
+                style.id = "copy-link-animation-styles";
                 style.textContent = `
                     @keyframes slideInFromRight {
                         from {
@@ -1551,13 +1135,14 @@ const MyRecommendationCard = ({
                 `;
                 document.head.appendChild(style);
             }
-            
+
             document.body.appendChild(notification);
-            
+
             // Remove notification after 3 seconds
             setTimeout(() => {
                 if (notification.parentNode) {
-                    notification.style.animation = 'slideInFromRight 0.3s ease-out reverse';
+                    notification.style.animation =
+                        "slideInFromRight 0.3s ease-out reverse";
                     setTimeout(() => {
                         if (notification.parentNode) {
                             notification.parentNode.removeChild(notification);
@@ -1565,18 +1150,17 @@ const MyRecommendationCard = ({
                     }, 300);
                 }
             }, 3000);
-            
         } catch (err) {
             // Fallback for browsers that don't support clipboard API
-            const textArea = document.createElement('textarea');
+            const textArea = document.createElement("textarea");
             textArea.value = url;
             document.body.appendChild(textArea);
             textArea.select();
             try {
-                document.execCommand('copy');
-                
+                document.execCommand("copy");
+
                 // Show success notification for fallback method too
-                const notification = document.createElement('div');
+                const notification = document.createElement("div");
                 notification.innerHTML = `
                     <div style="
                         position: fixed;
@@ -1607,10 +1191,10 @@ const MyRecommendationCard = ({
                         notification.parentNode.removeChild(notification);
                     }
                 }, 3000);
-                
-                console.log('Link copied to clipboard (fallback)');
+
+                console.log("Link copied to clipboard (fallback)");
             } catch (fallbackErr) {
-                console.error('Failed to copy link:', fallbackErr);
+                console.error("Failed to copy link:", fallbackErr);
                 alert(`Copy this link: ${url}`);
             }
             document.body.removeChild(textArea);
@@ -1684,26 +1268,38 @@ const MyRecommendationCard = ({
         <li className="profile-my-rec-card">
             <div className="profile-my-rec-card-header">
                 <h2 className="profile-my-rec-card-title">
-                    <Link to={`/provider/${providerIdForLink}`} target="_blank" rel="noopener noreferrer" className="clickable provider-name-link" onClick={() => {
-                        const essentialProviderData = {
-                            id: rec.id,
-                            provider_id: rec.provider_id,
-                            business_name: rec.business_name,
-                            recommender_message: rec.recommender_message,
-                            rating: rec.rating,
-                            average_rating: rec.average_rating,
-                            total_reviews: rec.total_reviews,
-                            tags: rec.tags,
-                            provider_contact_name: rec.provider_contact_name,
-                            website: rec.website,
-                            phone_number: rec.phone_number,
-                            city: rec.city,
-                            recommended_service_name: rec.recommended_service_name,
-                            date_of_recommendation: rec.date_of_recommendation,
-                            created_at: rec.created_at
-                        };
-                        localStorage.setItem("selectedProvider", JSON.stringify(essentialProviderData));
-                    }}>
+                    <Link
+                        to={`/provider/${providerIdForLink}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="clickable provider-name-link"
+                        onClick={() => {
+                            const essentialProviderData = {
+                                id: rec.id,
+                                provider_id: rec.provider_id,
+                                business_name: rec.business_name,
+                                recommender_message: rec.recommender_message,
+                                rating: rec.rating,
+                                average_rating: rec.average_rating,
+                                total_reviews: rec.total_reviews,
+                                tags: rec.tags,
+                                provider_contact_name:
+                                    rec.provider_contact_name,
+                                website: rec.website,
+                                phone_number: rec.phone_number,
+                                city: rec.city,
+                                recommended_service_name:
+                                    rec.recommended_service_name,
+                                date_of_recommendation:
+                                    rec.date_of_recommendation,
+                                created_at: rec.created_at,
+                            };
+                            localStorage.setItem(
+                                "selectedProvider",
+                                JSON.stringify(essentialProviderData)
+                            );
+                        }}
+                    >
                         {rec.business_name || "Unknown Business"}
                     </Link>
                 </h2>
@@ -2176,10 +1772,13 @@ const Profile = () => {
     const ASPECT_RATIO = 1;
     const MIN_DIMENSION = 150;
 
-    const [activeTab, setActiveTab] = useState("recommendations");
     const [userLists, setUserLists] = useState([]);
     const [listsLoading, setListsLoading] = useState(false);
     const [listsError, setListsError] = useState("");
+
+    const [expandedListId, setExpandedListId] = useState(null);
+    const [listRecs, setListRecs] = useState({});
+    const [listRecsLoading, setListRecsLoading] = useState({});
 
     const getClerkUserQueryParams = useCallback(() => {
         if (!user) return "";
@@ -2303,6 +1902,16 @@ const Profile = () => {
         }
     };
 
+    const handleExpandList = async (listId) => {
+        setExpandedListId(listId);
+        if (!listRecs[listId]) {
+            setListRecsLoading((prev) => ({ ...prev, [listId]: true }));
+            const recs = await fetchListRecommendations(listId);
+            setListRecs((prev) => ({ ...prev, [listId]: recs }));
+            setListRecsLoading((prev) => ({ ...prev, [listId]: false }));
+        }
+    };
+
     useEffect(() => {
         if (isSignedIn && user) fetchProfileData();
         else if (isLoaded && !isSignedIn) navigate("/");
@@ -2350,10 +1959,10 @@ const Profile = () => {
     }, [isLoaded, isSignedIn, user]);
 
     useEffect(() => {
-        if (activeTab === "lists" && user) {
+        if (user) {
             fetchUserLists();
         }
-    }, [activeTab, user, fetchUserLists]);
+    }, [user, fetchUserLists]);
 
     // Fetch comments for recommendations
     useEffect(() => {
@@ -3215,46 +2824,91 @@ const Profile = () => {
                 </div>
             </header>
             <main className="profile-content-area">
-                <div className="profile-tabs">
-                    <button
-                        className={`profile-tab-btn${
-                            activeTab === "recommendations" ? " active" : ""
-                        }`}
-                        onClick={() => setActiveTab("recommendations")}
-                    >
-                        My Recommendations
-                    </button>
-                    <button
-                        className={`profile-tab-btn${
-                            activeTab === "lists" ? " active" : ""
-                        }`}
-                        onClick={() => setActiveTab("lists")}
-                    >
-                        My Lists
-                    </button>
-                </div>
-                {activeTab === "recommendations" ? (
-                    <>
-                        <div className="profile-recommendations-header">
-                            <div className="profile-recommendations-title-section">
-                                <h2>My Recommendations</h2>
-                                <div className="profile-recommendations-controls">
-                                    <button
-                                        className="profile-add-new-btn"
-                                        onClick={() =>
-                                            navigate("/share-recommendation")
-                                        }
-                                    >
-                                        <PlusCircleIcon className="btn-icon" />{" "}
-                                        Add New
-                                    </button>
-                                </div>
+                <section style={{ marginBottom: "2rem" }}>
+                    <div className="profile-recommendations-header">
+                        <div className="profile-recommendations-title-section">
+                            <h2>My Lists</h2>
+                            <div className="profile-recommendations-controls">
+                                <button
+                                    className="profile-add-new-btn"
+                                    onClick={() =>
+                                        navigate("/share-recommendation")
+                                    }
+                                >
+                                    <PlusCircleIcon className="btn-icon" /> Add
+                                    New
+                                </button>
                             </div>
-                            {enrichedRecommendations.length > 0 && (
-                                <div className="profile-search-wrapper">
-                                    <div className="profile-search-container">
+                        </div>
+                    </div>
+                    {listsLoading ? (
+                        <div>Loading lists...</div>
+                    ) : listsError ? (
+                        <div className="profile-error-banner">{listsError}</div>
+                    ) : userLists.length === 0 ? (
+                        <div>You haven't created any lists yet.</div>
+                    ) : (
+                        <div className="profile-list-card-row">
+                            {userLists.map((list) => (
+                                <ListCard
+                                    key={list.id}
+                                    list={list}
+                                    expanded={expandedListId === list.id}
+                                    onExpand={handleExpandList}
+                                    recommendations={listRecs[list.id] || []}
+                                    loading={!!listRecsLoading[list.id]}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </section>
+
+                <div className="profile-recommendations-header">
+                    <div className="profile-recommendations-title-section">
+                        <h2>My Recommendations</h2>
+                        <div className="profile-recommendations-controls">
+                            <button
+                                className="profile-add-new-btn"
+                                onClick={() =>
+                                    navigate("/share-recommendation")
+                                }
+                            >
+                                <PlusCircleIcon className="btn-icon" /> Add New
+                            </button>
+                        </div>
+                    </div>
+                    {enrichedRecommendations.length > 0 && (
+                        <div className="profile-search-wrapper">
+                            <div className="profile-search-container">
+                                <svg
+                                    className="profile-search-icon"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                    />
+                                </svg>
+                                <input
+                                    type="text"
+                                    placeholder="Search recommendations..."
+                                    value={searchQuery}
+                                    onChange={(e) =>
+                                        setSearchQuery(e.target.value)
+                                    }
+                                    className="profile-search-input"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery("")}
+                                        className="profile-search-clear"
+                                        title="Clear search"
+                                    >
                                         <svg
-                                            className="profile-search-icon"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -3263,434 +2917,344 @@ const Profile = () => {
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
                                                 strokeWidth="2"
-                                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                                d="M6 18L18 6M6 6l12 12"
                                             />
                                         </svg>
-                                        <input
-                                            type="text"
-                                            placeholder="Search recommendations..."
-                                            value={searchQuery}
-                                            onChange={(e) =>
-                                                setSearchQuery(e.target.value)
-                                            }
-                                            className="profile-search-input"
-                                        />
-                                        {searchQuery && (
-                                            <button
-                                                onClick={() =>
-                                                    setSearchQuery("")
-                                                }
-                                                className="profile-search-clear"
-                                                title="Clear search"
-                                            >
-                                                <svg
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth="2"
-                                                        d="M6 18L18 6M6 6l12 12"
-                                                    />
-                                                </svg>
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="filters-container">
-                                        {availableServices.length > 0 && (
-                                            <div className="profile-city-filter-toggle-section">
-                                                <button
-                                                    className="profile-city-filter-toggle"
-                                                    onClick={() =>
-                                                        setShowServiceFilter(
-                                                            !showServiceFilter
-                                                        )
-                                                    }
-                                                >
-                                                    <FaConciergeBell className="profile-filter-icon" />
-                                                    <span className="filter-button-text">
-                                                        <span className="filter-button-text-long">
-                                                            Filter by{" "}
-                                                        </span>
-                                                        <span>Service</span>
-                                                    </span>
-                                                    {selectedServices.length >
-                                                        0 && (
-                                                        <span className="profile-active-filters-badge">
-                                                            {
-                                                                selectedServices.length
-                                                            }
-                                                        </span>
-                                                    )}
-                                                    <ChevronDownIcon
-                                                        className={`profile-filter-chevron ${
-                                                            showServiceFilter
-                                                                ? "rotated"
-                                                                : ""
-                                                        }`}
-                                                    />
-                                                </button>
-                                            </div>
-                                        )}
-                                        {availableCities.length > 1 && (
-                                            <div className="profile-city-filter-toggle-section">
-                                                <button
-                                                    className="profile-city-filter-toggle"
-                                                    onClick={() =>
-                                                        setShowCityFilter(
-                                                            !showCityFilter
-                                                        )
-                                                    }
-                                                >
-                                                    <FaMapMarkerAlt className="profile-filter-icon" />
-                                                    <span className="filter-button-text">
-                                                        <span className="filter-button-text-long">
-                                                            Filter by{" "}
-                                                        </span>
-                                                        <span>City</span>
-                                                    </span>
-                                                    {selectedCities.length >
-                                                        0 && (
-                                                        <span className="profile-active-filters-badge">
-                                                            {
-                                                                selectedCities.length
-                                                            }
-                                                        </span>
-                                                    )}
-                                                    <ChevronDownIcon
-                                                        className={`profile-filter-chevron ${
-                                                            showCityFilter
-                                                                ? "rotated"
-                                                                : ""
-                                                        }`}
-                                                    />
-                                                </button>
-                                            </div>
-                                        )}
-                                        {showServiceFilter &&
-                                            availableServices.length > 0 && (
-                                                <div className="profile-city-filter-wrapper">
-                                                    <div className="profile-city-filter-checkboxes">
-                                                        {availableServices.map(
-                                                            ([
-                                                                service,
-                                                                count,
-                                                            ]) => (
-                                                                <div
-                                                                    key={
-                                                                        service
-                                                                    }
-                                                                    className="profile-city-checkbox-item"
-                                                                >
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        id={`service-${service.replace(
-                                                                            /\s+/g,
-                                                                            "-"
-                                                                        )}`}
-                                                                        name={
-                                                                            service
-                                                                        }
-                                                                        checked={selectedServices.includes(
-                                                                            service
-                                                                        )}
-                                                                        onChange={() =>
-                                                                            handleServiceSelection(
-                                                                                service
-                                                                            )
-                                                                        }
-                                                                    />
-                                                                    <label
-                                                                        htmlFor={`service-${service.replace(
-                                                                            /\s+/g,
-                                                                            "-"
-                                                                        )}`}
-                                                                        className="profile-city-checkbox-label"
-                                                                    >
-                                                                        {
-                                                                            service
-                                                                        }
-                                                                    </label>
-                                                                    <span className="profile-city-count">
-                                                                        ({count}
-                                                                        )
-                                                                    </span>
-                                                                </div>
-                                                            )
-                                                        )}
-                                                        {selectedServices.length >
-                                                            0 && (
-                                                            <button
-                                                                onClick={() =>
-                                                                    setSelectedServices(
-                                                                        []
-                                                                    )
-                                                                }
-                                                                className="profile-city-clear-all"
-                                                            >
-                                                                Clear
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        {showCityFilter &&
-                                            availableCities.length > 1 && (
-                                                <div className="profile-city-filter-wrapper">
-                                                    <div className="profile-city-filter-checkboxes">
-                                                        {availableCities.map(
-                                                            ([city, count]) => (
-                                                                <div
-                                                                    key={city}
-                                                                    className="profile-city-checkbox-item"
-                                                                >
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        id={`city-${city.replace(
-                                                                            /\s+/g,
-                                                                            "-"
-                                                                        )}`}
-                                                                        name={
-                                                                            city
-                                                                        }
-                                                                        checked={selectedCities.includes(
-                                                                            city
-                                                                        )}
-                                                                        onChange={() =>
-                                                                            handleCitySelection(
-                                                                                city
-                                                                            )
-                                                                        }
-                                                                    />
-                                                                    <label
-                                                                        htmlFor={`city-${city.replace(
-                                                                            /\s+/g,
-                                                                            "-"
-                                                                        )}`}
-                                                                        className="profile-city-checkbox-label"
-                                                                    >
-                                                                        {city}
-                                                                    </label>
-                                                                    <span className="profile-city-count">
-                                                                        ({count}
-                                                                        )
-                                                                    </span>
-                                                                </div>
-                                                            )
-                                                        )}
-                                                        {selectedCities.length >
-                                                            0 && (
-                                                            <button
-                                                                onClick={() =>
-                                                                    setSelectedCities(
-                                                                        []
-                                                                    )
-                                                                }
-                                                                className="profile-city-clear-all"
-                                                            >
-                                                                Clear
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                        {(loading ||
-                            (statsLoading &&
-                                baseRecommendations.length > 0 &&
-                                enrichedRecommendations.length <
-                                    baseRecommendations.length)) &&
-                            sortedRecommendations.length === 0 && (
-                                <div className="profile-loading-container small-spinner">
-                                    <div className="profile-spinner"></div>
-                                    <p>Loading recommendations...</p>
-                                </div>
-                            )}
-                        {!(
-                            loading ||
-                            (statsLoading &&
-                                baseRecommendations.length > 0 &&
-                                enrichedRecommendations.length <
-                                    baseRecommendations.length)
-                        ) &&
-                            sortedRecommendations.length > 0 && (
-                                <ul className="provider-list">
-                                    {sortedRecommendations.map((rec) => (
-                                        <ProfileRecommendationCard
-                                            key={rec.id}
-                                            rec={rec}
-                                            onEdit={(rec) => {
-                                                setCurrentEditingRec(rec);
-                                                setIsEditModalOpen(true);
-                                            }}
-                                            onLikeRecommendation={
-                                                handleProviderLikeFromProfile
-                                            }
-                                            onRefreshList={fetchProfileData}
-                                            user={user}
-                                            comments={
-                                                commentsMap.get(
-                                                    rec.provider_id || rec.id
-                                                ) || []
-                                            }
-                                            onCommentAdded={handleCommentAdded}
-                                            currentUserName={currentUserName}
-                                            onWriteReview={
-                                                handleOpenReviewModal
-                                            }
-                                        />
-                                    ))}
-                                </ul>
-                            )}
-                        {!(
-                            loading ||
-                            (statsLoading &&
-                                baseRecommendations.length > 0 &&
-                                enrichedRecommendations.length <
-                                    baseRecommendations.length)
-                        ) &&
-                            sortedRecommendations.length === 0 &&
-                            !error &&
-                            (searchQuery.trim() ||
-                            selectedCities.length > 0 ||
-                            selectedServices.length > 0 ? (
-                                <div className="profile-empty-state no-search-results">
-                                    <svg
-                                        className="no-search-icon"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                                        />
-                                    </svg>
-                                    <p>
-                                        No recommendations found
-                                        {searchQuery.trim() &&
-                                            ` for "${searchQuery}"`}
-                                        {selectedServices.length > 0 &&
-                                            ` for ${selectedServices.join(
-                                                ", "
-                                            )}`}
-                                        {selectedCities.length > 0 &&
-                                            ` in ${selectedCities.join(", ")}`}
-                                    </p>
-                                    <p className="search-suggestions">
-                                        Try adjusting your search or filters.
-                                    </p>
-                                    <div className="profile-filter-clear-buttons">
-                                        {searchQuery.trim() && (
-                                            <button
-                                                className="profile-secondary-action-btn"
-                                                onClick={() =>
-                                                    setSearchQuery("")
-                                                }
-                                            >
-                                                Clear Search
-                                            </button>
-                                        )}
-                                        {selectedServices.length > 0 && (
-                                            <button
-                                                className="profile-secondary-action-btn"
-                                                onClick={() =>
-                                                    setSelectedServices([])
-                                                }
-                                            >
-                                                Clear Service Filters
-                                            </button>
-                                        )}
-                                        {selectedCities.length > 0 && (
-                                            <button
-                                                className="profile-secondary-action-btn"
-                                                onClick={() =>
-                                                    setSelectedCities([])
-                                                }
-                                            >
-                                                Clear City Filters
-                                            </button>
-                                        )}
-                                        {(searchQuery.trim() ||
-                                            selectedCities.length > 0 ||
-                                            selectedServices.length > 0) && (
-                                            <button
-                                                className="profile-secondary-action-btn"
-                                                onClick={() => {
-                                                    setSearchQuery("");
-                                                    setSelectedCities([]);
-                                                    setSelectedServices([]);
-                                                }}
-                                            >
-                                                Clear All Filters
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="profile-empty-state no-providers-message">
-                                    <FaStar className="no-providers-icon" />
-                                    <p>
-                                        You haven't made any recommendations
-                                        yet.
-                                    </p>
-                                    <button
-                                        className="profile-primary-action-btn"
-                                        onClick={() =>
-                                            navigate("/share-recommendation")
-                                        }
-                                    >
-                                        Share Your First Recommendation
                                     </button>
-                                </div>
-                            ))}
-                        {!(
-                            loading ||
-                            (statsLoading &&
-                                baseRecommendations.length > 0 &&
-                                enrichedRecommendations.length <
-                                    baseRecommendations.length)
-                        ) &&
-                            sortedRecommendations.length === 0 &&
-                            error && (
-                                <p className="profile-empty-state-error-inline">
-                                    Could not load recommendations. {error}
-                                </p>
-                            )}
-                    </>
-                ) : (
-                    <section className="profile-user-lists-section">
-                        <h2>My Lists</h2>
-                        {listsLoading ? (
-                            <div>Loading lists...</div>
-                        ) : listsError ? (
-                            <div className="profile-error-banner">
-                                {listsError}
+                                )}
                             </div>
-                        ) : userLists.length === 0 ? (
-                            <div>You haven't created any lists yet.</div>
-                        ) : (
-                            <ul className="profile-user-lists">
-                                {userLists.map((list) => (
-                                    <UserListCard
-                                        key={list.id}
-                                        list={list}
-                                        fetchListRecommendations={
-                                            fetchListRecommendations
-                                        }
-                                    />
-                                ))}
-                            </ul>
-                        )}
-                    </section>
-                )}
+                            <div className="filters-container">
+                                {availableServices.length > 0 && (
+                                    <div className="profile-city-filter-toggle-section">
+                                        <button
+                                            className="profile-city-filter-toggle"
+                                            onClick={() =>
+                                                setShowServiceFilter(
+                                                    !showServiceFilter
+                                                )
+                                            }
+                                        >
+                                            <FaConciergeBell className="profile-filter-icon" />
+                                            <span className="filter-button-text">
+                                                <span className="filter-button-text-long">
+                                                    Filter by{" "}
+                                                </span>
+                                                <span>Service</span>
+                                            </span>
+                                            {selectedServices.length > 0 && (
+                                                <span className="profile-active-filters-badge">
+                                                    {selectedServices.length}
+                                                </span>
+                                            )}
+                                            <ChevronDownIcon
+                                                className={`profile-filter-chevron ${
+                                                    showServiceFilter
+                                                        ? "rotated"
+                                                        : ""
+                                                }`}
+                                            />
+                                        </button>
+                                    </div>
+                                )}
+                                {availableCities.length > 1 && (
+                                    <div className="profile-city-filter-toggle-section">
+                                        <button
+                                            className="profile-city-filter-toggle"
+                                            onClick={() =>
+                                                setShowCityFilter(
+                                                    !showCityFilter
+                                                )
+                                            }
+                                        >
+                                            <FaMapMarkerAlt className="profile-filter-icon" />
+                                            <span className="filter-button-text">
+                                                <span className="filter-button-text-long">
+                                                    Filter by{" "}
+                                                </span>
+                                                <span>City</span>
+                                            </span>
+                                            {selectedCities.length > 0 && (
+                                                <span className="profile-active-filters-badge">
+                                                    {selectedCities.length}
+                                                </span>
+                                            )}
+                                            <ChevronDownIcon
+                                                className={`profile-filter-chevron ${
+                                                    showCityFilter
+                                                        ? "rotated"
+                                                        : ""
+                                                }`}
+                                            />
+                                        </button>
+                                    </div>
+                                )}
+                                {showServiceFilter &&
+                                    availableServices.length > 0 && (
+                                        <div className="profile-city-filter-wrapper">
+                                            <div className="profile-city-filter-checkboxes">
+                                                {availableServices.map(
+                                                    ([service, count]) => (
+                                                        <div
+                                                            key={service}
+                                                            className="profile-city-checkbox-item"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                id={`service-${service.replace(
+                                                                    /\s+/g,
+                                                                    "-"
+                                                                )}`}
+                                                                name={service}
+                                                                checked={selectedServices.includes(
+                                                                    service
+                                                                )}
+                                                                onChange={() =>
+                                                                    handleServiceSelection(
+                                                                        service
+                                                                    )
+                                                                }
+                                                            />
+                                                            <label
+                                                                htmlFor={`service-${service.replace(
+                                                                    /\s+/g,
+                                                                    "-"
+                                                                )}`}
+                                                                className="profile-city-checkbox-label"
+                                                            >
+                                                                {service}
+                                                            </label>
+                                                            <span className="profile-city-count">
+                                                                ({count})
+                                                            </span>
+                                                        </div>
+                                                    )
+                                                )}
+                                                {selectedServices.length >
+                                                    0 && (
+                                                    <button
+                                                        onClick={() =>
+                                                            setSelectedServices(
+                                                                []
+                                                            )
+                                                        }
+                                                        className="profile-city-clear-all"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                {showCityFilter &&
+                                    availableCities.length > 1 && (
+                                        <div className="profile-city-filter-wrapper">
+                                            <div className="profile-city-filter-checkboxes">
+                                                {availableCities.map(
+                                                    ([city, count]) => (
+                                                        <div
+                                                            key={city}
+                                                            className="profile-city-checkbox-item"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                id={`city-${city.replace(
+                                                                    /\s+/g,
+                                                                    "-"
+                                                                )}`}
+                                                                name={city}
+                                                                checked={selectedCities.includes(
+                                                                    city
+                                                                )}
+                                                                onChange={() =>
+                                                                    handleCitySelection(
+                                                                        city
+                                                                    )
+                                                                }
+                                                            />
+                                                            <label
+                                                                htmlFor={`city-${city.replace(
+                                                                    /\s+/g,
+                                                                    "-"
+                                                                )}`}
+                                                                className="profile-city-checkbox-label"
+                                                            >
+                                                                {city}
+                                                            </label>
+                                                            <span className="profile-city-count">
+                                                                ({count})
+                                                            </span>
+                                                        </div>
+                                                    )
+                                                )}
+                                                {selectedCities.length > 0 && (
+                                                    <button
+                                                        onClick={() =>
+                                                            setSelectedCities(
+                                                                []
+                                                            )
+                                                        }
+                                                        className="profile-city-clear-all"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+                {(loading ||
+                    (statsLoading &&
+                        baseRecommendations.length > 0 &&
+                        enrichedRecommendations.length <
+                            baseRecommendations.length)) &&
+                    sortedRecommendations.length === 0 && (
+                        <div className="profile-loading-container small-spinner">
+                            <div className="profile-spinner"></div>
+                            <p>Loading recommendations...</p>
+                        </div>
+                    )}
+                {!(
+                    loading ||
+                    (statsLoading &&
+                        baseRecommendations.length > 0 &&
+                        enrichedRecommendations.length <
+                            baseRecommendations.length)
+                ) &&
+                    sortedRecommendations.length > 0 && (
+                        <ul className="provider-list">
+                            {sortedRecommendations.map((rec) => (
+                                <ProfileRecommendationCard
+                                    key={rec.id}
+                                    rec={rec}
+                                    onEdit={(rec) => {
+                                        setCurrentEditingRec(rec);
+                                        setIsEditModalOpen(true);
+                                    }}
+                                    onLikeRecommendation={
+                                        handleProviderLikeFromProfile
+                                    }
+                                    onRefreshList={fetchProfileData}
+                                    user={user}
+                                    comments={
+                                        commentsMap.get(
+                                            rec.provider_id || rec.id
+                                        ) || []
+                                    }
+                                    onCommentAdded={handleCommentAdded}
+                                    currentUserName={currentUserName}
+                                    onWriteReview={handleOpenReviewModal}
+                                />
+                            ))}
+                        </ul>
+                    )}
+                {!(
+                    loading ||
+                    (statsLoading &&
+                        baseRecommendations.length > 0 &&
+                        enrichedRecommendations.length <
+                            baseRecommendations.length)
+                ) &&
+                    sortedRecommendations.length === 0 &&
+                    !error &&
+                    (searchQuery.trim() ||
+                    selectedCities.length > 0 ||
+                    selectedServices.length > 0 ? (
+                        <div className="profile-empty-state no-search-results">
+                            <svg
+                                className="no-search-icon"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                />
+                            </svg>
+                            <p>
+                                No recommendations found
+                                {searchQuery.trim() && ` for "${searchQuery}"`}
+                                {selectedServices.length > 0 &&
+                                    ` for ${selectedServices.join(", ")}`}
+                                {selectedCities.length > 0 &&
+                                    ` in ${selectedCities.join(", ")}`}
+                            </p>
+                            <p className="search-suggestions">
+                                Try adjusting your search or filters.
+                            </p>
+                            <div className="profile-filter-clear-buttons">
+                                {searchQuery.trim() && (
+                                    <button
+                                        className="profile-secondary-action-btn"
+                                        onClick={() => setSearchQuery("")}
+                                    >
+                                        Clear Search
+                                    </button>
+                                )}
+                                {selectedServices.length > 0 && (
+                                    <button
+                                        className="profile-secondary-action-btn"
+                                        onClick={() => setSelectedServices([])}
+                                    >
+                                        Clear Service Filters
+                                    </button>
+                                )}
+                                {selectedCities.length > 0 && (
+                                    <button
+                                        className="profile-secondary-action-btn"
+                                        onClick={() => setSelectedCities([])}
+                                    >
+                                        Clear City Filters
+                                    </button>
+                                )}
+                                {(searchQuery.trim() ||
+                                    selectedCities.length > 0 ||
+                                    selectedServices.length > 0) && (
+                                    <button
+                                        className="profile-secondary-action-btn"
+                                        onClick={() => {
+                                            setSearchQuery("");
+                                            setSelectedCities([]);
+                                            setSelectedServices([]);
+                                        }}
+                                    >
+                                        Clear All Filters
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="profile-empty-state no-providers-message">
+                            <FaStar className="no-providers-icon" />
+                            <p>You haven't made any recommendations yet.</p>
+                            <button
+                                className="profile-primary-action-btn"
+                                onClick={() =>
+                                    navigate("/share-recommendation")
+                                }
+                            >
+                                Share Your First Recommendation
+                            </button>
+                        </div>
+                    ))}
+                {!(
+                    loading ||
+                    (statsLoading &&
+                        baseRecommendations.length > 0 &&
+                        enrichedRecommendations.length <
+                            baseRecommendations.length)
+                ) &&
+                    sortedRecommendations.length === 0 &&
+                    error && (
+                        <p className="profile-empty-state-error-inline">
+                            Could not load recommendations. {error}
+                        </p>
+                    )}
             </main>
             {isEditModalOpen && currentEditingRec && user && (
                 <EditRecommendationModal
