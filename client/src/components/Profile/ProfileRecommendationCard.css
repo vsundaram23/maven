@@ -1,0 +1,449 @@
+/* ProfileRecommendationCard wrapper and card */
+.profile-recommendation-card-wrapper {
+    margin-bottom: 1.5rem;
+    width: 100%;
+    list-style: none;
+}
+.profile-my-rec-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    transition: opacity 0.5s ease;
+}
+.profile-my-rec-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+.profile-my-rec-card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1a365d;
+    margin: 0;
+    flex-grow: 1;
+}
+.profile-my-rec-badge-wrapper-with-menu {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+.profile-my-rec-badge-group {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+.profile-my-rec-top-rated-badge {
+    background-color: #2f855a;
+    color: white;
+    font-weight: 600;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+    white-space: nowrap;
+}
+.profile-my-rec-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.profile-my-rec-dropdown-wrapper {
+    position: relative;
+}
+.profile-my-rec-three-dots-button {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    color: #6b7280;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+.profile-my-rec-three-dots-button:hover {
+    background-color: #f7f8fa;
+    color: #1a365d;
+}
+.profile-my-rec-dropdown-menu {
+    position: absolute;
+    top: 110%;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    min-width: 221px;
+    padding: 0.5rem 0;
+}
+.profile-my-rec-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+    color: #4b5563;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    width: 100%;
+}
+.profile-my-rec-dropdown-item.delete-action {
+    color: #dc2626;
+}
+.profile-my-rec-dropdown-item svg {
+    width: 1.1em;
+    height: 1.1em;
+    opacity: 0.7;
+}
+.profile-my-rec-dropdown-item:hover {
+    background-color: #f7f8fa;
+    color: #1a365d;
+}
+.profile-my-rec-card-footer {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+    flex-shrink: 0;
+}
+@media (max-width: 768px) {
+    .profile-my-rec-card-footer {
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+}
+@media (max-width: 480px) {
+    .profile-my-rec-card-footer {
+        gap: 0.75rem;
+        padding-top: 0.75rem;
+    }
+}
+.profile-my-rec-date {
+    font-size: 0.8rem;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+.profile-my-rec-date .inline-icon {
+    width: 1em;
+    height: 1em;
+}
+.profile-my-rec-action-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+.profile-my-rec-primary-action-button {
+    background-color: #1a365d;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: background-color 0.2s ease;
+}
+.profile-my-rec-primary-action-button:hover {
+    background-color: #12264a;
+}
+.profile-my-rec-primary-action-button .btn-icon {
+    width: 1.1em;
+    height: 1.1em;
+}
+.profile-my-rec-images {
+    margin: 1rem 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+.profile-image-carousel {
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+    max-width: 400px;
+}
+.profile-image-carousel-container {
+    position: relative;
+    aspect-ratio: 16/9;
+    background: #f3f4f6;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+.profile-carousel-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.profile-carousel-image:hover {
+    transform: scale(1.02);
+}
+.profile-carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    z-index: 2;
+}
+.profile-carousel-btn svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+.profile-carousel-btn:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+.profile-carousel-btn.prev {
+    left: 0.5rem;
+}
+.profile-carousel-btn.next {
+    right: 0.5rem;
+}
+.profile-carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+.profile-carousel-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: #e5e7eb;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.profile-carousel-dot.active {
+    background: #1a365d;
+}
+.profile-image-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.profile-image-modal-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+}
+.profile-image-modal-img {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+}
+.profile-image-modal-close {
+    position: absolute;
+    top: -2rem;
+    right: -2rem;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0.5rem;
+}
+.profile-image-modal-close svg {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Star rating display */
+.profile-star-display {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+.profile-star-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+}
+.profile-star-icon.filled {
+    color: #f59e0b;
+}
+.profile-star-icon.empty {
+    color: #e5e7eb;
+}
+
+/* Delete modal styles */
+.profile-edit-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease-out;
+}
+.profile-edit-modal-content {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    animation: scaleInModal 0.3s ease-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes scaleInModal {
+    from { opacity: 0; transform: scale(0.95);}
+    to { opacity: 1; transform: scale(1);}
+}
+.profile-edit-modal-close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.75rem;
+    color: #6b7280;
+    cursor: pointer;
+    line-height: 1;
+}
+.profile-edit-modal-close-btn:hover {
+    color: #1a365d;
+}
+.profile-edit-modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a365d;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+.profile-delete-modal-body {
+    padding: 1rem 0;
+}
+.profile-delete-modal-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+.profile-delete-modal-warning .warning-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: #dc2626;
+    flex-shrink: 0;
+}
+.profile-delete-modal-warning p {
+    margin: 0;
+    color: #991b1b;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+.profile-edit-modal-btn.delete-btn {
+    background-color: #ef4444;
+    color: white;
+}
+.profile-edit-modal-btn.delete-btn:hover:not(:disabled) {
+    background-color: #dc2626;
+}
+.profile-edit-modal-btn.delete-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.profile-edit-modal-btn .animate-spin {
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    from { transform: rotate(0deg);}
+    to { transform: rotate(360deg);}
+}
+.profile-edit-modal-message {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 0.9rem 1.1rem;
+    border-radius: 0.6rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+.profile-edit-modal-message.error {
+    color: #dc2626;
+    background-color: #fef2f2;
+    border-color: #fecaca;
+}
+.profile-edit-modal-button-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+.profile-edit-modal-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+.profile-edit-modal-btn.cancel-btn {
+    background-color: #f7f8fa;
+    color: #4b5563;
+    border: 1px solid #e5e7eb;
+}
+.profile-edit-modal-btn.cancel-btn:hover:not(:disabled) {
+    background-color: #e5e7eb;
+}
+.profile-edit-modal-btn.cancel-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
