@@ -364,102 +364,6 @@ export default function ListRecommendationForm({
         setDragActive(false);
     };
 
-    const handleSubmitList = async (e) => {
-        e.preventDefault();
-        if (!listTitle.trim()) {
-            setMessage("error:Please provide a name for your list.");
-            return;
-        }
-        for (const rec of listRecommendations) {
-            if (
-                !rec.businessName.trim() ||
-                !rec.recommendationBlurb.trim() ||
-                !rec.rating
-            ) {
-                setMessage(
-                    "error:Please fill out all required fields for each recommendation."
-                );
-                return;
-            }
-        }
-        setIsSubmitting(true);
-        setMessage("");
-        setShowSuccessModal(true); // Show modal immediately
-
-        try {
-            // 1. Create each review (recommendation) and collect their IDs
-            const reviewIds = [];
-            for (const rec of listRecommendations) {
-                const mappedPublishScope =
-                    publishScope === "Entire Trust Circle"
-                        ? "Full Trust Circle"
-                        : publishScope;
-
-                const reviewData = {
-                    user_email: userEmail,
-                    business_name: rec.businessName.trim(),
-                    provider_contact_name:
-                        rec.providerContactName.trim() || null,
-                    recommender_message: rec.recommendationBlurb,
-                    rating: rec.rating,
-                    website: rec.website.trim() || null,
-                    phone_number: rec.phoneNumber.trim() || null,
-                    tags: rec.tags,
-                    publish_scope: publishScope,
-                    ...(mappedPublishScope === "Specific Trust Circles" && {
-                        trust_circle_ids: selectedTrustCircles,
-                    }),
-                };
-                const formData = new FormData();
-                formData.append("data", JSON.stringify(reviewData));
-                // Append images if they exist
-                if (rec.images && rec.images.length > 0) {
-                    rec.images.forEach((image) => {
-                        formData.append("images", image.file);
-                    });
-                }
-
-                const res = await fetch(`${API_URL}/api/recommendations`, {
-                    method: "POST",
-                    body: formData,
-                });
-                const data = await res.json();
-                if (!res.ok || !data.reviewId) {
-                    throw new Error(data.message || "Failed to create review");
-                }
-                reviewIds.push(data.reviewId); // <-- use reviewId, not providerId
-            }
-
-            // 2. Create the list with the collected review IDs
-            const listRes = await fetch(
-                `${API_URL}/api/recommendations/lists`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        title: listTitle,
-                        description: listDescription,
-                        reviewIds,
-                        user_id: userId,
-                        email: userEmail,
-                    }),
-                }
-            );
-            const listData = await listRes.json();
-            if (!listRes.ok || !listData.success) {
-                throw new Error(listData.message || "Failed to create list");
-            }
-
-            setIsSubmitting(false); // Stop submitting state
-            // setShowSuccessModal(true); // Already true
-            setMessage("success:List created successfully!");
-        } catch (err) {
-            setIsSubmitting(false);
-            setMessage("error:" + err.message);
-            setShowSuccessModal(false); // Hide modal on error
-        }
-    };
-
     const handleAddAnother = () => {
         setShowSuccessModal(false);
         setListTitle("");
@@ -620,6 +524,82 @@ export default function ListRecommendationForm({
                     : rec
             )
         );
+    };
+
+    const handleSubmitList = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setMessage("");
+        setShowSuccessModal(true);
+
+        try {
+            // 1. Create each recommendation and collect provider IDs
+            const providerIds = [];
+            for (const rec of listRecommendations) {
+                const formData = new FormData();
+                formData.append(
+                    "data",
+                    JSON.stringify({
+                        business_name: rec.businessName,
+                        recommender_message: rec.recommendationBlurb,
+                        rating: rec.rating,
+                        user_email: userEmail,
+                        provider_contact_name: rec.providerContactName,
+                        website: rec.website,
+                        phone_number: rec.phoneNumber,
+                        tags: rec.tags,
+                        // Add any other fields needed by your createRecommendation endpoint
+                    })
+                );
+                // Attach images if any
+                if (rec.images && rec.images.length > 0) {
+                    rec.images.forEach((img) => {
+                        if (img.file) {
+                            formData.append("images", img.file, img.file.name);
+                        }
+                    });
+                }
+
+                const res = await fetch(`${API_URL}/api/recommendations`, {
+                    method: "POST",
+                    body: formData,
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(
+                        data.message || "Failed to create recommendation"
+                    );
+                }
+                providerIds.push(data.providerId); // returned from backend
+            }
+
+            // 2. Create the list and link providers
+            const listRes = await fetch(
+                `${API_URL}/api/recommendations/lists`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title: listTitle,
+                        description: listDescription,
+                        providerIds, // <-- use providerIds, not reviewIds
+                        user_id: userId,
+                        email: userEmail,
+                    }),
+                }
+            );
+            const listData = await listRes.json();
+            if (!listRes.ok || !listData.success) {
+                throw new Error(listData.message || "Failed to create list");
+            }
+
+            setIsSubmitting(false);
+            setMessage("success:List created successfully!");
+        } catch (err) {
+            setIsSubmitting(false);
+            setMessage("error:" + err.message);
+            setShowSuccessModal(false);
+        }
     };
 
     useEffect(() => {
