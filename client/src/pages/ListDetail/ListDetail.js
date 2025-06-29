@@ -3,23 +3,31 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { API_URL } from "../../utils/constants";
 import ProfileRecommendationCard from "../../components/Profile/ProfileRecommendationCard";
+import { useUser } from "@clerk/clerk-react"; // or your auth provider
 
 const ListDetail = () => {
     const { listId } = useParams();
     const navigate = useNavigate();
+    const { user } = useUser(); // get user from context/provider
     const [list, setList] = useState(null);
     const [recommendations, setRecommendations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     useEffect(() => {
+        if (!user) return; // Wait for user to load
         const fetchListAndRecs = async () => {
             setLoading(true);
             setError("");
             try {
-                const listRes = await fetch(
-                    `${API_URL}/api/recommendations/lists/${listId}`
-                );
+                const url = `${API_URL}/api/recommendations/lists/${listId}?user_id=${
+                    user.id
+                }&email=${encodeURIComponent(
+                    user.primaryEmailAddress?.emailAddress ||
+                        user.emailAddresses?.[0]?.emailAddress ||
+                        ""
+                )}`;
+                const listRes = await fetch(url);
                 if (!listRes.ok)
                     throw new Error("Failed to fetch list details");
                 const listData = await listRes.json();
@@ -32,7 +40,7 @@ const ListDetail = () => {
             }
         };
         fetchListAndRecs();
-    }, [listId]);
+    }, [listId, user]);
 
     return (
         <div
@@ -47,7 +55,7 @@ const ListDetail = () => {
                 }}
             >
                 <button
-                    onClick={() => navigate(-1)}
+                    onClick={() => navigate("/profile")}
                     style={{
                         background: "none",
                         border: "none",
