@@ -24,11 +24,20 @@ import {
     XCircleIcon,
     XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
 import {
-    StarIcon as SolidStarIcon,
-} from "@heroicons/react/24/solid";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FaConciergeBell, FaMapMarkerAlt, FaStar, FaStarHalfAlt } from "react-icons/fa";
+    FaConciergeBell,
+    FaMapMarkerAlt,
+    FaStar,
+    FaStarHalfAlt,
+} from "react-icons/fa";
 import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Link, useNavigate } from "react-router-dom";
@@ -38,7 +47,7 @@ import ShareProfileModal from "../../components/ShareProfileModal/ShareProfileMo
 import TrustScoreWheel from "../../components/TrustScoreWheel/TrustScoreWheel";
 import "./Profile.css";
 
-const API_URL = 'https://api.seanag-recommendations.org:8080';
+const API_URL = "https://api.seanag-recommendations.org:8080";
 // const API_URL = "http://localhost:3000";
 
 function getCroppedImg(image, crop, fileName) {
@@ -225,7 +234,11 @@ const EditRecommendationModal = ({
                 recommendationToEdit.recommender_message || ""
             );
             // Use initial_rating if available, otherwise fall back to rating
-            setRatingState(recommendationToEdit.initial_rating || recommendationToEdit.rating || 0);
+            setRatingState(
+                recommendationToEdit.initial_rating ||
+                    recommendationToEdit.rating ||
+                    0
+            );
             setTags(recommendationToEdit.tags || []);
             setProviderContactName(
                 recommendationToEdit.provider_contact_name ||
@@ -238,24 +251,30 @@ const EditRecommendationModal = ({
             let initialSelectedCircles = [];
 
             switch (recommendationToEdit.visibility) {
-                case 'public':
-                    initialPublishScope = 'Public';
+                case "public":
+                    initialPublishScope = "Public";
                     break;
-                case 'connections':
-                    initialPublishScope = 'Full Trust Circle';
+                case "connections":
+                    initialPublishScope = "Full Trust Circle";
                     break;
-                case 'communities':
-                    initialPublishScope = 'Specific Trust Circles';
+                case "communities":
+                    initialPublishScope = "Specific Trust Circles";
                     if (Array.isArray(recommendationToEdit.trust_circle_ids)) {
-                        initialSelectedCircles = recommendationToEdit.trust_circle_ids;
+                        initialSelectedCircles =
+                            recommendationToEdit.trust_circle_ids;
                     }
                     break;
                 default:
                     // Fallback for older data that might use publish_scope or a different visibility logic
                     if (recommendationToEdit.publish_scope) {
-                        initialPublishScope = recommendationToEdit.publish_scope;
-                        if (initialPublishScope === 'Specific Trust Circles' && Array.isArray(recommendationToEdit.trust_circle_ids)) {
-                            initialSelectedCircles = recommendationToEdit.trust_circle_ids;
+                        initialPublishScope =
+                            recommendationToEdit.publish_scope;
+                        if (
+                            initialPublishScope === "Specific Trust Circles" &&
+                            Array.isArray(recommendationToEdit.trust_circle_ids)
+                        ) {
+                            initialSelectedCircles =
+                                recommendationToEdit.trust_circle_ids;
                         }
                     } else if (
                         recommendationToEdit.visibility === "connections" &&
@@ -263,15 +282,16 @@ const EditRecommendationModal = ({
                         recommendationToEdit.trust_circle_ids.length > 0
                     ) {
                         // Handle legacy case where 'connections' with IDs meant 'Specific'
-                        initialPublishScope = 'Specific Trust Circles';
-                        initialSelectedCircles = recommendationToEdit.trust_circle_ids;
+                        initialPublishScope = "Specific Trust Circles";
+                        initialSelectedCircles =
+                            recommendationToEdit.trust_circle_ids;
                     }
                     break;
             }
 
             setPublishScope(initialPublishScope);
             setSelectedTrustCircles(initialSelectedCircles);
-            
+
             setMessage("");
             setHoverRating(0);
             setTagInput("");
@@ -327,13 +347,13 @@ const EditRecommendationModal = ({
 
     const processTagInput = () => {
         if (!tagInput.trim()) return;
-        
+
         // Split by comma and process each tag
         const newTags = tagInput
-            .split(',')
-            .map(tag => tag.trim())
-            .filter(tag => tag && !tags.includes(tag));
-        
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter((tag) => tag && !tags.includes(tag));
+
         if (newTags.length > 0) {
             setTags([...tags, ...newTags]);
         }
@@ -342,7 +362,7 @@ const EditRecommendationModal = ({
 
     // Handle blur event to process comma-separated tags when user leaves input
     const handleTagInputBlur = () => {
-        if (tagInput.includes(',')) {
+        if (tagInput.includes(",")) {
             processTagInput();
         }
     };
@@ -1210,7 +1230,9 @@ const ProfileRecommendationCard = ({
                 onRefreshList();
             }, 500);
         } catch (error) {
-            setDeleteError("Failed to delete recommendation. Please try again.");
+            setDeleteError(
+                "Failed to delete recommendation. Please try again."
+            );
             console.log("Error deleting recommendation:", error);
             setIsDeleting(false);
         }
@@ -1219,12 +1241,16 @@ const ProfileRecommendationCard = ({
     // Handle click outside dropdown
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target)
+            ) {
                 setDropdownOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     // Parse images if they're stored as a string
@@ -1277,10 +1303,15 @@ const ProfileRecommendationCard = ({
                             )}
                         </div>
                         <div className="profile-my-rec-right-actions">
-                            <div className="profile-my-rec-dropdown-wrapper" ref={dropdownRef}>
+                            <div
+                                className="profile-my-rec-dropdown-wrapper"
+                                ref={dropdownRef}
+                            >
                                 <button
                                     className="profile-my-rec-three-dots-button"
-                                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                                    onClick={() =>
+                                        setDropdownOpen(!dropdownOpen)
+                                    }
                                     title="Options"
                                 >
                                     ⋮
@@ -1294,7 +1325,8 @@ const ProfileRecommendationCard = ({
                                                 setDropdownOpen(false);
                                             }}
                                         >
-                                            <PencilSquareIcon /> Edit Recommendation
+                                            <PencilSquareIcon /> Edit
+                                            Recommendation
                                         </button>
                                         <button
                                             className="profile-my-rec-dropdown-item"
@@ -1307,7 +1339,9 @@ const ProfileRecommendationCard = ({
                                             onClick={handleDeleteClick}
                                         >
                                             <TrashIcon />
-                                            <span className="delete-text">Delete Recommendation</span>
+                                            <span className="delete-text">
+                                                Delete Recommendation
+                                            </span>
                                         </button>
                                     </div>
                                 )}
@@ -1330,27 +1364,31 @@ const ProfileRecommendationCard = ({
                     />
                 </div>
 
-                                 {/* Profile-specific footer with images only */}
-                 {parsedImages.length > 0 && (
-                     <div className="profile-my-rec-images">
-                         <ImageCarousel
-                             images={parsedImages}
-                             onImageClick={(image) => setSelectedImage(image)}
-                         />
-                     </div>
-                 )}
+                {/* Profile-specific footer with images only */}
+                {parsedImages.length > 0 && (
+                    <div className="profile-my-rec-images">
+                        <ImageCarousel
+                            images={parsedImages}
+                            onImageClick={(image) => setSelectedImage(image)}
+                        />
+                    </div>
+                )}
 
                 <div className="profile-my-rec-card-footer">
                     <div className="profile-my-rec-date">
                         <CalendarDaysIcon className="inline-icon" />
-                        Recommended on: {formatDate(rec.date_of_recommendation || rec.created_at)}
+                        Recommended on:{" "}
+                        {formatDate(
+                            rec.date_of_recommendation || rec.created_at
+                        )}
                     </div>
                     <div className="profile-my-rec-action-buttons">
                         <button
                             className="profile-my-rec-primary-action-button"
                             onClick={() => onEdit(rec)}
                         >
-                            <PencilSquareIcon className="btn-icon" /> Edit My Rec
+                            <PencilSquareIcon className="btn-icon" /> Edit My
+                            Rec
                         </button>
                     </div>
                 </div>
@@ -1755,27 +1793,29 @@ const MyRecommendationCard = ({
                 <ChatBubbleLeftEllipsisIcon className="inline-icon" />
                 {rec.recommender_message || "No detailed message provided."}
             </p>
-            {rec.users_who_reviewed && 
+            {rec.users_who_reviewed &&
                 rec.users_who_reviewed.length > 0 &&
-                rec.users_who_reviewed.filter(name => {
+                rec.users_who_reviewed.filter((name) => {
                     if (!name) return false;
                     // Exclude the current user's name
-                    const currentUserName = user?.firstName && user?.lastName 
-                        ? `${user.firstName} ${user.lastName}`.trim()
-                        : user?.firstName || user?.lastName || '';
+                    const currentUserName =
+                        user?.firstName && user?.lastName
+                            ? `${user.firstName} ${user.lastName}`.trim()
+                            : user?.firstName || user?.lastName || "";
                     return name !== currentUserName;
                 }).length > 0 && (
                     <div className="recommended-row">
-                        <span className="recommended-label">
-                            Also used by:
-                        </span>
+                        <span className="recommended-label">Also used by:</span>
                         <span className="used-by-names">
                             {rec.users_who_reviewed
-                                .filter(name => {
+                                .filter((name) => {
                                     if (!name) return false;
-                                    const currentUserName = user?.firstName && user?.lastName 
-                                        ? `${user.firstName} ${user.lastName}`.trim()
-                                        : user?.firstName || user?.lastName || '';
+                                    const currentUserName =
+                                        user?.firstName && user?.lastName
+                                            ? `${user.firstName} ${user.lastName}`.trim()
+                                            : user?.firstName ||
+                                              user?.lastName ||
+                                              "";
                                     return name !== currentUserName;
                                 })
                                 .join(", ")}
@@ -1906,43 +1946,43 @@ const AchievementBadge = ({ recCount, onStartRecommending }) => {
     const getBadgeInfo = (count) => {
         if (count >= 100) {
             return {
-                level: 'Diamond',
-                tier: 'Diamond Recommender',
-                className: 'achievement-badge-diamond',
-                icon: '💎',
-                description: `Diamond Recommender (${count} recommendations)`
+                level: "Diamond",
+                tier: "Diamond Recommender",
+                className: "achievement-badge-diamond",
+                icon: "💎",
+                description: `Diamond Recommender (${count} recommendations)`,
             };
         } else if (count >= 50) {
             return {
-                level: 'Platinum',
-                tier: 'Platinum Recommender',
-                className: 'achievement-badge-platinum',
-                icon: '⭐',
-                description: `Platinum Recommender (${count} recommendations)`
+                level: "Platinum",
+                tier: "Platinum Recommender",
+                className: "achievement-badge-platinum",
+                icon: "⭐",
+                description: `Platinum Recommender (${count} recommendations)`,
             };
         } else if (count >= 25) {
             return {
-                level: 'Gold',
-                tier: 'Gold Recommender',
-                className: 'achievement-badge-gold',
-                icon: '🏆',
-                description: `Gold Recommender (${count} recommendations)`
+                level: "Gold",
+                tier: "Gold Recommender",
+                className: "achievement-badge-gold",
+                icon: "🏆",
+                description: `Gold Recommender (${count} recommendations)`,
             };
         } else if (count >= 10) {
             return {
-                level: 'Silver',
-                tier: 'Silver Recommender',
-                className: 'achievement-badge-silver',
-                icon: '🥈',
-                description: `Silver Recommender (${count} recommendations)`
+                level: "Silver",
+                tier: "Silver Recommender",
+                className: "achievement-badge-silver",
+                icon: "🥈",
+                description: `Silver Recommender (${count} recommendations)`,
             };
         } else if (count >= 1) {
             return {
-                level: 'Bronze',
-                tier: 'Bronze Recommender',
-                className: 'achievement-badge-bronze',
-                icon: '🥉',
-                description: `Bronze Recommender (${count} recommendations)`
+                level: "Bronze",
+                tier: "Bronze Recommender",
+                className: "achievement-badge-bronze",
+                icon: "🥉",
+                description: `Bronze Recommender (${count} recommendations)`,
             };
         }
         return null;
@@ -1953,8 +1993,8 @@ const AchievementBadge = ({ recCount, onStartRecommending }) => {
     if (!badge) {
         // Show incentivizing starter badge for users with 0 recommendations
         return (
-            <div 
-                className="achievement-badge-starter" 
+            <div
+                className="achievement-badge-starter"
                 title="Share your first recommendation to unlock Bronze tier!"
                 onClick={onStartRecommending}
             >
@@ -1964,11 +2004,132 @@ const AchievementBadge = ({ recCount, onStartRecommending }) => {
     }
 
     return (
-        <div className={`achievement-badge-circular ${badge.className}`} title={badge.description}>
+        <div
+            className={`achievement-badge-circular ${badge.className}`}
+            title={badge.description}
+        >
             <div className="achievement-badge-icon">{badge.icon}</div>
         </div>
     );
 };
+
+function UserListCard({ list, fetchListRecommendations }) {
+    const [expanded, setExpanded] = useState(false);
+    const [recs, setRecs] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    const handleExpand = async () => {
+        setExpanded((prev) => !prev);
+        if (!expanded && recs.length === 0) {
+            setLoading(true);
+            const recommendations = await fetchListRecommendations(list.id);
+            setRecs(recommendations);
+            setLoading(false);
+        }
+    };
+
+    return (
+        <li className="profile-user-list-card">
+            <div
+                className="profile-user-list-header"
+                onClick={handleExpand}
+                style={{ cursor: "pointer" }}
+            >
+                <h3>{list.title}</h3>
+                <span className="profile-user-list-date">
+                    {new Date(list.created_at).toLocaleDateString()}
+                </span>
+                <ChevronDownIcon
+                    className={`profile-user-list-chevron${
+                        expanded ? " rotated" : ""
+                    }`}
+                />
+            </div>
+            <p className="profile-user-list-description">{list.description}</p>
+            {expanded && (
+                <div className="profile-user-list-recommendations">
+                    {loading ? (
+                        <div>Loading recommendations...</div>
+                    ) : recs.length === 0 ? (
+                        <div>No recommendations in this list.</div>
+                    ) : (
+                        <ul className="profile-user-list-recs">
+                            {recs.map((rec) => (
+                                <li
+                                    key={rec.id}
+                                    className="profile-user-list-rec-card"
+                                >
+                                    <div className="profile-user-list-rec-header">
+                                        <span className="profile-user-list-rec-title">
+                                            {rec.business_name}
+                                        </span>
+                                        <StarRatingDisplay
+                                            rating={
+                                                rec.rating ||
+                                                rec.initial_rating ||
+                                                0
+                                            }
+                                            isProfileCard={false}
+                                        />
+                                    </div>
+                                    <div className="profile-user-list-rec-details">
+                                        <span>{rec.recommender_message}</span>
+                                        {Array.isArray(rec.tags) &&
+                                            rec.tags.length > 0 && (
+                                                <div className="profile-user-list-rec-tags">
+                                                    {rec.tags.map(
+                                                        (tag, idx) => (
+                                                            <span
+                                                                key={idx}
+                                                                className="profile-user-list-rec-tag"
+                                                            >
+                                                                {tag}
+                                                            </span>
+                                                        )
+                                                    )}
+                                                </div>
+                                            )}
+                                        {rec.images &&
+                                            rec.images.length > 0 && (
+                                                <div className="profile-user-list-rec-images">
+                                                    <img
+                                                        src={
+                                                            typeof rec
+                                                                .images[0] ===
+                                                            "string"
+                                                                ? rec.images[0]
+                                                                : rec.images[0]
+                                                                      ?.preview ||
+                                                                  ""
+                                                        }
+                                                        alt="Preview"
+                                                        className="profile-user-list-rec-image"
+                                                        style={{
+                                                            maxWidth: "80px",
+                                                            maxHeight: "80px",
+                                                            borderRadius: "8px",
+                                                        }}
+                                                    />
+                                                    {rec.images.length > 1 && (
+                                                        <span className="profile-user-list-rec-image-count">
+                                                            +
+                                                            {rec.images.length -
+                                                                1}{" "}
+                                                            more
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            )}
+        </li>
+    );
+}
 
 const Profile = () => {
     const { isLoaded, isSignedIn, user } = useUser();
@@ -2015,6 +2176,11 @@ const Profile = () => {
     const ASPECT_RATIO = 1;
     const MIN_DIMENSION = 150;
 
+    const [activeTab, setActiveTab] = useState("recommendations");
+    const [userLists, setUserLists] = useState([]);
+    const [listsLoading, setListsLoading] = useState(false);
+    const [listsError, setListsError] = useState("");
+
     const getClerkUserQueryParams = useCallback(() => {
         if (!user) return "";
         return new URLSearchParams({
@@ -2054,13 +2220,19 @@ const Profile = () => {
             setBaseRecommendations(profileData.recommendations || []);
             setUserBio(profileData.userBio || "");
             setEditingBio(profileData.userBio || "");
-            
+
             // Fetch user score for Trust Points Wheel
             try {
-                const scoreResponse = await fetch(`${API_URL}/api/users/preferred-name?email=${encodeURIComponent(user.primaryEmailAddress.emailAddress)}`);
+                const scoreResponse = await fetch(
+                    `${API_URL}/api/users/preferred-name?email=${encodeURIComponent(
+                        user.primaryEmailAddress.emailAddress
+                    )}`
+                );
                 if (scoreResponse.ok) {
                     const scoreData = await scoreResponse.json();
-                    const score = parseInt(scoreData.userScore || scoreData.user_score) || 0;
+                    const score =
+                        parseInt(scoreData.userScore || scoreData.user_score) ||
+                        0;
                     setUserScore(score);
                 } else {
                     setUserScore(0);
@@ -2069,7 +2241,7 @@ const Profile = () => {
                 console.error("Error fetching user score:", scoreError);
                 setUserScore(0);
             }
-            
+
             const imageQuery = getClerkUserQueryParams();
             if (imageQuery)
                 setProfileImage(
@@ -2088,6 +2260,49 @@ const Profile = () => {
         }
     }, [isLoaded, isSignedIn, user, getClerkUserQueryParams]);
 
+    const fetchUserLists = useCallback(async () => {
+        if (!user?.id || !user.primaryEmailAddress?.emailAddress) return;
+        setListsLoading(true);
+        setListsError("");
+        try {
+            const res = await fetch(
+                `${API_URL}/api/recommendations/lists?user_id=${
+                    user.id
+                }&email=${encodeURIComponent(
+                    user.primaryEmailAddress.emailAddress
+                )}`
+            );
+            if (!res.ok) throw new Error("Failed to fetch lists");
+            const data = await res.json();
+            if (!data.success)
+                throw new Error(data.message || "Failed to fetch lists");
+            setUserLists(data.lists || []);
+        } catch (err) {
+            setListsError(err.message || "Could not load your lists.");
+            setUserLists([]);
+        } finally {
+            setListsLoading(false);
+        }
+    }, [user]);
+
+    const fetchListRecommendations = async (listId) => {
+        try {
+            const res = await fetch(
+                `${API_URL}/api/recommendations/lists/${listId}?user_id=${
+                    user.id
+                }&email=${encodeURIComponent(
+                    user.primaryEmailAddress.emailAddress
+                )}`
+            );
+            if (!res.ok)
+                throw new Error("Failed to fetch list recommendations");
+            const data = await res.json();
+            return data.recommendations || [];
+        } catch (err) {
+            return [];
+        }
+    };
+
     useEffect(() => {
         if (isSignedIn && user) fetchProfileData();
         else if (isLoaded && !isSignedIn) navigate("/");
@@ -2105,7 +2320,7 @@ const Profile = () => {
                 currentUserLiked: rec.currentUserLiked || false,
                 users_who_reviewed: rec.users_who_reviewed || [],
             }));
-            
+
             setEnrichedRecommendations(enriched);
 
             const newInitialUserLikes = new Set();
@@ -2133,6 +2348,12 @@ const Profile = () => {
             setCurrentUserName(null);
         }
     }, [isLoaded, isSignedIn, user]);
+
+    useEffect(() => {
+        if (activeTab === "lists" && user) {
+            fetchUserLists();
+        }
+    }, [activeTab, user, fetchUserLists]);
 
     // Fetch comments for recommendations
     useEffect(() => {
@@ -2348,7 +2569,8 @@ const Profile = () => {
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    provider_id: providerForReview.provider_id || providerForReview.id,
+                    provider_id:
+                        providerForReview.provider_id || providerForReview.id,
                     provider_email: providerForReview.email || "",
                     user_id: user.id,
                     email: user.primaryEmailAddress?.emailAddress,
@@ -2370,33 +2592,37 @@ const Profile = () => {
     // Batch fetch comments for multiple recommendations
     const fetchBatchComments = async (recommendations) => {
         if (!recommendations || recommendations.length === 0) return;
-        
+
         setIsLoadingComments(true);
         try {
-            const serviceIds = recommendations.map(rec => rec.provider_id || rec.id).filter(Boolean);
-            
+            const serviceIds = recommendations
+                .map((rec) => rec.provider_id || rec.id)
+                .filter(Boolean);
+
             if (serviceIds.length === 0) return;
 
             const response = await fetch(`${API_URL}/api/comments/batch`, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json'
+                    "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ service_ids: serviceIds })
+                body: JSON.stringify({ service_ids: serviceIds }),
             });
 
             if (response.ok) {
                 const data = await response.json();
                 if (data.success && data.comments) {
                     const commentsMap = new Map();
-                    Object.entries(data.comments).forEach(([serviceId, comments]) => {
-                        commentsMap.set(serviceId, comments || []);
-                    });
+                    Object.entries(data.comments).forEach(
+                        ([serviceId, comments]) => {
+                            commentsMap.set(serviceId, comments || []);
+                        }
+                    );
                     setCommentsMap(commentsMap);
                 }
             }
         } catch (error) {
-            console.error('Error fetching batch comments:', error);
+            console.error("Error fetching batch comments:", error);
         } finally {
             setIsLoadingComments(false);
         }
@@ -2404,7 +2630,7 @@ const Profile = () => {
 
     // Handle new comment added
     const handleCommentAdded = (serviceId, newComment) => {
-        setCommentsMap(prev => {
+        setCommentsMap((prev) => {
             const newMap = new Map(prev);
             const existingComments = newMap.get(serviceId) || [];
             newMap.set(serviceId, [newComment, ...existingComments]);
@@ -2413,56 +2639,64 @@ const Profile = () => {
     };
 
     const handleServiceSelection = (service) => {
-        setSelectedServices(prev => 
-            prev.includes(service) 
-                ? prev.filter(s => s !== service)
+        setSelectedServices((prev) =>
+            prev.includes(service)
+                ? prev.filter((s) => s !== service)
                 : [...prev, service]
         );
     };
 
     const handleCitySelection = (city) => {
-        setSelectedCities(prev => 
-            prev.includes(city) 
-                ? prev.filter(c => c !== city)
+        setSelectedCities((prev) =>
+            prev.includes(city)
+                ? prev.filter((c) => c !== city)
                 : [...prev, city]
         );
     };
 
     const sortedRecommendations = React.useMemo(() => {
         let sortableItems = [...enrichedRecommendations];
-        
+
         // Apply search filter first
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase().trim();
-            sortableItems = sortableItems.filter(item => {
+            sortableItems = sortableItems.filter((item) => {
                 const businessName = (item.business_name || "").toLowerCase();
                 const message = (item.recommender_message || "").toLowerCase();
-                const tags = Array.isArray(item.tags) ? item.tags.join(" ").toLowerCase() : "";
-                const contactName = (item.provider_contact_name || item.business_contact || "").toLowerCase();
-                
-                return businessName.includes(query) || 
-                       message.includes(query) || 
-                       tags.includes(query) ||
-                       contactName.includes(query);
+                const tags = Array.isArray(item.tags)
+                    ? item.tags.join(" ").toLowerCase()
+                    : "";
+                const contactName = (
+                    item.provider_contact_name ||
+                    item.business_contact ||
+                    ""
+                ).toLowerCase();
+
+                return (
+                    businessName.includes(query) ||
+                    message.includes(query) ||
+                    tags.includes(query) ||
+                    contactName.includes(query)
+                );
             });
         }
-        
+
         // Apply service filter
         if (selectedServices.length > 0) {
-            sortableItems = sortableItems.filter(item => {
+            sortableItems = sortableItems.filter((item) => {
                 const itemService = item.recommended_service_name || "Other";
                 return selectedServices.includes(itemService);
             });
         }
-        
+
         // Apply city filter
         if (selectedCities.length > 0) {
-            sortableItems = sortableItems.filter(item => {
+            sortableItems = sortableItems.filter((item) => {
                 const itemCity = item.city || "Other";
                 return selectedCities.includes(itemCity);
             });
         }
-        
+
         // Then apply sorting
         if (
             sortOption === "topRated" &&
@@ -2482,28 +2716,40 @@ const Profile = () => {
                     new Date(a.date_of_recommendation || a.created_at || 0)
             );
         return sortableItems;
-    }, [enrichedRecommendations, sortOption, searchQuery, selectedCities, selectedServices]);
+    }, [
+        enrichedRecommendations,
+        sortOption,
+        searchQuery,
+        selectedCities,
+        selectedServices,
+    ]);
 
     const availableCities = React.useMemo(() => {
-        if (!enrichedRecommendations || enrichedRecommendations.length === 0) return [];
+        if (!enrichedRecommendations || enrichedRecommendations.length === 0)
+            return [];
         const cityCounts = enrichedRecommendations.reduce((acc, rec) => {
             const city = rec.city || "Other";
             acc[city] = (acc[city] || 0) + 1;
             return acc;
         }, {});
 
-        return Object.entries(cityCounts).sort(([, countA], [, countB]) => countB - countA);
+        return Object.entries(cityCounts).sort(
+            ([, countA], [, countB]) => countB - countA
+        );
     }, [enrichedRecommendations]);
 
     const availableServices = React.useMemo(() => {
-        if (!enrichedRecommendations || enrichedRecommendations.length === 0) return [];
+        if (!enrichedRecommendations || enrichedRecommendations.length === 0)
+            return [];
         const serviceCounts = enrichedRecommendations.reduce((acc, rec) => {
             const service = rec.recommended_service_name || "Other";
             acc[service] = (acc[service] || 0) + 1;
             return acc;
         }, {});
 
-        return Object.entries(serviceCounts).sort(([, countA], [, countB]) => countB - countA);
+        return Object.entries(serviceCounts).sort(
+            ([, countA], [, countB]) => countB - countA
+        );
     }, [enrichedRecommendations]);
 
     const handleLogout = async () => {
@@ -2703,10 +2949,10 @@ const Profile = () => {
                                         ) : (
                                             <div className="profile-avatar-initials">
                                                 <span>
-                                                    {profileUserData?.userName?.[0]?.toUpperCase() || 
-                                                     user?.firstName?.[0]?.toUpperCase() || 
-                                                     user?.primaryEmailAddress?.emailAddress?.[0]?.toUpperCase() || 
-                                                     "U"}
+                                                    {profileUserData?.userName?.[0]?.toUpperCase() ||
+                                                        user?.firstName?.[0]?.toUpperCase() ||
+                                                        user?.primaryEmailAddress?.emailAddress?.[0]?.toUpperCase() ||
+                                                        "U"}
                                                 </span>
                                             </div>
                                         )}
@@ -2725,7 +2971,9 @@ const Profile = () => {
                                         <ReactCrop
                                             crop={crop}
                                             onChange={(pc, p) => setCrop(p)}
-                                            onComplete={(c) => setCompletedCrop(c)}
+                                            onComplete={(c) =>
+                                                setCompletedCrop(c)
+                                            }
                                             aspect={ASPECT_RATIO}
                                             minWidth={MIN_DIMENSION}
                                             minHeight={MIN_DIMENSION}
@@ -2771,10 +3019,10 @@ const Profile = () => {
                                 ) : (
                                     <div className="profile-avatar-initials">
                                         <span>
-                                            {profileUserData?.userName?.[0]?.toUpperCase() || 
-                                             user?.firstName?.[0]?.toUpperCase() || 
-                                             user?.primaryEmailAddress?.emailAddress?.[0]?.toUpperCase() || 
-                                             "U"}
+                                            {profileUserData?.userName?.[0]?.toUpperCase() ||
+                                                user?.firstName?.[0]?.toUpperCase() ||
+                                                user?.primaryEmailAddress?.emailAddress?.[0]?.toUpperCase() ||
+                                                "U"}
                                         </span>
                                     </div>
                                 )}
@@ -2799,14 +3047,17 @@ const Profile = () => {
                                             disabled={saving}
                                         >
                                             <CheckCircleIcon className="btn-icon" />{" "}
-                                            {saving ? "Saving..." : "Save Changes"}
+                                            {saving
+                                                ? "Saving..."
+                                                : "Save Changes"}
                                         </button>
                                         <button
                                             className="profile-cancel-btn"
                                             onClick={handleEditToggle}
                                             disabled={saving}
                                         >
-                                            <XCircleIcon className="btn-icon" /> Cancel
+                                            <XCircleIcon className="btn-icon" />{" "}
+                                            Cancel
                                         </button>
                                     </>
                                 ) : (
@@ -2814,8 +3065,8 @@ const Profile = () => {
                                         className="profile-edit-btn"
                                         onClick={handleEditToggle}
                                     >
-                                        <PencilSquareIcon className="btn-icon" /> Edit
-                                        Profile
+                                        <PencilSquareIcon className="btn-icon" />{" "}
+                                        Edit Profile
                                     </button>
                                 )}
                                 <button
@@ -2823,29 +3074,36 @@ const Profile = () => {
                                     onClick={() => setIsShareModalOpen(true)}
                                     disabled={saving || isEditing}
                                 >
-                                    <ShareIcon className="btn-icon" />{" "}
-                                    Share Profile
+                                    <ShareIcon className="btn-icon" /> Share
+                                    Profile
                                 </button>
                             </div>
                         </div>
-                        
+
                         <div className="profile-contact-info">
                             {profileUserData?.userPhone && (
-                                <a 
-                                    href={`sms:${profileUserData.userPhone.replace(/\D/g, '')}`} 
+                                <a
+                                    href={`sms:${profileUserData.userPhone.replace(
+                                        /\D/g,
+                                        ""
+                                    )}`}
                                     className="profile-contact-link phone"
                                     title="Send a text to this number"
                                 >
-                                    <svg className="contact-icon" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                                    <svg
+                                        className="contact-icon"
+                                        fill="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
                                     </svg>
                                     {profileUserData.userPhone}
                                 </a>
                             )}
-                            
+
                             {profileUserData?.userEmail && (
-                                <a 
-                                    href={`mailto:${profileUserData.userEmail}`} 
+                                <a
+                                    href={`mailto:${profileUserData.userEmail}`}
                                     className="profile-contact-link email"
                                     title="Send email to this address"
                                 >
@@ -2854,7 +3112,7 @@ const Profile = () => {
                                 </a>
                             )}
                         </div>
-                        
+
                         {isEditing ? (
                             <textarea
                                 className="profile-bio-textarea"
@@ -2873,63 +3131,82 @@ const Profile = () => {
                     </div>
                     <div className="profile-stats-wrapper">
                         <div className="profile-stat-item">
-                            <span className="profile-stat-number">{enrichedRecommendations.length}</span>
-                            <span className="profile-stat-label">Recommendations</span>
+                            <span className="profile-stat-number">
+                                {enrichedRecommendations.length}
+                            </span>
+                            <span className="profile-stat-label">
+                                Recommendations
+                            </span>
                         </div>
                         <div className="profile-stat-item">
-                            <span className="profile-stat-number">{connections.length}</span>
-                            <span className="profile-stat-label">Followers</span>
+                            <span className="profile-stat-number">
+                                {connections.length}
+                            </span>
+                            <span className="profile-stat-label">
+                                Followers
+                            </span>
                         </div>
                         <div className="profile-stat-item">
                             <div className="profile-trust-score-wrapper">
-                                <TrustScoreWheel 
-                                    score={userScore} 
+                                <TrustScoreWheel
+                                    score={userScore}
                                     showDebug={false}
                                 />
                             </div>
                         </div>
-                        <div className="profile-stat-item profile-achievement-hidden" style={{display: 'none'}}>
+                        <div
+                            className="profile-stat-item profile-achievement-hidden"
+                            style={{ display: "none" }}
+                        >
                             <div className="profile-stat-achievement">
-                                <AchievementBadge 
-                                    recCount={enrichedRecommendations.length} 
-                                    onStartRecommending={() => navigate("/share-recommendation")}
+                                <AchievementBadge
+                                    recCount={enrichedRecommendations.length}
+                                    onStartRecommending={() =>
+                                        navigate("/share-recommendation")
+                                    }
                                 />
                             </div>
                             <span className="profile-stat-label">
                                 {(() => {
-                                    const count = enrichedRecommendations.length;
-                                    if (count >= 100) return 'Diamond Recommender';
-                                    if (count >= 50) return 'Platinum Recommender';
-                                    if (count >= 25) return 'Gold Recommender';
-                                    if (count >= 10) return 'Silver Recommender';
-                                    if (count >= 1) return 'Bronze Recommender';
-                                    return 'Start Your Journey';
+                                    const count =
+                                        enrichedRecommendations.length;
+                                    if (count >= 100)
+                                        return "Diamond Recommender";
+                                    if (count >= 50)
+                                        return "Platinum Recommender";
+                                    if (count >= 25) return "Gold Recommender";
+                                    if (count >= 10)
+                                        return "Silver Recommender";
+                                    if (count >= 1) return "Bronze Recommender";
+                                    return "Start Your Journey";
                                 })()}
                             </span>
                             {(() => {
                                 const count = enrichedRecommendations.length;
                                 let nextTier, remaining;
                                 if (count < 1) {
-                                    nextTier = 'Bronze';
+                                    nextTier = "Bronze";
                                     remaining = 1 - count;
                                 } else if (count < 10) {
-                                    nextTier = 'Silver';
+                                    nextTier = "Silver";
                                     remaining = 10 - count;
                                 } else if (count < 25) {
-                                    nextTier = 'Gold';
+                                    nextTier = "Gold";
                                     remaining = 25 - count;
                                 } else if (count < 50) {
-                                    nextTier = 'Platinum';
+                                    nextTier = "Platinum";
                                     remaining = 50 - count;
                                 } else if (count < 100) {
-                                    nextTier = 'Diamond';
+                                    nextTier = "Diamond";
                                     remaining = 100 - count;
                                 } else {
                                     return null; // Max tier reached
                                 }
                                 return (
                                     <span className="profile-stat-progress">
-                                        {count === 0 ? 'Share your first recommendation!' : `${remaining} more to reach ${nextTier}`}
+                                        {count === 0
+                                            ? "Share your first recommendation!"
+                                            : `${remaining} more to reach ${nextTier}`}
                                     </span>
                                 );
                             })()}
@@ -2938,347 +3215,482 @@ const Profile = () => {
                 </div>
             </header>
             <main className="profile-content-area">
-                <div className="profile-recommendations-header">
-                    <div className="profile-recommendations-title-section">
-                        <h2>My Recommendations</h2>
-                        <div className="profile-recommendations-controls">
-                            <button
-                                className="profile-add-new-btn"
-                                onClick={() => navigate("/share-recommendation")}
-                            >
-                                <PlusCircleIcon className="btn-icon" /> Add New
-                            </button>
-                        </div>
-                    </div>
-                    {enrichedRecommendations.length > 0 && (
-                        <div className="profile-search-wrapper">
-                            <div className="profile-search-container">
-                                <svg className="profile-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                                <input
-                                    type="text"
-                                    placeholder="Search recommendations..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="profile-search-input"
-                                />
-                                {searchQuery && (
-                                    <button
-                                        onClick={() => setSearchQuery("")}
-                                        className="profile-search-clear"
-                                        title="Clear search"
-                                    >
-                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                )}
-                            </div>
-                            <div
-                                className="filters-container"
-                            >
-                                {availableServices.length > 0 && (
-                                    <div className="profile-city-filter-toggle-section">
-                                        <button
-                                            className="profile-city-filter-toggle"
-                                            onClick={() =>
-                                                setShowServiceFilter(
-                                                    !showServiceFilter
-                                                )
-                                            }
-                                        >
-                                            <FaConciergeBell className="profile-filter-icon" />
-                                            <span className="filter-button-text">
-                                                <span className="filter-button-text-long">
-                                                    Filter by{" "}
-                                                </span>
-                                                <span>Service</span>
-                                            </span>
-                                            {selectedServices.length > 0 && (
-                                                <span className="profile-active-filters-badge">
-                                                    {selectedServices.length}
-                                                </span>
-                                            )}
-                                            <ChevronDownIcon
-                                                className={`profile-filter-chevron ${
-                                                    showServiceFilter
-                                                        ? "rotated"
-                                                        : ""
-                                                }`}
-                                            />
-                                        </button>
-                                    </div>
-                                )}
-                                {availableCities.length > 1 && (
-                                    <div className="profile-city-filter-toggle-section">
-                                        <button
-                                            className="profile-city-filter-toggle"
-                                            onClick={() =>
-                                                setShowCityFilter(
-                                                    !showCityFilter
-                                                )
-                                            }
-                                        >
-                                            <FaMapMarkerAlt className="profile-filter-icon" />
-                                            <span className="filter-button-text">
-                                                <span className="filter-button-text-long">
-                                                    Filter by{" "}
-                                                </span>
-                                                <span>City</span>
-                                            </span>
-                                            {selectedCities.length > 0 && (
-                                                <span className="profile-active-filters-badge">
-                                                    {selectedCities.length}
-                                                </span>
-                                            )}
-                                            <ChevronDownIcon
-                                                className={`profile-filter-chevron ${
-                                                    showCityFilter
-                                                        ? "rotated"
-                                                        : ""
-                                                }`}
-                                            />
-                                        </button>
-                                    </div>
-                                )}
-                                {showServiceFilter && availableServices.length > 0 && (
-                                    <div className="profile-city-filter-wrapper">
-                                        <div className="profile-city-filter-checkboxes">
-                                            {availableServices.map(
-                                                ([service, count]) => (
-                                                    <div
-                                                        key={service}
-                                                        className="profile-city-checkbox-item"
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            id={`service-${service.replace(/\s+/g, '-')}`}
-                                                            name={service}
-                                                            checked={selectedServices.includes(
-                                                                service
-                                                            )}
-                                                            onChange={() =>
-                                                                handleServiceSelection(
-                                                                    service
-                                                                )
-                                                            }
-                                                        />
-                                                        <label
-                                                            htmlFor={`service-${service.replace(/\s+/g, '-')}`}
-                                                            className="profile-city-checkbox-label"
-                                                        >
-                                                            {service}
-                                                        </label>
-                                                        <span className="profile-city-count">
-                                                            ({count})
-                                                        </span>
-                                                    </div>
-                                                )
-                                            )}
-                                            {selectedServices.length > 0 && (
-                                                <button
-                                                    onClick={() =>
-                                                        setSelectedServices(
-                                                            []
-                                                        )
-                                                    }
-                                                    className="profile-city-clear-all"
-                                                >
-                                                    Clear
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                                {showCityFilter && availableCities.length > 1 && (
-                                    <div className="profile-city-filter-wrapper">
-                                        <div className="profile-city-filter-checkboxes">
-                                            {availableCities.map(
-                                                ([city, count]) => (
-                                                    <div
-                                                        key={city}
-                                                        className="profile-city-checkbox-item"
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            id={`city-${city.replace(
-                                                                /\s+/g,
-                                                                '-'
-                                                            )}`}
-                                                            name={city}
-                                                            checked={selectedCities.includes(
-                                                                city
-                                                            )}
-                                                            onChange={() =>
-                                                                handleCitySelection(
-                                                                    city
-                                                                )
-                                                            }
-                                                        />
-                                                        <label
-                                                            htmlFor={`city-${city.replace(
-                                                                /\s+/g,
-                                                                '-'
-                                                            )}`}
-                                                            className="profile-city-checkbox-label"
-                                                        >
-                                                            {city}
-                                                        </label>
-                                                        <span className="profile-city-count">
-                                                            ({count})
-                                                        </span>
-                                                    </div>
-                                                )
-                                            )}
-                                            {selectedCities.length > 0 && (
-                                                <button
-                                                    onClick={() =>
-                                                        setSelectedCities([])
-                                                    }
-                                                    className="profile-city-clear-all"
-                                                >
-                                                    Clear
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                <div className="profile-tabs">
+                    <button
+                        className={`profile-tab-btn${
+                            activeTab === "recommendations" ? " active" : ""
+                        }`}
+                        onClick={() => setActiveTab("recommendations")}
+                    >
+                        My Recommendations
+                    </button>
+                    <button
+                        className={`profile-tab-btn${
+                            activeTab === "lists" ? " active" : ""
+                        }`}
+                        onClick={() => setActiveTab("lists")}
+                    >
+                        My Lists
+                    </button>
                 </div>
-                {(loading ||
-                    (statsLoading &&
-                        baseRecommendations.length > 0 &&
-                        enrichedRecommendations.length <
-                            baseRecommendations.length)) &&
-                    sortedRecommendations.length === 0 && (
-                        <div className="profile-loading-container small-spinner">
-                            <div className="profile-spinner"></div>
-                            <p>Loading recommendations...</p>
-                        </div>
-                    )}
-                {!(
-                    loading ||
-                    (statsLoading &&
-                        baseRecommendations.length > 0 &&
-                        enrichedRecommendations.length <
-                            baseRecommendations.length)
-                ) &&
-                    sortedRecommendations.length > 0 && (
-                        <ul className="provider-list">
-                            {sortedRecommendations.map((rec) => (
-                                <ProfileRecommendationCard
-                                    key={rec.id}
-                                    rec={rec}
-                                    onEdit={(rec) => {
-                                        setCurrentEditingRec(rec);
-                                        setIsEditModalOpen(true);
-                                    }}
-                                    onLikeRecommendation={
-                                        handleProviderLikeFromProfile
-                                    }
-                                    onRefreshList={fetchProfileData}
-                                    user={user}
-                                    comments={commentsMap.get(rec.provider_id || rec.id) || []}
-                                    onCommentAdded={handleCommentAdded}
-                                    currentUserName={currentUserName}
-                                    onWriteReview={handleOpenReviewModal}
-                                />
-                            ))}
-                        </ul>
-                    )}
-                {!(
-                    loading ||
-                    (statsLoading &&
-                        baseRecommendations.length > 0 &&
-                        enrichedRecommendations.length <
-                            baseRecommendations.length)
-                ) &&
-                    sortedRecommendations.length === 0 &&
-                    !error && (
-                        (searchQuery.trim() || selectedCities.length > 0 || selectedServices.length > 0) ? (
-                            <div className="profile-empty-state no-search-results">
-                                <svg className="no-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                                <p>
-                                    No recommendations found
-                                    {searchQuery.trim() && ` for "${searchQuery}"`}
-                                    {selectedServices.length > 0 && ` for ${selectedServices.join(", ")}`}
-                                    {selectedCities.length > 0 && ` in ${selectedCities.join(", ")}`}
-                                </p>
-                                <p className="search-suggestions">
-                                    Try adjusting your search or filters.
-                                </p>
-                                <div className="profile-filter-clear-buttons">
-                                    {searchQuery.trim() && (
-                                        <button
-                                            className="profile-secondary-action-btn"
-                                            onClick={() => setSearchQuery("")}
-                                        >
-                                            Clear Search
-                                        </button>
-                                    )}
-                                    {selectedServices.length > 0 && (
-                                        <button
-                                            className="profile-secondary-action-btn"
-                                            onClick={() => setSelectedServices([])}
-                                        >
-                                            Clear Service Filters
-                                        </button>
-                                    )}
-                                    {selectedCities.length > 0 && (
-                                        <button
-                                            className="profile-secondary-action-btn"
-                                            onClick={() => setSelectedCities([])}
-                                        >
-                                            Clear City Filters
-                                        </button>
-                                    )}
-                                    {(searchQuery.trim() || selectedCities.length > 0 || selectedServices.length > 0) && (
-                                        <button
-                                            className="profile-secondary-action-btn"
-                                            onClick={() => {
-                                                setSearchQuery("");
-                                                setSelectedCities([]);
-                                                setSelectedServices([]);
-                                            }}
-                                        >
-                                            Clear All Filters
-                                        </button>
-                                    )}
+                {activeTab === "recommendations" ? (
+                    <>
+                        <div className="profile-recommendations-header">
+                            <div className="profile-recommendations-title-section">
+                                <h2>My Recommendations</h2>
+                                <div className="profile-recommendations-controls">
+                                    <button
+                                        className="profile-add-new-btn"
+                                        onClick={() =>
+                                            navigate("/share-recommendation")
+                                        }
+                                    >
+                                        <PlusCircleIcon className="btn-icon" />{" "}
+                                        Add New
+                                    </button>
                                 </div>
                             </div>
-                        ) : (
-                            <div className="profile-empty-state no-providers-message">
-                                <FaStar className="no-providers-icon" />
-                                <p>You haven't made any recommendations yet.</p>
-                                <button
-                                    className="profile-primary-action-btn"
-                                    onClick={() =>
-                                        navigate("/share-recommendation")
-                                    }
-                                >
-                                    Share Your First Recommendation
-                                </button>
+                            {enrichedRecommendations.length > 0 && (
+                                <div className="profile-search-wrapper">
+                                    <div className="profile-search-container">
+                                        <svg
+                                            className="profile-search-icon"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth="2"
+                                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                            />
+                                        </svg>
+                                        <input
+                                            type="text"
+                                            placeholder="Search recommendations..."
+                                            value={searchQuery}
+                                            onChange={(e) =>
+                                                setSearchQuery(e.target.value)
+                                            }
+                                            className="profile-search-input"
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                onClick={() =>
+                                                    setSearchQuery("")
+                                                }
+                                                className="profile-search-clear"
+                                                title="Clear search"
+                                            >
+                                                <svg
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth="2"
+                                                        d="M6 18L18 6M6 6l12 12"
+                                                    />
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="filters-container">
+                                        {availableServices.length > 0 && (
+                                            <div className="profile-city-filter-toggle-section">
+                                                <button
+                                                    className="profile-city-filter-toggle"
+                                                    onClick={() =>
+                                                        setShowServiceFilter(
+                                                            !showServiceFilter
+                                                        )
+                                                    }
+                                                >
+                                                    <FaConciergeBell className="profile-filter-icon" />
+                                                    <span className="filter-button-text">
+                                                        <span className="filter-button-text-long">
+                                                            Filter by{" "}
+                                                        </span>
+                                                        <span>Service</span>
+                                                    </span>
+                                                    {selectedServices.length >
+                                                        0 && (
+                                                        <span className="profile-active-filters-badge">
+                                                            {
+                                                                selectedServices.length
+                                                            }
+                                                        </span>
+                                                    )}
+                                                    <ChevronDownIcon
+                                                        className={`profile-filter-chevron ${
+                                                            showServiceFilter
+                                                                ? "rotated"
+                                                                : ""
+                                                        }`}
+                                                    />
+                                                </button>
+                                            </div>
+                                        )}
+                                        {availableCities.length > 1 && (
+                                            <div className="profile-city-filter-toggle-section">
+                                                <button
+                                                    className="profile-city-filter-toggle"
+                                                    onClick={() =>
+                                                        setShowCityFilter(
+                                                            !showCityFilter
+                                                        )
+                                                    }
+                                                >
+                                                    <FaMapMarkerAlt className="profile-filter-icon" />
+                                                    <span className="filter-button-text">
+                                                        <span className="filter-button-text-long">
+                                                            Filter by{" "}
+                                                        </span>
+                                                        <span>City</span>
+                                                    </span>
+                                                    {selectedCities.length >
+                                                        0 && (
+                                                        <span className="profile-active-filters-badge">
+                                                            {
+                                                                selectedCities.length
+                                                            }
+                                                        </span>
+                                                    )}
+                                                    <ChevronDownIcon
+                                                        className={`profile-filter-chevron ${
+                                                            showCityFilter
+                                                                ? "rotated"
+                                                                : ""
+                                                        }`}
+                                                    />
+                                                </button>
+                                            </div>
+                                        )}
+                                        {showServiceFilter &&
+                                            availableServices.length > 0 && (
+                                                <div className="profile-city-filter-wrapper">
+                                                    <div className="profile-city-filter-checkboxes">
+                                                        {availableServices.map(
+                                                            ([
+                                                                service,
+                                                                count,
+                                                            ]) => (
+                                                                <div
+                                                                    key={
+                                                                        service
+                                                                    }
+                                                                    className="profile-city-checkbox-item"
+                                                                >
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        id={`service-${service.replace(
+                                                                            /\s+/g,
+                                                                            "-"
+                                                                        )}`}
+                                                                        name={
+                                                                            service
+                                                                        }
+                                                                        checked={selectedServices.includes(
+                                                                            service
+                                                                        )}
+                                                                        onChange={() =>
+                                                                            handleServiceSelection(
+                                                                                service
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                    <label
+                                                                        htmlFor={`service-${service.replace(
+                                                                            /\s+/g,
+                                                                            "-"
+                                                                        )}`}
+                                                                        className="profile-city-checkbox-label"
+                                                                    >
+                                                                        {
+                                                                            service
+                                                                        }
+                                                                    </label>
+                                                                    <span className="profile-city-count">
+                                                                        ({count}
+                                                                        )
+                                                                    </span>
+                                                                </div>
+                                                            )
+                                                        )}
+                                                        {selectedServices.length >
+                                                            0 && (
+                                                            <button
+                                                                onClick={() =>
+                                                                    setSelectedServices(
+                                                                        []
+                                                                    )
+                                                                }
+                                                                className="profile-city-clear-all"
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        {showCityFilter &&
+                                            availableCities.length > 1 && (
+                                                <div className="profile-city-filter-wrapper">
+                                                    <div className="profile-city-filter-checkboxes">
+                                                        {availableCities.map(
+                                                            ([city, count]) => (
+                                                                <div
+                                                                    key={city}
+                                                                    className="profile-city-checkbox-item"
+                                                                >
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        id={`city-${city.replace(
+                                                                            /\s+/g,
+                                                                            "-"
+                                                                        )}`}
+                                                                        name={
+                                                                            city
+                                                                        }
+                                                                        checked={selectedCities.includes(
+                                                                            city
+                                                                        )}
+                                                                        onChange={() =>
+                                                                            handleCitySelection(
+                                                                                city
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                    <label
+                                                                        htmlFor={`city-${city.replace(
+                                                                            /\s+/g,
+                                                                            "-"
+                                                                        )}`}
+                                                                        className="profile-city-checkbox-label"
+                                                                    >
+                                                                        {city}
+                                                                    </label>
+                                                                    <span className="profile-city-count">
+                                                                        ({count}
+                                                                        )
+                                                                    </span>
+                                                                </div>
+                                                            )
+                                                        )}
+                                                        {selectedCities.length >
+                                                            0 && (
+                                                            <button
+                                                                onClick={() =>
+                                                                    setSelectedCities(
+                                                                        []
+                                                                    )
+                                                                }
+                                                                className="profile-city-clear-all"
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        {(loading ||
+                            (statsLoading &&
+                                baseRecommendations.length > 0 &&
+                                enrichedRecommendations.length <
+                                    baseRecommendations.length)) &&
+                            sortedRecommendations.length === 0 && (
+                                <div className="profile-loading-container small-spinner">
+                                    <div className="profile-spinner"></div>
+                                    <p>Loading recommendations...</p>
+                                </div>
+                            )}
+                        {!(
+                            loading ||
+                            (statsLoading &&
+                                baseRecommendations.length > 0 &&
+                                enrichedRecommendations.length <
+                                    baseRecommendations.length)
+                        ) &&
+                            sortedRecommendations.length > 0 && (
+                                <ul className="provider-list">
+                                    {sortedRecommendations.map((rec) => (
+                                        <ProfileRecommendationCard
+                                            key={rec.id}
+                                            rec={rec}
+                                            onEdit={(rec) => {
+                                                setCurrentEditingRec(rec);
+                                                setIsEditModalOpen(true);
+                                            }}
+                                            onLikeRecommendation={
+                                                handleProviderLikeFromProfile
+                                            }
+                                            onRefreshList={fetchProfileData}
+                                            user={user}
+                                            comments={
+                                                commentsMap.get(
+                                                    rec.provider_id || rec.id
+                                                ) || []
+                                            }
+                                            onCommentAdded={handleCommentAdded}
+                                            currentUserName={currentUserName}
+                                            onWriteReview={
+                                                handleOpenReviewModal
+                                            }
+                                        />
+                                    ))}
+                                </ul>
+                            )}
+                        {!(
+                            loading ||
+                            (statsLoading &&
+                                baseRecommendations.length > 0 &&
+                                enrichedRecommendations.length <
+                                    baseRecommendations.length)
+                        ) &&
+                            sortedRecommendations.length === 0 &&
+                            !error &&
+                            (searchQuery.trim() ||
+                            selectedCities.length > 0 ||
+                            selectedServices.length > 0 ? (
+                                <div className="profile-empty-state no-search-results">
+                                    <svg
+                                        className="no-search-icon"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth="2"
+                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                        />
+                                    </svg>
+                                    <p>
+                                        No recommendations found
+                                        {searchQuery.trim() &&
+                                            ` for "${searchQuery}"`}
+                                        {selectedServices.length > 0 &&
+                                            ` for ${selectedServices.join(
+                                                ", "
+                                            )}`}
+                                        {selectedCities.length > 0 &&
+                                            ` in ${selectedCities.join(", ")}`}
+                                    </p>
+                                    <p className="search-suggestions">
+                                        Try adjusting your search or filters.
+                                    </p>
+                                    <div className="profile-filter-clear-buttons">
+                                        {searchQuery.trim() && (
+                                            <button
+                                                className="profile-secondary-action-btn"
+                                                onClick={() =>
+                                                    setSearchQuery("")
+                                                }
+                                            >
+                                                Clear Search
+                                            </button>
+                                        )}
+                                        {selectedServices.length > 0 && (
+                                            <button
+                                                className="profile-secondary-action-btn"
+                                                onClick={() =>
+                                                    setSelectedServices([])
+                                                }
+                                            >
+                                                Clear Service Filters
+                                            </button>
+                                        )}
+                                        {selectedCities.length > 0 && (
+                                            <button
+                                                className="profile-secondary-action-btn"
+                                                onClick={() =>
+                                                    setSelectedCities([])
+                                                }
+                                            >
+                                                Clear City Filters
+                                            </button>
+                                        )}
+                                        {(searchQuery.trim() ||
+                                            selectedCities.length > 0 ||
+                                            selectedServices.length > 0) && (
+                                            <button
+                                                className="profile-secondary-action-btn"
+                                                onClick={() => {
+                                                    setSearchQuery("");
+                                                    setSelectedCities([]);
+                                                    setSelectedServices([]);
+                                                }}
+                                            >
+                                                Clear All Filters
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="profile-empty-state no-providers-message">
+                                    <FaStar className="no-providers-icon" />
+                                    <p>
+                                        You haven't made any recommendations
+                                        yet.
+                                    </p>
+                                    <button
+                                        className="profile-primary-action-btn"
+                                        onClick={() =>
+                                            navigate("/share-recommendation")
+                                        }
+                                    >
+                                        Share Your First Recommendation
+                                    </button>
+                                </div>
+                            ))}
+                        {!(
+                            loading ||
+                            (statsLoading &&
+                                baseRecommendations.length > 0 &&
+                                enrichedRecommendations.length <
+                                    baseRecommendations.length)
+                        ) &&
+                            sortedRecommendations.length === 0 &&
+                            error && (
+                                <p className="profile-empty-state-error-inline">
+                                    Could not load recommendations. {error}
+                                </p>
+                            )}
+                    </>
+                ) : (
+                    <section className="profile-user-lists-section">
+                        <h2>My Lists</h2>
+                        {listsLoading ? (
+                            <div>Loading lists...</div>
+                        ) : listsError ? (
+                            <div className="profile-error-banner">
+                                {listsError}
                             </div>
-                        )
-                    )}
-                {!(
-                    loading ||
-                    (statsLoading &&
-                        baseRecommendations.length > 0 &&
-                        enrichedRecommendations.length <
-                            baseRecommendations.length)
-                ) &&
-                    sortedRecommendations.length === 0 &&
-                    error && (
-                        <p className="profile-empty-state-error-inline">
-                            Could not load recommendations. {error}
-                        </p>
-                    )}
+                        ) : userLists.length === 0 ? (
+                            <div>You haven't created any lists yet.</div>
+                        ) : (
+                            <ul className="profile-user-lists">
+                                {userLists.map((list) => (
+                                    <UserListCard
+                                        key={list.id}
+                                        list={list}
+                                        fetchListRecommendations={
+                                            fetchListRecommendations
+                                        }
+                                    />
+                                ))}
+                            </ul>
+                        )}
+                    </section>
+                )}
             </main>
             {isEditModalOpen && currentEditingRec && user && (
                 <EditRecommendationModal

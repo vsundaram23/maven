@@ -72,7 +72,7 @@
 }
 
 .profile-user-name {
-    color: #1A365D;
+    color: #1a365d;
     font-size: 2.5rem;
     font-weight: 800;
     margin: 0;
@@ -97,7 +97,7 @@
 }
 
 .profile-contact-link:hover {
-    color: #1A365D;
+    color: #1a365d;
 }
 
 .profile-contact-link.phone:hover {
@@ -203,7 +203,7 @@
     border-radius: 50%;
     border: 4px solid #ffffff;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    background-color: #1A365D;
+    background-color: #1a365d;
     color: white;
     display: flex;
     align-items: center;
@@ -335,7 +335,7 @@
     line-height: 1.6;
     color: #343a40;
     font-style: italic;
-    border-left: 3px solid #1A365D;
+    border-left: 3px solid #1a365d;
     padding-left: 1.5rem;
     text-align: left;
     margin: 0;
@@ -526,11 +526,9 @@
 .profile-recommendations-header h2 {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #1A365D;
+    color: #1a365d;
     margin: 0;
 }
-
-
 
 .profile-recommendations-controls {
     display: flex;
@@ -1653,13 +1651,13 @@
         margin: 0 1rem 1.5rem 1rem;
         padding: 1rem;
     }
-    
+
     /* Keep recommendation and follower stats in a row */
     .profile-stats-bar .stat-item:not(.profile-stat-achievement) {
         flex: 0 1 auto;
         min-width: 120px;
     }
-    
+
     /* Trust score takes full width below the numbers */
     .profile-stats-bar .profile-stat-achievement {
         flex: 1 1 100%;
@@ -1716,18 +1714,18 @@
         align-items: stretch;
         gap: 1rem;
     }
-    
+
     .profile-recommendations-controls {
         flex-direction: column;
         gap: 0.75rem;
         align-items: stretch;
     }
-    
+
     .profile-search-wrapper {
         width: 100%;
         order: 1;
     }
-    
+
     .profile-add-new-btn {
         order: 2;
         width: 100%;
@@ -2081,7 +2079,7 @@
     display: block;
     font-size: 2.25rem;
     font-weight: 700;
-    color: #1A365D;
+    color: #1a365d;
 }
 
 .profile-stat-label {
@@ -2156,16 +2154,18 @@
 }
 
 .achievement-badge-starter::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.3) 0%, 
-        rgba(255, 255, 255, 0.1) 50%, 
-        rgba(203, 213, 224, 0.1) 100%);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(203, 213, 224, 0.1) 100%
+    );
     border-radius: 50%;
     z-index: 1;
 }
@@ -2179,8 +2179,8 @@
 
 /* Bronze Badge */
 .achievement-badge-bronze {
-    background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);
-    border-color: #CD7F32;
+    background: linear-gradient(135deg, #cd7f32 0%, #8b4513 100%);
+    border-color: #cd7f32;
     box-shadow: 0 8px 16px rgba(205, 127, 50, 0.3);
 }
 
@@ -2189,24 +2189,26 @@
 }
 
 .achievement-badge-bronze::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.2) 0%, 
-        rgba(255, 255, 255, 0.05) 50%, 
-        rgba(0, 0, 0, 0.1) 100%);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0.05) 50%,
+        rgba(0, 0, 0, 0.1) 100%
+    );
     border-radius: 50%;
     z-index: 1;
 }
 
 /* Silver Badge */
 .achievement-badge-silver {
-    background: linear-gradient(135deg, #C0C0C0 0%, #808080 100%);
-    border-color: #C0C0C0;
+    background: linear-gradient(135deg, #c0c0c0 0%, #808080 100%);
+    border-color: #c0c0c0;
     box-shadow: 0 8px 16px rgba(192, 192, 192, 0.3);
 }
 
@@ -2215,24 +2217,26 @@
 }
 
 .achievement-badge-silver::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.3) 0%, 
-        rgba(255, 255, 255, 0.1) 50%, 
-        rgba(0, 0, 0, 0.05) 100%);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(0, 0, 0, 0.05) 100%
+    );
     border-radius: 50%;
     z-index: 1;
 }
 
 /* Gold Badge */
 .achievement-badge-gold {
-    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-    border-color: #FFD700;
+    background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+    border-color: #ffd700;
     box-shadow: 0 8px 16px rgba(255, 215, 0, 0.3);
 }
 
@@ -2241,24 +2245,26 @@
 }
 
 .achievement-badge-gold::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.4) 0%, 
-        rgba(255, 255, 255, 0.2) 50%, 
-        rgba(255, 165, 0, 0.1) 100%);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.4) 0%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 165, 0, 0.1) 100%
+    );
     border-radius: 50%;
     z-index: 1;
 }
 
 /* Platinum Badge */
 .achievement-badge-platinum {
-    background: linear-gradient(135deg, #E5E4E2 0%, #A8A8A8 100%);
-    border-color: #E5E4E2;
+    background: linear-gradient(135deg, #e5e4e2 0%, #a8a8a8 100%);
+    border-color: #e5e4e2;
     box-shadow: 0 8px 16px rgba(229, 228, 226, 0.4);
 }
 
@@ -2267,24 +2273,26 @@
 }
 
 .achievement-badge-platinum::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.5) 0%, 
-        rgba(255, 255, 255, 0.3) 50%, 
-        rgba(168, 168, 168, 0.1) 100%);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.5) 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(168, 168, 168, 0.1) 100%
+    );
     border-radius: 50%;
     z-index: 1;
 }
 
 /* Diamond Badge */
 .achievement-badge-diamond {
-    background: linear-gradient(135deg, #B9F2FF 0%, #7DD3FC 50%, #0369A1 100%);
-    border-color: #B9F2FF;
+    background: linear-gradient(135deg, #b9f2ff 0%, #7dd3fc 50%, #0369a1 100%);
+    border-color: #b9f2ff;
     box-shadow: 0 8px 16px rgba(185, 242, 255, 0.4);
 }
 
@@ -2293,16 +2301,18 @@
 }
 
 .achievement-badge-diamond::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.6) 0%, 
-        rgba(255, 255, 255, 0.4) 50%, 
-        rgba(3, 105, 161, 0.1) 100%);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.6) 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(3, 105, 161, 0.1) 100%
+    );
     border-radius: 50%;
     z-index: 1;
 }
@@ -2318,14 +2328,14 @@
         border-top: none !important;
         padding-top: 1rem !important;
     }
-    
+
     /* Keep recommendation and follower stats in a row */
     .profile-stats-wrapper .profile-stat-item:nth-child(1),
     .profile-stats-wrapper .profile-stat-item:nth-child(2) {
         flex: 0 1 auto !important;
         min-width: 120px !important;
     }
-    
+
     /* Trust score takes full width below the numbers */
     .profile-stats-wrapper .profile-stat-item:nth-child(3) {
         flex: 1 1 100% !important;
@@ -2333,30 +2343,30 @@
         justify-content: center !important;
         margin-top: 0.5rem !important;
     }
-    
+
     .profile-stat-achievement {
         height: 50px;
     }
-    
+
     .achievement-badge-circular {
         width: 50px;
         height: 50px;
     }
-    
+
     .achievement-badge-icon {
         font-size: 20px;
     }
-    
+
     .achievement-badge {
         font-size: 0.65rem;
         padding: 0.2rem 0.5rem;
         gap: 0.25rem;
     }
-    
+
     .achievement-badge-text {
         font-size: 0.6rem;
     }
-    
+
     .achievement-badge-icon {
         font-size: 1em;
     }
@@ -2565,21 +2575,21 @@
         font-size: 0.85rem;
         padding: 0.6rem 0.85rem;
     }
-    
+
     .profile-filter-icon {
         width: 1rem;
         height: 1rem;
     }
-    
+
     .profile-city-filter-checkboxes {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .profile-city-checkbox-item {
         justify-content: space-between;
     }
-    
+
     .profile-filter-clear-buttons {
         flex-direction: column;
         align-items: center;
@@ -2667,22 +2677,22 @@
         transform: scale(0.75);
         margin: -20px 0;
     }
-    
+
     .profile-trust-score-wrapper .trust-score-content-horizontal {
         flex-direction: column;
         gap: 0.75rem;
         text-align: left;
         align-items: flex-start;
     }
-    
+
     .profile-trust-score-wrapper .trust-score-level-text {
         font-size: 0.9rem;
     }
-    
+
     .profile-trust-score-wrapper .trust-score-next-level {
         font-size: 0.8rem;
     }
-    
+
     .profile-trust-score-wrapper .trust-score-circle-section {
         align-self: center;
     }
@@ -2693,11 +2703,11 @@
         transform: scale(0.65);
         margin: -25px 0;
     }
-    
+
     .profile-trust-score-wrapper .trust-score-level-text {
         font-size: 0.85rem;
     }
-    
+
     .profile-trust-score-wrapper .trust-score-next-level {
         font-size: 0.75rem;
     }
@@ -2725,15 +2735,24 @@
         border-top: none !important;
         padding-top: 1rem !important;
     }
-    
-    .profile-page .profile-hero-content .profile-stats-wrapper .profile-stat-item:nth-child(1),
-    .profile-page .profile-hero-content .profile-stats-wrapper .profile-stat-item:nth-child(2) {
+
+    .profile-page
+        .profile-hero-content
+        .profile-stats-wrapper
+        .profile-stat-item:nth-child(1),
+    .profile-page
+        .profile-hero-content
+        .profile-stats-wrapper
+        .profile-stat-item:nth-child(2) {
         flex: 0 1 auto !important;
         min-width: 120px !important;
         margin-bottom: 0 !important;
     }
-    
-    .profile-page .profile-hero-content .profile-stats-wrapper .profile-stat-item:nth-child(3) {
+
+    .profile-page
+        .profile-hero-content
+        .profile-stats-wrapper
+        .profile-stat-item:nth-child(3) {
         flex: 1 1 100% !important;
         display: flex !important;
         justify-content: center !important;
@@ -2796,16 +2815,16 @@
         font-size: 0.85rem;
         padding: 0.6rem 0.85rem;
     }
-    
+
     .profile-filter-icon {
         width: 1rem;
         height: 1rem;
     }
-    
+
     .profile-city-filter-checkboxes {
         grid-template-columns: 1fr;
     }
-    
+
     .profile-filter-clear-buttons {
         flex-direction: column;
         align-items: center;
@@ -2902,7 +2921,7 @@
 }
 
 .profile-recommendation-content .inline-post-button {
-    background: #1A365D;
+    background: #1a365d;
     color: white;
     border: none;
     border-radius: 16px;
@@ -2936,27 +2955,27 @@
         display: flex;
         justify-content: center;
     }
-    
+
     .profile-recommendation-card-wrapper .profile-my-rec-card {
         margin-left: auto;
         margin-right: auto;
         width: 100%;
         max-width: none;
     }
-    
+
     .profile-recommendation-content .public-provider-card {
         margin-left: auto !important;
         margin-right: auto !important;
         width: 100% !important;
         max-width: none !important;
     }
-    
+
     /* Make Edit My Rec button text smaller on mobile */
     .profile-recommendation-card-wrapper .profile-my-rec-primary-action-button {
         font-size: 0.75rem;
         padding: 0.4rem 0.8rem;
     }
-    
+
     /* Additional centering for all cards on mobile */
     .profile-my-rec-card {
         margin-left: auto !important;
@@ -2988,4 +3007,123 @@
     position: relative; /* Ensure consistent positioning context */
 }
 
-
+.profile-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+.profile-tab-btn {
+    background: #f3f4f6;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px 8px 0 0;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: #333;
+    transition: background 0.2s;
+}
+.profile-tab-btn.active {
+    background: #fff;
+    border-bottom: 2px solid #2563eb;
+    color: #2563eb;
+    font-weight: bold;
+}
+.profile-user-lists-section {
+    margin-top: 2rem;
+}
+.profile-user-lists {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.profile-user-list-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    transition: box-shadow 0.2s;
+}
+.profile-user-list-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.profile-user-list-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    flex: 1;
+}
+.profile-user-list-date {
+    color: #888;
+    font-size: 0.95rem;
+}
+.profile-user-list-chevron {
+    width: 1.25rem;
+    height: 1.25rem;
+    transition: transform 0.2s;
+}
+.profile-user-list-chevron.rotated {
+    transform: rotate(180deg);
+}
+.profile-user-list-description {
+    color: #555;
+    margin: 0.5rem 0 0.5rem 0;
+}
+.profile-user-list-recommendations {
+    margin-top: 1rem;
+}
+.profile-user-list-recs {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.profile-user-list-rec-card {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+.profile-user-list-rec-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-weight: 500;
+}
+.profile-user-list-rec-title {
+    font-size: 1.05rem;
+    flex: 1;
+}
+.profile-user-list-rec-details {
+    margin-top: 0.5rem;
+    color: #444;
+}
+.profile-user-list-rec-tags {
+    margin-top: 0.5rem;
+}
+.profile-user-list-rec-tag {
+    display: inline-block;
+    background: #e0e7ff;
+    color: #3730a3;
+    border-radius: 6px;
+    padding: 0.2rem 0.7rem;
+    font-size: 0.95rem;
+    margin-right: 0.5rem;
+    margin-bottom: 0.2rem;
+}
+.profile-user-list-rec-images {
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.profile-user-list-rec-image {
+    max-width: 80px;
+    max-height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+.profile-user-list-rec-image-count {
+    font-size: 0.95rem;
+    color: #888;
+}
