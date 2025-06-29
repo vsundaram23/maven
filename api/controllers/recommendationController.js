@@ -10,6 +10,15 @@ const upload = multer({
     },
 }).array("images", 5);
 
+const uploadListProviders = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB per image
+        files: 50, // up to 5 images per 10 recs
+        fieldSize: 30 * 1024 * 1024,
+    },
+}).any();
+
 // Add this near the top with other multer config
 const editUpload = multer({
     storage: multer.memoryStorage(),
@@ -941,63 +950,6 @@ const deleteRecommendation = async (req, res) => {
     }
 };
 
-const createList = async (req, res) => {
-    const { title, description, reviewIds, user_id, email } =
-        req.body;
-
-    if (!title || !Array.isArray(reviewIds) || reviewIds.length === 0) {
-        return res.status(400).json({
-            success: false,
-            message: "Title and at least one review are required.",
-        });
-    }
-
-    let client;
-    try {
-        client = await pool.connect();
-        await client.query("BEGIN");
-
-        // Get internal user id from Clerk ID or email
-        const userResult = await client.query(
-            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
-            [user_id, email]
-        );
-        if (userResult.rows.length === 0) {
-            await client.query("ROLLBACK");
-            return res
-                .status(404)
-                .json({ success: false, message: "User not found." });
-        }
-        const creatorUserId = userResult.rows[0].id;
-
-        // // Use provided community_id or set to a default/null if needed
-        // const commId = community_id || null;
-
-        // Create list
-        const listId = uuidv4();
-        await client.query(
-            `INSERT INTO lists (id, title, description, user_id) VALUES ($1, $2, $3, $4)`,
-            [listId, title, description || null, creatorUserId]
-        );
-
-        // Link reviews
-        for (const reviewId of reviewIds) {
-            await client.query(
-                `INSERT INTO list_reviews (list_id, review_id) VALUES ($1, $2)`,
-                [listId, reviewId]
-            );
-        }
-
-        await client.query("COMMIT");
-        res.status(201).json({ success: true, listId });
-    } catch (err) {
-        if (client) await client.query("ROLLBACK");
-        res.status(500).json({ success: false, error: err.message });
-    } finally {
-        if (client) client.release();
-    }
-};
-
 const getList = async (req, res) => {
     const { listId } = req.params;
     const { user_id: clerkUserId, email: userEmail } = req.query;
@@ -1026,7 +978,7 @@ const getList = async (req, res) => {
 
         const recsRes = await pool.query(
             `SELECT sp.* FROM list_reviews lr
-             JOIN service_providers sp ON lr.review_id = sp.id
+             JOIN service_providers sp ON lr.provider_id = sp.id
              WHERE lr.list_id = $1`,
             [listId]
         );
@@ -1050,7 +1002,6 @@ const getUserLists = async (req, res) => {
             clerkUserId,
             userEmail,
         });
-
 
         const listRes = await pool.query(
             `SELECT * FROM lists WHERE user_id = $1 ORDER BY created_at DESC`,
@@ -1084,7 +1035,9 @@ const pdfParse = require("pdf-parse");
 const mammoth = require("mammoth");
 
 // Single file upload for document extraction
-const uploadSingleDoc = multer({ storage: multer.memoryStorage() }).single("file");
+const uploadSingleDoc = multer({ storage: multer.memoryStorage() }).single(
+    "file"
+);
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -1094,7 +1047,8 @@ async function extractTextFromFile(file) {
         const data = await pdfParse(buffer);
         return data.text;
     } else if (
-        mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        mimetype ===
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
         originalname.endsWith(".docx")
     ) {
         const result = await mammoth.extractRawText({ buffer });
@@ -1147,19 +1101,87 @@ Return ONLY the JSON array.
 const listFileUpload = async (req, res) => {
     uploadSingleDoc(req, res, async (err) => {
         if (err) {
-            return res.status(400).json({ success: false, message: "Upload error", detail: err.message });
+            return res.status(400).json({
+                success: false,
+                message: "Upload error",
+                detail: err.message,
+            });
         }
         if (!req.file) {
-            return res.status(400).json({ success: false, message: "No file uploaded" });
+            return res
+                .status(400)
+                .json({ success: false, message: "No file uploaded" });
         }
         try {
             const text = await extractTextFromFile(req.file);
-            const recommendations = await extractRecommendationsWithGemini(text);
-            res.json({ success: true, recommendations: recommendations.slice(0, 10) });
+            const recommendations = await extractRecommendationsWithGemini(
+                text
+            );
+            res.json({
+                success: true,
+                recommendations: recommendations.slice(0, 10),
+            });
         } catch (error) {
-            res.status(500).json({ success: false, message: "Failed to extract recommendations", detail: error.message });
+            res.status(500).json({
+                success: false,
+                message: "Failed to extract recommendations",
+                detail: error.message,
+            });
         }
     });
+};
+
+const createList = async (req, res) => {
+    const { title, description, providerIds, user_id, email } = req.body;
+
+    if (!title || !Array.isArray(providerIds) || providerIds.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: "Title and at least one provider are required.",
+        });
+    }
+
+    let client;
+    try {
+        client = await pool.connect();
+        await client.query("BEGIN");
+
+        // Use both Clerk ID and email to find the user
+        const userResult = await client.query(
+            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
+            [user_id, email]
+        );
+        if (userResult.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found." });
+        }
+        const creatorUserId = userResult.rows[0].id;
+
+        // Create list
+        const listId = uuidv4();
+        await client.query(
+            `INSERT INTO lists (id, title, description, user_id) VALUES ($1, $2, $3, $4)`,
+            [listId, title, description || null, creatorUserId]
+        );
+
+        // Link providers to the list
+        for (const providerId of providerIds) {
+            await client.query(
+                `INSERT INTO list_reviews (list_id, provider_id) VALUES ($1, $2)`,
+                [listId, providerId]
+            );
+        }
+
+        await client.query("COMMIT");
+        res.status(201).json({ success: true, listId });
+    } catch (err) {
+        if (client) await client.query("ROLLBACK");
+        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        if (client) client.release();
+    }
 };
 
 module.exports = {
@@ -1174,8 +1196,8 @@ module.exports = {
     getReviewStats,
     getReviewsForProvider,
     deleteRecommendation,
-    createList,
     getList,
     getUserLists,
-    listFileUpload, // <-- new export for file upload
+    listFileUpload,
+    createList,
 };
