@@ -9,6 +9,7 @@ import {
 import { API_URL } from "../../utils/constants";
 import ProfileRecommendationCard from "../../components/Profile/ProfileRecommendationCard";
 import { useUser } from "@clerk/clerk-react";
+import EditRecommendationModal from "../../components/Profile/EditRecommendationModal";
 import "./ListDetail.css";
 
 const ListDetail = () => {
@@ -22,32 +23,82 @@ const ListDetail = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState("");
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [currentEditingRec, setCurrentEditingRec] = useState(null);
+
+    // Trust circles state for EditRecommendationModal
+    const [userTrustCircles, setUserTrustCircles] = useState([]);
+    const [trustCirclesLoading, setTrustCirclesLoading] = useState(false);
+    const [trustCirclesError, setTrustCirclesError] = useState("");
+
+    // Use the same endpoint and logic as Profile.js
+    const fetchUserTrustCircles = async () => {
+        if (!user?.primaryEmailAddress?.emailAddress) return [];
+        setTrustCirclesLoading(true);
+        setTrustCirclesError("");
+        try {
+            const email = encodeURIComponent(
+                user.primaryEmailAddress.emailAddress
+            );
+            const res = await fetch(
+                `${API_URL}/api/communities/user/${email}/communities`
+            );
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(
+                    errorData.message || "Failed to fetch user trust circles."
+                );
+            }
+            const data = await res.json();
+            const formattedCircles = Array.isArray(data)
+                ? data.map((tc) => ({ id: tc.id, name: tc.name }))
+                : [];
+            setUserTrustCircles(formattedCircles);
+            return formattedCircles;
+        } catch (err) {
+            setTrustCirclesError(
+                err.message || "Could not load trust circles."
+            );
+            setUserTrustCircles([]);
+            return [];
+        } finally {
+            setTrustCirclesLoading(false);
+        }
+    };
+
+    // Fetch trust circles on mount
+    useEffect(() => {
+        if (user) {
+            fetchUserTrustCircles();
+        }
+    }, [user]);
+
+    // Refresh recommendations after edit
+    const fetchListAndRecs = async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const url = `${API_URL}/api/recommendations/lists/${listId}?user_id=${
+                user.id
+            }&email=${encodeURIComponent(
+                user.primaryEmailAddress?.emailAddress ||
+                    user.emailAddresses?.[0]?.emailAddress ||
+                    ""
+            )}`;
+            const listRes = await fetch(url);
+            if (!listRes.ok) throw new Error("Failed to fetch list details");
+            const listData = await listRes.json();
+            setList(listData.list || {});
+            setRecommendations(listData.recommendations || []);
+        } catch (err) {
+            setError(err.message || "Could not load list.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (!user) return;
-        const fetchListAndRecs = async () => {
-            setLoading(true);
-            setError("");
-            try {
-                const url = `${API_URL}/api/recommendations/lists/${listId}?user_id=${
-                    user.id
-                }&email=${encodeURIComponent(
-                    user.primaryEmailAddress?.emailAddress ||
-                        user.emailAddresses?.[0]?.emailAddress ||
-                        ""
-                )}`;
-                const listRes = await fetch(url);
-                if (!listRes.ok)
-                    throw new Error("Failed to fetch list details");
-                const listData = await listRes.json();
-                setList(listData.list || {});
-                setRecommendations(listData.recommendations || []);
-            } catch (err) {
-                setError(err.message || "Could not load list.");
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchListAndRecs();
     }, [listId, user]);
 
@@ -190,6 +241,12 @@ const ListDetail = () => {
                                     <ProfileRecommendationCard
                                         key={rec.id}
                                         rec={rec}
+                                        onEdit={(rec) => {
+                                            setCurrentEditingRec(rec);
+                                            setIsEditModalOpen(true);
+                                        }}
+                                        user={user}
+                                        onRefreshList={fetchListAndRecs}
                                     />
                                 ))}
                             </ul>
@@ -255,6 +312,23 @@ const ListDetail = () => {
                             </div>
                         </div>
                     </div>
+                )}
+
+                {/* Edit Modal */}
+                {isEditModalOpen && currentEditingRec && user && (
+                    <EditRecommendationModal
+                        isOpen={isEditModalOpen}
+                        onClose={() => setIsEditModalOpen(false)}
+                        recommendationToEdit={currentEditingRec}
+                        onSaveSuccess={fetchListAndRecs}
+                        userEmail={user.primaryEmailAddress?.emailAddress}
+                        clerkUserId={user.id}
+                        apiBaseUrl={API_URL}
+                        userTrustCirclesProp={userTrustCircles}
+                        trustCirclesLoadingProp={trustCirclesLoading}
+                        trustCirclesErrorProp={trustCirclesError}
+                        fetchUserTrustCirclesFunc={fetchUserTrustCircles}
+                    />
                 )}
             </div>
         </div>
