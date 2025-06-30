@@ -1314,7 +1314,7 @@ export default function ListRecommendationForm({
 
             {/* Publish Scope Section */}
             <section className="form-section publish-section">
-                <h2 className="section-title">Share With</h2>
+                <h2 className="section-title">Share List With</h2>
                 <div className="publish-options-grid">
                     {[
                         "Entire Trust Circle",
