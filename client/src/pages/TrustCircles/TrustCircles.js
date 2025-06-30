@@ -17,9 +17,9 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import MemberCard from "../../components/MemberCard/MemberCard";
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
+import RecommendationCard from "../../components/RecommendationCard/RecommendationCard";
 import ReviewModal from "../../components/ReviewModal/ReviewModal";
 import SuccessModal from "../../components/SuccessModal/SuccessModal";
-import RecommendationCard from "../../components/RecommendationCard/RecommendationCard";
 import SuggestedFollowersModal from "../../components/SuggestedFollowersModal/SuggestedFollowersModal";
 import "./TrustCircles.css";
 
@@ -1289,6 +1289,7 @@ const TrustCircles = () => {
                                             <MemberCard
                                                 key={conn.email}
                                                 member={conn}
+                                                hideThreeDots={true}
                                             />
                                         ))}
                                     </div>
@@ -1371,7 +1372,7 @@ const TrustCircles = () => {
                                     ) : filteredFollowing.length > 0 ? (
                                         <div className="followers-list-vertical">
                                             {filteredFollowing.map((conn) => (
-                                                <MemberCard key={conn.id} member={conn} />
+                                                <MemberCard key={conn.id} member={conn} hideThreeDots={true} />
                                             ))}
                                         </div>
                                     ) : followersSearch ? (

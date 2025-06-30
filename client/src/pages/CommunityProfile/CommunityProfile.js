@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     FaCalendarAlt,
     FaConciergeBell,
-    FaEdit,
     FaEnvelope,
     FaEye,
     FaHourglassHalf,
@@ -18,14 +17,14 @@ import {
     FaUserCheck,
     FaUserPlus,
     FaUsers,
-    FaUserTie,
+    FaUserTie
 } from "react-icons/fa";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import InviteMembersModal from "../../components/InviteModal/InviteModal";
-import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import ListCard from "../../components/Profile/ListCard"; // adjust path if needed
-import "./CommunityProfile.css";
+import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import { API_URL } from "../../utils/constants";
+import "./CommunityProfile.css";
 
 const IconText = ({ icon, text, className = "" }) => (
     <div className={`icon-text-item ${className}`}>
@@ -893,14 +892,6 @@ const CommunityProfile = () => {
             return (
                 <div className="community-owner-actions">
                     <button
-                        className="btn btn-secondary"
-                        onClick={() =>
-                            navigate(`/community/${communityId}/admin`)
-                        }
-                    >
-                        <FaEdit style={{ marginRight: "8px" }} /> Admin Tools
-                    </button>
-                    <button
                         className="btn btn-primary"
                         onClick={() => {
                             setGeneratedInviteLink("");
@@ -909,7 +900,6 @@ const CommunityProfile = () => {
                             setInviteMaxUses("");
                             setIsInviteModalOpen(true);
                         }}
-                        style={{ marginLeft: "10px" }}
                     >
                         <FaUserPlus style={{ marginRight: "8px" }} /> Invite
                         Members

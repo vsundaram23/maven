@@ -3,7 +3,7 @@ import { FaComment, FaEllipsisH, FaEnvelope, FaStar } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import './MemberCard.css';
 
-const MemberCard = ({ member, hideContactActions = false }) => {
+const MemberCard = ({ member, hideContactActions = false, hideThreeDots = false }) => {
     const [imageFailed, setImageFailed] = useState(false);
     const primarySrc = member.profile_image_url || member.profile_image || member.avatarUrl;
     const fallbackUiAvatarSrc = `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -103,12 +103,14 @@ const MemberCard = ({ member, hideContactActions = false }) => {
                             <FaEnvelope />
                         </a>
                     )}
-                    <button
-                        className="member-action-icon-button"
-                        title="More options"
-                    >
-                        <FaEllipsisH />
-                    </button>
+                    {!hideThreeDots && (
+                        <button
+                            className="member-action-icon-button"
+                            title="More options"
+                        >
+                            <FaEllipsisH />
+                        </button>
+                    )}
                 </div>
             )}
         </div>
