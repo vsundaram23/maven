@@ -44,17 +44,31 @@ function getFillerImage(title) {
     return `https://placehold.co/200x200?text=${encoded}`;
 }
 
-const ListCard = ({ list }) => {
+const ListCard = ({ list, showOwner }) => {
     // Handler to open the list detail page in a new tab
     const openListInNewTab = (e) => {
-        // Prevent default navigation if triggered by keyboard or click
         if (e) e.stopPropagation();
         window.open(`/lists/${list.id}`, "_blank", "noopener,noreferrer");
     };
 
-    // Use cover image if present, else fallback with title
     const coverImageSrc =
         getCoverImageSrc(list.cover_image) || getFillerImage(list.title);
+
+    // Defensive: handle missing fields gracefully
+    const description =
+        typeof list.description === "string" &&
+        list.description.trim().length > 0
+            ? list.description
+            : "No description provided.";
+
+    const recCount =
+        typeof list.recommendationCount === "number"
+            ? list.recommendationCount
+            : Array.isArray(list.recommendations)
+            ? list.recommendations.length
+            : 0;
+
+    const ownerName = list.owner_name || "Owner";
 
     return (
         <div
@@ -162,7 +176,7 @@ const ListCard = ({ list }) => {
                     }}
                     title={list.description}
                 >
-                    {list.description}
+                    {description}
                 </p>
                 <div
                     className="profile-list-card-meta"
@@ -177,15 +191,25 @@ const ListCard = ({ list }) => {
                     }}
                 >
                     <span>
-                        {list.recommendationCount ??
-                            list.recommendations?.length ??
-                            0}{" "}
-                        recs
+                        {recCount} rec{recCount === 1 ? "" : "s"}
                     </span>
                     <span>
                         {new Date(list.created_at).toLocaleDateString()}
                     </span>
                 </div>
+                {/* Owner name in a new row below metadata */}
+                {showOwner && (
+                    <div
+                        style={{
+                            fontSize: "0.85rem",
+                            color: "#1a365d",
+                            marginTop: "0.3rem",
+                            fontWeight: 500,
+                        }}
+                    >
+                        Shared by {ownerName}
+                    </div>
+                )}
             </div>
         </div>
     );

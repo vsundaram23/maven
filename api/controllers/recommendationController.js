@@ -975,9 +975,14 @@ const getList = async (req, res) => {
             }
         }
 
-        const listRes = await pool.query(`SELECT * FROM lists WHERE id = $1`, [
-            listId,
-        ]);
+        // Join users to get owner name and profile image
+        const listRes = await pool.query(
+            `SELECT l.*, u.preferred_name AS owner_name, u.profile_image_url AS owner_profile_image
+             FROM lists l
+             JOIN users u ON l.user_id = u.id
+             WHERE l.id = $1`,
+            [listId]
+        );
         if (listRes.rows.length === 0) {
             return res
                 .status(404)

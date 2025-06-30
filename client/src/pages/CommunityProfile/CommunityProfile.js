@@ -25,9 +25,7 @@ import QuoteModal from "../../components/QuoteModal/QuoteModal";
 import RecommendationCard from "../../components/RecommendationCard/RecommendationCard";
 import SuccessModal from "../../components/SuccessModal/SuccessModal";
 import "./CommunityProfile.css";
-
-const API_URL = "https://api.seanag-recommendations.org:8080"
-// const API_URL = "http://localhost:3000";
+import { API_URL } from "../../utils/constants";
 
 const IconText = ({ icon, text, className = "" }) => (
     <div className={`icon-text-item ${className}`}>
