@@ -534,7 +534,19 @@ const getCommunityRecommendations = async (
               rec_user.profile_image AS recommender_profile_image_url,
               rec_user.phone_number AS recommender_phone,
               COALESCE(sp.num_likes, 0) AS num_likes,
-              EXISTS (SELECT 1 FROM recommendation_likes rl WHERE rl.recommendation_id = sp.id AND rl.user_id = $1) AS "currentUserLiked"
+              EXISTS (SELECT 1 FROM recommendation_likes rl WHERE rl.recommendation_id = sp.id AND rl.user_id = $1) AS "currentUserLiked",
+              sp.average_rating,
+              sp.total_reviews,
+              COALESCE(
+                  (SELECT json_agg(json_build_object('name', T.name))
+                      FROM (
+                          SELECT DISTINCT u.name
+                          FROM public.reviews r
+                          JOIN public.users u ON r.user_id = u.id
+                          WHERE r.provider_id = sp.id AND u.name IS NOT NULL
+                      ) AS T
+                  ), '[]'::json
+              ) AS users_who_reviewed
           FROM service_providers sp
           JOIN community_shares cs ON sp.id = cs.service_provider_id
           JOIN users rec_user ON sp.recommended_by = rec_user.id

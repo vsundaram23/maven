@@ -240,8 +240,9 @@
   flex-direction: column;
   gap: 1.75rem;
   padding: 0;
-  margin: 0;
+  margin: 0 auto;
   list-style: none;
+  max-width: 850px;
 }
 .community-profile-page-wrapper .provider-card {
   background: #fff;

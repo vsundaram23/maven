@@ -12,7 +12,6 @@ import {
     FaSignInAlt,
     FaSms,
     FaStar,
-    FaThumbsUp,
     FaTools,
     FaUserCheck,
     FaUserPlus,
@@ -23,8 +22,12 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import InviteMembersModal from "../../components/InviteModal/InviteModal";
 import ListCard from "../../components/Profile/ListCard"; // adjust path if needed
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
-import { API_URL } from "../../utils/constants";
+import RecommendationCard from "../../components/RecommendationCard/RecommendationCard";
+import SuccessModal from "../../components/SuccessModal/SuccessModal";
 import "./CommunityProfile.css";
+
+const API_URL = "https://api.seanag-recommendations.org:8080"
+// const API_URL = "http://localhost:3000";
 
 const IconText = ({ icon, text, className = "" }) => (
     <div className={`icon-text-item ${className}`}>
@@ -148,162 +151,6 @@ const MemberCard = ({ member }) => {
     );
 };
 
-const CommunityRecStarRating = ({ rating }) => {
-    const numRating = parseFloat(rating) || 0;
-    const fullStars = Math.floor(numRating);
-    const hasHalf = numRating - fullStars >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
-    return (
-        <div className="star-rating">
-            {[...Array(fullStars)].map((_, i) => (
-                <FaStar key={`full-${i}`} className="filled" />
-            ))}
-            {hasHalf && (
-                <FaStar key={`half-${Date.now()}-sr`} className="half" />
-            )}
-            {[...Array(emptyStars)].map((_, i) => (
-                <FaStar key={`empty-${i}`} className="empty" />
-            ))}
-        </div>
-    );
-};
-
-const CommunityRecReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
-    const [rating, setRating] = useState(0);
-    const [hover, setHover] = useState(0);
-    const [review, setReview] = useState("");
-    const [tags, setTags] = useState([]);
-    const [tagInput, setTagInput] = useState("");
-    const [error, setError] = useState("");
-
-    useEffect(() => {
-        if (isOpen) {
-            setRating(0);
-            setHover(0);
-            setReview("");
-            setTags([]);
-            setTagInput("");
-            setError("");
-        }
-    }, [isOpen]);
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!rating) {
-            setError("Please select a rating");
-            return;
-        }
-        onSubmit({ rating, review, tags });
-        onClose();
-    };
-    const handleTagKeyDown = (e) => {
-        if (e.key === "Enter" || e.key === ",") {
-            e.preventDefault();
-            processTagInput();
-        }
-    };
-    const processTagInput = () => {
-        if (!tagInput.trim()) return;
-
-        // Split by comma and process each tag
-        const newTags = tagInput
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter((tag) => tag && !tags.includes(tag));
-
-        if (newTags.length > 0) {
-            setTags([...tags, ...newTags]);
-        }
-        setTagInput("");
-    };
-
-    // Handle blur event to process comma-separated tags when user leaves input
-    const handleTagInputBlur = () => {
-        if (tagInput.includes(",")) {
-            processTagInput();
-        }
-    };
-    const removeTag = (tagToRemove) =>
-        setTags(tags.filter((tag) => tag !== tagToRemove));
-    if (!isOpen || !provider) return null;
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content review-modal-content">
-                <h2>Review {provider?.business_name}</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className="rating-container">
-                        <label>
-                            Rate your experience:{" "}
-                            <span className="required">*</span>
-                        </label>
-                        <div className="stars">
-                            {[...Array(5)].map((_, index) => (
-                                <FaStar
-                                    key={index}
-                                    className={
-                                        index < (hover || rating)
-                                            ? "star active"
-                                            : "star"
-                                    }
-                                    onClick={() => setRating(index + 1)}
-                                    onMouseEnter={() => setHover(index + 1)}
-                                    onMouseLeave={() => setHover(rating)}
-                                />
-                            ))}
-                        </div>
-                        {error && <div className="error-message">{error}</div>}
-                    </div>
-                    <div className="review-input">
-                        <label>Tell us about your experience:</label>
-                        <textarea
-                            value={review}
-                            onChange={(e) => setReview(e.target.value)}
-                            placeholder="Optional: Share your thoughts..."
-                            rows={4}
-                        />
-                    </div>
-                    <div className="tag-input-group">
-                        <label>Add tags (press Enter or comma to add):</label>
-                        <input
-                            type="text"
-                            value={tagInput}
-                            onChange={(e) => setTagInput(e.target.value)}
-                            onKeyDown={handleTagKeyDown}
-                            onBlur={handleTagInputBlur}
-                            placeholder="e.g. friendly, affordable"
-                        />
-                        <div className="tag-container modal-tag-container">
-                            {tags.map((tag, idx) => (
-                                <span key={idx} className="tag-badge">
-                                    {tag}{" "}
-                                    <span
-                                        className="remove-tag"
-                                        onClick={() => removeTag(tag)}
-                                    >
-                                        ×
-                                    </span>
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="modal-buttons">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="cancel-button"
-                        >
-                            Cancel
-                        </button>
-                        <button type="submit" className="submit-button">
-                            Submit Review
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-};
-
 const CommunityProfile = () => {
     const { communityId } = useParams();
     const navigate = useNavigate();
@@ -323,7 +170,6 @@ const CommunityProfile = () => {
     const [activeTab, setActiveTab] = useState("recommendations");
 
     const [commRecsRaw, setCommRecsRaw] = useState([]);
-    const [commRecsReviewMap, setCommRecsReviewMap] = useState({});
     const [loadingCommRecs, setLoadingCommRecs] = useState(true);
     const [commRecsError, setCommRecsError] = useState(null);
     const [commRecsIsReviewModalOpen, setCommRecsIsReviewModalOpen] =
@@ -358,6 +204,14 @@ const CommunityProfile = () => {
     const [communityLists, setCommunityLists] = useState([]);
     const [loadingCommunityLists, setLoadingCommunityLists] = useState(false);
     const [communityListsError, setCommunityListsError] = useState("");
+
+    // Comment-related state
+    const [commentsMap, setCommentsMap] = useState(new Map());
+    const [isLoadingComments, setIsLoadingComments] = useState(false);
+    
+    // Success modal state for reviews
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
 
     useEffect(() => {
         if (isLoaded && user) {
@@ -402,6 +256,7 @@ const CommunityProfile = () => {
             alert("Please sign in to submit a review");
             return;
         }
+        setCommRecsIsReviewModalOpen(false);
         try {
             const response = await fetch(`${API_URL}/api/reviews`, {
                 method: "POST",
@@ -420,8 +275,9 @@ const CommunityProfile = () => {
                 const errTxt = await response.text();
                 throw new Error(errTxt || "Failed to submit review");
             }
+            setSuccessMessage("Your review has been successfully submitted!");
+            setShowSuccessModal(true);
             fetchCommunityRecommendations();
-            setCommRecsIsReviewModalOpen(false);
         } catch (err) {
             alert(`Error submitting review: ${err.message}`);
         }
@@ -531,53 +387,17 @@ const CommunityProfile = () => {
                     data.message || "Failed to fetch recommendations."
                 );
             let fetchedProviders = data.recommendations || data.providers || [];
-            const statsMap = {};
-            const allReviewsMap = {};
-            if (fetchedProviders.length > 0) {
-                await Promise.all(
-                    fetchedProviders.map(async (p) => {
-                        try {
-                            const statsRes = await fetch(
-                                `${API_URL}/api/reviews/stats/${p.id}`
-                            );
-                            statsMap[p.id] = statsRes.ok
-                                ? await statsRes.json()
-                                : { average_rating: 0, total_reviews: 0 };
-                        } catch (err) {
-                            statsMap[p.id] = {
-                                average_rating: p.average_rating || 0,
-                                total_reviews: p.total_reviews || 0,
-                            };
-                        }
-                        try {
-                            const reviewsRes = await fetch(
-                                `${API_URL}/api/reviews/${p.id}`
-                            );
-                            allReviewsMap[p.id] = reviewsRes.ok
-                                ? await reviewsRes.json()
-                                : [];
-                        } catch (err) {
-                            allReviewsMap[p.id] = [];
-                        }
-                    })
-                );
-            }
-            setCommRecsReviewMap(allReviewsMap);
-
+            
             const enriched = fetchedProviders.map((p, idx) => ({
                 ...p,
                 originalIndex: idx,
-                average_rating:
-                    parseFloat(statsMap[p.id]?.average_rating) ||
-                    parseFloat(p.average_rating) ||
-                    0,
-                total_reviews:
-                    parseInt(statsMap[p.id]?.total_reviews, 10) ||
-                    parseInt(p.total_reviews, 10) ||
-                    0,
+                average_rating: parseFloat(p.average_rating) || 0,
+                total_reviews: parseInt(p.total_reviews, 10) || 0,
+                users_who_reviewed: p.users_who_reviewed || [],
                 currentUserLiked: p.currentUserLiked || false,
                 num_likes: parseInt(p.num_likes, 10) || 0,
             }));
+
             const initialLikes = new Map();
             enriched.forEach((p) => {
                 if (p.currentUserLiked) initialLikes.set(p.id, true);
@@ -614,6 +434,51 @@ const CommunityProfile = () => {
             setLoadingCommunityLists(false);
         }
     }, [communityId]);
+
+    // Batch fetch comments for multiple recommendations
+    const fetchBatchComments = async (recommendations) => {
+        if (!recommendations || recommendations.length === 0) return;
+        
+        setIsLoadingComments(true);
+        try {
+            const serviceIds = recommendations.map(rec => rec.id).filter(Boolean);
+            
+            if (serviceIds.length === 0) return;
+
+            const response = await fetch(`${API_URL}/api/comments/batch`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ service_ids: serviceIds })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.comments) {
+                    const commentsMap = new Map();
+                    Object.entries(data.comments).forEach(([serviceId, comments]) => {
+                        commentsMap.set(serviceId, comments || []);
+                    });
+                    setCommentsMap(commentsMap);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching batch comments:', error);
+        } finally {
+            setIsLoadingComments(false);
+        }
+    };
+
+    // Handle new comment added
+    const handleCommentAdded = (serviceId, newComment) => {
+        setCommentsMap(prev => {
+            const newMap = new Map(prev);
+            const existingComments = newMap.get(serviceId) || [];
+            newMap.set(serviceId, [newComment, ...existingComments]);
+            return newMap;
+        });
+    };
 
     useEffect(() => {
         if (communityId && (currentUserId || !isSignedIn))
@@ -701,6 +566,13 @@ const CommunityProfile = () => {
             return (a.originalIndex || 0) - (b.originalIndex || 0);
         });
     }, [commRecsRaw, selectedServices, selectedCities]);
+
+    // Fetch batch comments when recommendations are loaded
+    useEffect(() => {
+        if (!loadingCommRecs && sortedAndFilteredCommRecs.length > 0) {
+            fetchBatchComments(sortedAndFilteredCommRecs);
+        }
+    }, [sortedAndFilteredCommRecs, loadingCommRecs]);
 
     const handleServiceSelection = (serviceName) => {
         setSelectedServices((prev) =>
@@ -1283,294 +1155,24 @@ const CommunityProfile = () => {
                                 </div>
                             )}
                         {sortedAndFilteredCommRecs.length > 0 && (
-                            <ul className="provider-list">
-                                {sortedAndFilteredCommRecs.map((provider) => {
-                                    const currentReviews =
-                                        commRecsReviewMap[provider.id] || [];
-                                    const displayAvgRating = (
-                                        parseFloat(provider.average_rating) || 0
-                                    ).toFixed(1);
-                                    const displayTotalReviews =
-                                        parseInt(provider.total_reviews, 10) ||
-                                        0;
-                                    const isLiked = commRecsLikedMap.get(
-                                        provider.id
-                                    );
-                                    return (
-                                        <li
-                                            key={provider.id}
-                                            className="provider-card"
-                                        >
-                                            <div className="card-header">
-                                                <h3 className="card-title">
-                                                    <Link
-                                                        to={`/provider/${provider.id}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="clickable provider-name-link"
-                                                        onClick={() =>
-                                                            localStorage.setItem(
-                                                                "selectedProvider",
-                                                                JSON.stringify(
-                                                                    provider
-                                                                )
-                                                            )
-                                                        }
-                                                    >
-                                                        {provider.business_name}
-                                                    </Link>
-                                                </h3>
-                                                <div className="badge-wrapper-with-menu">
-                                                    {(parseFloat(
-                                                        provider.average_rating
-                                                    ) || 0) >= 4.5 && (
-                                                        <span className="badge top-rated-badge">
-                                                            Top Rated
-                                                        </span>
-                                                    )}
-                                                    <div className="dropdown-wrapper">
-                                                        <button
-                                                            className="three-dots-button"
-                                                            onClick={() =>
-                                                                setCommRecsDropdownOpenForId(
-                                                                    commRecsDropdownOpenForId ===
-                                                                        provider.id
-                                                                        ? null
-                                                                        : provider.id
-                                                                )
-                                                            }
-                                                            title="Options"
-                                                        >
-                                                            ⋮
-                                                        </button>
-                                                        {commRecsDropdownOpenForId ===
-                                                            provider.id && (
-                                                            <div className="dropdown-menu">
-                                                                <button
-                                                                    className="dropdown-item"
-                                                                    onClick={() => {
-                                                                        navigator.clipboard.writeText(
-                                                                            `${window.location.origin}/provider/${provider.id}`
-                                                                        );
-                                                                        setCommRecsDropdownOpenForId(
-                                                                            null
-                                                                        );
-                                                                        setCommRecsShowLinkCopied(
-                                                                            true
-                                                                        );
-                                                                        setTimeout(
-                                                                            () =>
-                                                                                setCommRecsShowLinkCopied(
-                                                                                    false
-                                                                                ),
-                                                                            2000
-                                                                        );
-                                                                    }}
-                                                                >
-                                                                    Share this
-                                                                    Rec
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="review-summary">
-                                                <CommunityRecStarRating
-                                                    rating={
-                                                        parseFloat(
-                                                            provider.average_rating
-                                                        ) || 0
-                                                    }
-                                                />
-                                                <span className="review-score">
-                                                    {displayAvgRating}
-                                                </span>
-                                                <span className="review-count">
-                                                    ({displayTotalReviews}{" "}
-                                                    {displayTotalReviews === 1
-                                                        ? "review"
-                                                        : "reviews"}
-                                                    )
-                                                </span>
-                                                {isSignedIn && (
-                                                    <button
-                                                        className="write-review-link"
-                                                        onClick={() => {
-                                                            setCommRecsSelectedProvider(
-                                                                provider
-                                                            );
-                                                            setCommRecsIsReviewModalOpen(
-                                                                true
-                                                            );
-                                                        }}
-                                                    >
-                                                        Write a Review
-                                                    </button>
-                                                )}
-                                                <button
-                                                    className={`like-button ${
-                                                        isLiked ? "liked" : ""
-                                                    }`}
-                                                    onClick={() =>
-                                                        handleCommRecsLike(
-                                                            provider.id
-                                                        )
-                                                    }
-                                                    title={
-                                                        isLiked
-                                                            ? "Unlike"
-                                                            : "Like"
-                                                    }
-                                                    disabled={!isSignedIn}
-                                                >
-                                                    <FaThumbsUp />{" "}
-                                                    <span className="like-count">
-                                                        {provider.num_likes ||
-                                                            0}
-                                                    </span>
-                                                </button>
-                                            </div>
-
-                                            <p className="card-description">
-                                                {provider.description ||
-                                                    provider.recommender_message ||
-                                                    "No description available"}
-                                            </p>
-
-                                            <div className="tag-container">
-                                                {Array.isArray(provider.tags) &&
-                                                    provider.tags.map(
-                                                        (tag, idx) => (
-                                                            <span
-                                                                key={idx}
-                                                                className="tag-badge"
-                                                            >
-                                                                {tag}
-                                                            </span>
-                                                        )
-                                                    )}
-                                                {isSignedIn && (
-                                                    <button
-                                                        className="add-tag-button"
-                                                        onClick={() => {
-                                                            setCommRecsSelectedProvider(
-                                                                provider
-                                                            );
-                                                            setCommRecsIsReviewModalOpen(
-                                                                true
-                                                            );
-                                                        }}
-                                                        aria-label="Add or edit tags"
-                                                    >
-                                                        <FaPlusCircle />
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            {provider.recommender_name && (
-                                                <div className="recommended-row">
-                                                    <span className="recommended-label">
-                                                        Recommended by:
-                                                    </span>
-                                                    <Link
-                                                        to={`/pro/${provider.recommender_username}`}
-                                                        className="recommended-name clickable"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                    >
-                                                        {
-                                                            provider.recommender_name
-                                                        }
-                                                    </Link>
-                                                    {provider.date_of_recommendation && (
-                                                        <span className="recommendation-date">
-                                                            (
-                                                            {new Date(
-                                                                provider.date_of_recommendation
-                                                            ).toLocaleDateString(
-                                                                "en-US",
-                                                                {
-                                                                    year: "2-digit",
-                                                                    month: "numeric",
-                                                                    day: "numeric",
-                                                                }
-                                                            )}
-                                                            )
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            {currentReviews.length > 0 &&
-                                                currentReviews
-                                                    .map((r) => r.user_name)
-                                                    .filter(
-                                                        (n) =>
-                                                            n &&
-                                                            n.trim() &&
-                                                            n !==
-                                                                provider.recommender_name
-                                                    )
-                                                    .filter(
-                                                        (v, i, a) =>
-                                                            a.indexOf(v) === i
-                                                    ).length > 0 && (
-                                                    <div className="recommended-row also-used-by">
-                                                        <span className="recommended-label">
-                                                            Also used by:
-                                                        </span>
-                                                        <span className="used-by-names">
-                                                            {currentReviews
-                                                                .map(
-                                                                    (r) =>
-                                                                        r.user_name
-                                                                )
-                                                                .filter(
-                                                                    (n) =>
-                                                                        n &&
-                                                                        n.trim() &&
-                                                                        n !==
-                                                                            provider.recommender_name
-                                                                )
-                                                                .filter(
-                                                                    (v, i, a) =>
-                                                                        a.indexOf(
-                                                                            v
-                                                                        ) === i
-                                                                )
-                                                                .join(", ")}
-                                                        </span>
-                                                    </div>
-                                                )}
-
-                                            <div className="action-buttons">
-                                                {isSignedIn &&
-                                                    (provider.recommender_phone ||
-                                                        provider.recommender_email) && (
-                                                        <button
-                                                            className="secondary-button"
-                                                            onClick={() => {
-                                                                if (
-                                                                    provider.recommender_phone
-                                                                )
-                                                                    window.location.href = `sms:${provider.recommender_phone}`;
-                                                                else if (
-                                                                    provider.recommender_email
-                                                                )
-                                                                    window.location.href = `mailto:${provider.recommender_email}`;
-                                                            }}
-                                                        >
-                                                            Connect with
-                                                            Recommender
-                                                        </button>
-                                                    )}
-                                            </div>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
+                            <div className="provider-list">
+                                {sortedAndFilteredCommRecs.map((provider) => (
+                                    <RecommendationCard
+                                        key={provider.id}
+                                        rec={provider}
+                                        onWriteReview={(rec) => {
+                                            setCommRecsSelectedProvider(rec);
+                                            setCommRecsIsReviewModalOpen(true);
+                                        }}
+                                        onLike={handleCommRecsLike}
+                                        isLikedByCurrentUser={commRecsLikedMap.get(provider.id)}
+                                        loggedInUserId={currentUserId}
+                                        currentUserName={user?.firstName || user?.fullName || 'User'}
+                                        comments={commentsMap.get(String(provider.id)) || []}
+                                        onCommentAdded={handleCommentAdded}
+                                    />
+                                ))}
+                            </div>
                         )}
                         {commRecsShowLinkCopied && (
                             <div className="toast">Link copied!</div>
@@ -1616,7 +1218,7 @@ const CommunityProfile = () => {
                 )}
             </div>
             {commRecsIsReviewModalOpen && commRecsSelectedProvider && (
-                <CommunityRecReviewModal
+                <ReviewModal
                     isOpen={commRecsIsReviewModalOpen}
                     onClose={() => setCommRecsIsReviewModalOpen(false)}
                     onSubmit={handleCommRecsReviewSubmit}
@@ -1707,6 +1309,11 @@ const CommunityProfile = () => {
                 generatedLink={generatedInviteLink}
                 error={inviteGenerationError}
                 loading={inviteGenerationLoading}
+            />
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                message={successMessage}
             />
         </div>
     );
