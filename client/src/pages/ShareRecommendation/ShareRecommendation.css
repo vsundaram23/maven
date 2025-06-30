@@ -1621,3 +1621,54 @@
     border: 1px solid #e5e7eb !important;
     filter: grayscale(0.5);
 }
+
+/* Add after .list-form or at the end of the file for cover image styles */
+.cover-image-upload-section {
+    margin-bottom: 1.5rem;
+}
+.cover-image-label {
+    font-weight: 500;
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #1a365d;
+}
+.cover-image-dropzone {
+    border: 2px dashed #b3b3b3;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    background: #fafbfc;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    margin-bottom: 1rem;
+}
+.cover-image-dropzone:hover {
+    border-color: #2563eb;
+    background: #e0e7ff;
+}
+.cover-image-dropzone img {
+    max-width: 220px;
+    max-height: 140px;
+    border-radius: 0.5rem;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.cover-image-dropzone .image-preview-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.5);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.cover-image-dropzone .image-preview-remove:hover {
+    background: rgba(220, 38, 38, 0.8);
+}

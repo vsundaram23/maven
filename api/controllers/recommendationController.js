@@ -19,6 +19,15 @@ const uploadListProviders = multer({
     },
 }).any();
 
+const uploadListCover = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB max for cover image
+        files: 1,
+        fieldSize: 30 * 1024 * 1024,
+    },
+}).single("coverImage");
+
 // Add this near the top with other multer config
 const editUpload = multer({
     storage: multer.memoryStorage(),
@@ -1132,56 +1141,85 @@ const listFileUpload = async (req, res) => {
 };
 
 const createList = async (req, res) => {
-    const { title, description, providerIds, user_id, email } = req.body;
-
-    if (!title || !Array.isArray(providerIds) || providerIds.length === 0) {
-        return res.status(400).json({
-            success: false,
-            message: "Title and at least one provider are required.",
-        });
-    }
-
-    let client;
-    try {
-        client = await pool.connect();
-        await client.query("BEGIN");
-
-        // Use both Clerk ID and email to find the user
-        const userResult = await client.query(
-            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
-            [user_id, email]
-        );
-        if (userResult.rows.length === 0) {
-            await client.query("ROLLBACK");
-            return res
-                .status(404)
-                .json({ success: false, message: "User not found." });
+    uploadListCover(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({
+                success: false,
+                message: "Error uploading cover image",
+                detail: err.message,
+            });
         }
-        const creatorUserId = userResult.rows[0].id;
 
-        // Create list
-        const listId = uuidv4();
-        await client.query(
-            `INSERT INTO lists (id, title, description, user_id) VALUES ($1, $2, $3, $4)`,
-            [listId, title, description || null, creatorUserId]
-        );
+        // Use FormData for all fields
+        const { title, description, user_id, email } = req.body;
+        let providerIds = req.body.providerIds || [];
+        // If providerIds[] is sent as multiple fields, req.body.providerIds will be an array
+        if (!Array.isArray(providerIds)) {
+            providerIds = [providerIds].filter(Boolean);
+        }
 
-        // Link providers to the list
-        for (const providerId of providerIds) {
-            await client.query(
-                `INSERT INTO list_reviews (list_id, provider_id) VALUES ($1, $2)`,
-                [listId, providerId]
+        if (!title || !Array.isArray(providerIds) || providerIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Title and at least one provider are required.",
+            });
+        }
+
+        let client;
+        try {
+            client = await pool.connect();
+            await client.query("BEGIN");
+
+            // Use both Clerk ID and email to find the user
+            const userResult = await client.query(
+                "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
+                [user_id, email]
             );
-        }
+            if (userResult.rows.length === 0) {
+                await client.query("ROLLBACK");
+                return res
+                    .status(404)
+                    .json({ success: false, message: "User not found." });
+            }
+            const creatorUserId = userResult.rows[0].id;
 
-        await client.query("COMMIT");
-        res.status(201).json({ success: true, listId });
-    } catch (err) {
-        if (client) await client.query("ROLLBACK");
-        res.status(500).json({ success: false, error: err.message });
-    } finally {
-        if (client) client.release();
-    }
+            // Prepare cover image JSONB if present
+            let coverImageJson = null;
+            if (req.file) {
+                coverImageJson = {
+                    id: uuidv4(),
+                    data: req.file.buffer,
+                    contentType: req.file.mimetype,
+                    size: req.file.size,
+                    originalname: req.file.originalname,
+                    createdAt: new Date().toISOString(),
+                };
+            }
+
+            // Create list (with or without cover image)
+            const listId = uuidv4();
+            await client.query(
+                `INSERT INTO lists (id, title, description, user_id, cover_image) VALUES ($1, $2, $3, $4, $5)`,
+                [listId, title, description || null, creatorUserId, coverImageJson ? JSON.stringify(coverImageJson) : null]
+            );
+
+            // Link providers to the list
+            for (const providerId of providerIds) {
+                await client.query(
+                    `INSERT INTO list_reviews (list_id, provider_id) VALUES ($1, $2)`,
+                    [listId, providerId]
+                );
+            }
+
+            await client.query("COMMIT");
+            res.status(201).json({ success: true, listId });
+        } catch (err) {
+            if (client) await client.query("ROLLBACK");
+            res.status(500).json({ success: false, error: err.message });
+        } finally {
+            if (client) client.release();
+        }
+    });
 };
 
 module.exports = {

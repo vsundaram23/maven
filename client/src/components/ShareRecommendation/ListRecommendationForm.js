@@ -111,6 +111,9 @@ export default function ListRecommendationForm({
     const [modalListDescription, setModalListDescription] = useState("");
 
     const [isExtracting, setIsExtracting] = useState(false);
+    const [coverImage, setCoverImage] = useState(null);
+    const [coverImagePreview, setCoverImagePreview] = useState(null);
+    const coverImageInputRef = useRef(null);
 
     const fileInputRef = useRef(null);
 
@@ -464,6 +467,29 @@ export default function ListRecommendationForm({
         );
     };
 
+    const handleCoverImageChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+            setMessage("error:Only JPG, PNG, or WebP images allowed for cover image.");
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setMessage("error:Cover image must be under 5MB.");
+            return;
+        }
+        setCoverImage(file);
+        const reader = new FileReader();
+        reader.onloadend = () => setCoverImagePreview(reader.result);
+        reader.readAsDataURL(file);
+    };
+
+    const handleRemoveCoverImage = () => {
+        setCoverImage(null);
+        setCoverImagePreview(null);
+        if (coverImageInputRef.current) coverImageInputRef.current.value = "";
+    };
+
     const handleListImageSelect = (idx, event) => {
         const files = Array.from(event.target.files);
 
@@ -590,18 +616,21 @@ export default function ListRecommendationForm({
             }
 
             // 2. Create the list and link providers
+            const listFormData = new FormData();
+            listFormData.append("title", listTitle);
+            listFormData.append("description", listDescription);
+            listFormData.append("user_id", userId);
+            listFormData.append("email", userEmail);
+            providerIds.forEach((id) => listFormData.append("providerIds[]", id));
+            if (coverImage) {
+                listFormData.append("coverImage", coverImage, coverImage.name);
+            }
+
             const listRes = await fetch(
                 `${API_URL}/api/recommendations/lists`,
                 {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        title: listTitle,
-                        description: listDescription,
-                        providerIds, // <-- use providerIds, not reviewIds
-                        user_id: userId,
-                        email: userEmail,
-                    }),
+                    body: listFormData,
                 }
             );
             const listData = await listRes.json();
@@ -642,6 +671,7 @@ export default function ListRecommendationForm({
         <form onSubmit={handleSubmitList}>
             <div className="list-form">
                 <h2>Share Recommendations as a List</h2>
+                <h3>Upload a Document</h3>
                 <p>
                     You can upload a document or create a list manually. Each
                     list can contain up to 10 recommendations.
@@ -735,6 +765,7 @@ export default function ListRecommendationForm({
 
                 {/* Manual List Creation */}
                 <div className="manual-list-section">
+                    <h3>Create a List Manually</h3>
                     <label className="list-title-label">
                         List Title *
                         <input
@@ -757,6 +788,89 @@ export default function ListRecommendationForm({
                             style={{ marginBottom: "1rem" }}
                         />
                     </label>
+
+                    {/* Cover Image Dropzone */}
+                    <div className="cover-image-upload-section">
+                        <label className="cover-image-label">
+                            Cover Image (optional)
+                            <div
+                                className="cover-image-dropzone"
+                                onClick={() =>
+                                    coverImageInputRef.current &&
+                                    coverImageInputRef.current.click()
+                                }
+                                tabIndex={0}
+                                style={{
+                                    cursor: "pointer",
+                                    border: "2px dashed #b3b3b3",
+                                    borderRadius: "8px",
+                                    padding: "1.5rem",
+                                    textAlign: "center",
+                                    background: "#fafbfc",
+                                    marginBottom: "1rem",
+                                    marginTop: "1rem",
+                                }}
+                            >
+                                {coverImagePreview ? (
+                                    <div style={{ position: "relative", display: "inline-block" }}>
+                                        <img
+                                            src={coverImagePreview}
+                                            alt="Cover preview"
+                                            style={{
+                                                maxWidth: 220,
+                                                maxHeight: 140,
+                                                borderRadius: "0.5rem",
+                                                boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+                                                objectFit: "cover",
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="image-preview-remove"
+                                            style={{
+                                                position: "absolute",
+                                                top: 8,
+                                                right: 8,
+                                                background: "rgba(0,0,0,0.5)",
+                                                border: "none",
+                                                borderRadius: "50%",
+                                                width: 28,
+                                                height: 28,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                color: "white",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRemoveCoverImage();
+                                            }}
+                                        >
+                                            <XCircleIcon className="w-6 h-6" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                                        <PhotoIcon className="image-dropzone-icon" />
+                                        <span className="image-dropzone-text">
+                                            Click to upload a cover image
+                                        </span>
+                                        <span className="image-dropzone-text secondary">
+                                            JPG, PNG or WebP (max. 5MB)
+                                        </span>
+                                    </div>
+                                )}
+                                <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    style={{ display: "none" }}
+                                    ref={coverImageInputRef}
+                                    onChange={handleCoverImageChange}
+                                />
+                            </div>
+                        </label>
+                    </div>
 
                     <div className="list-recommendations-list">
                         {listRecommendations.map((rec, idx) => {
