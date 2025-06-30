@@ -471,7 +471,9 @@ export default function ListRecommendationForm({
         const file = e.target.files?.[0];
         if (!file) return;
         if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-            setMessage("error:Only JPG, PNG, or WebP images allowed for cover image.");
+            setMessage(
+                "error:Only JPG, PNG, or WebP images allowed for cover image."
+            );
             return;
         }
         if (file.size > 5 * 1024 * 1024) {
@@ -621,9 +623,26 @@ export default function ListRecommendationForm({
             listFormData.append("description", listDescription);
             listFormData.append("user_id", userId);
             listFormData.append("email", userEmail);
-            providerIds.forEach((id) => listFormData.append("providerIds[]", id));
+            listFormData.append(
+                "visibility",
+                publishScope === "Public"
+                    ? "public"
+                    : publishScope === "Entire Trust Circle"
+                    ? "connections"
+                    : publishScope === "Specific Trust Circles"
+                    ? "communities"
+                    : "connections"
+            );
+            providerIds.forEach((id) =>
+                listFormData.append("providerIds[]", id)
+            );
             if (coverImage) {
                 listFormData.append("coverImage", coverImage, coverImage.name);
+            }
+            if (publishScope === "Specific Trust Circles") {
+                selectedTrustCircles.forEach((id) =>
+                    listFormData.append("trustCircleIds[]", id)
+                );
             }
 
             const listRes = await fetch(
@@ -812,7 +831,12 @@ export default function ListRecommendationForm({
                                 }}
                             >
                                 {coverImagePreview ? (
-                                    <div style={{ position: "relative", display: "inline-block" }}>
+                                    <div
+                                        style={{
+                                            position: "relative",
+                                            display: "inline-block",
+                                        }}
+                                    >
                                         <img
                                             src={coverImagePreview}
                                             alt="Cover preview"
@@ -820,7 +844,8 @@ export default function ListRecommendationForm({
                                                 maxWidth: 220,
                                                 maxHeight: 140,
                                                 borderRadius: "0.5rem",
-                                                boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+                                                boxShadow:
+                                                    "0 2px 8px rgba(0,0,0,0.07)",
                                                 objectFit: "cover",
                                             }}
                                         />
@@ -851,7 +876,14 @@ export default function ListRecommendationForm({
                                         </button>
                                     </div>
                                 ) : (
-                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            alignItems: "center",
+                                            gap: 8,
+                                        }}
+                                    >
                                         <PhotoIcon className="image-dropzone-icon" />
                                         <span className="image-dropzone-text">
                                             Click to upload a cover image

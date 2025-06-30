@@ -1151,11 +1151,15 @@ const createList = async (req, res) => {
         }
 
         // Use FormData for all fields
-        const { title, description, user_id, email } = req.body;
+        const { title, description, user_id, email, visibility } = req.body;
         let providerIds = req.body.providerIds || [];
-        // If providerIds[] is sent as multiple fields, req.body.providerIds will be an array
+        let trustCircleIds =
+            req.body.trustCircleIds || req.body.trust_circle_ids || [];
         if (!Array.isArray(providerIds)) {
             providerIds = [providerIds].filter(Boolean);
+        }
+        if (!Array.isArray(trustCircleIds)) {
+            trustCircleIds = [trustCircleIds].filter(Boolean);
         }
 
         if (!title || !Array.isArray(providerIds) || providerIds.length === 0) {
@@ -1196,12 +1200,30 @@ const createList = async (req, res) => {
                 };
             }
 
-            // Create list (with or without cover image)
+            // Insert the list with visibility
             const listId = uuidv4();
             await client.query(
-                `INSERT INTO lists (id, title, description, user_id, cover_image) VALUES ($1, $2, $3, $4, $5)`,
-                [listId, title, description || null, creatorUserId, coverImageJson ? JSON.stringify(coverImageJson) : null]
+                `INSERT INTO lists (id, title, description, user_id, cover_image, visibility) VALUES ($1, $2, $3, $4, $5, $6)`,
+                [
+                    listId,
+                    title,
+                    description || null,
+                    creatorUserId,
+                    coverImageJson ? JSON.stringify(coverImageJson) : null,
+                    visibility || "connections",
+                ]
             );
+
+            // If visibility is 'communities', insert into list_community_shares
+            if (visibility === "communities" && trustCircleIds.length > 0) {
+                for (const communityId of trustCircleIds) {
+                    await client.query(
+                        `INSERT INTO list_community_shares (id, list_id, community_id, shared_by_user_id, shared_at)
+                         VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
+                        [uuidv4(), listId, communityId, creatorUserId]
+                    );
+                }
+            }
 
             // Link providers to the list
             for (const providerId of providerIds) {
@@ -1274,10 +1296,9 @@ const deleteList = async (req, res) => {
         }
 
         // Delete all list_reviews for this list (just the association, not the recommendations)
-        await client.query(
-            "DELETE FROM list_reviews WHERE list_id = $1",
-            [listId]
-        );
+        await client.query("DELETE FROM list_reviews WHERE list_id = $1", [
+            listId,
+        ]);
 
         // Delete the list itself
         const deletedList = await client.query(
