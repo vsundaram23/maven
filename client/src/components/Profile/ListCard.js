@@ -1,14 +1,60 @@
 import React from "react";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 
-const FILLER_IMAGE = "https://placehold.co/200x200?text=List+Preview";
+// Helper to get cover image src from JSONB
+function getCoverImageSrc(coverImage) {
+    if (!coverImage) return null;
+    try {
+        // If coverImage is a string, parse it
+        const imgObj =
+            typeof coverImage === "string"
+                ? JSON.parse(coverImage)
+                : coverImage;
+        if (!imgObj.data) return null;
+        // Handle Buffer (array) or base64 string
+        const imageData = imgObj.data?.data || imgObj.data;
+        if (Array.isArray(imageData)) {
+            const bytes = new Uint8Array(imageData);
+            const binary = bytes.reduce(
+                (acc, byte) => acc + String.fromCharCode(byte),
+                ""
+            );
+            const base64String = window.btoa(binary);
+            return `data:${imgObj.contentType};base64,${base64String}`;
+        }
+        if (typeof imageData === "string") {
+            return `data:${imgObj.contentType};base64,${imageData}`;
+        }
+        return null;
+    } catch (e) {
+        return null;
+    }
+}
+
+// Helper to generate a placeholder image with the list title
+function getFillerImage(title) {
+    // Limit title to 22 chars with ellipsis if too long
+    let displayTitle = (title || "List").trim();
+    if (displayTitle.length > 22) {
+        displayTitle = displayTitle.slice(0, 19) + "...";
+    }
+    // Encode for URL
+    const encoded = encodeURIComponent(displayTitle);
+    // Placehold.co supports custom text
+    return `https://placehold.co/200x200?text=${encoded}`;
+}
 
 const ListCard = ({ list }) => {
     // Handler to open the list detail page in a new tab
-    const handleExpand = (e) => {
-        e.stopPropagation();
+    const openListInNewTab = (e) => {
+        // Prevent default navigation if triggered by keyboard or click
+        if (e) e.stopPropagation();
         window.open(`/lists/${list.id}`, "_blank", "noopener,noreferrer");
     };
+
+    // Use cover image if present, else fallback with title
+    const coverImageSrc =
+        getCoverImageSrc(list.cover_image) || getFillerImage(list.title);
 
     return (
         <div
@@ -16,6 +62,12 @@ const ListCard = ({ list }) => {
             tabIndex={0}
             role="button"
             aria-label={`Open list ${list.title}`}
+            onClick={openListInNewTab}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    openListInNewTab(e);
+                }
+            }}
             style={{
                 width: "160px",
                 borderRadius: "1.2rem",
@@ -37,14 +89,14 @@ const ListCard = ({ list }) => {
                 style={{
                     width: "100%",
                     height: "120px",
-                    background: `url(${FILLER_IMAGE}) center center/cover no-repeat`,
+                    background: `url(${coverImageSrc}) center center/cover no-repeat`,
                     position: "relative",
                     padding: 0,
                 }}
             >
                 <button
                     className="profile-list-card-expand-btn"
-                    onClick={handleExpand}
+                    onClick={openListInNewTab}
                     style={{
                         position: "absolute",
                         top: 10,
@@ -58,6 +110,7 @@ const ListCard = ({ list }) => {
                         color: "#fff",
                     }}
                     title="Open list in new tab"
+                    tabIndex={-1}
                 >
                     <ArrowTopRightOnSquareIcon
                         style={{ width: 18, height: 18 }}
