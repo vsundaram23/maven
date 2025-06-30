@@ -1,0 +1,122 @@
+.list-delete-btn {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    transition: background 0.15s;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.07);
+}
+.list-delete-btn:hover,
+.list-delete-btn:focus {
+    background: #b91c1c;
+    color: #fff;
+    cursor: pointer;
+}
+
+.profile-edit-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.18);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.profile-edit-modal-content {
+    background: #fff;
+    border-radius: 1rem;
+    max-width: 420px;
+    width: 96%;
+    padding: 2rem 1.5rem 1.5rem 1.5rem;
+    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.13);
+    position: relative;
+    animation: fadeInUp 0.2s;
+}
+.profile-edit-modal-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 18px;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #888;
+    cursor: pointer;
+    z-index: 2;
+}
+.profile-edit-modal-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1a365d;
+    margin-bottom: 1.2rem;
+    text-align: left;
+}
+.profile-delete-modal-body {
+    padding: 0.5rem 0 0.5rem 0;
+}
+.profile-delete-modal-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 0.5rem;
+    padding: 1rem 1rem 1rem 1rem;
+    margin-bottom: 1.2rem;
+    color: #b91c1c;
+}
+.profile-delete-modal-warning .warning-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+.profile-edit-modal-message.error {
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 0.5rem;
+    padding: 0.7rem 1rem;
+    margin-bottom: 1rem;
+    font-weight: 500;
+    font-size: 0.96rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.profile-edit-modal-button-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.7rem;
+    margin-top: 1.2rem;
+}
+.profile-edit-modal-btn {
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.4rem;
+    padding: 0.5rem 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.15s;
+}
+.profile-edit-modal-btn.cancel-btn {
+    background: #e5e7eb;
+    color: #222;
+}
+.profile-edit-modal-btn.cancel-btn:hover,
+.profile-edit-modal-btn.cancel-btn:focus {
+    background: #cbd5e1;
+}
+.profile-edit-modal-btn.delete-btn {
+    background: #dc2626;
+    color: #fff;
+}
+.profile-edit-modal-btn.delete-btn:hover,
+.profile-edit-modal-btn.delete-btn:focus {
+    background: #b91c1c;
+    color: #fff;
+}

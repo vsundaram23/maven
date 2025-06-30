@@ -7,6 +7,7 @@ router.get("/lists", recommendationController.getUserLists);
 router.get("/lists/:listId", recommendationController.getList);
 router.post("/list-file-upload", recommendationController.listFileUpload);
 router.post("/lists", recommendationController.createList);
+router.delete("/lists/:listId", recommendationController.deleteList);
 
 router.post("/", recommendationController.createRecommendation);
 router.get("/", recommendationController.getAllRecommendations);

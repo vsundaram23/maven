@@ -1,21 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import {
+    ArrowLeftIcon,
+    TrashIcon,
+    ArrowPathIcon,
+    XCircleIcon,
+} from "@heroicons/react/24/outline";
 import { API_URL } from "../../utils/constants";
 import ProfileRecommendationCard from "../../components/Profile/ProfileRecommendationCard";
-import { useUser } from "@clerk/clerk-react"; // or your auth provider
+import { useUser } from "@clerk/clerk-react";
+import "./ListDetail.css";
 
 const ListDetail = () => {
     const { listId } = useParams();
     const navigate = useNavigate();
-    const { user } = useUser(); // get user from context/provider
+    const { user } = useUser();
     const [list, setList] = useState(null);
     const [recommendations, setRecommendations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState("");
 
     useEffect(() => {
-        if (!user) return; // Wait for user to load
+        if (!user) return;
         const fetchListAndRecs = async () => {
             setLoading(true);
             setError("");
@@ -41,6 +50,40 @@ const ListDetail = () => {
         };
         fetchListAndRecs();
     }, [listId, user]);
+
+    // Delete list
+    const handleDeleteList = async () => {
+        setIsDeleting(true);
+        setDeleteError("");
+        try {
+            const res = await fetch(
+                `${API_URL}/api/recommendations/lists/${listId}`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        user_id: user.id,
+                        email:
+                            user.primaryEmailAddress?.emailAddress ||
+                            user.emailAddresses?.[0]?.emailAddress ||
+                            "",
+                    }),
+                }
+            );
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || "Failed to delete list");
+            }
+            setShowDeleteModal(false);
+            navigate("/profile");
+        } catch (err) {
+            setDeleteError(err.message || "Could not delete list.");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     return (
         <div
@@ -81,7 +124,12 @@ const ListDetail = () => {
                     <div className="profile-error-banner">{error}</div>
                 ) : (
                     <>
-                        <div style={{ marginBottom: "2rem" }}>
+                        <div
+                            style={{
+                                marginBottom: "2rem",
+                                position: "relative",
+                            }}
+                        >
                             <h1
                                 style={{
                                     fontSize: "2rem",
@@ -114,6 +162,25 @@ const ListDetail = () => {
                                     recommendations.length}{" "}
                                 recs
                             </div>
+                            {/* Delete button */}
+                            <button
+                                className="btn btn-danger list-delete-btn"
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 6,
+                                    position: "absolute",
+                                    top: 0,
+                                    right: 0,
+                                    fontWeight: 600,
+                                    fontSize: "1rem",
+                                    padding: "0.4rem 1.1rem",
+                                }}
+                                onClick={() => setShowDeleteModal(true)}
+                            >
+                                <TrashIcon style={{ width: 18, height: 18 }} />
+                                Delete List
+                            </button>
                         </div>
                         {recommendations.length === 0 ? (
                             <div>No recommendations in this list.</div>
@@ -123,12 +190,71 @@ const ListDetail = () => {
                                     <ProfileRecommendationCard
                                         key={rec.id}
                                         rec={rec}
-                                        // You may want to pass user, onEdit, etc. if needed
                                     />
                                 ))}
                             </ul>
                         )}
                     </>
+                )}
+
+                {/* Delete Modal */}
+                {showDeleteModal && (
+                    <div className="profile-edit-modal-overlay">
+                        <div className="profile-edit-modal-content">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="profile-edit-modal-close-btn"
+                            >
+                                &times;
+                            </button>
+                            <h2 className="profile-edit-modal-title">
+                                Delete List
+                            </h2>
+                            <div className="profile-delete-modal-body">
+                                <div className="profile-delete-modal-warning">
+                                    <TrashIcon className="warning-icon" />
+                                    <p>
+                                        Are you sure you want to delete this
+                                        list? This action cannot be undone.
+                                    </p>
+                                </div>
+                                {deleteError && (
+                                    <div className="profile-edit-modal-message error">
+                                        <XCircleIcon />
+                                        <span>{deleteError}</span>
+                                    </div>
+                                )}
+                                <div className="profile-edit-modal-button-row">
+                                    <button
+                                        className="profile-edit-modal-btn cancel-btn"
+                                        onClick={() =>
+                                            setShowDeleteModal(false)
+                                        }
+                                        disabled={isDeleting}
+                                    >
+                                        <XCircleIcon /> Cancel
+                                    </button>
+                                    <button
+                                        className="profile-edit-modal-btn delete-btn"
+                                        onClick={handleDeleteList}
+                                        disabled={isDeleting}
+                                    >
+                                        {isDeleting ? (
+                                            <>
+                                                <ArrowPathIcon className="animate-spin" />
+                                                Deleting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <TrashIcon />
+                                                Delete
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

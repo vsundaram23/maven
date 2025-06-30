@@ -1222,6 +1222,87 @@ const createList = async (req, res) => {
     });
 };
 
+const deleteList = async (req, res) => {
+    const listId = req.params.listId;
+    const { user_id: clerkUserId, email: userEmail } = req.body;
+
+    if (!clerkUserId || !userEmail) {
+        return res.status(401).json({
+            success: false,
+            message: "User authentication details (ID and email) required.",
+        });
+    }
+
+    let client;
+    try {
+        client = await pool.connect();
+        await client.query("BEGIN");
+
+        // Verify user exists and get internal user ID
+        const userResult = await client.query(
+            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
+            [clerkUserId, userEmail]
+        );
+        if (userResult.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res.status(404).json({
+                success: false,
+                message: "User not found.",
+            });
+        }
+        const userId = userResult.rows[0].id;
+
+        // Get list details and verify ownership
+        const listRes = await client.query(
+            "SELECT * FROM lists WHERE id = $1",
+            [listId]
+        );
+        if (listRes.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res.status(404).json({
+                success: false,
+                message: "List not found.",
+            });
+        }
+        const list = listRes.rows[0];
+        if (list.user_id !== userId) {
+            await client.query("ROLLBACK");
+            return res.status(403).json({
+                success: false,
+                message: "Only the list owner can delete this list.",
+            });
+        }
+
+        // Delete all list_reviews for this list (just the association, not the recommendations)
+        await client.query(
+            "DELETE FROM list_reviews WHERE list_id = $1",
+            [listId]
+        );
+
+        // Delete the list itself
+        const deletedList = await client.query(
+            "DELETE FROM lists WHERE id = $1 RETURNING *",
+            [listId]
+        );
+
+        await client.query("COMMIT");
+        res.json({
+            success: true,
+            message: "List and associations deleted successfully",
+            deletedList: deletedList.rows[0],
+        });
+    } catch (err) {
+        if (client) await client.query("ROLLBACK");
+        res.status(500).json({
+            success: false,
+            error: "Server error deleting list",
+            detail: err.message,
+        });
+    } finally {
+        if (client) client.release();
+    }
+};
+
 module.exports = {
     createRecommendation,
     addReviewToProvider,
@@ -1238,4 +1319,5 @@ module.exports = {
     getUserLists,
     listFileUpload,
     createList,
+    deleteList,
 };
