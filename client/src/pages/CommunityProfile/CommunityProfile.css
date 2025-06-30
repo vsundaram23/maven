@@ -1183,15 +1183,11 @@
     gap: 1.2rem !important;
     padding-bottom: 1.5rem !important;
     margin-bottom: 2rem !important;
-    scrollbar-width: none !important;
     padding-top: 0.5rem !important;
     padding-left: 0.5rem !important;
     padding-right: 0.5rem !important;
 }
 
-.community-profile-page-wrapper .profile-list-card-row::-webkit-scrollbar {
-    display: none !important;
-}
 
 .community-profile-page-wrapper .profile-list-card {
     min-width: 320px !important;

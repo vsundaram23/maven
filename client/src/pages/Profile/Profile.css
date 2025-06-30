@@ -3109,14 +3109,11 @@
     gap: 1.2rem;
     padding-bottom: 1.5rem;
     margin-bottom: 2rem;
-    scrollbar-width: none;
     padding-top: 0.5rem;      
     padding-left: 0.5rem;     
     padding-right: 0.5rem;
 }
-.profile-list-card-row::-webkit-scrollbar {
-    display: none; /* Chrome, Safari */
-}
+
 .profile-list-card {
     min-width: 320px;
     max-width: 340px;
