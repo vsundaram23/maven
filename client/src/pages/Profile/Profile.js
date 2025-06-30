@@ -50,8 +50,8 @@ import ProfileRecommendationCard from "../../components/Profile/ProfileRecommend
 import EditRecommendationModal from "../../components/Profile/EditRecommendationModal";
 import "./Profile.css";
 
-// const API_URL = "https://api.seanag-recommendations.org:8080";
-const API_URL = "http://localhost:3000";
+const API_URL = "https://api.seanag-recommendations.org:8080";
+// const API_URL = "http://localhost:3000";
 
 function getCroppedImg(image, crop, fileName) {
     const canvas = document.createElement("canvas");

@@ -31,6 +31,7 @@ import InvitePage from "./pages/InvitePage/InvitePage";
 import PWAInterface from './pages/PWAInterface/PWAInterface';
 import UsernameRedirector from "./pages/UsernameRedirector/UsernameRedirector";
 import ListDetail from "./pages/ListDetail/ListDetail";
+import ProfileRedirect from "./pages/Profile/ProfileRedirect";
 import "./styles/global.css";
 import "./App.css";
 
@@ -125,7 +126,7 @@ const AppWrapper = () => {
                         path="/profile"
                         element={
                             <ProtectedRoute>
-                                <Profile />
+                                <ProfileRedirect />
                             </ProtectedRoute>
                         }
                     />
