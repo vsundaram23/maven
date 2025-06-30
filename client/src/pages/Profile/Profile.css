@@ -3230,3 +3230,16 @@
     padding: 0;
     margin: 0;
 }
+
+.profile-my-rec-location-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: var(--profile-text-secondary);
+    margin: 0.25rem 0 0.75rem 0;
+}
+
+.profile-my-rec-location-info svg {
+    color: var(--profile-text-light);
+}

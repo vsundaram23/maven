@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FaPlusCircle, FaStar } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaPlusCircle, FaStar } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import CommentModal from '../CommentModal/CommentModal';
 import CommentsDisplay from '../CommentsDisplay/CommentsDisplay';
@@ -31,7 +31,8 @@ const RecommendationCard = ({
     loggedInUserId, 
     currentUserName,
     comments = [], // Comments passed as props instead of fetching individually
-    onCommentAdded // Callback when a new comment is added
+    onCommentAdded, // Callback when a new comment is added
+    hidePhotoPreview = false
 }) => {
     const providerIdForLink = rec.provider_id || rec.id;
     const displayAvgRating = (parseFloat(rec.average_rating) || 0).toFixed(1);
@@ -50,6 +51,29 @@ const RecommendationCard = ({
 
     const API_URL = 'https://api.seanag-recommendations.org:8080';
     // const API_URL = "http://localhost:3000";
+
+    const getImageSrc = (photo) => {
+        if (!photo) return null;
+        if (typeof photo === 'string') return photo;
+        if (photo.url) return photo.url;
+        if (photo.data && photo.contentType) {
+            const bufferData = photo.data.data;
+            if (!bufferData) return null;
+            try {
+                const base64String = btoa(
+                    new Uint8Array(bufferData).reduce(
+                        (data, byte) => data + String.fromCharCode(byte),
+                        ''
+                    )
+                );
+                return `data:${photo.contentType};base64,${base64String}`;
+            } catch (e) {
+                console.error("Error converting image buffer for display:", e);
+                return null;
+            }
+        }
+        return null;
+    };
 
     const shareLink = () => {
         navigator.clipboard.writeText(`${window.location.origin}/provider/${providerIdForLink}`);
@@ -212,6 +236,15 @@ const RecommendationCard = ({
                 </div>
             </div>
 
+            {(rec.city || rec.state) && (
+                <div className="public-location-info">
+                    <FaMapMarkerAlt />
+                    <span>
+                        {rec.city}{rec.city && rec.state && ', '}{rec.state}
+                    </span>
+                </div>
+            )}
+
             <div className="public-review-summary">
                 <StarRatingDisplay rating={rec.average_rating || 0} />
                 <span className="public-review-score">{displayAvgRating}</span>
@@ -234,75 +267,98 @@ const RecommendationCard = ({
                 )}
             </div>
 
-            {rec.recommender_name && (
-                <>
-                    <div className="public-recommended-row">
-                        <span className="public-recommended-label">Recommended by:</span>
-                        <Link to={`/pro/${rec.recommender_username || 'user'}`} className="public-recommended-name">{rec.recommender_name}</Link>
-                        {rec.date_of_recommendation && (
-                            <span className="public-recommendation-date">
-                                ({new Date(rec.date_of_recommendation).toLocaleDateString("en-US", { year: "2-digit", month: "numeric", day: "numeric" })})
-                            </span>
-                        )}
-                    </div>
-                    {rec.users_who_reviewed && 
-                        rec.users_who_reviewed.length > 0 &&
-                        rec.users_who_reviewed.filter(user => 
-                            user && user.name && user.name !== rec.recommender_name
-                        ).length > 0 && (
+            <div className="public-card-footer">
+                <div className="public-card-footer-content">
+                    {rec.recommender_name && (
+                        <div className="public-recommendation-details">
                             <div className="public-recommended-row">
-                                <span className="public-recommended-label">
-                                    Also used by:
-                                </span>
-                                <span className="public-used-by-names">
-                                    {rec.users_who_reviewed
-                                        .filter(user => 
-                                            user && user.name && user.name !== rec.recommender_name
-                                        )
-                                        .map(user => user.name)
-                                        .join(", ")}
-                                </span>
+                                <span className="public-recommended-label">Recommended by:</span>
+                                <Link to={`/pro/${rec.recommender_username || 'user'}`} className="public-recommended-name">{rec.recommender_name}</Link>
+                                {rec.date_of_recommendation && (
+                                    <span className="public-recommendation-date">
+                                        ({new Date(rec.date_of_recommendation).toLocaleDateString("en-US", { year: "2-digit", month: "numeric", day: "numeric" })})
+                                    </span>
+                                )}
                             </div>
-                        )}
-                </>
-            )}
-
-            {/* Bottom Action Bar */}
-            <div className="public-bottom-actions">
-                <div className="public-bottom-actions-left">
-                    <button
-                        className={`public-like-button ${isLikedByCurrentUser ? 'liked' : ''}`}
-                        onClick={() => onLike(providerIdForLink)}
-                        title={isLikedByCurrentUser ? "Unlike" : "Like"}
-                        disabled={!loggedInUserId}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" 
-                                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" 
-                                  fill={isLikedByCurrentUser ? 'currentColor' : 'none'}/>
-                        </svg>
-                        <span className="public-like-count">{rec.num_likes || 0}</span>
-                    </button>
+                            {rec.users_who_reviewed && 
+                                rec.users_who_reviewed.length > 0 &&
+                                rec.users_who_reviewed.filter(user => 
+                                    user && user.name && user.name !== rec.recommender_name
+                                ).length > 0 && (
+                                    <div className="public-recommended-row">
+                                        <span className="public-recommended-label">
+                                            Also used by:
+                                        </span>
+                                        <span className="public-used-by-names">
+                                            {rec.users_who_reviewed
+                                                .filter(user => 
+                                                    user && user.name && user.name !== rec.recommender_name
+                                                )
+                                                .map(user => user.name)
+                                                .join(", ")}
+                                        </span>
+                                    </div>
+                                )}
+                        </div>
+                    )}
                     
-                    <button
-                        className="public-comment-button"
-                        onClick={() => {
-                            if (commentCount > 0 && !loggedInUserId) {
-                                setIsCommentsDisplayOpen(true);
-                            } else if (loggedInUserId) {
-                                setShowInlineCommentForm(!showInlineCommentForm);
-                            }
-                        }}
-                        title={commentCount > 0 ? `${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}` : 'Comments'}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" 
-                                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                        {commentCount > 0 && <span className="public-comment-count">{commentCount}</span>}
-                    </button>
+                    <div className="public-bottom-actions">
+                        <div className="public-bottom-actions-left">
+                            <button
+                                className={`public-like-button ${isLikedByCurrentUser ? 'liked' : ''}`}
+                                onClick={() => onLike(providerIdForLink)}
+                                title={isLikedByCurrentUser ? "Unlike" : "Like"}
+                                disabled={!loggedInUserId}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" 
+                                        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" 
+                                        fill={isLikedByCurrentUser ? 'currentColor' : 'none'}/>
+                                </svg>
+                                <span className="public-like-count">{rec.num_likes || 0}</span>
+                            </button>
+                            
+                            <button
+                                className="public-comment-button"
+                                onClick={() => {
+                                    if (commentCount > 0 && !loggedInUserId) {
+                                        setIsCommentsDisplayOpen(true);
+                                    } else if (loggedInUserId) {
+                                        setShowInlineCommentForm(!showInlineCommentForm);
+                                    }
+                                }}
+                                title={commentCount > 0 ? `${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}` : 'Comments'}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" 
+                                        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                {commentCount > 0 && <span className="public-comment-count">{commentCount}</span>}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            {!hidePhotoPreview && rec.images && rec.images.length > 0 && (
+                <Link to={`/provider/${providerIdForLink}`} className="public-photo-preview">
+                    {rec.images.slice(0, 1).map((photo, index) => {
+                        const imageSrc = getImageSrc(photo);
+                        if (!imageSrc) return null;
+                        return (
+                            <img 
+                                key={index} 
+                                src={imageSrc} 
+                                alt={`Preview ${index + 1}`} 
+                                className="preview-image" 
+                            />
+                        );
+                    })}
+                    {rec.images.length > 1 && (
+                        <div className="more-photos-indicator">+{rec.images.length - 1}</div>
+                    )}
+                </Link>
+            )}
 
             {/* Recent Comments Section */}
             {comments.length > 0 && (

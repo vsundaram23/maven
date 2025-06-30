@@ -13,24 +13,20 @@ import {
     GlobeAltIcon,
     StarIcon as OutlineStarIcon,
     PencilSquareIcon,
-    PhoneIcon,
-    PhotoIcon,
     PlusCircleIcon,
     ShareIcon,
-    TagIcon,
     TrashIcon,
     UserCircleIcon,
     UsersIcon as UsersIconSolid,
     XCircleIcon,
-    XMarkIcon,
+    XMarkIcon
 } from "@heroicons/react/24/outline";
 import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
 import React, {
     useCallback,
     useEffect,
-    useMemo,
     useRef,
-    useState,
+    useState
 } from "react";
 import {
     FaConciergeBell,
@@ -41,13 +37,12 @@ import {
 import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Link, useNavigate } from "react-router-dom";
-import RecommendationCard from "../../components/RecommendationCard/RecommendationCard";
+import EditRecommendationModal from "../../components/Profile/EditRecommendationModal";
+import ListCard from "../../components/Profile/ListCard";
+import ProfileRecommendationCard from "../../components/Profile/ProfileRecommendationCard";
 import ReviewModal from "../../components/ReviewModal/ReviewModal";
 import ShareProfileModal from "../../components/ShareProfileModal/ShareProfileModal";
 import TrustScoreWheel from "../../components/TrustScoreWheel/TrustScoreWheel";
-import ListCard from "../../components/Profile/ListCard";
-import ProfileRecommendationCard from "../../components/Profile/ProfileRecommendationCard";
-import EditRecommendationModal from "../../components/Profile/EditRecommendationModal";
 import "./Profile.css";
 
 const API_URL = "https://api.seanag-recommendations.org:8080";
@@ -630,6 +625,16 @@ const MyRecommendationCard = ({
                     </div>
                 </div>
             </div>
+            {(rec.city || rec.state) && (
+                <div className="profile-my-rec-location-info">
+                    <FaMapMarkerAlt />
+                    <span>
+                        {rec.city}
+                        {rec.city && rec.state && ", "}
+                        {rec.state}
+                    </span>
+                </div>
+            )}
             <div className="profile-my-rec-review-summary">
                 {typeof rec.average_rating === "number" ||
                 rec.average_rating === 0 ? (

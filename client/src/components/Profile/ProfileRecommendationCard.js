@@ -1,19 +1,18 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
-import RecommendationCard from "../RecommendationCard/RecommendationCard";
-import { 
+import {
+    ArrowPathIcon,
     CalendarDaysIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    ExclamationTriangleIcon,
     PencilSquareIcon,
     ShareIcon,
     TrashIcon,
-    ChatBubbleLeftEllipsisIcon,
-    ExclamationTriangleIcon,
-    ArrowPathIcon,
-    XCircleIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon
+    XCircleIcon
 } from "@heroicons/react/24/outline";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FaStar, FaStarHalfAlt } from "react-icons/fa";
+import { Link } from "react-router-dom";
+import RecommendationCard from "../RecommendationCard/RecommendationCard";
 import "./ProfileRecommendationCard.css";
 
 // Helper: StarRatingDisplay
@@ -173,7 +172,7 @@ const ImageModal = ({ image, onClose }) => {
     );
 };
 
-import {API_URL} from "../../utils/constants"; 
+import { API_URL } from "../../utils/constants";
 
 const ProfileRecommendationCard = ({
     rec,
@@ -501,6 +500,7 @@ const ProfileRecommendationCard = ({
                         currentUserName={currentUserName}
                         comments={comments}
                         onCommentAdded={onCommentAdded}
+                        hidePhotoPreview={true}
                     />
                 </div>
 
