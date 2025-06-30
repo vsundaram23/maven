@@ -23,10 +23,9 @@ import {
 import { Link, useNavigate, useParams } from "react-router-dom";
 import InviteMembersModal from "../../components/InviteModal/InviteModal";
 import QuoteModal from "../../components/QuoteModal/QuoteModal";
+import ListCard from "../../components/Profile/ListCard"; // adjust path if needed
 import "./CommunityProfile.css";
-
-const API_URL = 'https://api.seanag-recommendations.org:8080';
-// const API_URL = "http://localhost:3000";
+import { API_URL } from "../../utils/constants";
 
 const IconText = ({ icon, text, className = "" }) => (
     <div className={`icon-text-item ${className}`}>
@@ -115,17 +114,15 @@ const MemberCard = ({ member }) => {
                             displayName
                         )}
                     </Link>
+                ) : nameParts.length > 1 ? (
+                    <>
+                        {nameParts.slice(0, -1).join(" ")}{" "}
+                        <span className="member-last-name">
+                            {nameParts.slice(-1)[0]}
+                        </span>
+                    </>
                 ) : (
-                    nameParts.length > 1 ? (
-                        <>
-                            {nameParts.slice(0, -1).join(" ")}{" "}
-                            <span className="member-last-name">
-                                {nameParts.slice(-1)[0]}
-                            </span>
-                        </>
-                    ) : (
-                        displayName
-                    )
+                    displayName
                 )}
             </div>
             <div className="member-actions">
@@ -208,13 +205,13 @@ const CommunityRecReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
     };
     const processTagInput = () => {
         if (!tagInput.trim()) return;
-        
+
         // Split by comma and process each tag
         const newTags = tagInput
-            .split(',')
-            .map(tag => tag.trim())
-            .filter(tag => tag && !tags.includes(tag));
-        
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter((tag) => tag && !tags.includes(tag));
+
         if (newTags.length > 0) {
             setTags([...tags, ...newTags]);
         }
@@ -223,7 +220,7 @@ const CommunityRecReviewModal = ({ isOpen, onClose, onSubmit, provider }) => {
 
     // Handle blur event to process comma-separated tags when user leaves input
     const handleTagInputBlur = () => {
-        if (tagInput.includes(',')) {
+        if (tagInput.includes(",")) {
             processTagInput();
         }
     };
@@ -358,6 +355,10 @@ const CommunityProfile = () => {
     const [inviteGenerationError, setInviteGenerationError] = useState("");
     const [inviteGenerationLoading, setInviteGenerationLoading] =
         useState(false);
+
+    const [communityLists, setCommunityLists] = useState([]);
+    const [loadingCommunityLists, setLoadingCommunityLists] = useState(false);
+    const [communityListsError, setCommunityListsError] = useState("");
 
     useEffect(() => {
         if (isLoaded && user) {
@@ -592,6 +593,29 @@ const CommunityProfile = () => {
         }
     }, [communityId, currentUserId, currentUserEmail]);
 
+    const fetchCommunityLists = useCallback(async () => {
+        setLoadingCommunityLists(true);
+        setCommunityListsError("");
+        try {
+            const response = await fetch(
+                `${API_URL}/api/communities/${communityId}/lists`
+            );
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(
+                    errData.message || "Failed to fetch community lists"
+                );
+            }
+            const data = await response.json();
+            setCommunityLists(data.lists || []);
+        } catch (err) {
+            setCommunityListsError(err.message);
+            setCommunityLists([]);
+        } finally {
+            setLoadingCommunityLists(false);
+        }
+    }, [communityId]);
+
     useEffect(() => {
         if (communityId && (currentUserId || !isSignedIn))
             fetchCommunityDetails();
@@ -614,6 +638,11 @@ const CommunityProfile = () => {
         currentUserEmail,
         fetchCommunityRecommendations,
     ]);
+    useEffect(() => {
+        if (activeTab === "recommendations" && communityId) {
+            fetchCommunityLists();
+        }
+    }, [activeTab, communityId, fetchCommunityLists]);
 
     const availableCities = useMemo(() => {
         if (!commRecsRaw || commRecsRaw.length === 0) return [];
@@ -657,7 +686,7 @@ const CommunityProfile = () => {
         }
 
         if (selectedCities.length > 0) {
-            list = list.filter(p => {
+            list = list.filter((p) => {
                 const city = p.city || "Other";
                 return selectedCities.includes(city);
             });
@@ -672,11 +701,7 @@ const CommunityProfile = () => {
             if (!dateA && dateB) return 1;
             return (a.originalIndex || 0) - (b.originalIndex || 0);
         });
-    }, [
-        commRecsRaw,
-        selectedServices,
-        selectedCities,
-    ]);
+    }, [commRecsRaw, selectedServices, selectedCities]);
 
     const handleServiceSelection = (serviceName) => {
         setSelectedServices((prev) =>
@@ -995,7 +1020,57 @@ const CommunityProfile = () => {
 
                 {activeTab === "recommendations" && (
                     <div className="recommendations-section appliance-services-container">
+                        {/* --- LISTS SECTION --- */}
+                        <div
+                            className="community-lists-section"
+                            style={{ marginBottom: "2.5rem" }}
+                        >
+                            <h2
+                                style={{
+                                    fontSize: "1.5rem",
+                                    fontWeight: 700,
+                                    color: "#1a365d",
+                                    marginBottom: "1rem",
+                                }}
+                            >
+                                Lists Shared With This Community
+                            </h2>
+                            {loadingCommunityLists ? (
+                                <div>Loading lists...</div>
+                            ) : communityListsError ? (
+                                <div className="profile-error-banner">
+                                    {communityListsError}
+                                </div>
+                            ) : communityLists.length === 0 ? (
+                                <div>
+                                    No lists have been shared with this
+                                    community yet.
+                                </div>
+                            ) : (
+                                <div className="profile-list-card-row">
+                                    {communityLists.map((list) => (
+                                        <ListCard
+                                            key={list.id}
+                                            list={list}
+                                            showOwner // Pass this prop to show owner info
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        {/* --- FILTERS AND INDIVIDUAL RECOMMENDATIONS BELOW --- */}
+                        <h2
+                                style={{
+                                    fontSize: "1.5rem",
+                                    fontWeight: 700,
+                                    color: "#1a365d",
+                                    marginBottom: "1rem",
+                                }}
+                            >
+                                Recommendations
+                            </h2>
                         <div className="filters-container">
+                            
                             <div className="profile-city-filter-toggle-section">
                                 <button
                                     className="profile-city-filter-toggle"
@@ -1066,7 +1141,10 @@ const CommunityProfile = () => {
                                                 >
                                                     <input
                                                         type="checkbox"
-                                                        id={`city-${cityName.replace(/\s+/g, '-')}`}
+                                                        id={`city-${cityName.replace(
+                                                            /\s+/g,
+                                                            "-"
+                                                        )}`}
                                                         name={cityName}
                                                         checked={selectedCities.includes(
                                                             cityName
@@ -1078,7 +1156,10 @@ const CommunityProfile = () => {
                                                         }
                                                     />
                                                     <label
-                                                        htmlFor={`city-${cityName.replace(/\s+/g, '-')}`}
+                                                        htmlFor={`city-${cityName.replace(
+                                                            /\s+/g,
+                                                            "-"
+                                                        )}`}
                                                         className="profile-city-checkbox-label"
                                                     >
                                                         {cityName}
@@ -1102,53 +1183,60 @@ const CommunityProfile = () => {
                                     </div>
                                 </div>
                             )}
-                            {showServiceFilter && availableServices.length > 0 && (
-                                <div className="profile-city-filter-wrapper">
-                                    <div className="profile-city-filter-checkboxes">
-                                        {availableServices.map(
-                                            ([serviceName, count]) => (
-                                                <div
-                                                    key={serviceName}
-                                                    className="profile-city-checkbox-item"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        id={`service-${serviceName.replace(/\s+/g, '-')}`}
-                                                        name={serviceName}
-                                                        checked={selectedServices.includes(
-                                                            serviceName
-                                                        )}
-                                                        onChange={() =>
-                                                            handleServiceSelection(
-                                                                serviceName
-                                                            )
-                                                        }
-                                                    />
-                                                    <label
-                                                        htmlFor={`service-${serviceName.replace(/\s+/g, '-')}`}
-                                                        className="profile-city-checkbox-label"
+                            {showServiceFilter &&
+                                availableServices.length > 0 && (
+                                    <div className="profile-city-filter-wrapper">
+                                        <div className="profile-city-filter-checkboxes">
+                                            {availableServices.map(
+                                                ([serviceName, count]) => (
+                                                    <div
+                                                        key={serviceName}
+                                                        className="profile-city-checkbox-item"
                                                     >
-                                                        {serviceName}
-                                                    </label>
-                                                    <span className="profile-city-count">
-                                                        ({count})
-                                                    </span>
-                                                </div>
-                                            )
-                                        )}
-                                        {selectedServices.length > 0 && (
-                                            <button
-                                                onClick={() =>
-                                                    setSelectedServices([])
-                                                }
-                                                className="profile-city-clear-all"
-                                            >
-                                                Clear
-                                            </button>
-                                        )}
+                                                        <input
+                                                            type="checkbox"
+                                                            id={`service-${serviceName.replace(
+                                                                /\s+/g,
+                                                                "-"
+                                                            )}`}
+                                                            name={serviceName}
+                                                            checked={selectedServices.includes(
+                                                                serviceName
+                                                            )}
+                                                            onChange={() =>
+                                                                handleServiceSelection(
+                                                                    serviceName
+                                                                )
+                                                            }
+                                                        />
+                                                        <label
+                                                            htmlFor={`service-${serviceName.replace(
+                                                                /\s+/g,
+                                                                "-"
+                                                            )}`}
+                                                            className="profile-city-checkbox-label"
+                                                        >
+                                                            {serviceName}
+                                                        </label>
+                                                        <span className="profile-city-count">
+                                                            ({count})
+                                                        </span>
+                                                    </div>
+                                                )
+                                            )}
+                                            {selectedServices.length > 0 && (
+                                                <button
+                                                    onClick={() =>
+                                                        setSelectedServices([])
+                                                    }
+                                                    className="profile-city-clear-all"
+                                                >
+                                                    Clear
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
                         </div>
                         {loadingCommRecs && (
                             <div className="loading-spinner">

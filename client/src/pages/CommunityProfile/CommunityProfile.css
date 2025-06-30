@@ -1174,3 +1174,91 @@
 .community-profile-page-wrapper .profile-city-checkbox-item {
     flex: 0 0 auto;
 }
+
+/* Ensure community lists row and cards match Profile page exactly */
+.community-profile-page-wrapper .profile-list-card-row {
+    display: flex !important;
+    overflow-x: auto !important;
+    gap: 1.2rem !important;
+    padding-bottom: 1.5rem !important;
+    margin-bottom: 2rem !important;
+    scrollbar-width: none !important;
+    padding-top: 0.5rem !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+}
+
+.community-profile-page-wrapper .profile-list-card-row::-webkit-scrollbar {
+    display: none !important;
+}
+
+.community-profile-page-wrapper .profile-list-card {
+    min-width: 320px !important;
+    max-width: 340px !important;
+    background: #fff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+    padding: 1.2rem 1.2rem 1rem 1.2rem !important;
+    cursor: pointer !important;
+    position: relative !important;
+    transition: box-shadow 0.2s, transform 0.2s !important;
+    flex-shrink: 0 !important;
+    border: 1px solid #e5e7eb !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+.community-profile-page-wrapper .profile-list-card-top {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+}
+
+.community-profile-page-wrapper .profile-list-card-info {
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
+.community-profile-page-wrapper .profile-list-card-title {
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    margin: 0 0 0.2rem 0 !important;
+    color: #1a365d !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.community-profile-page-wrapper .profile-list-card-desc {
+    font-size: 0.95rem !important;
+    color: #555 !important;
+    margin: 0 0 0.3rem 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.community-profile-page-wrapper .profile-list-card-meta {
+    font-size: 0.85rem !important;
+    color: #888 !important;
+    display: flex !important;
+    gap: 1.2rem !important;
+}
+
+.community-profile-page-wrapper .profile-list-card-owner {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-top: 8px !important;
+}
+
+.community-profile-page-wrapper .profile-list-card-owner img {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    margin-right: 6px !important;
+    border: 1px solid #e5e7eb !important;
+}

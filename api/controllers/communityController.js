@@ -399,7 +399,7 @@ const approveMembership = async (
             throw new Error("Approver not found");
         }
         const internalApproverUuid = approverRes.rows[0].id;
-        
+
         const communityCheck = await client.query(
             `SELECT created_by FROM communities WHERE id = $1`,
             [community_id]
@@ -602,71 +602,101 @@ const getCommunityServiceCategories = async (communityId) => {
 };
 
 const getUserCommunityCount = async ({ user_id, email }) => {
-  // Check if neither clerkUserId nor email is provided
-  if (!user_id && !email) {
-    console.warn(
-      "getUserCommunityCount called without clerkUserId or email. Returning 0."
-    );
-    return 0;
-  }
-
-  let client;
-  try {
-    client = await pool.connect();
-    let internalUserUuid = null;
-
-    if (user_id) {
-      // If clerkUserId is provided, fetch internal UUID using it
-      const userRes = await client.query(
-        "SELECT id FROM users WHERE clerk_id = $1",
-        [user_id]
-      );
-      if (userRes.rows.length > 0) {
-        internalUserUuid = userRes.rows[0].id;
-      } else {
+    // Check if neither clerkUserId nor email is provided
+    if (!user_id && !email) {
         console.warn(
-          `No internal user UUID found for Clerk ID: ${user_id} in getUserCommunityCount. Returning 0.`
+            "getUserCommunityCount called without clerkUserId or email. Returning 0."
         );
         return 0;
-      }
-    } else if (email) {
-      // If email is provided, fetch internal UUID using it
-      const userRes = await client.query(
-        "SELECT id FROM users WHERE email = $1",
-        [email]
-      );
-      if (userRes.rows.length > 0) {
-        internalUserUuid = userRes.rows[0].id;
-      } else {
-        console.warn(
-          `No internal user UUID found for email: ${email} in getUserCommunityCount. Returning 0.`
-        );
-        return 0;
-      }
     }
 
-    // If for some reason internalUserUuid is still null (shouldn't happen with the above checks)
-    if (!internalUserUuid) {
-      console.warn("Could not determine internal user UUID. Returning 0.");
-      return 0;
-    }
+    let client;
+    try {
+        client = await pool.connect();
+        let internalUserUuid = null;
 
-    // Now, use the obtained internalUserUuid to count community memberships
-    const result = await client.query(
-      `
+        if (user_id) {
+            // If clerkUserId is provided, fetch internal UUID using it
+            const userRes = await client.query(
+                "SELECT id FROM users WHERE clerk_id = $1",
+                [user_id]
+            );
+            if (userRes.rows.length > 0) {
+                internalUserUuid = userRes.rows[0].id;
+            } else {
+                console.warn(
+                    `No internal user UUID found for Clerk ID: ${user_id} in getUserCommunityCount. Returning 0.`
+                );
+                return 0;
+            }
+        } else if (email) {
+            // If email is provided, fetch internal UUID using it
+            const userRes = await client.query(
+                "SELECT id FROM users WHERE email = $1",
+                [email]
+            );
+            if (userRes.rows.length > 0) {
+                internalUserUuid = userRes.rows[0].id;
+            } else {
+                console.warn(
+                    `No internal user UUID found for email: ${email} in getUserCommunityCount. Returning 0.`
+                );
+                return 0;
+            }
+        }
+
+        // If for some reason internalUserUuid is still null (shouldn't happen with the above checks)
+        if (!internalUserUuid) {
+            console.warn(
+                "Could not determine internal user UUID. Returning 0."
+            );
+            return 0;
+        }
+
+        // Now, use the obtained internalUserUuid to count community memberships
+        const result = await client.query(
+            `
           SELECT COUNT(*) FROM community_memberships
           WHERE user_id = $1 AND status = 'approved'
           `,
-      [internalUserUuid]
-    );
+            [internalUserUuid]
+        );
 
-    return parseInt(result.rows[0].count, 10) || 0;
-  } catch (err) {
-    console.error("Error in getUserCommunityCount:", err.message, err.stack);
-    throw err;
-  } finally {
-    if (client) client.release();
-  }
+        return parseInt(result.rows[0].count, 10) || 0;
+    } catch (err) {
+        console.error(
+            "Error in getUserCommunityCount:",
+            err.message,
+            err.stack
+        );
+        throw err;
+    } finally {
+        if (client) client.release();
+    }
+};
+
+const getCommunityLists = async (communityId) => {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            `
+            SELECT 
+                l.*, 
+                u.name as owner_name, 
+                u.profile_image as owner_profile_image
+            FROM lists l
+            JOIN list_community_shares lcs ON l.id = lcs.list_id
+            JOIN users u ON l.user_id = u.id
+            WHERE lcs.community_id = $1
+              AND (l.visibility = 'public' OR l.visibility = 'communities')
+            ORDER BY l.created_at DESC
+            `,
+            [communityId]
+        );
+        return result.rows;
+    } finally {
+        client.release();
+    }
 };
 
 module.exports = {
@@ -682,7 +712,8 @@ module.exports = {
     getCommunityServiceCategories,
     getJoinRequestsByInternalId,
     requestToJoinCommunityByInternalId,
-    getUserCommunityCount
+    getUserCommunityCount,
+    getCommunityLists,
 };
 
 // 5/21 working version
