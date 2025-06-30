@@ -1,4 +1,4 @@
-import { useUser } from "@clerk/clerk-react";
+import { useClerk, useUser } from "@clerk/clerk-react";
 import {
     ChevronLeftIcon,
     ChevronRightIcon,
@@ -28,6 +28,7 @@ const API_URL = "https://api.seanag-recommendations.org:8080";
 
 const ProviderProfile = () => {
     const { isLoaded, isSignedIn, user } = useUser();
+    const { openSignIn } = useClerk();
     const { id } = useParams();
     const navigate = useNavigate();
     const [provider, setProvider] = useState(null);
@@ -48,13 +49,19 @@ const ProviderProfile = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [selectedImage, setSelectedImage] = useState(null);
 
+    // Helper function to check if user needs to sign in for a feature
+    const requireSignIn = () => {
+        if (!isSignedIn) {
+            openSignIn({
+                redirectUrl: window.location.href,
+            });
+            return true;
+        }
+        return false;
+    };
+
     useEffect(() => {
         if (!isLoaded) return;
-
-        if (!isSignedIn) {
-            navigate("/");
-            return;
-        }
 
         if (!id) {
             setLoadingProvider(false);
@@ -66,12 +73,21 @@ const ProviderProfile = () => {
             setLoadingProvider(true);
             setError(null);
             try {
-                const params = new URLSearchParams({
-                    user_id: user.id,
-                    email: user.primaryEmailAddress?.emailAddress,
-                });
+                let fetchUrl;
+                
+                if (isSignedIn && user) {
+                    // Use authenticated endpoint with user credentials
+                    const params = new URLSearchParams();
+                    params.append('user_id', user.id);
+                    if (user.primaryEmailAddress?.emailAddress) {
+                        params.append('email', user.primaryEmailAddress.emailAddress);
+                    }
+                    fetchUrl = `${API_URL}/api/providers/${id}?${params.toString()}`;
+                } else {
+                    // Use public endpoint for anonymous users
+                    fetchUrl = `${API_URL}/api/providers/public/${id}`;
+                }
 
-                const fetchUrl = `${API_URL}/api/providers/${id}?${params.toString()}`;
                 const res = await fetch(fetchUrl);
 
                 if (!res.ok) {
@@ -99,22 +115,30 @@ const ProviderProfile = () => {
         };
 
         fetchProvider();
-    }, [id, isLoaded, isSignedIn, user, navigate]);
+    }, [id, isLoaded, isSignedIn, user]);
 
     useEffect(() => {
-        if (!isLoaded || !isSignedIn || !id) return;
+        if (!isLoaded || !id) return;
 
         const fetchReviews = async () => {
             setLoadingReviews(true);
             try {
-                const params = new URLSearchParams({
-                    user_id: user.id,
-                    email: user.primaryEmailAddress?.emailAddress,
-                });
+                let fetchUrl;
+                
+                if (isSignedIn && user) {
+                    // Use authenticated endpoint with user credentials (if needed for user-specific data)
+                    const params = new URLSearchParams();
+                    params.append('user_id', user.id);
+                    if (user.primaryEmailAddress?.emailAddress) {
+                        params.append('email', user.primaryEmailAddress.emailAddress);
+                    }
+                    fetchUrl = `${API_URL}/api/reviews/${id}${params.toString() ? `?${params.toString()}` : ''}`;
+                } else {
+                    // Use public endpoint for anonymous users - reviews endpoint is already public
+                    fetchUrl = `${API_URL}/api/reviews/${id}`;
+                }
 
-                const res = await fetch(
-                    `${API_URL}/api/reviews/${id}?${params.toString()}`
-                );
+                const res = await fetch(fetchUrl);
                 if (!res.ok)
                     throw new Error(
                         `HTTP error! status: ${res.status} fetching reviews list`
@@ -219,16 +243,14 @@ const ProviderProfile = () => {
     };
 
     const handleBookmarkClick = () => {
+        if (requireSignIn()) return;
         setIsBookmarked(!isBookmarked);
     };
 
     const handleTabClick = (tab) => setActiveTab(tab);
 
     const handleReviewSubmit = async (reviewData) => {
-        if (!isSignedIn) {
-            navigate("/");
-            return;
-        }
+        if (requireSignIn()) return;
 
         try {
             const response = await fetch(`${API_URL}/api/reviews`, {
@@ -250,19 +272,29 @@ const ProviderProfile = () => {
             }
 
             // Refresh reviews after submission
-            const params = new URLSearchParams({
-                user_id: user.id,
-                email: user.primaryEmailAddress?.emailAddress,
-            });
-            const newReviewsRes = await fetch(
-                `${API_URL}/api/reviews/${id}?${params.toString()}`
-            );
+            let refreshUrl;
+            if (isSignedIn && user) {
+                const params = new URLSearchParams();
+                params.append('user_id', user.id);
+                if (user.primaryEmailAddress?.emailAddress) {
+                    params.append('email', user.primaryEmailAddress.emailAddress);
+                }
+                refreshUrl = `${API_URL}/api/reviews/${id}${params.toString() ? `?${params.toString()}` : ''}`;
+            } else {
+                refreshUrl = `${API_URL}/api/reviews/${id}`;
+            }
+            const newReviewsRes = await fetch(refreshUrl);
             const newReviews = await newReviewsRes.json();
             setReviews(Array.isArray(newReviews) ? newReviews : []);
         } catch (err) {
             console.error("Error submitting review:", err);
             setError(`Failed to submit review: ${err.message}`);
         }
+    };
+
+    const handleQuoteClick = () => {
+        if (requireSignIn()) return;
+        setShowQuoteModal(true);
     };
 
     const primaryRecommenderName = provider?.recommender_name;
@@ -385,7 +417,7 @@ const ProviderProfile = () => {
                             )}
                             {(provider.email || provider.phone_number) && (
                                 <button
-                                    onClick={() => setShowQuoteModal(true)}
+                                    onClick={handleQuoteClick}
                                     className="action-button"
                                 >
                                     <FaMoneyBillWave /> Get a Quote

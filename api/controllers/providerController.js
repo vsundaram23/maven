@@ -732,6 +732,85 @@ const getPublicRecommendations = async (req, res) => {
     }
 };
 
+const getPublicProviderById = async (req, res) => {
+    const { id: providerId } = req.params;
+
+    if (!providerId) {
+        return res.status(400).json({ success: false, message: "Provider ID is required." });
+    }
+
+    try {
+        const query = `
+            SELECT DISTINCT
+                sp.id,
+                sp.business_name,
+                sp.description,
+                sp.email,
+                sp.phone_number,
+                sp.tags,
+                sp.website,
+                sp.city,
+                sp.state,
+                sp.zip_code,
+                sp.service_scope,
+                sp.price_range,
+                sp.date_of_recommendation,
+                sp.num_likes,
+                sp.provider_message,
+                sp.business_contact,
+                sp.recommender_message,
+                sp.visibility,
+                sp.images,
+                sp.service_id AS recommended_service_id,
+                s.display_name AS recommended_service_name,
+                sc.name as category,
+                sp.recommended_by AS recommender_user_id,
+                rec_user.username as recommender_username,
+                rec_user.name AS recommender_name,
+                rec_user.phone_number AS recommender_phone,
+                sp.average_rating,
+                sp.total_reviews,
+                FALSE AS "currentUserLiked", -- Anonymous users haven't liked anything
+                COALESCE(
+                    (SELECT ARRAY_AGG(DISTINCT review_users.name)
+                     FROM public.reviews rev_sub
+                     LEFT JOIN public.users review_users ON rev_sub.user_id = review_users.id
+                     WHERE rev_sub.provider_id = sp.id AND review_users.name IS NOT NULL
+                    ), ARRAY[]::text[]
+                ) AS users_who_reviewed
+            FROM
+                public.service_providers sp
+            LEFT JOIN
+                public.services s ON sp.service_id = s.service_id
+            LEFT JOIN
+                public.service_categories sc ON s.category_id = sc.service_id
+            LEFT JOIN
+                public.users rec_user ON sp.recommended_by = rec_user.id
+            WHERE
+                sp.id = $1
+                AND sp.visibility = 'public'
+        `;
+
+        const result = await pool.query(query, [providerId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Provider not found or not publicly accessible" 
+            });
+        }
+
+        res.json({ success: true, provider: result.rows[0] });
+    } catch (err) {
+        console.error("Database error in getPublicProviderById:", err);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error fetching public provider", 
+            error: err.message 
+        });
+    }
+};
+
 module.exports = {
     getAllVisibleProviders,
     getProviderById,
@@ -742,7 +821,8 @@ module.exports = {
     likeRecommendation,
     simpleLikeRecommendation,
     getNewestVisibleProviders,
-    getPublicRecommendations
+    getPublicRecommendations,
+    getPublicProviderById
 };
 
 // working 5/20
