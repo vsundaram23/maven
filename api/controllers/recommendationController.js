@@ -977,7 +977,7 @@ const getList = async (req, res) => {
 
         // Join users to get owner name and profile image
         const listRes = await pool.query(
-            `SELECT l.*, u.preferred_name AS owner_name, u.profile_image_url AS owner_profile_image
+            `SELECT l.*, u.preferred_name AS owner_name
              FROM lists l
              JOIN users u ON l.user_id = u.id
              WHERE l.id = $1`,
