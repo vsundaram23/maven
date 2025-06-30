@@ -963,10 +963,17 @@ const getList = async (req, res) => {
     const { listId } = req.params;
     const { user_id: clerkUserId, email: userEmail } = req.query;
     try {
-        const creatorUserId = await getInternalUserId({
-            clerkUserId,
-            userEmail,
-        });
+        let creatorUserId = null;
+        if (clerkUserId || userEmail) {
+            try {
+                creatorUserId = await getInternalUserId({
+                    clerkUserId,
+                    userEmail,
+                });
+            } catch (e) {
+                // Not fatal for non-owners
+            }
+        }
 
         const listRes = await pool.query(`SELECT * FROM lists WHERE id = $1`, [
             listId,
@@ -978,12 +985,8 @@ const getList = async (req, res) => {
         }
         const list = listRes.rows[0];
 
-        // Only allow access if the requesting user owns the list
-        if (list.user_id !== creatorUserId) {
-            return res
-                .status(403)
-                .json({ success: false, message: "Forbidden" });
-        }
+        // Anyone can view, but add isOwner flag
+        const isOwner = creatorUserId && list.user_id === creatorUserId;
 
         const recsRes = await pool.query(
             `SELECT sp.* FROM list_reviews lr
@@ -992,7 +995,11 @@ const getList = async (req, res) => {
             [listId]
         );
 
-        res.json({ success: true, list, recommendations: recsRes.rows });
+        res.json({
+            success: true,
+            list: { ...list, isOwner },
+            recommendations: recsRes.rows,
+        });
     } catch (err) {
         if (err.message === "User not found.") {
             return res

@@ -136,6 +136,11 @@ const ListDetail = () => {
         }
     };
 
+    const isOwner = !!(
+        list &&
+        (list.isOwner || (user && list.user_id === user.id))
+    );
+
     return (
         <div
             className="profile-page-container"
@@ -213,25 +218,29 @@ const ListDetail = () => {
                                     recommendations.length}{" "}
                                 recs
                             </div>
-                            {/* Delete button */}
-                            <button
-                                className="btn btn-danger list-delete-btn"
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 6,
-                                    position: "absolute",
-                                    top: 0,
-                                    right: 0,
-                                    fontWeight: 600,
-                                    fontSize: "1rem",
-                                    padding: "0.4rem 1.1rem",
-                                }}
-                                onClick={() => setShowDeleteModal(true)}
-                            >
-                                <TrashIcon style={{ width: 18, height: 18 }} />
-                                Delete List
-                            </button>
+                            {/* Only show Delete button if owner */}
+                            {isOwner && (
+                                <button
+                                    className="btn btn-danger list-delete-btn"
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 6,
+                                        position: "absolute",
+                                        top: 0,
+                                        right: 0,
+                                        fontWeight: 600,
+                                        fontSize: "1rem",
+                                        padding: "0.4rem 1.1rem",
+                                    }}
+                                    onClick={() => setShowDeleteModal(true)}
+                                >
+                                    <TrashIcon
+                                        style={{ width: 18, height: 18 }}
+                                    />
+                                    Delete List
+                                </button>
+                            )}
                         </div>
                         {recommendations.length === 0 ? (
                             <div>No recommendations in this list.</div>
@@ -241,16 +250,26 @@ const ListDetail = () => {
                                     <ProfileRecommendationCard
                                         key={rec.id}
                                         rec={rec}
-                                        onEdit={(rec) => {
-                                            setCurrentEditingRec(rec);
-                                            setIsEditModalOpen(true);
-                                        }}
+                                        onEdit={
+                                            isOwner
+                                                ? (rec) => {
+                                                      setCurrentEditingRec(rec);
+                                                      setIsEditModalOpen(true);
+                                                  }
+                                                : undefined
+                                        }
                                         user={user}
                                         onRefreshList={fetchListAndRecs}
                                     />
                                 ))}
                             </ul>
                         )}
+                        {/* {!isOwner && (
+                            <div style={{ color: "#888", marginBottom: "1rem" }}>
+                                You do not have permission to edit or delete this
+                                list.
+                            </div>
+                        )} */}
                     </>
                 )}
 
@@ -315,7 +334,7 @@ const ListDetail = () => {
                 )}
 
                 {/* Edit Modal */}
-                {isEditModalOpen && currentEditingRec && user && (
+                {isEditModalOpen && currentEditingRec && user && isOwner && (
                     <EditRecommendationModal
                         isOpen={isEditModalOpen}
                         onClose={() => setIsEditModalOpen(false)}
