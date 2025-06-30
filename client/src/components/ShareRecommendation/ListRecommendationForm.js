@@ -519,6 +519,19 @@ export default function ListRecommendationForm({
 
     const handleSubmitList = async (e) => {
         e.preventDefault();
+
+        if (isSubmitting) return;
+
+        if (
+            publishScope === "Specific Trust Circles" &&
+            selectedTrustCircles.length === 0
+        ) {
+            setMessage(
+                "error:Please select at least one trust circle to share this list."
+            );
+            return;
+        }
+
         setIsSubmitting(true);
         setMessage("");
         setShowSuccessModal(true);
@@ -527,6 +540,15 @@ export default function ListRecommendationForm({
             // 1. Create each recommendation and collect provider IDs
             const providerIds = [];
             for (const rec of listRecommendations) {
+                if (
+                    !rec.businessName ||
+                    !rec.recommendationBlurb ||
+                    !rec.rating
+                ) {
+                    throw new Error(
+                        "Each recommendation in the list must have a Recommendation Name, Your Experience, and Your Rating."
+                    );
+                }
                 const formData = new FormData();
                 formData.append(
                     "data",
@@ -539,7 +561,10 @@ export default function ListRecommendationForm({
                         website: rec.website,
                         phone_number: rec.phoneNumber,
                         tags: rec.tags,
-                        // Add any other fields needed by your createRecommendation endpoint
+                        publish_scope: publishScope,
+                        ...(publishScope === "Specific Trust Circles" && {
+                            trust_circle_ids: selectedTrustCircles,
+                        }),
                     })
                 );
                 // Attach images if any
@@ -587,9 +612,10 @@ export default function ListRecommendationForm({
             setIsSubmitting(false);
             setMessage("success:List created successfully!");
         } catch (err) {
-            setIsSubmitting(false);
             setMessage("error:" + err.message);
             setShowSuccessModal(false);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
