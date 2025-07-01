@@ -40,7 +40,7 @@ const LikesModal = ({ isOpen, onClose, likers, isLoading, providerName, API_URL 
                       <FaUserCircle className="liker-avatar-default" />
                     )}
                     <div className="liker-info">
-                      <span className="liker-name">{liker.preferred_name || liker.name}</span>
+                      <span className="liker-name">{liker.name || liker.preferred_name}</span>
                       <span className="liker-username">@{liker.username}</span>
                     </div>
                   </Link>
