@@ -356,14 +356,32 @@
     color: #1A365D;
   }
   
-  .public-card-footer {
+  .public-card-body-wrapper {
     display: flex;
-    justify-content: space-between;
+    flex-direction: row;
     align-items: flex-start;
     gap: 16px;
-    margin-top: 0.5rem;
+    margin-top: auto;
   }
-  
+
+  .public-provider-card.without-photo .public-card-body-wrapper {
+    align-items: stretch;
+  }
+
+  .public-card-footer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* Align footer content to the bottom */
+    gap: 8px;
+    margin-top: 0;
+    min-height: 120px; /* Match photo height */
+  }
+
+  .public-provider-card.without-photo .public-card-footer {
+    min-height: auto;
+  }
+
   .public-card-footer-left {
     flex-grow: 1;
     display: flex;
@@ -432,11 +450,13 @@
   }
 
   .public-photo-preview {
-    position: absolute;
-    right: 18px;
-    bottom: 16px;
+    position: relative;
+    right: 0;
+    bottom: 0;
     width: 120px;
     height: 120px;
+    flex-shrink: 0;
+    margin-top: 0;
   }
   
   .public-photo-preview .preview-image {
@@ -915,11 +935,12 @@
   } 
 
 .public-card-footer-content {
-  padding-right: 140px; /* Space for the absolute positioned photo */
+  padding-right: 0; /* Space for the absolute positioned photo */
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-top: auto; /* Pushes content to the bottom */
+  width: 100%;
 }
 
 .public-recommendation-details {
@@ -983,11 +1004,13 @@
   }
 
   .public-photo-preview {
-    position: absolute;
-    right: 18px;
-    bottom: 16px;
+    position: relative;
+    right: 0;
+    bottom: 0;
     width: 120px;
     height: 120px;
+    flex-shrink: 0;
+    margin-top: 0;
   }
   
   .public-photo-preview .preview-image {
