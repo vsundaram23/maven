@@ -163,10 +163,18 @@
     color: #6c757d;
   }
   
+  .public-like-count {
+    cursor: pointer;
+  }
+  
+  .public-like-count:hover {
+    text-decoration: underline;
+  }
+  
   .public-write-review-link {
     background: none;
     border: none;
-    color: #1A365D;
+    color: #12264a;
     text-decoration: underline;
     font-size: 0.9rem;
     cursor: pointer;
@@ -175,6 +183,26 @@
   
   .public-write-review-link:hover {
     color: #12264a;
+  }
+  
+  .view-more-section {
+    margin-top: 0;
+  }
+
+  .public-view-more-link {
+    background: none;
+    border: none;
+    color: #6c757d;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+  }
+
+  .public-view-more-link:hover {
+    text-decoration: underline;
+    color: #1A365D;
   }
   
   /* Bottom Action Bar Buttons */

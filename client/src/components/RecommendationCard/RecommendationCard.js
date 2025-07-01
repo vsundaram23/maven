@@ -3,6 +3,7 @@ import { FaMapMarkerAlt, FaPlusCircle, FaStar } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import CommentModal from '../CommentModal/CommentModal';
 import CommentsDisplay from '../CommentsDisplay/CommentsDisplay';
+import LikesModal from '../LikesModal/LikesModal';
 import './RecommendationCard.css';
 
 const StarRatingDisplay = ({ rating }) => {
@@ -45,6 +46,9 @@ const RecommendationCard = ({
     const [inlineCommentText, setInlineCommentText] = useState('');
     const [isSubmittingInlineComment, setIsSubmittingInlineComment] = useState(false);
     const [commentsError, setCommentsError] = useState(null);
+    const [isLikesModalOpen, setIsLikesModalOpen] = useState(false);
+    const [likers, setLikers] = useState([]);
+    const [isLoadingLikers, setIsLoadingLikers] = useState(false);
     const dropdownRef = useRef(null);
     const inlineCommentRef = useRef(null);
     const textareaRef = useRef(null);
@@ -83,6 +87,31 @@ const RecommendationCard = ({
     };
 
     const commentCount = comments.length;
+
+    const handleViewLikers = async () => {
+        setIsLikesModalOpen(true);
+        setIsLoadingLikers(true);
+        try {
+            const session = await window.Clerk.session.getToken();
+            const response = await fetch(`${API_URL}/api/recommendations/${providerIdForLink}/likers`, {
+                headers: {
+                    'Authorization': `Bearer ${session}`
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setLikers(data.likers);
+            } else {
+                console.error("Failed to fetch likers");
+                setLikers([]);
+            }
+        } catch (error) {
+            console.error('Error fetching likers:', error);
+            setLikers([]);
+        } finally {
+            setIsLoadingLikers(false);
+        }
+    };
 
     // Handle comment submission from CommentModal
     const handleCommentSubmit = async ({ commentText }) => {
@@ -337,6 +366,14 @@ const RecommendationCard = ({
                             </button>
                         </div>
                     </div>
+
+                    {rec.num_likes > 0 && (
+                        <div className="view-more-section">
+                            <button className="public-view-more-link" onClick={handleViewLikers}>
+                                View likes
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -454,6 +491,14 @@ const RecommendationCard = ({
                     onCommentAdded={onCommentAdded}
                 />
             )}
+
+            <LikesModal
+                isOpen={isLikesModalOpen}
+                onClose={() => setIsLikesModalOpen(false)}
+                likers={likers}
+                isLoading={isLoadingLikers}
+                providerName={rec.business_name || "Recommendation"}
+            />
         </div>
     );
 };

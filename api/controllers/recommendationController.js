@@ -1336,6 +1336,33 @@ const deleteList = async (req, res) => {
     }
 };
 
+const getLikers = async (req, res) => {
+    const { recommendation_id } = req.params;
+  
+    if (!recommendation_id) {
+      return res.status(400).json({ error: 'recommendation_id is required' });
+    }
+  
+    try {
+      const query = `
+        SELECT u.id, u.name, u.preferred_name, u.username, (u.profile_image IS NOT NULL) as has_profile_image, rl.created_at
+        FROM users u
+        JOIN recommendation_likes rl ON u.id = rl.user_id
+        WHERE rl.recommendation_id = $1
+        ORDER BY rl.created_at DESC;
+      `;
+      const result = await pool.query(query, [recommendation_id]);
+  
+      res.status(200).json({
+        success: true,
+        likers: result.rows
+      });
+    } catch (error) {
+      console.error('Error fetching likers:', error);
+      res.status(500).json({ error: 'Failed to fetch likers' });
+    }
+  };
+
 module.exports = {
     createRecommendation,
     addReviewToProvider,
@@ -1353,4 +1380,5 @@ module.exports = {
     listFileUpload,
     createList,
     deleteList,
+    getLikers
 };

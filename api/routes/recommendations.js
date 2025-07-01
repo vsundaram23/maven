@@ -12,6 +12,7 @@ router.delete("/lists/:listId", recommendationController.deleteList);
 router.post("/", recommendationController.createRecommendation);
 router.get("/", recommendationController.getAllRecommendations);
 router.get("/:id", recommendationController.getRecommendationById);
+router.get("/:recommendation_id/likers", recommendationController.getLikers);
 router.put("/:id", recommendationController.updateRecommendation);
 router.delete("/:id", recommendationController.deleteRecommendation);
 
