@@ -23,6 +23,7 @@ const quoteRoutes = require("./routes/quotes");
 const inviteRoutes = require("./routes/invites");
 const shortcutRoutes = require("./routes/shortcut");
 const notificationRoutes = require("./routes/notifications");
+const listRoutes = require("./routes/lists");
 
 const app = express();
 
@@ -112,6 +113,7 @@ app.use("/api/quotes", quoteRoutes);
 app.use("/api/invites", inviteRoutes);
 app.use("/api/shortcut", shortcutRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/lists", listRoutes);
 
 // 500 handler
 app.use((err, req, res, next) => {
