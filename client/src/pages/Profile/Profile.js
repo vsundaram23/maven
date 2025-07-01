@@ -44,9 +44,7 @@ import ReviewModal from "../../components/ReviewModal/ReviewModal";
 import ShareProfileModal from "../../components/ShareProfileModal/ShareProfileModal";
 import TrustScoreWheel from "../../components/TrustScoreWheel/TrustScoreWheel";
 import "./Profile.css";
-
-const API_URL = "https://api.seanag-recommendations.org:8080";
-// const API_URL = "http://localhost:3000";
+import { API_URL } from "../../utils/constants";
 
 function getCroppedImg(image, crop, fileName) {
     const canvas = document.createElement("canvas");
@@ -1145,7 +1143,7 @@ const Profile = () => {
         setListsError("");
         try {
             const res = await fetch(
-                `${API_URL}/api/recommendations/lists?user_id=${
+                `${API_URL}/api/lists?user_id=${
                     user.id
                 }&email=${encodeURIComponent(
                     user.primaryEmailAddress.emailAddress
@@ -1167,7 +1165,7 @@ const Profile = () => {
     const fetchListRecommendations = async (listId) => {
         try {
             const res = await fetch(
-                `${API_URL}/api/recommendations/lists/${listId}?user_id=${
+                `${API_URL}/api/lists/${listId}?user_id=${
                     user.id
                 }&email=${encodeURIComponent(
                     user.primaryEmailAddress.emailAddress
