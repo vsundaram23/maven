@@ -498,6 +498,7 @@ const RecommendationCard = ({
                 likers={likers}
                 isLoading={isLoadingLikers}
                 providerName={rec.business_name || "Recommendation"}
+                API_URL={API_URL}
             />
         </div>
     );

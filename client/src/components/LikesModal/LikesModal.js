@@ -3,7 +3,7 @@ import { FaHeart, FaUserCircle } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import './LikesModal.css';
 
-const LikesModal = ({ isOpen, onClose, likers, isLoading, providerName }) => {
+const LikesModal = ({ isOpen, onClose, likers, isLoading, providerName, API_URL }) => {
   if (!isOpen) return null;
 
   const totalLikes = likers.length;
@@ -35,7 +35,7 @@ const LikesModal = ({ isOpen, onClose, likers, isLoading, providerName }) => {
                 <li key={liker.id}>
                   <Link to={`/pro/${liker.username}`} className="liker-item">
                     {liker.has_profile_image ? (
-                      <img src={`/api/users/${liker.id}/profile/image`} alt={liker.name} className="liker-avatar" />
+                      <img src={`${API_URL}/api/users/${liker.id}/profile/image`} alt={liker.name} className="liker-avatar" />
                     ) : (
                       <FaUserCircle className="liker-avatar-default" />
                     )}
