@@ -257,7 +257,7 @@ export default function ListRecommendationForm({
 
         try {
             const res = await fetch(
-                `${API_URL}/api/recommendations/list-file-upload`,
+                `${API_URL}/api/lists/file-upload`,
                 {
                     method: "POST",
                     body: formData,
@@ -285,7 +285,7 @@ export default function ListRecommendationForm({
         formData.append("email", userEmail);
         try {
             const res = await fetch(
-                `${API_URL}/api/recommendations/list-file-upload`,
+                `${API_URL}/api/lists/file-upload`,
                 {
                     method: "POST",
                     body: formData,
@@ -646,7 +646,7 @@ export default function ListRecommendationForm({
             }
 
             const listRes = await fetch(
-                `${API_URL}/api/recommendations/lists`,
+                `${API_URL}/api/lists`,
                 {
                     method: "POST",
                     body: listFormData,

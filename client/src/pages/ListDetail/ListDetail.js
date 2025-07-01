@@ -109,7 +109,7 @@ const ListDetail = () => {
         setLoading(true);
         setError("");
         try {
-            const url = `${API_URL}/api/recommendations/lists/${listId}?user_id=${
+            const url = `${API_URL}/api/lists/${listId}?user_id=${
                 user.id
             }&email=${encodeURIComponent(
                 user.primaryEmailAddress?.emailAddress ||
@@ -139,7 +139,7 @@ const ListDetail = () => {
         setDeleteError("");
         try {
             const res = await fetch(
-                `${API_URL}/api/recommendations/lists/${listId}`,
+                `${API_URL}/api/lists/${listId}`,
                 {
                     method: "DELETE",
                     headers: {
