@@ -5,12 +5,43 @@ import {
     TrashIcon,
     ArrowPathIcon,
     XCircleIcon,
+    PencilSquareIcon, // <-- Add this import
 } from "@heroicons/react/24/outline";
 import { API_URL } from "../../utils/constants";
 import ProfileRecommendationCard from "../../components/Profile/ProfileRecommendationCard";
 import { useUser } from "@clerk/clerk-react";
 import EditRecommendationModal from "../../components/Profile/EditRecommendationModal";
 import "./ListDetail.css";
+
+// Helper to get cover image src from JSONB
+function getCoverImageSrc(coverImage) {
+    if (!coverImage) return null;
+    try {
+        // If coverImage is a string, parse it
+        const imgObj =
+            typeof coverImage === "string"
+                ? JSON.parse(coverImage)
+                : coverImage;
+        if (!imgObj.data) return null;
+        // Handle Buffer (array) or base64 string
+        const imageData = imgObj.data?.data || imgObj.data;
+        if (Array.isArray(imageData)) {
+            const bytes = new Uint8Array(imageData);
+            const binary = bytes.reduce(
+                (acc, byte) => acc + String.fromCharCode(byte),
+                ""
+            );
+            const base64String = window.btoa(binary);
+            return `data:${imgObj.contentType};base64,${base64String}`;
+        }
+        if (typeof imageData === "string") {
+            return `data:${imgObj.contentType};base64,${imageData}`;
+        }
+        return null;
+    } catch (e) {
+        return null;
+    }
+}
 
 const ListDetail = () => {
     const { listId } = useParams();
@@ -186,16 +217,101 @@ const ListDetail = () => {
                                 position: "relative",
                             }}
                         >
-                            <h1
+                            {list?.cover_image && (
+                                <div
+                                    className="list-detail-cover-image-wrapper"
+                                    style={{ position: "relative" }}
+                                >
+                                    <img
+                                        className="list-detail-cover-image"
+                                        src={getCoverImageSrc(list.cover_image)}
+                                        alt="List cover"
+                                    />
+                                    {isOwner && (
+                                        <button
+                                            className="list-detail-edit-cover-btn"
+                                            title="Edit cover image"
+                                            style={{
+                                                position: "absolute",
+                                                top: 16,
+                                                right: 16,
+                                                background:
+                                                    "rgba(255,255,255,0.85)",
+                                                border: "none",
+                                                borderRadius: "50%",
+                                                padding: 8,
+                                                cursor: "pointer",
+                                                boxShadow:
+                                                    "0 2px 8px rgba(0,0,0,0.10)",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                transition: "background 0.2s",
+                                            }}
+                                            onClick={() => {
+                                                // TODO: Open your cover image edit modal here
+                                                alert(
+                                                    "Edit cover image (implement modal)"
+                                                );
+                                            }}
+                                        >
+                                            <PencilSquareIcon
+                                                style={{
+                                                    width: 22,
+                                                    height: 22,
+                                                    color: "#1a365d",
+                                                }}
+                                            />
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                            <div
                                 style={{
-                                    fontSize: "2rem",
-                                    fontWeight: 800,
-                                    color: "#1a365d",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: "1rem",
+                                    marginTop: "0.5rem",
                                     marginBottom: "0.5rem",
                                 }}
                             >
-                                {list.title}
-                            </h1>
+                                <h1
+                                    style={{
+                                        fontSize: "2rem",
+                                        fontWeight: 800,
+                                        color: "#1a365d",
+                                        margin: 0,
+                                        flex: 1,
+                                        lineHeight: 1.2,
+                                        wordBreak: "break-word",
+                                    }}
+                                >
+                                    {list.title}
+                                </h1>
+                                {/* Only show Delete button if owner */}
+                                {isOwner && (
+                                    <button
+                                        className="btn btn-danger list-delete-btn"
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 6,
+                                            fontWeight: 600,
+                                            fontSize: "1rem",
+                                            padding: "0.4rem 1.1rem",
+                                            marginLeft: "1rem",
+                                            whiteSpace: "nowrap",
+                                        }}
+                                        onClick={() => setShowDeleteModal(true)}
+                                    >
+                                        <TrashIcon
+                                            style={{ width: 18, height: 18 }}
+                                        />
+                                        Delete List
+                                    </button>
+                                )}
+                            </div>
                             <div
                                 style={{
                                     color: "#555",
@@ -218,29 +334,6 @@ const ListDetail = () => {
                                     recommendations.length}{" "}
                                 recs
                             </div>
-                            {/* Only show Delete button if owner */}
-                            {isOwner && (
-                                <button
-                                    className="btn btn-danger list-delete-btn"
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 6,
-                                        position: "absolute",
-                                        top: 0,
-                                        right: 0,
-                                        fontWeight: 600,
-                                        fontSize: "1rem",
-                                        padding: "0.4rem 1.1rem",
-                                    }}
-                                    onClick={() => setShowDeleteModal(true)}
-                                >
-                                    <TrashIcon
-                                        style={{ width: 18, height: 18 }}
-                                    />
-                                    Delete List
-                                </button>
-                            )}
                         </div>
                         {recommendations.length === 0 ? (
                             <div>No recommendations in this list.</div>

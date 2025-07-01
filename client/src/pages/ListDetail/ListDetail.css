@@ -120,3 +120,32 @@
     background: #b91c1c;
     color: #fff;
 }
+
+.list-detail-cover-image-wrapper {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto 1.5rem auto;
+    border-radius: 1.2rem;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    background: #f3f4f6;
+    min-height: 180px;
+    max-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.list-detail-cover-image {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    display: block;
+    border-radius: 1.2rem;
+    background: #f3f4f6;
+}
+
+.list-detail-edit-cover-btn:hover,
+.list-detail-edit-cover-btn:focus {
+    background: #e0e7ef !important;
+}
