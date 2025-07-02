@@ -304,8 +304,6 @@ async function extractTextFromFile(file) {
     }
 }
 
-
-
 async function extractRecommendationsWithGemini(text) {
     const prompt = `
 Extract up to 10 recommendations from the following text. For each, return a JSON array of objects with these fields:
@@ -375,10 +373,408 @@ const listFileUpload = async (req, res) => {
     });
 };
 
+const updateList = async (req, res) => {
+    const listId = req.params.listId;
+    const {
+        title,
+        description,
+        visibility,
+        trustCircleIds = [],
+        recommendationIds = [],
+        user_id: clerkUserId,
+        email: userEmail,
+    } = req.body;
+
+    let client;
+    try {
+        client = await pool.connect();
+        await client.query("BEGIN");
+
+        // Get user
+        const userResult = await client.query(
+            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
+            [clerkUserId, userEmail]
+        );
+        if (userResult.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found." });
+        }
+        const userId = userResult.rows[0].id;
+
+        // Get list and check ownership
+        const listRes = await client.query(
+            "SELECT * FROM lists WHERE id = $1",
+            [listId]
+        );
+        if (listRes.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res
+                .status(404)
+                .json({ success: false, message: "List not found." });
+        }
+        const list = listRes.rows[0];
+        if (list.user_id !== userId) {
+            await client.query("ROLLBACK");
+            return res
+                .status(403)
+                .json({
+                    success: false,
+                    message: "Only the list owner can edit this list.",
+                });
+        }
+
+        // Update list fields
+        await client.query(
+            "UPDATE lists SET title = $1, description = $2, visibility = $3 WHERE id = $4",
+            [title, description, visibility, listId]
+        );
+
+        // Update list_community_shares
+        await client.query(
+            "DELETE FROM list_community_shares WHERE list_id = $1",
+            [listId]
+        );
+        if (
+            (visibility === "communities" || visibility === "specific") &&
+            trustCircleIds.length > 0
+        ) {
+            for (const communityId of trustCircleIds) {
+                await client.query(
+                    `INSERT INTO list_community_shares (id, list_id, community_id, shared_by_user_id, shared_at)
+                     VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
+                    [uuidv4(), listId, communityId, userId]
+                );
+            }
+        }
+
+        // Update list_reviews (remove all, then add current)
+        await client.query("DELETE FROM list_reviews WHERE list_id = $1", [
+            listId,
+        ]);
+        for (const providerId of recommendationIds) {
+            await client.query(
+                `INSERT INTO list_reviews (list_id, provider_id) VALUES ($1, $2)`,
+                [listId, providerId]
+            );
+        }
+
+        // Now, for each recommendation, ensure its visibility is at least as open as the list
+        for (const providerId of recommendationIds) {
+            // Get rec's current visibility and communities
+            const recRes = await client.query(
+                "SELECT visibility FROM service_providers WHERE id = $1",
+                [providerId]
+            );
+            if (recRes.rows.length === 0) continue;
+            const recVis = recRes.rows[0].visibility;
+
+            // Visibility levels
+            const levels = {
+                private: 0,
+                connections: 1,
+                communities: 2,
+                public: 3,
+            };
+            const recLevel = levels[recVis] ?? 0;
+            const listLevel = levels[visibility] ?? 0;
+
+            // If list is more open than rec, update rec
+            if (listLevel > recLevel) {
+                // Update rec visibility
+                await client.query(
+                    "UPDATE service_providers SET visibility = $1 WHERE id = $2",
+                    [visibility, providerId]
+                );
+                // If communities, update community_shares
+                if (visibility === "communities" || visibility === "specific") {
+                    // Remove old shares for this rec by this user
+                    await client.query(
+                        "DELETE FROM community_shares WHERE service_provider_id = $1 AND shared_by_user_id = $2",
+                        [providerId, userId]
+                    );
+                    // Add new shares
+                    for (const communityId of trustCircleIds) {
+                        await client.query(
+                            `INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at)
+                             VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
+                            [uuidv4(), providerId, communityId, userId]
+                        );
+                    }
+                }
+            } else if (
+                recVis === "communities" &&
+                (visibility === "communities" || visibility === "specific")
+            ) {
+                // If rec is already communities, but list has additional communities, add those
+                // Get current communities for this rec
+                const recCommsRes = await client.query(
+                    "SELECT community_id FROM community_shares WHERE service_provider_id = $1 AND shared_by_user_id = $2",
+                    [providerId, userId]
+                );
+                const recComms = recCommsRes.rows.map(
+                    (row) => row.community_id
+                );
+                for (const communityId of trustCircleIds) {
+                    if (!recComms.includes(communityId)) {
+                        await client.query(
+                            `INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at)
+                             VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
+                            [uuidv4(), providerId, communityId, userId]
+                        );
+                    }
+                }
+            }
+        }
+
+        await client.query("COMMIT");
+        res.json({ success: true });
+    } catch (err) {
+        if (client) await client.query("ROLLBACK");
+        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        if (client) client.release();
+    }
+};
+
+const addRecommendationsToList = async (req, res) => {
+    const listId = req.params.listId;
+    const {
+        recommendationIds = [],
+        user_id: clerkUserId,
+        email: userEmail,
+    } = req.body;
+
+    if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: "No recommendations provided.",
+        });
+    }
+
+    let client;
+    try {
+        client = await pool.connect();
+        await client.query("BEGIN");
+
+        // Get user
+        const userResult = await client.query(
+            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
+            [clerkUserId, userEmail]
+        );
+        if (userResult.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found." });
+        }
+        const userId = userResult.rows[0].id;
+
+        // Get list and check ownership
+        const listRes = await client.query(
+            "SELECT * FROM lists WHERE id = $1",
+            [listId]
+        );
+        if (listRes.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res
+                .status(404)
+                .json({ success: false, message: "List not found." });
+        }
+        const list = listRes.rows[0];
+        if (list.user_id !== userId) {
+            await client.query("ROLLBACK");
+            return res
+                .status(403)
+                .json({
+                    success: false,
+                    message: "Only the list owner can add recommendations.",
+                });
+        }
+
+        // Get trust circles for the list if needed
+        let trustCircleIds = [];
+        if (
+            list.visibility === "communities" ||
+            list.visibility === "specific"
+        ) {
+            const commRes = await client.query(
+                "SELECT community_id FROM list_community_shares WHERE list_id = $1",
+                [listId]
+            );
+            trustCircleIds = commRes.rows.map((row) => row.community_id);
+        }
+
+        // Add recommendations to list_reviews if not already present
+        for (const providerId of recommendationIds) {
+            await client.query(
+                `INSERT INTO list_reviews (list_id, provider_id)
+                 VALUES ($1, $2)
+                 ON CONFLICT DO NOTHING`,
+                [listId, providerId]
+            );
+        }
+
+        // Now, for each recommendation, ensure its visibility is at least as open as the list
+        for (const providerId of recommendationIds) {
+            // Get rec's current visibility and communities
+            const recRes = await client.query(
+                "SELECT visibility FROM service_providers WHERE id = $1",
+                [providerId]
+            );
+            if (recRes.rows.length === 0) continue;
+            const recVis = recRes.rows[0].visibility;
+
+            // Visibility levels
+            const levels = {
+                private: 0,
+                connections: 1,
+                communities: 2,
+                public: 3,
+            };
+            const recLevel = levels[recVis] ?? 0;
+            const listLevel = levels[list.visibility] ?? 0;
+
+            // If list is more open than rec, update rec
+            if (listLevel > recLevel) {
+                // Update rec visibility
+                await client.query(
+                    "UPDATE service_providers SET visibility = $1 WHERE id = $2",
+                    [list.visibility, providerId]
+                );
+                // If communities, update community_shares
+                if (
+                    list.visibility === "communities" ||
+                    list.visibility === "specific"
+                ) {
+                    // Remove old shares for this rec by this user
+                    await client.query(
+                        "DELETE FROM community_shares WHERE service_provider_id = $1 AND shared_by_user_id = $2",
+                        [providerId, userId]
+                    );
+                    // Add new shares
+                    for (const communityId of trustCircleIds) {
+                        await client.query(
+                            `INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at)
+                             VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
+                            [uuidv4(), providerId, communityId, userId]
+                        );
+                    }
+                }
+            } else if (
+                recVis === "communities" &&
+                (list.visibility === "communities" ||
+                    list.visibility === "specific")
+            ) {
+                // If rec is already communities, but list has additional communities, add those
+                const recCommsRes = await client.query(
+                    "SELECT community_id FROM community_shares WHERE service_provider_id = $1 AND shared_by_user_id = $2",
+                    [providerId, userId]
+                );
+                const recComms = recCommsRes.rows.map(
+                    (row) => row.community_id
+                );
+                for (const communityId of trustCircleIds) {
+                    if (!recComms.includes(communityId)) {
+                        await client.query(
+                            `INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at)
+                             VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
+                            [uuidv4(), providerId, communityId, userId]
+                        );
+                    }
+                }
+            }
+        }
+
+        await client.query("COMMIT");
+        res.json({ success: true });
+    } catch (err) {
+        if (client) await client.query("ROLLBACK");
+        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        if (client) client.release();
+    }
+};
+
+const removeRecommendationsFromList = async (req, res) => {
+    const listId = req.params.listId;
+    const {
+        recommendationIds = [],
+        user_id: clerkUserId,
+        email: userEmail,
+    } = req.body;
+
+    if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: "No recommendations provided.",
+        });
+    }
+
+    let client;
+    try {
+        client = await pool.connect();
+        await client.query("BEGIN");
+
+        // Get user
+        const userResult = await client.query(
+            "SELECT id FROM users WHERE clerk_id = $1 OR email = $2",
+            [clerkUserId, userEmail]
+        );
+        if (userResult.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found." });
+        }
+        const userId = userResult.rows[0].id;
+
+        // Get list and check ownership
+        const listRes = await client.query(
+            "SELECT * FROM lists WHERE id = $1",
+            [listId]
+        );
+        if (listRes.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res
+                .status(404)
+                .json({ success: false, message: "List not found." });
+        }
+        const list = listRes.rows[0];
+        if (list.user_id !== userId) {
+            await client.query("ROLLBACK");
+            return res
+                .status(403)
+                .json({
+                    success: false,
+                    message: "Only the list owner can remove recommendations.",
+                });
+        }
+
+        // Remove recommendations from list_reviews
+        await client.query(
+            `DELETE FROM list_reviews WHERE list_id = $1 AND provider_id = ANY($2::uuid[])`,
+            [listId, recommendationIds]
+        );
+
+        await client.query("COMMIT");
+        res.json({ success: true });
+    } catch (err) {
+        if (client) await client.query("ROLLBACK");
+        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        if (client) client.release();
+    }
+};
+
 module.exports = {
     getList,
     getUserLists,
     createList,
     deleteList,
     listFileUpload,
+    updateList,
+    addRecommendationsToList,
+    removeRecommendationsFromList,
 };

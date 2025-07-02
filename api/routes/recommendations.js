@@ -9,5 +9,6 @@ router.get("/:id", recommendationController.getRecommendationById);
 router.get("/:recommendation_id/likers", recommendationController.getLikers);
 router.put("/:id", recommendationController.updateRecommendation);
 router.delete("/:id", recommendationController.deleteRecommendation);
+router.get("/user/:userId", recommendationController.getRecommendationsByUser);
 
 module.exports = router;

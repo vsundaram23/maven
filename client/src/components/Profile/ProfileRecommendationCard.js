@@ -7,7 +7,7 @@ import {
     PencilSquareIcon,
     ShareIcon,
     TrashIcon,
-    XCircleIcon
+    XCircleIcon,
 } from "@heroicons/react/24/outline";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FaStar, FaStarHalfAlt } from "react-icons/fa";
@@ -26,15 +26,25 @@ const StarRatingDisplay = ({ rating, isProfileCard }) => {
     const starClass = isProfileCard ? "profile-star-icon" : "as-star-icon";
 
     return (
-        <div className={isProfileCard ? "profile-star-display" : "as-star-rating"}>
+        <div
+            className={
+                isProfileCard ? "profile-star-display" : "as-star-rating"
+            }
+        >
             {[...Array(fullStars)].map((_, i) => (
                 <FaStar key={`full-${i}`} className={`${starClass} filled`} />
             ))}
             {hasHalf &&
                 (isProfileCard ? (
-                    <FaStarHalfAlt key="half" className={`${starClass} filled`} />
+                    <FaStarHalfAlt
+                        key="half"
+                        className={`${starClass} filled`}
+                    />
                 ) : (
-                    <FaStar key={`half-${Date.now()}-srd`} className={`${starClass} half`} />
+                    <FaStar
+                        key={`half-${Date.now()}-srd`}
+                        className={`${starClass} half`}
+                    />
                 ))}
             {[...Array(emptyStars)].map((_, i) => (
                 <FaStar key={`empty-${i}`} className={`${starClass} empty`} />
@@ -88,7 +98,8 @@ const ImageCarousel = ({ images, onImageClick }) => {
                             onClick={() =>
                                 setCurrentIndex(
                                     (prev) =>
-                                        (prev - 1 + images.length) % images.length
+                                        (prev - 1 + images.length) %
+                                        images.length
                                 )
                             }
                             className="profile-carousel-btn prev"
@@ -113,7 +124,9 @@ const ImageCarousel = ({ images, onImageClick }) => {
                     {images.map((_, idx) => (
                         <button
                             key={idx}
-                            className={`profile-carousel-dot ${idx === currentIndex ? "active" : ""}`}
+                            className={`profile-carousel-dot ${
+                                idx === currentIndex ? "active" : ""
+                            }`}
                             onClick={() => setCurrentIndex(idx)}
                         />
                     ))}
@@ -184,6 +197,10 @@ const ProfileRecommendationCard = ({
     onCommentAdded,
     currentUserName,
     onWriteReview,
+    showDeleteCheckbox = false,
+    checked = false,
+    onCheckboxChange,
+    disableActions = false,
 }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -399,8 +416,26 @@ const ProfileRecommendationCard = ({
 
     return (
         <li className="profile-recommendation-card-wrapper">
-            <div className="profile-my-rec-card">
+            <div
+                className="profile-my-rec-card"
+                style={{ opacity: disableActions ? 0.7 : 1 }}
+            >
                 <div className="profile-my-rec-card-header">
+                    {showDeleteCheckbox && (
+                        <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={onCheckboxChange}
+                            style={{
+                                marginRight: "1rem",
+                                width: "1.3em",
+                                height: "1.3em",
+                                accentColor: "#1a365d",
+                                borderRadius: "50%",
+                                cursor: "pointer",
+                            }}
+                        />
+                    )}
                     <h2 className="profile-my-rec-card-title">
                         <Link
                             to={`/provider/${rec.provider_id || rec.id}`}
@@ -412,17 +447,21 @@ const ProfileRecommendationCard = ({
                                     id: rec.id,
                                     provider_id: rec.provider_id,
                                     business_name: rec.business_name,
-                                    recommender_message: rec.recommender_message,
+                                    recommender_message:
+                                        rec.recommender_message,
                                     rating: rec.rating,
                                     average_rating: rec.average_rating,
                                     total_reviews: rec.total_reviews,
                                     tags: rec.tags,
-                                    provider_contact_name: rec.provider_contact_name,
+                                    provider_contact_name:
+                                        rec.provider_contact_name,
                                     website: rec.website,
                                     phone_number: rec.phone_number,
                                     city: rec.city,
-                                    recommended_service_name: rec.recommended_service_name,
-                                    date_of_recommendation: rec.date_of_recommendation,
+                                    recommended_service_name:
+                                        rec.recommended_service_name,
+                                    date_of_recommendation:
+                                        rec.date_of_recommendation,
                                     created_at: rec.created_at,
                                 };
                                 localStorage.setItem(

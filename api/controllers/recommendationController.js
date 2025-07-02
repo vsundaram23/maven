@@ -348,6 +348,10 @@ const getAllRecommendations = async (req, res) => {
     }
 };
 
+
+
+
+
 const getRecommendationById = async (req, res) => {
     try {
         const query = `
@@ -986,6 +990,34 @@ const getLikers = async (req, res) => {
     }
   };
 
+const getRecommendationsByUser = async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const userResult = await pool.query(
+            "SELECT id FROM users WHERE clerk_id = $1 OR email = $1",
+            [userId]
+        );
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found.",
+            });
+        }
+        const internalUserId = userResult.rows[0].id;
+        const recs = await pool.query(
+            `SELECT * FROM service_providers WHERE recommended_by = $1 ORDER BY created_at DESC`,
+            [internalUserId]
+        );
+        res.json({ success: true, recommendations: recs.rows });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch recommendations.",
+            detail: err.message,
+        });
+    }
+};
+
 module.exports = {
     createRecommendation,
     addReviewToProvider,
@@ -998,5 +1030,6 @@ module.exports = {
     getReviewStats,
     getReviewsForProvider,
     deleteRecommendation,
-    getLikers
+    getLikers,
+    getRecommendationsByUser
 };

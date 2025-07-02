@@ -127,7 +127,7 @@
     margin: 0 auto 1.5rem auto;
     border-radius: 1.2rem;
     overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
     background: #f3f4f6;
     min-height: 180px;
     max-height: 260px;
@@ -148,4 +148,98 @@
 .list-detail-edit-cover-btn:hover,
 .list-detail-edit-cover-btn:focus {
     background: #e0e7ef !important;
+}
+
+.list-detail-edit-list-btn:hover,
+.list-detail-edit-list-btn:focus {
+    background: #e0e7ef;
+}
+
+.list-add-recs-section {
+    background: #f8fafc;
+    border-radius: 1rem;
+    padding: 1.2rem 1.5rem 1.5rem 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+.list-add-recs-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a365d;
+    margin-bottom: 0.7rem;
+}
+.list-add-recs-search-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.7rem;
+}
+.list-add-recs-search {
+    flex: 1;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.6rem;
+    font-size: 1rem;
+    background: #fff;
+    color: #222;
+}
+.list-add-recs-list {
+    max-height: 180px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.7rem;
+    background: #f9fafb;
+    padding: 0.7rem 0.8rem;
+}
+.list-add-recs-checkbox-label {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    font-weight: 400;
+    color: #222;
+    gap: 0.5rem;
+    cursor: pointer;
+    margin-bottom: 0.3rem;
+    user-select: none;
+}
+.list-add-recs-checkbox-label input[type="checkbox"] {
+    accent-color: #2563eb;
+    width: 1.1em;
+    height: 1.1em;
+    margin-right: 0.3em;
+}
+.list-add-recs-checkbox-label.in-list {
+    color: #888;
+    opacity: 0.7;
+}
+.list-add-recs-badge {
+    background: #e0e7ef;
+    color: #1a365d;
+    font-size: 0.85em;
+    border-radius: 0.5em;
+    padding: 0.1em 0.6em;
+    margin-left: 0.7em;
+    font-weight: 600;
+}
+.list-add-recs-btn {
+    background: #2563eb;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    border-radius: 0.7rem;
+    padding: 0.6rem 1.5rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.list-add-recs-btn:disabled {
+    background: #cbd5e1;
+    color: #888;
+    cursor: not-allowed;
+}
+.list-add-recs-empty {
+    color: #888;
+    font-size: 1rem;
+    padding: 0.7rem 0;
 }

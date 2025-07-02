@@ -1,0 +1,250 @@
+.edit-list-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(30, 41, 59, 0.25);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.edit-list-modal-content {
+    background: #fff;
+    border-radius: 1.2rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 2rem 2.5rem 2rem 2.5rem;
+    max-width: 480px;
+    width: 100%;
+    position: relative;
+    animation: fadeIn 0.2s;
+}
+
+.edit-list-modal-close-btn {
+    position: absolute;
+    top: 18px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #1a365d;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.edit-list-modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a365d;
+    margin-bottom: 1.2rem;
+    text-align: left;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(30px);}
+    to { opacity: 1; transform: translateY(0);}
+}
+
+.edit-list-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(30, 41, 59, 0.25);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.edit-list-modal-content {
+    background: #fff;
+    border-radius: 1.2rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 2rem 2.5rem 2rem 2.5rem;
+    max-width: 480px;
+    width: 100%;
+    position: relative;
+    animation: fadeIn 0.2s;
+    max-height: 80vh;
+    overflow-y: auto;
+    min-height: unset;
+}
+
+.edit-list-modal-close-btn {
+    position: absolute;
+    top: 18px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #1a365d;
+    cursor: pointer;
+    z-index: 2;
+    transition: color 0.15s;
+}
+.edit-list-modal-close-btn:hover,
+.edit-list-modal-close-btn:focus {
+    color: #dc2626;
+}
+
+.edit-list-modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a365d;
+    margin-bottom: 1.2rem;
+    text-align: left;
+}
+
+.edit-list-label {
+    display: block;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a365d;
+    margin-bottom: 0.5rem;
+    margin-top: 1.1rem;
+}
+
+.edit-list-input,
+.edit-list-select,
+.edit-list-textarea {
+    width: 100%;
+    padding: 0.55rem 0.9rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.6rem;
+    font-size: 1rem;
+    margin-top: 0.3rem;
+    margin-bottom: 0.7rem;
+    background: #f8fafc;
+    color: #222;
+    transition: border 0.15s;
+    outline: none;
+    resize: none;
+}
+.edit-list-input:focus,
+.edit-list-select:focus,
+.edit-list-textarea:focus {
+    border: 1.5px solid #2563eb;
+    background: #fff;
+}
+
+.edit-list-textarea {
+    min-height: 70px;
+    max-height: 180px;
+}
+
+.edit-list-trust-circles {
+    margin-bottom: 0.7rem;
+}
+.edit-list-trust-circles-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.2rem;
+    margin-top: 0.4rem;
+}
+.edit-list-checkbox-label {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    font-weight: 400;
+    color: #222;
+    gap: 0.5rem;
+    cursor: pointer;
+    margin-bottom: 0.3rem;
+    user-select: none;
+}
+.edit-list-checkbox-label input[type="checkbox"] {
+    accent-color: #2563eb;
+    width: 1.1em;
+    height: 1.1em;
+    margin-right: 0.3em;
+}
+
+.edit-list-recommendations-list {
+    max-height: 160px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.7rem;
+    background: #f9fafb;
+    padding: 0.7rem 0.8rem;
+    margin-bottom: 1.1rem;
+    margin-top: 0.3rem;
+}
+
+.edit-list-error {
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.8rem;
+    margin: 0.7rem 0 0.7rem 0;
+    font-size: 0.97rem;
+}
+
+.edit-list-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.edit-list-modal-save-btn {
+    background: #2563eb;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    border-radius: 0.7rem;
+    padding: 0.6rem 1.5rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.edit-list-modal-save-btn:hover,
+.edit-list-modal-save-btn:focus {
+    background: #1d4ed8;
+}
+
+.edit-list-modal-cancel-btn {
+    background: #f3f4f6;
+    color: #1a365d;
+    font-weight: 500;
+    font-size: 1rem;
+    border: none;
+    border-radius: 0.7rem;
+    padding: 0.6rem 1.5rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.edit-list-modal-cancel-btn:hover,
+.edit-list-modal-cancel-btn:focus {
+    background: #e5e7eb;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(30px);}
+    to { opacity: 1; transform: translateY(0);}
+}
+
+.edit-list-spinner-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60px;
+}
+
+.edit-list-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid #dbeafe;
+    border-top: 3px solid #2563eb;
+    border-radius: 50%;
+    animation: editListSpin 0.8s linear infinite;
+}
+
+@keyframes editListSpin {
+    0% { transform: rotate(0deg);}
+    100% { transform: rotate(360deg);}
+}
