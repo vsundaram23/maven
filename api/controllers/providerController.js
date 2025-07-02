@@ -461,6 +461,44 @@ const getRecommendationsByTargetUser = async (req, res) => {
     }
 };
 
+const executeFtsQuery = async (CteString, baseParams, ftsInputString, userState = null) => {
+    if (!ftsInputString || ftsInputString.trim().length === 0) {
+        return [];
+    }
+
+    let localityCondition = '';
+    const queryParams = [...baseParams, ftsInputString];
+    
+    const ftsMatchCondition = `sp.search_vector @@ to_tsquery('english', $${baseParams.length + 1})`;
+
+    if (userState) {
+        const stateParamIndex = baseParams.length + 2;
+        localityCondition = `AND (sp.service_scope = 'remote' OR (sp.service_scope = 'local' AND sp.state = $${stateParamIndex}))`;
+        queryParams.push(userState);
+    }
+
+    const ftsQuery = `
+        ${CteString}
+        SELECT 
+            sp.*,
+            s.display_name AS recommended_service_name,
+            sc.name as category,
+            ts_rank_cd(sp.search_vector, to_tsquery('english', $${baseParams.length + 1})) as rank
+        FROM "VisibleProviderIDs" vp
+        JOIN public.service_providers sp ON vp.id = sp.id
+        LEFT JOIN public.services s ON sp.service_id = s.service_id
+        LEFT JOIN public.service_categories sc ON s.category_id = sc.service_id
+        WHERE ${ftsMatchCondition}
+        ${localityCondition}
+        ORDER BY rank DESC
+        LIMIT 10;
+    `;
+
+    const result = await pool.query(ftsQuery, queryParams);
+    return result.rows;
+};
+
+
 const searchVisibleProviders = async (req, res) => {
     const { q } = req.query;
     const clerkUserId = req.query.user_id;
@@ -1164,44 +1202,6 @@ module.exports = {
 //         res.status(500).json({ success: false, error: "Failed to search providers", message: error.message });
 //     }
 // };
-
-// const executeFtsQuery = async (CteString, baseParams, ftsInputString, userState = null) => {
-//     if (!ftsInputString || ftsInputString.trim().length === 0) {
-//         return [];
-//     }
-
-//     let localityCondition = '';
-//     const queryParams = [...baseParams, ftsInputString];
-    
-//     const ftsMatchCondition = `sp.search_vector @@ to_tsquery('english', $${baseParams.length + 1})`;
-
-//     if (userState) {
-//         const stateParamIndex = baseParams.length + 2;
-//         localityCondition = `AND (sp.service_scope = 'remote' OR (sp.service_scope = 'local' AND sp.state = $${stateParamIndex}))`;
-//         queryParams.push(userState);
-//     }
-
-//     const ftsQuery = `
-//         ${CteString}
-//         SELECT 
-//             sp.*,
-//             s.display_name AS recommended_service_name,
-//             sc.name as category,
-//             ts_rank_cd(sp.search_vector, to_tsquery('english', $${baseParams.length + 1})) as rank
-//         FROM "VisibleProviderIDs" vp
-//         JOIN public.service_providers sp ON vp.id = sp.id
-//         LEFT JOIN public.services s ON sp.service_id = s.service_id
-//         LEFT JOIN public.service_categories sc ON s.category_id = sc.service_id
-//         WHERE ${ftsMatchCondition}
-//         ${localityCondition}
-//         ORDER BY rank DESC
-//         LIMIT 10;
-//     `;
-
-//     const result = await pool.query(ftsQuery, queryParams);
-//     return result.rows;
-// };
-
 
 // const executeFtsQuery = async (baseQuery, baseParams, ftsInputString, userState = null) => {
 //     if (!ftsInputString || ftsInputString.trim().length === 0) {
