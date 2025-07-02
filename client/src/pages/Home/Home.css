@@ -1474,6 +1474,17 @@ body {
   font-size: 1.2rem;
 }
 
+.public-recs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 2rem;
+}
+
+.public-recs-header .section-title {
+  margin-bottom: 0;
+}
+
 .leaderboard {
   display: flex;
   flex-direction: column;
@@ -1750,6 +1761,16 @@ body {
 
   .metric-content {
     min-height: 3.5rem;
+  }
+
+  .public-recs-header {
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .public-recs-header .section-title {
+    font-size: 1.2rem;
   }
 }
 

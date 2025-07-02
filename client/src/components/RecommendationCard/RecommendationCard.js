@@ -370,8 +370,8 @@ const RecommendationCard = ({
 
                         {rec.num_likes > 0 && (
                             <div className="view-more-section">
-                                <button className="public-view-more-link" onClick={handleViewLikers}>
-                                    View likes
+                                <button className="public-view-more-link" onClick={handleViewLikers} disabled={!loggedInUserId}>
+                                    See who liked it!
                                 </button>
                             </div>
                         )}
