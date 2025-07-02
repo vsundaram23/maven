@@ -15,6 +15,8 @@ import { useUser } from "@clerk/clerk-react";
 import EditRecommendationModal from "../../components/Profile/EditRecommendationModal";
 import EditListModal from "../../components/EditListModal/EditListModal";
 import AddToListModal from "../../components/AddToListModal/AddToListModal"; // <-- Add this import
+import ReviewModal from "../../components/ReviewModal/ReviewModal";
+import SuccessModal from "../../components/SuccessModal/SuccessModal";
 import "./ListDetail.css";
 
 // Helper to get cover image src from JSONB
@@ -398,6 +400,129 @@ const ListDetail = () => {
             document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    const [selectedProvider, setSelectedProvider] = useState(null);
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [commentsMap, setCommentsMap] = useState(new Map());
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
+    const [likedRecommendations, setLikedRecommendations] = useState(new Set());
+
+    const handleCommentAdded = (providerId, newComment) => {
+        setCommentsMap((prev) => {
+            const newMap = new Map(prev);
+            const existingComments = newMap.get(providerId) || [];
+            newMap.set(providerId, [newComment, ...existingComments]);
+            return newMap;
+        });
+    };
+
+    // Like handler (mimics ApplianceServices.js)
+    const handleLike = async (providerId) => {
+        if (!user?.id || !user?.primaryEmailAddress?.emailAddress) {
+            alert("Please log in to like/unlike a recommendation.");
+            return;
+        }
+
+        const recToUpdate = recommendations.find((r) => r.id === providerId);
+        if (!recToUpdate) return;
+
+        // Optimistic update
+        const newCurrentUserLikedState = !recToUpdate.currentUserLiked;
+        const newNumLikes = newCurrentUserLikedState
+            ? (recToUpdate.num_likes || 0) + 1
+            : Math.max(0, (recToUpdate.num_likes || 1) - 1);
+
+        setRecommendations((prev) =>
+            prev.map((r) =>
+                r.id === providerId
+                    ? {
+                          ...r,
+                          num_likes: newNumLikes,
+                          currentUserLiked: newCurrentUserLikedState,
+                      }
+                    : r
+            )
+        );
+
+        setLikedRecommendations((prev) => {
+            const newSet = new Set(prev);
+            if (newCurrentUserLikedState) newSet.add(providerId);
+            else newSet.delete(providerId);
+            return newSet;
+        });
+
+        try {
+            const response = await fetch(
+                `${API_URL}/api/providers/${providerId}/like`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        userId: user.id,
+                        userEmail: user.primaryEmailAddress?.emailAddress,
+                    }),
+                }
+            );
+            if (!response.ok) {
+                throw new Error("Failed to update like status.");
+            }
+            const result = await response.json();
+            setRecommendations((prev) =>
+                prev.map((r) =>
+                    r.id === providerId
+                        ? {
+                              ...r,
+                              num_likes: parseInt(result.num_likes, 10) || 0,
+                              currentUserLiked: result.currentUserLiked,
+                          }
+                        : r
+                )
+            );
+            setLikedRecommendations((prev) => {
+                const newSet = new Set(prev);
+                if (result.currentUserLiked) newSet.add(providerId);
+                else newSet.delete(providerId);
+                return newSet;
+            });
+        } catch (error) {
+            alert(`Failed to update like status: ${error.message}`);
+            // Optionally, revert optimistic update here
+        }
+    };
+
+    // Review submit handler (mimics ApplianceServices.js)
+    const handleReviewSubmit = async (reviewData) => {
+        if (!user?.id || !selectedProvider) {
+            alert("Please sign in to submit a review");
+            return;
+        }
+        setIsReviewModalOpen(false);
+        try {
+            const response = await fetch(`${API_URL}/api/reviews`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    provider_id: selectedProvider.id,
+                    provider_email: selectedProvider.email || "",
+                    user_id: user.id,
+                    email: user.primaryEmailAddress?.emailAddress,
+                    rating: reviewData.rating,
+                    content: reviewData.review,
+                    tags: reviewData.tags,
+                }),
+            });
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(errText || "Failed to submit review");
+            }
+            setSuccessMessage("Your review has been successfully submitted!");
+            setShowSuccessModal(true);
+            await fetchListAndRecs();
+        } catch (err) {
+            alert(`Error submitting review: ${err.message}`);
+        }
+    };
+
     return (
         <div
             className="profile-page-container"
@@ -656,14 +781,23 @@ const ListDetail = () => {
                                         <RecommendationCard
                                             key={rec.id}
                                             rec={rec}
-                                            // You may want to pass these props or adjust as needed:
-                                            onWriteReview={() => {}}
-                                            onLike={() => {}}
-                                            isLikedByCurrentUser={false}
+                                            onWriteReview={() => {
+                                                setSelectedProvider(rec);
+                                                setIsReviewModalOpen(true);
+                                            }}
+                                            onLike={() => handleLike(rec.id)}
+                                            isLikedByCurrentUser={
+                                                rec.currentUserLiked ||
+                                                likedRecommendations.has(rec.id)
+                                            }
                                             loggedInUserId={user?.id}
                                             currentUserName={user?.firstName}
-                                            comments={rec.comments || []}
-                                            onCommentAdded={() => {}}
+                                            comments={
+                                                commentsMap.get(
+                                                    String(rec.id)
+                                                ) || []
+                                            }
+                                            onCommentAdded={handleCommentAdded}
                                         />
                                     )
                                 )}
@@ -911,6 +1045,19 @@ const ListDetail = () => {
                     )}
                 </div>
             )}
+            {isReviewModalOpen && selectedProvider && (
+                <ReviewModal
+                    isOpen={isReviewModalOpen}
+                    onClose={() => setIsReviewModalOpen(false)}
+                    onSubmit={handleReviewSubmit}
+                    provider={selectedProvider}
+                />
+            )}
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                message={successMessage}
+            />
         </div>
     );
 };

@@ -1,9 +1,7 @@
 import { useUser } from "@clerk/clerk-react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-// IMPORTANT: keep this in sync with other API URL declarations
-const API_URL = "https://api.seanag-recommendations.org:8080";
+import { API_URL } from "../../utils/constants";
 
 // A lightweight component that simply resolves the current user's preferred
 // username (as exposed by the backend) then performs a client-side redirect
