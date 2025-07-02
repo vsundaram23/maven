@@ -336,7 +336,7 @@
   .nav-links .add-recommendation-button.styled-button,
   .nav-links .login-button {
       margin-left: 0; /* Override specific margin if any */
-      justify-content: center; /* Center text in buttons */
+      justify-content: flex-start; /* Center text in buttons */
   }
 
 
