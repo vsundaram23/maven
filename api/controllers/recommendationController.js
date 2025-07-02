@@ -247,6 +247,209 @@ const createRecommendation = async (req, res) => {
     });
 };
 
+const createRecommendationWithUuid = async (req, res) => {
+    upload(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({
+                success: false,
+                message: "Error uploading images",
+                detail: err.message,
+            });
+        }
+
+        let jsonData;
+        try {
+            jsonData = JSON.parse(req.body.data);
+        } catch (error) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid request data format",
+                detail: error.message,
+            });
+        }
+
+        const {
+            business_name,
+            recommender_message,
+            rating,
+            recommended_by, // <-- UUID passed directly
+            provider_contact_name,
+            category,
+            subcategory,
+            website,
+            phone_number,
+            tags,
+            publish_scope,
+            trust_circle_ids,
+            email,
+        } = jsonData;
+
+        // Validation
+        if (!business_name?.trim() || !recommender_message?.trim() || !rating) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Missing required fields: Service Provider Name, Your Experience, and Rating are required.",
+            });
+        }
+
+        // Process images
+        const processedImages = (req.files || []).map((file) => ({
+            id: uuidv4(),
+            data: file.buffer,
+            contentType: file.mimetype,
+            size: file.size,
+            createdAt: new Date().toISOString(),
+        }));
+
+        let client;
+        try {
+            client = await pool.connect();
+            await client.query("BEGIN");
+
+            // Use the UUID directly, check if user exists
+            const userResult = await client.query(
+                "SELECT id FROM users WHERE id = $1",
+                [recommended_by]
+            );
+            if (userResult.rows.length === 0) {
+                await client.query("ROLLBACK");
+                return res.status(404).json({
+                    success: false,
+                    message: "Recommending user not found.",
+                });
+            }
+            const recommenderUserId = userResult.rows[0].id;
+
+            let visibility_status = "private";
+            if (publish_scope === "Public") {
+                visibility_status = "public";
+            } else if (publish_scope === "Full Trust Circle") {
+                visibility_status = "connections";
+            } else if (publish_scope === "Specific Trust Circles") {
+                visibility_status = "communities";
+            }
+
+            const newProviderId = uuidv4();
+            const actualDateOfRecommendation = new Date();
+
+            const providerInsertQuery = `
+      INSERT INTO service_providers (
+        id, business_name, description, category_id, service_id, recommended_by, date_of_recommendation,
+        email, phone_number, website, tags, city, state, zip_code, service_scope, price_range,
+        business_contact, provider_message, recommender_message, visibility, num_likes, notes, price_paid,
+        created_at, updated_at, images, initial_rating
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 0, $21, $22, $23, $24, $25, $26
+      ) RETURNING id;
+    `;
+
+            const providerValues = [
+                newProviderId,
+                business_name,
+                null,
+                PENDING_CATEGORY_PK_ID,
+                PENDING_SERVICE_PK_ID,
+                recommenderUserId,
+                actualDateOfRecommendation,
+                toNull(email),
+                toNull(phone_number),
+                toNull(website),
+                tags || [],
+                null,
+                null,
+                null,
+                null,
+                null,
+                toNull(provider_contact_name),
+                null,
+                recommender_message,
+                visibility_status,
+                null,
+                null,
+                actualDateOfRecommendation,
+                actualDateOfRecommendation,
+                JSON.stringify(processedImages),
+                rating,
+            ];
+
+            await client.query(providerInsertQuery, providerValues);
+
+            // Insert review
+            const reviewInsertQuery = `
+  INSERT INTO reviews (id, provider_id, user_id, rating, content, created_at)
+  VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+  RETURNING id;
+`;
+            const reviewResult = await client.query(reviewInsertQuery, [
+                uuidv4(),
+                newProviderId,
+                recommenderUserId,
+                rating,
+                recommender_message,
+            ]);
+            const newReviewId = reviewResult.rows[0].id;
+
+            // Community shares logic (same as original)
+            if (
+                publish_scope === "Specific Trust Circles" &&
+                trust_circle_ids &&
+                trust_circle_ids.length > 0
+            ) {
+                for (const communityId of trust_circle_ids) {
+                    await client.query(
+                        "INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)",
+                        [
+                            uuidv4(),
+                            newProviderId,
+                            communityId,
+                            recommenderUserId,
+                        ]
+                    );
+                }
+            } else if (
+                publish_scope === "Full Trust Circle" ||
+                publish_scope === "Public"
+            ) {
+                const userCommunitiesResult = await client.query(
+                    "SELECT community_id FROM community_memberships WHERE user_id = $1 AND status = $2",
+                    [recommenderUserId, "approved"]
+                );
+                if (userCommunitiesResult.rows.length > 0) {
+                    for (const row of userCommunitiesResult.rows) {
+                        await client.query(
+                            "INSERT INTO community_shares (id, service_provider_id, community_id, shared_by_user_id, shared_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)",
+                            [
+                                uuidv4(),
+                                newProviderId,
+                                row.community_id,
+                                recommenderUserId,
+                            ]
+                        );
+                    }
+                }
+            }
+
+            await client.query("COMMIT");
+            res.status(201).json({
+                success: true,
+                message: "Recommendation submitted for review successfully!",
+                providerId: newProviderId,
+                reviewId: newReviewId,
+            });
+        } catch (err) {
+            if (client) await client.query("ROLLBACK");
+            res.status(500).json({
+                success: false,
+                error: "Server error creating recommendation",
+                detail: err.message,
+            });
+        } finally {
+            if (client) client.release();
+        }
+    });
+};
+
 const addReviewToProvider = async (req, res) => {
     const {
         provider_id,
@@ -347,10 +550,6 @@ const getAllRecommendations = async (req, res) => {
         });
     }
 };
-
-
-
-
 
 const getRecommendationById = async (req, res) => {
     try {
@@ -965,30 +1164,30 @@ const deleteRecommendation = async (req, res) => {
 
 const getLikers = async (req, res) => {
     const { recommendation_id } = req.params;
-  
+
     if (!recommendation_id) {
-      return res.status(400).json({ error: 'recommendation_id is required' });
+        return res.status(400).json({ error: "recommendation_id is required" });
     }
-  
+
     try {
-      const query = `
+        const query = `
         SELECT u.id, u.name, u.preferred_name, u.username, (u.profile_image IS NOT NULL) as has_profile_image, rl.created_at
         FROM users u
         JOIN recommendation_likes rl ON u.id = rl.user_id
         WHERE rl.recommendation_id = $1
         ORDER BY rl.created_at DESC;
       `;
-      const result = await pool.query(query, [recommendation_id]);
-  
-      res.status(200).json({
-        success: true,
-        likers: result.rows
-      });
+        const result = await pool.query(query, [recommendation_id]);
+
+        res.status(200).json({
+            success: true,
+            likers: result.rows,
+        });
     } catch (error) {
-      console.error('Error fetching likers:', error);
-      res.status(500).json({ error: 'Failed to fetch likers' });
+        console.error("Error fetching likers:", error);
+        res.status(500).json({ error: "Failed to fetch likers" });
     }
-  };
+};
 
 const getRecommendationsByUser = async (req, res) => {
     const { userId } = req.params;
@@ -1020,6 +1219,7 @@ const getRecommendationsByUser = async (req, res) => {
 
 module.exports = {
     createRecommendation,
+    createRecommendationWithUuid,
     addReviewToProvider,
     getAllRecommendations,
     getRecommendationById,
@@ -1031,5 +1231,5 @@ module.exports = {
     getReviewsForProvider,
     deleteRecommendation,
     getLikers,
-    getRecommendationsByUser
+    getRecommendationsByUser,
 };

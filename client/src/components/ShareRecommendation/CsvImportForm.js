@@ -23,32 +23,15 @@ const processTags = (tagString) => {
 
 const validateRecommendation = (row) => {
     const errors = [];
-
-    // Required fields
     if (!row.business_name?.trim()) {
         errors.push("Business Name is required");
     }
     if (!row.recommender_message?.trim()) {
         errors.push("Experience description is required");
     }
-    if (!row.rating) {
-        errors.push("Rating is required");
-    }
-
-    // Type validations
-    const rating = parseInt(row.rating);
-    if (isNaN(rating) || rating < 1 || rating > 5) {
+    if (!row.rating || isNaN(row.rating) || row.rating < 1 || row.rating > 5) {
         errors.push("Rating must be a number between 1 and 5");
     }
-
-    // Phone number validation (if provided)
-    if (row.phone_number) {
-        const digitsOnly = row.phone_number.replace(/\D/g, "");
-        if (digitsOnly.length !== 10) {
-            errors.push("Phone number must be 10 digits");
-        }
-    }
-
     return errors;
 };
 
@@ -168,24 +151,35 @@ export default function CsvImportForm({ userEmail, navigate }) {
 
             // Transform CSV columns to API fields
             const transformedData = {
-                user_email: userEmail,
-                business_name: row["Business Name"]?.trim(),
-                recommender_message: row["Your Experience"]?.trim(),
-                rating: parseInt(row["Rating (1-5)"]),
-                provider_contact_name:
-                    row["Provider Contact Name (Optional)"]?.trim() || null,
-                website: row["Website (Optional)"]?.trim() || null,
-                phone_number: row["Phone (Optional)"]?.trim() || null,
-                tags: processTags(row["Tags (comma-separated, Optional)"]),
-                publish_scope: publishScopeFromCsv,
-                trust_circle_ids:
-                    row[
-                        "Trust Circle IDs (comma-separated if Specific Trust Circles, Optional)"
-                    ]
-                        ?.split(",")
-                        .map((id) => id.trim())
-                        .filter((id) => id) || [],
-                email: null, // We don't use this field as we're using Clerk
+                recommended_by: row["recommended_by"], // Use the UUID from CSV
+                business_name: row["business_name"]?.trim(),
+                recommender_message:
+                    row["recommender_message"]?.trim() ||
+                    row["recommender_message"] ||
+                    row["Your Experience"] ||
+                    "",
+                rating: parseInt(
+                    row["initial_rating"] ||
+                        row["rating"] ||
+                        row["Rating (1-5)"] ||
+                        5,
+                    10
+                ),
+                provider_contact_name: row["business_contact"]?.trim() || null,
+                website: row["website"]?.trim() || null,
+                phone_number: row["phone_number"]?.trim() || null,
+                tags: processTags(row["tags"]),
+                publish_scope:
+                    row["visibility"] === "public"
+                        ? "Public"
+                        : row["visibility"] === "connections"
+                        ? "Full Trust Circle"
+                        : row["visibility"] === "communities"
+                        ? "Specific Trust Circles"
+                        : "Full Trust Circle",
+                trust_circle_ids: [], // Not in CSV, leave empty
+                email: row["email"]?.trim() || null,
+                date_of_recommendation: new Date().toISOString().slice(0, 10), // Use current date
             };
 
             // Validate the row
@@ -212,7 +206,7 @@ export default function CsvImportForm({ userEmail, navigate }) {
                 const formData = new FormData();
                 formData.append("data", JSON.stringify(transformedData));
 
-                const response = await fetch(`${API_URL}/api/recommendations`, {
+                const response = await fetch(`${API_URL}/api/recommendations/uuid`, {
                     method: "POST",
                     body: formData,
                 });
@@ -298,7 +292,7 @@ export default function CsvImportForm({ userEmail, navigate }) {
                     accept=".csv"
                     onChange={handleFileUpload}
                     style={{ display: "none" }}
-                    value={selectedFile ? undefined : ''} // Reset trick for file input
+                    value={selectedFile ? undefined : ""} // Reset trick for file input
                 />
                 {csvFileName && (
                     <span className="file-name">
@@ -307,9 +301,7 @@ export default function CsvImportForm({ userEmail, navigate }) {
                     </span>
                 )}
             </div>
-            {csvError && (
-                <MessageDisplay message={`error:${csvError}`} />
-            )}
+            {csvError && <MessageDisplay message={`error:${csvError}`} />}
             {/* CSV Preview Modal */}
             {showPreviewModal && (
                 <div
