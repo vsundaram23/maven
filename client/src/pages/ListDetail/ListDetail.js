@@ -9,6 +9,7 @@ import {
     MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { API_URL } from "../../utils/constants";
+import RecommendationCard from "../../components/RecommendationCard/RecommendationCard";
 import ProfileRecommendationCard from "../../components/Profile/ProfileRecommendationCard";
 import { useUser } from "@clerk/clerk-react";
 import EditRecommendationModal from "../../components/Profile/EditRecommendationModal";
@@ -612,36 +613,60 @@ const ListDetail = () => {
                             <div>No recommendations in this list.</div>
                         ) : (
                             <ul className="provider-list">
-                                {recommendations.map((rec) => (
-                                    <ProfileRecommendationCard
-                                        key={rec.id}
-                                        rec={rec}
-                                        onEdit={
-                                            isOwner && !isDeleteRecsMode
-                                                ? (rec) => {
-                                                      setCurrentEditingRec(rec);
-                                                      setIsEditModalOpen(true);
-                                                  }
-                                                : undefined
-                                        }
-                                        user={user}
-                                        onRefreshList={fetchListAndRecs}
-                                        showDeleteCheckbox={isDeleteRecsMode}
-                                        checked={selectedRecsToDelete.includes(
-                                            rec.id
-                                        )}
-                                        onCheckboxChange={() => {
-                                            setSelectedRecsToDelete((prev) =>
-                                                prev.includes(rec.id)
-                                                    ? prev.filter(
-                                                          (id) => id !== rec.id
-                                                      )
-                                                    : [...prev, rec.id]
-                                            );
-                                        }}
-                                        disableActions={isDeleteRecsMode}
-                                    />
-                                ))}
+                                {recommendations.map((rec) =>
+                                    isOwner ? (
+                                        <ProfileRecommendationCard
+                                            key={rec.id}
+                                            rec={rec}
+                                            onEdit={
+                                                !isDeleteRecsMode
+                                                    ? (rec) => {
+                                                          setCurrentEditingRec(
+                                                              rec
+                                                          );
+                                                          setIsEditModalOpen(
+                                                              true
+                                                          );
+                                                      }
+                                                    : undefined
+                                            }
+                                            user={user}
+                                            onRefreshList={fetchListAndRecs}
+                                            showDeleteCheckbox={
+                                                isDeleteRecsMode
+                                            }
+                                            checked={selectedRecsToDelete.includes(
+                                                rec.id
+                                            )}
+                                            onCheckboxChange={() => {
+                                                setSelectedRecsToDelete(
+                                                    (prev) =>
+                                                        prev.includes(rec.id)
+                                                            ? prev.filter(
+                                                                  (id) =>
+                                                                      id !==
+                                                                      rec.id
+                                                              )
+                                                            : [...prev, rec.id]
+                                                );
+                                            }}
+                                            disableActions={isDeleteRecsMode}
+                                        />
+                                    ) : (
+                                        <RecommendationCard
+                                            key={rec.id}
+                                            rec={rec}
+                                            // You may want to pass these props or adjust as needed:
+                                            onWriteReview={() => {}}
+                                            onLike={() => {}}
+                                            isLikedByCurrentUser={false}
+                                            loggedInUserId={user?.id}
+                                            currentUserName={user?.firstName}
+                                            comments={rec.comments || []}
+                                            onCommentAdded={() => {}}
+                                        />
+                                    )
+                                )}
                             </ul>
                         )}
                     </>
