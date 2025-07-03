@@ -385,18 +385,25 @@ const getInboundAsks = async (req, res) => {
                 a.id,
                 a.title,
                 a.description,
-                a.status,
+                CASE
+                    WHEN EXISTS (SELECT 1 FROM asks_responses ar WHERE ar.ask_id = a.id AND ar.responder_id = $1) THEN 'responded'
+                    ELSE a.status
+                END as status,
                 a.created_at,
                 u.name AS asker_name,
+                u.location AS asker_location,
+                u.state AS asker_state,
                 u.clerk_id AS asker_clerk_id,
                 u.profile_image AS asker_profile_image
             FROM asks a
             JOIN users u ON a.asker_id = u.id
-            WHERE $1 = ANY(a.recipients)
+            WHERE 
+                $1 = ANY(a.recipients) AND
+                (a.declined_by IS NULL OR NOT (a.declined_by @> ARRAY[$1::uuid]))
             ORDER BY a.created_at DESC;
         `;
         const { rows } = await pool.query(inboundQuery, [internalRecipientId]);
-
+        console.log(rows);
         return res.status(200).json({ requests: rows });
     } catch (error) {
         console.error('Error fetching inbound asks:', error);
@@ -441,6 +448,63 @@ const getOutboundAsks = async (req, res) => {
     }
 };
 
+const submitAskResponse = async (req, res) => {
+    const { ask_id, user_id, text } = req.body; // user_id is clerk_id
+
+    if (!ask_id || !user_id || !text || text.trim() === '') {
+        return res.status(400).json({ error: 'ask_id, user_id, and text are required.' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Get internal user ID from clerk_id
+        const userQuery = 'SELECT id FROM users WHERE clerk_id = $1';
+        const userResult = await client.query(userQuery, [user_id]);
+
+        if (userResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'User not found for the provided clerk_id' });
+        }
+        const internal_responder_id = userResult.rows[0].id;
+
+        // 2. Security Check: Verify user is a recipient of the ask
+        const askQuery = 'SELECT recipients FROM asks WHERE id = $1';
+        const askResult = await client.query(askQuery, [ask_id]);
+
+        if (askResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Ask not found.' });
+        }
+        
+        const { recipients } = askResult.rows[0];
+        if (!recipients.includes(internal_responder_id)) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ error: 'User is not a recipient of this ask and cannot respond.' });
+        }
+
+        // 3. Insert the response into asks_responses
+        const responseType = 'comment'; // Using 'comment' for freeform text responses
+        const insertResponseQuery = `
+            INSERT INTO asks_responses (ask_id, responder_id, response_type, response_text)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *;
+        `;
+        const { rows } = await client.query(insertResponseQuery, [ask_id, internal_responder_id, responseType, text]);
+        
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: 'Response submitted successfully.', response: rows[0] });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error submitting ask response:', error);
+        res.status(500).json({ error: 'Failed to submit response.' });
+    } finally {
+        client.release();
+    }
+};
+
 module.exports = {
     suggestRecommenders,
     createAsk,
@@ -449,4 +513,5 @@ module.exports = {
     calculateMatchScore,
     getInboundAsks,
     getOutboundAsks,
+    submitAskResponse,
 };

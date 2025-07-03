@@ -19,6 +19,9 @@ router.post('/asks/decline', bumpController.declineAsk);
 // Submit a recommendation FOR an ask
 router.post('/asks/process-recommendation', bumpController.processRecommendationSubmission);
 
+// Submit a text response TO an ask
+router.post('/asks/respond', bumpController.submitAskResponse);
+
 // Get inbound asks for a recipient
 router.get('/asks/inbound', bumpController.getInboundAsks);
 
