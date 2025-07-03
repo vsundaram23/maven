@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useEffect, useMemo, useState } from 'react';
-import { FaBolt, FaCheck, FaCheckCircle, FaMapMarkerAlt, FaPaperPlane, FaSearch, FaStar, FaUsers } from 'react-icons/fa';
+import { FaBolt, FaCheck, FaCheckCircle, FaMapMarkerAlt, FaPaperPlane, FaPlus, FaSearch, FaStar, FaUsers } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AlgorithmicLoader from '../AlgorithmicLoader/AlgorithmicLoader';
 import SuggestedFollowersModal from '../SuggestedFollowersModal/SuggestedFollowersModal';
@@ -89,6 +89,20 @@ const BumpYourNetwork = ({ isOpen, onClose, query: propQuery, currentUser, isPag
             (user.reason || '').toLowerCase().includes(searchLower)
         );
     }, [followingSearch, suggestedRecommenders]);
+
+    const selectedCount = useMemo(() => selectedRecommenders.size, [selectedRecommenders]);
+
+    const filteredFollowing = useMemo(() => {
+        if (!followingSearch.trim()) {
+            return [];
+        }
+        const searchLower = followingSearch.toLowerCase();
+        const suggestedIds = new Set(suggestedRecommenders.map(r => r.id));
+        return following.filter(user =>
+            !suggestedIds.has(user.id) &&
+            (user.name || '').toLowerCase().includes(searchLower)
+        );
+    }, [followingSearch, following, suggestedRecommenders]);
 
     useEffect(() => {
         const shouldFetch = (isPage && !isLoading && !dataFetched) || (isOpen && !isPage && !dataFetched);
@@ -301,8 +315,6 @@ const BumpYourNetwork = ({ isOpen, onClose, query: propQuery, currentUser, isPag
         [suggestedRecommenders, selectedRecommenders]
     );
 
-    const selectedCount = useMemo(() => selectedRecommenders.size, [selectedRecommenders]);
-
     const handleFollowUser = async (userId) => {
         try {
             const response = await fetch(`${API_URL}/api/connections/send`, {
@@ -412,6 +424,51 @@ const BumpYourNetwork = ({ isOpen, onClose, query: propQuery, currentUser, isPag
         }
     };
 
+    const fetchMatchScoreForFollower = async (followerId) => {
+        try {
+            const response = await fetch(`${API_URL}/api/bump/asks/calculate-score`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    asker_id: currentUser.id,
+                    ask_details: { query },
+                    recipient_id: followerId
+                })
+            });
+            if (!response.ok) throw new Error("Could not calculate score");
+            const data = await response.json();
+            const score = data.score;
+
+            setSuggestedRecommenders(prev =>
+                prev.map(r =>
+                    r.id === followerId ? { ...r, score: score } : r
+                )
+            );
+        } catch (err) {
+            console.error("Failed to fetch match score:", err);
+            setSuggestedRecommenders(prev =>
+                prev.map(r =>
+                    r.id === followerId ? { ...r, score: Math.round(following.find(f => f.id === followerId)?.user_score) || 94 } : r
+                )
+            );
+        }
+    };
+
+    const handleAddFollowingAsRecommender = (followingUser) => {
+        const newRecommender = {
+            id: followingUser.id,
+            name: followingUser.name,
+            reason: 'You follow them directly (1st degree).',
+            score: '...', // Will be fetched after adding
+            has_profile_image: followingUser.has_profile_image,
+            degree: 1,
+        };
+        setSuggestedRecommenders(prev => [newRecommender, ...prev]);
+        setSelectedRecommenders(prev => new Set(prev).add(followingUser.id));
+        setFollowingSearch('');
+        fetchMatchScoreForFollower(followingUser.id);
+    };
+
     if (isPage && isLoading) {
         return <AlgorithmicLoader onComplete={() => setIsLoading(false)} />;
     }
@@ -456,12 +513,51 @@ const BumpYourNetwork = ({ isOpen, onClose, query: propQuery, currentUser, isPag
                         <FaSearch className="search-icon" />
                         <input
                             type="text"
-                            placeholder="Search through contacts..."
+                            placeholder="Search through your Trust Circle..."
                             value={followingSearch}
                             onChange={(e) => setFollowingSearch(e.target.value)}
                             className="search-input"
                         />
                     </div>
+                     {filteredFollowing.length > 0 && (
+                        <div className="follower-search-results">
+                            {filteredFollowing.map(followingUser => (
+                                <div key={followingUser.id} className="follower-result-item" onClick={() => handleAddFollowingAsRecommender(followingUser)}>
+                                    <div className="avatar-wrapper small">
+                                        {followingUser.has_profile_image ? (
+                                            <img src={`${API_URL}/api/users/${followingUser.id}/profile/image`} alt={followingUser.name} className="avatar-image" />
+                                        ) : (
+                                            <div className="avatar-initials">{generateInitials(followingUser.name)}</div>
+                                        )}
+                                    </div>
+                                    <div className="follower-info">
+                                        <span className="follower-name">{followingUser.name}</span>
+                                    </div>
+                                    <div className="follower-add-action">
+                                        <FaPlus />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </motion.div>
+
+                <motion.div
+                    className="context-container"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15, duration: 0.5 }}
+                >
+                    <div className="original-query-box">
+                        <span className="query-label">REQUEST</span>
+                        <p className="query-text">"{query}"</p>
+                    </div>
+                    <textarea
+                        className="context-textarea"
+                        placeholder="Add optional context to help your network (e.g., timeline, budget, specific needs...)"
+                        value={context}
+                        onChange={(e) => setContext(e.target.value)}
+                    />
                 </motion.div>
 
                 <div className="contacts-list">
