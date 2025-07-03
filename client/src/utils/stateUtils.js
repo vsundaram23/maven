@@ -13,14 +13,16 @@ import "./OnboardingModal.css";
 
 const API_URL = "https://api.seanag-recommendations.org:8080";
 
-const numbers = value.replace(/\D/g, "");
-if (numbers.length <= 3) return numbers;
-if (numbers.length <= 6)
-    return `(${numbers.slice(0, 3)}) ${numbers.slice(3)}`;
-return `(${numbers.slice(0, 3)}) ${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
-};
+function formatPhoneNumber(value) {
+    const numbers = value.replace(/\D/g, "");
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 6) {
+      return `(${numbers.slice(0, 3)}) ${numbers.slice(3)}`;
+    }
+    return `(${numbers.slice(0, 3)}) ${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
+  }
 
-const handleNext = () => {
+  const handleNext = async () => { // Add 'async' here
     try {
         // Generate a unique username
         const generatedUsername = await generateUsername(formData.preferredName);

@@ -84,6 +84,8 @@ const SuggestedFollowersModal = ({
     suggestedFollows,
     loading,
     onFollow,
+    title = "Suggested For You",
+    subtitle = "Discover trusted recommenders in your network"
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -104,8 +106,8 @@ const SuggestedFollowersModal = ({
                         <SparkleIcon />
                     </div>
                     <div className="modal-header-text-sfm">
-                        <h2>Suggested For You</h2>
-                        <p>Discover trusted recommenders in your network</p>
+                        <h2>{title}</h2>
+                        <p>{subtitle}</p>
                     </div>
                     <button className="close-button-sfm" onClick={onClose}>
                         &times;

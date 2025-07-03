@@ -1,7 +1,8 @@
 import { useUser } from "@clerk/clerk-react";
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FaBullhorn, FaChevronDown, FaEye, FaMapMarkerAlt, FaPaperPlane, FaStar } from 'react-icons/fa';
+import { FaBullhorn, FaChevronDown, FaEye, FaMapMarkerAlt, FaStar } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
+import BumpYourNetwork from '../../components/BumpYourNetwork/BumpYourNetwork';
 import QuoteModal from '../../components/QuoteModal/QuoteModal';
 import RecommendationCard from "../../components/RecommendationCard/RecommendationCard";
 import ReviewModal from "../../components/ReviewModal/ReviewModal";
@@ -448,7 +449,7 @@ const Search = () => {
         if (data.success && data.comments) {
           const commentsMap = new Map();
           Object.entries(data.comments).forEach(([serviceId, comments]) => {
-            commentsMap.set(serviceId, comments || []);
+            commentsMap.set(String(serviceId), comments || []);
           });
           setCommentsMap(commentsMap);
         }
@@ -493,33 +494,11 @@ const Search = () => {
 
   if (noResultsParam && query && !isLoading) {
     return (
-      <div className="no-results-container elite-no-results">
-        <FaBullhorn className="no-results-icon" />
-        <h2>No Instant Matches for "{query}" in Your Circle... Yet!</h2>
-        <p className="no-results-subtext">
-          Don't worry! While we couldn't find an immediate recommendation from your direct network,
-          Tried & Trusted's intelligent agent is ready to dig deeper for you.
-        </p>
-        <div className="bump-network-feature">
-          <h3>🚀 Activate: Bump Your Network</h3>
-          <p>
-            Unleash our proprietary algorithm! We'll intelligently identify and ping
-            specific individuals within your extended Trust Circle who are most likely to have
-            a top-tier recommendation for "{query}".
-          </p>
-          <p>
-            Once they respond, you'll be the first to know. It's like having a personal
-            concierge for trusted advice.
-          </p>
-          <button
-            className="primary-button bump-button"
-            onClick={handleBumpNetwork}
-          >
-            <FaPaperPlane style={{ marginRight: '10px' }} />
-            Coming soon, stay tuned!
-          </button>
-        </div>
-      </div>
+      <BumpYourNetwork 
+        query={query} 
+        currentUser={user} 
+        isPage={true} 
+      />
     );
   }
   
@@ -695,22 +674,12 @@ const Search = () => {
           </div>
         </div>
       )}
-      {showBumpNetworkModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <button className="modal-close-x" onClick={() => setShowBumpNetworkModal(false)}>×</button>
-            <h2 style={{ textAlign: 'center', marginBottom: '1rem' }}>Great Things Coming!</h2>
-            <p style={{ textAlign: 'center', fontSize: '1rem', lineHeight: '1.6' }}>
-              We're working hard to launch the "Bump Your Network" feature soon.
-              This intelligent agent will supercharge your search for trusted recommendations!
-            </p>
-            <p style={{ textAlign: 'center', marginTop: '1rem', fontWeight: 'bold' }}>Stay tuned! <FaEye style={{ marginLeft: '5px' }} /></p>
-            <div className="modal-buttons" style={{marginTop: '2rem'}}>
-              <button className="primary-button" onClick={() => setShowBumpNetworkModal(false)}>Got it!</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BumpYourNetwork
+        isOpen={showBumpNetworkModal}
+        onClose={() => setShowBumpNetworkModal(false)}
+        query={query}
+        currentUser={user}
+      />
     </div>
   );
 };

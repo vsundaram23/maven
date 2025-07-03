@@ -1,0 +1,15 @@
+:root {
+    --card-border-radius: 1.5rem;
+    --card-shadow: 0 8px 16px rgba(0,0,0,0.05);
+    --success-green: #22c55e;
+}
+
+.response-count-badge {
+    background-color: var(--success-green);
+    color: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-left: 0.5rem;
+}

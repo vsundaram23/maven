@@ -116,12 +116,12 @@ const registerWithInvite = async (
     newUserClerkId,
     inviteTokenString
 ) => {
-    console.log("--- [1/7] registerWithInvite function initiated ---");
-    console.log(`Attempting registration for email: ${email} with token: ${inviteTokenString}`);
+    // console.log("--- [1/7] registerWithInvite function initiated ---");
+    // console.log(`Attempting registration for email: ${email} with token: ${inviteTokenString}`);
 
     const client = await pool.connect();
     try {
-        console.log("--- [2/7] Database client connected. Beginning transaction. ---");
+        // console.log("--- [2/7] Database client connected. Beginning transaction. ---");
         await client.query("BEGIN");
 
         const tokenRes = await client.query(
@@ -134,7 +134,7 @@ const registerWithInvite = async (
             console.error("!!! EXITING: No invite token found in database.");
             throw new Error("Invalid invite token.");
         }
-        console.log("--- [3/7] Invite token found successfully. ---", tokenRes.rows[0]);
+        // console.log("--- [3/7] Invite token found successfully. ---", tokenRes.rows[0]);
 
         const token = tokenRes.rows[0];
         const now = new Date();
@@ -147,7 +147,7 @@ const registerWithInvite = async (
             console.error("!!! EXITING: Token is not active, expired, or maxed out.", { status: token.status, isExpired, isMaxedOut });
             throw new Error("Invite token is no longer valid.");
         }
-        console.log("--- [4/7] Token status and validity checks passed. ---");
+        // console.log("--- [4/7] Token status and validity checks passed. ---");
 
         const existingUserByEmail = await client.query(
             "SELECT id FROM users WHERE email = $1",
@@ -158,7 +158,7 @@ const registerWithInvite = async (
             console.error(`!!! EXITING: Email address '${email}' is already registered.`);
             throw new Error("Email address is already registered.");
         }
-        console.log(`--- [5/7] Email '${email}' confirmed as new. ---`);
+        // console.log(`--- [5/7] Email '${email}' confirmed as new. ---`);
 
         let internalNewUserId;
         if (newUserClerkId) {
@@ -181,15 +181,15 @@ const registerWithInvite = async (
                 "User registration via invite without a Clerk ID needs a defined local account creation strategy (including password handling)."
             );
         }
-        console.log(`--- [6/7] User successfully created/retrieved with internal ID: ${internalNewUserId} ---`);
+        // console.log(`--- [6/7] User successfully created/retrieved with internal ID: ${internalNewUserId} ---`);
 
         // This is the target line we're trying to reach
-        console.log(">>> EXECUTING SQL to insert into community_memberships...");
+        // console.log(">>> EXECUTING SQL to insert into community_memberships...");
         await client.query(
             `INSERT INTO community_memberships (user_id, community_id, status, requested_at, approved_at) VALUES ($1, $2, 'approved', NOW(), NOW())`,
             [internalNewUserId, token.community_id]
         );
-        console.log("--- [7/7] Membership created successfully! ---");
+        // console.log("--- [7/7] Membership created successfully! ---");
         
         // ... rest of the function
         const newCurrentUses = token.current_uses + 1;
@@ -203,7 +203,7 @@ const registerWithInvite = async (
         );
 
         await client.query("COMMIT");
-        console.log("--- Transaction committed. ---")
+        // console.log("--- Transaction committed. ---")
         return {
             user_id: internalNewUserId,
             name: name,
@@ -217,7 +217,7 @@ const registerWithInvite = async (
         throw error;
     } finally {
         client.release();
-        console.log("--- Client released. ---")
+        // console.log("--- Client released. ---")
     }
 };
 

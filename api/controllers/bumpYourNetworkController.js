@@ -19,20 +19,15 @@ const suggestRecommenders = async (req, res) => {
 
         const queryText = `
             WITH first_degree AS (
+                -- Only people the asker is following (outbound connections)
                 SELECT connected_user_id as user_id FROM user_connections WHERE user_id = $1 AND status = 'accepted'
-                UNION
-                SELECT user_id FROM user_connections WHERE connected_user_id = $1 AND status = 'accepted'
             ),
             second_degree AS (
+                -- People followed by people the asker follows (2nd degree outbound)
                 SELECT uc.connected_user_id AS user_id
                 FROM user_connections uc
                 JOIN first_degree fd ON uc.user_id = fd.user_id
                 WHERE uc.connected_user_id != $1 AND uc.connected_user_id NOT IN (SELECT user_id FROM first_degree) AND uc.status = 'accepted'
-                UNION
-                SELECT uc.user_id
-                FROM user_connections uc
-                JOIN first_degree fd ON uc.connected_user_id = fd.user_id
-                WHERE uc.user_id != $1 AND uc.user_id NOT IN (SELECT user_id FROM first_degree) AND uc.status = 'accepted'
             ),
             all_connections AS (
                 SELECT user_id, 1 AS degree FROM first_degree
@@ -100,10 +95,10 @@ const suggestRecommenders = async (req, res) => {
 
             if (row.degree === 1) {
                 score += 10;
-                reasons.push({ score: 10, text: 'You are directly connected.' });
+                reasons.push({ score: 10, text: 'You follow them directly (1st degree).' });
             } else {
                 score += 3;
-                reasons.push({ score: 3, text: 'A trusted 2nd-degree connection.' });
+                reasons.push({ score: 3, text: 'Followed by someone you follow (2nd degree).' });
             }
             
             if (row.response_rate && row.response_rate > 0.8) {
@@ -121,6 +116,7 @@ const suggestRecommenders = async (req, res) => {
                 score,
                 reason: bestReason,
                 has_profile_image: !!row.profile_image,
+                degree: row.degree,
             };
         }).sort((a, b) => b.score - a.score).slice(0, 5);
 
@@ -226,12 +222,19 @@ const declineAsk = async (req, res) => {
     try {
         await client.query('BEGIN');
         
+        const userResult = await client.query('SELECT id FROM users WHERE clerk_id = $1', [user_id]);
+        if (userResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const internalUserId = userResult.rows[0].id;
+        
         const updateDeclineQuery = `
             UPDATE asks
             SET declined_by = array_append(COALESCE(declined_by, ARRAY[]::uuid[]), $2)
             WHERE id = $1 AND $2 = ANY(recipients);
         `;
-        const { rowCount } = await client.query(updateDeclineQuery, [ask_id, user_id]);
+        const { rowCount } = await client.query(updateDeclineQuery, [ask_id, internalUserId]);
 
         if (rowCount === 0) {
             await client.query('ROLLBACK');
@@ -269,20 +272,15 @@ const calculateMatchScore = async (req, res) => {
 
         const queryText = `
             WITH first_degree AS (
+                -- Only people the asker is following (outbound connections)
                 SELECT connected_user_id as user_id FROM user_connections WHERE user_id = $1 AND status = 'accepted'
-                UNION
-                SELECT user_id FROM user_connections WHERE connected_user_id = $1 AND status = 'accepted'
             ),
             second_degree AS (
+                -- People followed by people the asker follows (2nd degree outbound)
                 SELECT uc.connected_user_id AS user_id
                 FROM user_connections uc
                 JOIN first_degree fd ON uc.user_id = fd.user_id
                 WHERE uc.connected_user_id != $1 AND uc.connected_user_id NOT IN (SELECT user_id FROM first_degree) AND uc.status = 'accepted'
-                UNION
-                SELECT uc.user_id
-                FROM user_connections uc
-                JOIN first_degree fd ON uc.connected_user_id = fd.user_id
-                WHERE uc.user_id != $1 AND uc.user_id NOT IN (SELECT user_id FROM first_degree) AND uc.status = 'accepted'
             ),
             connection_degree AS (
                 SELECT
@@ -381,30 +379,40 @@ const getInboundAsks = async (req, res) => {
         const internalRecipientId = userResult.rows[0].id;
 
         const inboundQuery = `
+            WITH user_responses AS (
+                SELECT 
+                    ask_id, 
+                    json_agg(json_build_object('text', response_text, 'created_at', responded_at, 'user_name', u.name) ORDER BY asks_responses.responded_at ASC) as responses
+                FROM asks_responses
+                JOIN users u ON asks_responses.responder_id = u.id
+                WHERE asks_responses.responder_id = $1
+                GROUP BY ask_id
+            )
             SELECT 
-                a.id,
-                a.title,
-                a.description,
+                a.id, a.title, a.description, a.created_at,
+                u.name as asker_name,
+                u.location as asker_location,
+                u.state as asker_state,
                 CASE
-                    WHEN EXISTS (SELECT 1 FROM asks_responses ar WHERE ar.ask_id = a.id AND ar.responder_id = $1) THEN 'responded'
+                    WHEN ur.responses IS NOT NULL THEN 'responded'
                     ELSE a.status
                 END as status,
-                a.created_at,
-                u.name AS asker_name,
-                u.location AS asker_location,
-                u.state AS asker_state,
-                u.clerk_id AS asker_clerk_id,
-                u.profile_image AS asker_profile_image
+                ur.responses
             FROM asks a
             JOIN users u ON a.asker_id = u.id
-            WHERE 
-                $1 = ANY(a.recipients) AND
-                (a.declined_by IS NULL OR NOT (a.declined_by @> ARRAY[$1::uuid]))
+            LEFT JOIN user_responses ur ON a.id = ur.ask_id
+            WHERE $1 = ANY(a.recipients) AND (a.declined_by IS NULL OR NOT($1 = ANY(a.declined_by)))
             ORDER BY a.created_at DESC;
         `;
+
         const { rows } = await pool.query(inboundQuery, [internalRecipientId]);
-        console.log(rows);
-        return res.status(200).json({ requests: rows });
+        
+        const processedRows = rows.map(row => ({
+            ...row,
+            responses: row.responses || []
+        }));
+
+        res.status(200).json({ requests: processedRows });
     } catch (error) {
         console.error('Error fetching inbound asks:', error);
         return res.status(500).json({ error: 'Failed to fetch inbound asks' });
@@ -428,80 +436,103 @@ const getOutboundAsks = async (req, res) => {
         const internalAskerId = userResult.rows[0].id;
 
         const outboundQuery = `
+            WITH ask_responses AS (
+                SELECT
+                    ar.ask_id,
+                    json_agg(
+                        json_build_object(
+                            'text', ar.response_text,
+                            'created_at', ar.responded_at,
+                            'user_name', u.name
+                        ) ORDER BY ar.responded_at ASC
+                    ) as responses
+                FROM asks_responses ar
+                JOIN users u ON ar.responder_id = u.id
+                GROUP BY ar.ask_id
+            )
             SELECT 
                 a.id,
                 a.title,
                 a.description,
-                a.status,
+                CASE
+                    WHEN res.responses IS NOT NULL THEN 'responded'
+                    ELSE a.status
+                END as status,
                 a.created_at,
                 a.recipients,
-                ARRAY(SELECT name FROM users WHERE id = ANY(a.recipients)) AS recipient_names
+                ARRAY(SELECT name FROM users WHERE id = ANY(a.recipients)) AS recipient_names,
+                res.responses
             FROM asks a
+            LEFT JOIN ask_responses res ON a.id = res.ask_id
             WHERE a.asker_id = $1
             ORDER BY a.created_at DESC;
         `;
         const { rows } = await pool.query(outboundQuery, [internalAskerId]);
-        return res.status(200).json({ requests: rows });
+        
+        const processedRows = rows.map(row => ({
+            ...row,
+            responses: row.responses || []
+        }));
+
+        return res.status(200).json({ requests: processedRows });
     } catch (error) {
         console.error('Error fetching outbound asks:', error);
-        return res.status(500).json({ error: 'Failed to fetch outbound asks' });
+        res.status(500).json({ error: 'Internal server error' });
     }
 };
 
 const submitAskResponse = async (req, res) => {
     const { ask_id, user_id, text } = req.body; // user_id is clerk_id
 
-    if (!ask_id || !user_id || !text || text.trim() === '') {
-        return res.status(400).json({ error: 'ask_id, user_id, and text are required.' });
+    if (!ask_id || !user_id || !text) {
+        return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const client = await pool.connect();
     try {
-        await client.query('BEGIN');
-
-        // 1. Get internal user ID from clerk_id
-        const userQuery = 'SELECT id FROM users WHERE clerk_id = $1';
-        const userResult = await client.query(userQuery, [user_id]);
-
+        const userResult = await pool.query('SELECT id, name FROM users WHERE clerk_id = $1', [user_id]);
         if (userResult.rows.length === 0) {
-            await client.query('ROLLBACK');
-            return res.status(404).json({ error: 'User not found for the provided clerk_id' });
+            return res.status(404).json({ error: 'Responder not found' });
         }
-        const internal_responder_id = userResult.rows[0].id;
+        const internalUserId = userResult.rows[0].id;
+        const userName = userResult.rows[0].name;
 
-        // 2. Security Check: Verify user is a recipient of the ask
-        const askQuery = 'SELECT recipients FROM asks WHERE id = $1';
-        const askResult = await client.query(askQuery, [ask_id]);
-
-        if (askResult.rows.length === 0) {
-            await client.query('ROLLBACK');
-            return res.status(404).json({ error: 'Ask not found.' });
-        }
-        
-        const { recipients } = askResult.rows[0];
-        if (!recipients.includes(internal_responder_id)) {
-            await client.query('ROLLBACK');
-            return res.status(403).json({ error: 'User is not a recipient of this ask and cannot respond.' });
-        }
-
-        // 3. Insert the response into asks_responses
-        const responseType = 'comment'; // Using 'comment' for freeform text responses
-        const insertResponseQuery = `
-            INSERT INTO asks_responses (ask_id, responder_id, response_type, response_text)
-            VALUES ($1, $2, $3, $4)
-            RETURNING *;
+        const insertQuery = `
+            INSERT INTO asks_responses (ask_id, responder_id, response_text, response_type)
+            VALUES ($1, $2, $3, 'comment')
+            RETURNING id, response_text, responded_at;
         `;
-        const { rows } = await client.query(insertResponseQuery, [ask_id, internal_responder_id, responseType, text]);
+        const { rows } = await pool.query(insertQuery, [ask_id, internalUserId, text]);
         
-        await client.query('COMMIT');
-        res.status(201).json({ success: true, message: 'Response submitted successfully.', response: rows[0] });
+        const newResponse = rows[0];
 
+        const formattedResponse = {
+            text: newResponse.response_text,
+            created_at: newResponse.responded_at,
+            user_name: userName,
+        };
+
+        res.status(201).json(formattedResponse);
     } catch (error) {
-        await client.query('ROLLBACK');
         console.error('Error submitting ask response:', error);
-        res.status(500).json({ error: 'Failed to submit response.' });
-    } finally {
-        client.release();
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+const getAskResponses = async (req, res) => {
+    const { askId } = req.params;
+    try {
+        const query = `
+            SELECT ar.id, ar.response_text as text, ar.responded_at as created_at, u.name as user_name, u.profile_image
+            FROM asks_responses ar
+            JOIN users u ON ar.responder_id = u.id
+            WHERE ar.ask_id = $1
+            ORDER BY ar.responded_at ASC;
+        `;
+        const { rows } = await pool.query(query, [askId]);
+        res.status(200).json({ responses: rows });
+    } catch (error) {
+        console.error('Error fetching ask responses:', error);
+        res.status(500).json({ error: 'Failed to fetch responses.' });
     }
 };
 
@@ -514,4 +545,5 @@ module.exports = {
     getInboundAsks,
     getOutboundAsks,
     submitAskResponse,
+    getAskResponses,
 };

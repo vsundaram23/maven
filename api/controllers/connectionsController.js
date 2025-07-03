@@ -5,8 +5,8 @@ const API_BASE_URL = "https://api.seanag-recommendations.org:8080";
 // Get accepted connections by email
 const getConnectionsByEmail = async (email) => {
   try {
-    console.log('--- ENTERING getConnectionsByEmail ---');
-    console.log('Attempting to fetch connections for email:', email);
+    // console.log('--- ENTERING getConnectionsByEmail ---');
+    // console.log('Attempting to fetch connections for email:', email);
 
     const result = await pool.query(`
       WITH user_id AS (
@@ -31,8 +31,8 @@ const getConnectionsByEmail = async (email) => {
       ORDER BY u.user_score DESC, uc.connected_at DESC
     `, [email]);
 
-    console.log('Query result in getConnectionsByEmail:', result);
-    console.log('Query rows:', result.rows);
+    // console.log('Query result in getConnectionsByEmail:', result);
+    // console.log('Query rows:', result.rows);
     
     // Map the results to include constructed profile image URLs
     const mappedResult = result.rows.map((row) => {
@@ -51,19 +51,19 @@ const getConnectionsByEmail = async (email) => {
         connected_at: row.connected_at,
       };
     });
-    console.log('--- EXITING getConnectionsByEmail ---');
+    // console.log('--- EXITING getConnectionsByEmail ---');
     return mappedResult;
   } catch (error) {
-    console.error('--- ERROR in getConnectionsByEmail ---');
-    console.error('Error fetching connections:', error.message);
+    // console.error('--- ERROR in getConnectionsByEmail ---');
+    // console.error('Error fetching connections:', error.message);
     throw new Error('Database error fetching connections');
   }
 };
 
 const getConnectionsByUserId = async (userId) => {
   try {
-    console.log('--- ENTERING getConnectionsByUserId ---');
-    console.log('Attempting to fetch connections for user ID:', userId);
+    // console.log('--- ENTERING getConnectionsByUserId ---');
+    // console.log('Attempting to fetch connections for user ID:', userId);
 
     const result = await pool.query(`
       WITH user_info AS (
@@ -88,8 +88,8 @@ const getConnectionsByUserId = async (userId) => {
       ORDER BY u.user_score DESC, uc.connected_at DESC
     `, [userId]); // And here
 
-    console.log('Query result in getConnectionsByUserId:', result);
-    console.log('Query rows:', result.rows);
+    // console.log('Query result in getConnectionsByUserId:', result);
+    // console.log('Query rows:', result.rows);
     
     // Map the results to include constructed profile image URLs
     const mappedResult = result.rows.map((row) => {
@@ -108,11 +108,11 @@ const getConnectionsByUserId = async (userId) => {
         connected_at: row.connected_at,
       };
     });
-    console.log('--- EXITING getConnectionsByUserId ---');
+    // console.log('--- EXITING getConnectionsByUserId ---');
     return mappedResult;
   } catch (error) {
-    console.error('--- ERROR in getConnectionsByUserId ---');
-    console.error('Error fetching connections by ID:', error.message);
+    // console.error('--- ERROR in getConnectionsByUserId ---');
+    // console.error('Error fetching connections by ID:', error.message);
     throw new Error('Database error fetching connections by ID');
   }
 };

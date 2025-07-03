@@ -330,6 +330,9 @@ const Header = () => {
                                     <Link to="/profile" className="dropdown-item" onClick={handleProfileLinkClick}>
                                         My Profile
                                     </Link>
+                                    <Link to="/rec-requests" className="dropdown-item" onClick={handleNavLinkClick}>
+                                        Requests
+                                    </Link>
                                     <Link to="#" className="dropdown-item" onClick={handleLogoutLinkClick}>
                                         Logout
                                     </Link>

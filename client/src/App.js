@@ -1,4 +1,5 @@
 // App.js
+import { RedirectToSignIn, useUser } from "@clerk/clerk-react";
 import React, { useEffect, useState } from "react";
 import {
     Route,
@@ -6,34 +7,33 @@ import {
     Routes,
     useLocation,
 } from "react-router-dom";
-import { useUser, RedirectToSignIn } from "@clerk/clerk-react";
-import Home from "./pages/Home/Home";
-import Profile from "./pages/Profile/Profile";
-import ServiceDetails from "./pages/ServiceDetails/ServiceDetails";
+import "./App.css";
+import BumpYourNetwork from "./components/BumpYourNetwork/BumpYourNetwork";
 import Header from "./components/Header/Header";
-import FinancialServices from "./pages/FinancialServices/FinancialServices";
-import AutoServices from "./pages/AutoServices/AutoServices";
+import OnboardingModal from "./components/OnboardingModal/OnboardingModal";
 import ApplianceServices from "./pages/ApplianceServices/ApplianceServices";
+import AutoServices from "./pages/AutoServices/AutoServices";
 import CleaningServices from "./pages/CleaningServices/CleaningServices";
-import UtilitiesServices from "./pages/UtilitiesServices/UtilitiesServices";
-import RepairServices from "./pages/RepairServices/RepairServices";
-import OutdoorServices from "./pages/OutdoorServices/OutdoorServices";
+import CommunityProfile from "./pages/CommunityProfile/CommunityProfile";
+import FinancialServices from "./pages/FinancialServices/FinancialServices";
+import Home from "./pages/Home/Home";
+import InvitePage from "./pages/InvitePage/InvitePage";
+import ListDetail from "./pages/ListDetail/ListDetail";
 import MovingServices from "./pages/MovingServices/MovingServices";
-import TrustCircles from "./pages/TrustCircles/TrustCircles";
+import OutdoorServices from "./pages/OutdoorServices/OutdoorServices";
+import ProfileRedirect from "./pages/Profile/ProfileRedirect";
+import PublicProfile from "./pages/PublicProfile/PublicProfile";
+import PWAInterface from './pages/PWAInterface/PWAInterface';
+import RecRequests from "./pages/RecRequests/RecRequests";
+import RepairServices from "./pages/RepairServices/RepairServices";
 import Search from "./pages/Search/Search";
 import ProviderProfile from "./pages/ServiceDetails/ProviderProfile";
+import ServiceDetails from "./pages/ServiceDetails/ServiceDetails";
 import ShareRecommendation from "./pages/ShareRecommendation/ShareRecommendation";
+import TrustCircles from "./pages/TrustCircles/TrustCircles";
 import UserRecommendations from "./pages/UserRecommendations/UserRecommendations";
-import CommunityProfile from "./pages/CommunityProfile/CommunityProfile";
-import PublicProfile from "./pages/PublicProfile/PublicProfile";
-import OnboardingModal from "./components/OnboardingModal/OnboardingModal";
-import InvitePage from "./pages/InvitePage/InvitePage";
-import PWAInterface from './pages/PWAInterface/PWAInterface';
-import UsernameRedirector from "./pages/UsernameRedirector/UsernameRedirector";
-import ListDetail from "./pages/ListDetail/ListDetail";
-import ProfileRedirect from "./pages/Profile/ProfileRedirect";
+import UtilitiesServices from "./pages/UtilitiesServices/UtilitiesServices";
 import "./styles/global.css";
-import "./App.css";
 
 const API_URL = "https://api.seanag-recommendations.org:8080";
 // const API_URL = "http://localhost:3000";
@@ -46,6 +46,14 @@ const ProtectedRoute = ({ children }) => {
     }
 
     return children;
+};
+
+const BumpYourNetworkPage = () => {
+    const location = useLocation();
+    const { user } = useUser();
+    const query = location.state?.query || '';
+    
+    return <BumpYourNetwork isPage={true} currentUser={user} query={query} />;
 };
 
 const AppWrapper = () => {
@@ -257,6 +265,22 @@ const AppWrapper = () => {
                     <Route
                         path="/invite/:tokenString"
                         element={<InvitePage />}
+                    />
+                    <Route
+                        path="/rec-requests"
+                        element={
+                            <ProtectedRoute>
+                                <RecRequests />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/bump-your-network"
+                        element={
+                            <ProtectedRoute>
+                                <BumpYourNetworkPage />
+                            </ProtectedRoute>
+                        }
                     />
 
                     {/* <Route

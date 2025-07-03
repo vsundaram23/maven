@@ -28,4 +28,7 @@ router.get('/asks/inbound', bumpController.getInboundAsks);
 // Get outbound asks for an asker
 router.get('/asks/outbound', bumpController.getOutboundAsks);
 
+// Get all responses for a specific ask
+router.get('/asks/:askId/responses', bumpController.getAskResponses);
+
 module.exports = router;

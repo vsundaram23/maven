@@ -16,30 +16,30 @@ const pool = require('../config/db.config');
 
 // Get accepted connections for a user by email
 router.post('/check-connections', async (req, res) => {
-  console.log('--- ENTERING /check-connections ---');
-  console.log('Request body:', req.body);
+  // console.log('--- ENTERING /check-connections ---');
+  // console.log('Request body:', req.body);
   const { email, user_id } = req.body;
   try {
     let connections;
     if (user_id) {
-      console.log(`Fetching connections for user_id: ${user_id}`);
+      // console.log(`Fetching connections for user_id: ${user_id}`);
       connections = await getConnectionsByUserId(user_id);
-      console.log(`Connections result for user_id ${user_id}:`, connections);
+      // console.log(`Connections result for user_id ${user_id}:`, connections);
     } else if (email) {
-      console.log(`Fetching connections for email: ${email}`);
+      // console.log(`Fetching connections for email: ${email}`);
       connections = await getConnectionsByEmail(email);
-      console.log(`Connections result for email ${email}:`, connections);
+      // console.log(`Connections result for email ${email}:`, connections);
     } else {
-      console.log('Neither user_id nor email provided in request body.');
+      // console.log('Neither user_id nor email provided in request body.');
       return res.status(400).json({ error: 'Request body must contain either a user_id or an email.' });
     }
-    console.log('--- SUCCESSFULLY FETCHED CONNECTIONS ---');
-    console.log('Sending connections response:', connections);
+    // console.log('--- SUCCESSFULLY FETCHED CONNECTIONS ---');
+    // console.log('Sending connections response:', connections);
     res.json(connections);
 
   } catch (error) {
-    console.error("--- ERROR in /check-connections ---");
-    console.error("Failed to fetch connections:", error); 
+    // console.error("--- ERROR in /check-connections ---");
+    // console.error("Failed to fetch connections:", error); 
     res.status(500).json({ error: 'Server error fetching connections' });
   }
 });

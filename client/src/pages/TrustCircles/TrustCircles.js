@@ -1856,29 +1856,29 @@ const TrustCircles = () => {
                             />
                         </div>
                         
-                        <div className="grid-layout modal-grid-layout">
+                        <div className="user-list-sfm">
                             {discoverableCommunities.length > 0 ? discoverableCommunities.map((comm) => (
-                                <div className="card" key={comm.id}>
-                                    <div className="card-content">
-                                        <h3 className="card-title">{comm.name}</h3>
-                                        <p className="card-description">{comm.description}</p>
-                                        <p className="card-info">{comm.memberCount} members</p>
-                                    </div>
-                                    <div className="card-actions">
-                                        {comm.user_membership_status === "requested" ? (
-                                            <button className="button button-small icon-button status-requested" disabled>
-                                                <HourglassTopIcon /> Request Sent
-                                            </button>
-                                        ) : (
-                                            <button
-                                                className="button button-primary"
-                                                onClick={() => handleRequestToJoinCommunity(comm.id)}
-                                                disabled={!currentUser}
-                                            >
-                                                Request to Join
-                                            </button>
+                                <div className="suggestion-item-sfm" key={comm.id}>
+                                    <div className="user-info-sfm">
+                                        <span className="user-name-sfm">{comm.name}</span>
+                                        <span className="trust-points-sfm">{comm.memberCount} members</span>
+                                        {comm.description && (
+                                            <span className="community-description-sfm" style={{ display: 'block', marginTop: '4px', color: '#6B7280', fontSize: '0.85rem' }}>{comm.description}</span>
                                         )}
                                     </div>
+                                    {comm.user_membership_status === "requested" ? (
+                                        <button className="follow-button-sfm" disabled style={{ backgroundColor: '#E9ECEF', color: '#495057', cursor: 'default' }}>
+                                            <HourglassTopIcon /> Request Sent
+                                        </button>
+                                    ) : (
+                                        <button
+                                            className="follow-button-sfm"
+                                            onClick={() => handleRequestToJoinCommunity(comm.id)}
+                                            disabled={!currentUser}
+                                        >
+                                            Request to Join
+                                        </button>
+                                    )}
                                 </div>
                             )) : (
                                 <p className="empty-message">No communities found matching your search.</p>
