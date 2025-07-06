@@ -37,7 +37,9 @@ const corsOptions = {
             "http://34.214.248.192:8080",
             "https://maven-frontend.onrender.com",
             "https://triedandtrusted.ai", // Add your production domain
-            "https://www.triedandtrusted.ai" // Add www subdomain as well
+            "https://www.triedandtrusted.ai", // Add www subdomain as well
+            "capacitor://localhost",
+            "http://localhost"
         ];
 
         if (!origin || allowedOrigins.includes(origin)) {

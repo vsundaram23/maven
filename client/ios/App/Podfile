@@ -1,0 +1,70 @@
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+platform :ios, '14.0'
+use_frameworks!
+
+# workaround to avoid Xcode caching of Pods that requires
+# Product -> Clean Build Folder after new Cordova plugins installed
+# Requires CocoaPods 1.6 or newer
+install! 'cocoapods', :disable_input_output_paths => true
+
+def capacitor_pods
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+
+end
+
+target 'App' do
+  capacitor_pods
+  # Add your Pods here
+end
+
+# This new and improved post_install hook will ensure MSEC_PER_SEC is defined
+# and other critical build settings are applied for Capacitor.
+# REPLACE YOUR ENTIRE EXISTING post_install BLOCK WITH THE CONTENT BELOW
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    # Apply settings to Capacitor and CapacitorCordova Pods
+    if ['Capacitor', 'CapacitorCordova'].include?(target.name)
+      target.build_configurations.each do |config|
+        # Define MSEC_PER_SEC as a preprocessor macro
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'MSEC_PER_SEC=1000'
+
+        # This helps with module issues, often required for older frameworks with newer Swift versions
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      end
+    end
+
+    # Add a Run Script Phase to the main 'App' target to define MSEC_PER_SEC in a generated header
+    # This provides an alternative way to ensure the constant is available to Swift
+    if target.name == 'App'
+      # Path for the generated header file within derived data (Xcode's build output)
+      generated_header_path = "$(BUILT_PRODUCTS_DIR)/$(PUBLIC_HEADERS_FOLDER)/CapacitorCustomConstants.h"
+
+      # Content of the header file: Defines MSEC_PER_SEC as a C macro
+      header_content = "#ifndef CapacitorCustomConstants_h\n"
+      header_content += "#define CapacitorCustomConstants_h\n"
+      header_content += "#define MSEC_PER_SEC 1000.0\n"
+      header_content += "#endif /* CapacitorCustomConstants_h */\n"
+
+      # Add a Run Script Phase to create this header file during the build process
+      target.new_shell_script_build_phase("Generate Capacitor Custom Constants Header") do |phase|
+        phase.shell_script = "mkdir -p \"$(BUILT_PRODUCTS_DIR)/$(PUBLIC_HEADERS_FOLDER)\"\n" \
+                             "echo \"#{header_content}\" > \"#{generated_header_path}\"\n"
+        phase.input_paths = []
+        phase.output_paths = [generated_header_path] # Declare output for dependency analysis
+      end
+
+      # Add the directory containing the generated header to the App target's Header Search Paths
+      # This ensures Xcode can find the new header
+      target.build_configurations.each do |config|
+        config.build_settings['HEADER_SEARCH_PATHS'] ||= ['$(inherited)']
+        config.build_settings['HEADER_SEARCH_PATHS'] << "$(BUILT_PRODUCTS_DIR)/$(PUBLIC_HEADERS_FOLDER)"
+      end
+    end
+  end
+
+  # Keep the original assertDeploymentTarget hook from Capacitor
+  assertDeploymentTarget(installer)
+end
