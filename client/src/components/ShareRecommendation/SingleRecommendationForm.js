@@ -17,7 +17,13 @@ import {
 } from "@heroicons/react/24/outline";
 import { StarIcon as SolidStarIcon } from "@heroicons/react/24/solid";
 import { useNavigate } from "react-router-dom";
-import { API_URL, INTRO_TEXT, TYPEWRITER_SPEED, PUBLISH_OPTIONS } from "../../utils/constants";
+import {
+    API_URL,
+    INTRO_TEXT,
+    TYPEWRITER_SPEED,
+    PUBLISH_OPTIONS,
+} from "../../utils/constants";
+import PlaceAutocompleteInput from "../PlacesAutocomplete/PlacesAutocomplete";
 
 // Helper function (moved here as per your request not to create separate utils/helpers.js)
 const processTags = (tagString) => {
@@ -72,8 +78,9 @@ const MessageDisplay = ({ message }) => {
     );
 };
 
-
 export default function SingleRecommendationForm({ userEmail, navigate }) {
+    const google_api_key = "AIzaSyBxRfRgSI7wTeLc4LuBIWSlbv7wpOe49Pc";
+
     const [typewriterText, setTypewriterText] = useState("");
     const [typewriterIndex, setTypewriterIndex] = useState(0);
 
@@ -90,6 +97,20 @@ export default function SingleRecommendationForm({ userEmail, navigate }) {
     const [userTrustCircles, setUserTrustCircles] = useState([]);
     const [trustCirclesLoading, setTrustCirclesLoading] = useState(false);
     const [trustCirclesError, setTrustCirclesError] = useState("");
+
+    const [selectedPlace, setSelectedPlace] = useState(null);
+
+    // Function to handle when a place is selected from the autocomplete suggestions
+    const handlePlaceSelect = (place) => {
+        setSelectedPlace(place);
+        console.log("Selected Place:", place);
+        // You can add further logic here, e.g., display the place on a map
+    };
+
+    // Function to handle business name changes (both from autocomplete and custom input)
+    const handleBusinessNameChange = (value) => {
+        setBusinessName(value);
+    };
 
     const [message, setMessage] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -398,16 +419,12 @@ export default function SingleRecommendationForm({ userEmail, navigate }) {
                             <label htmlFor="businessName">
                                 Recommendation Name *
                             </label>
-                            <input
-                                id="businessName"
-                                type="text"
-                                placeholder="e.g., Stellar Plumbing Co."
+                            <PlaceAutocompleteInput
                                 value={businessName}
-                                onChange={(e) =>
-                                    setBusinessName(e.target.value)
-                                }
-                                onBlur={(e) => setBusinessName(e.target.value)}
-                                required
+                                onChange={handleBusinessNameChange}
+                                onPlaceSelect={handlePlaceSelect}
+                                placeholder="e.g., Stellar Plumbing Co. or 'The Great Gatsby' book"
+                                allowCustomInput={true}
                                 className={businessName ? "has-value" : ""}
                             />
                         </div>
@@ -536,7 +553,8 @@ export default function SingleRecommendationForm({ userEmail, navigate }) {
                     </section>
                     <section className="form-section optional-section">
                         <h2 className="section-title">
-                            <span className="section-number">3</span>Upload Images
+                            <span className="section-number">3</span>Upload
+                            Images
                         </h2>
                         <div className="image-upload-section">
                             <div

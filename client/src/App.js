@@ -23,7 +23,7 @@ import MovingServices from "./pages/MovingServices/MovingServices";
 import OutdoorServices from "./pages/OutdoorServices/OutdoorServices";
 import ProfileRedirect from "./pages/Profile/ProfileRedirect";
 import PublicProfile from "./pages/PublicProfile/PublicProfile";
-import PWAInterface from './pages/PWAInterface/PWAInterface';
+import PWAInterface from "./pages/PWAInterface/PWAInterface";
 import RecRequests from "./pages/RecRequests/RecRequests";
 import RepairServices from "./pages/RepairServices/RepairServices";
 import Search from "./pages/Search/Search";
@@ -33,10 +33,8 @@ import ShareRecommendation from "./pages/ShareRecommendation/ShareRecommendation
 import TrustCircles from "./pages/TrustCircles/TrustCircles";
 import UserRecommendations from "./pages/UserRecommendations/UserRecommendations";
 import UtilitiesServices from "./pages/UtilitiesServices/UtilitiesServices";
+import { API_URL } from "./utils/constants";
 import "./styles/global.css";
-
-const API_URL = "https://api.seanag-recommendations.org:8080";
-// const API_URL = "http://localhost:3000";
 
 const ProtectedRoute = ({ children }) => {
     const { isSignedIn } = useUser();
@@ -51,8 +49,8 @@ const ProtectedRoute = ({ children }) => {
 const BumpYourNetworkPage = () => {
     const location = useLocation();
     const { user } = useUser();
-    const query = location.state?.query || '';
-    
+    const query = location.state?.query || "";
+
     return <BumpYourNetwork isPage={true} currentUser={user} query={query} />;
 };
 
@@ -258,10 +256,7 @@ const AppWrapper = () => {
                             </ProtectedRoute>
                         }
                     />
-                    <Route
-                        path="/pro/:username"
-                        element={<PublicProfile />}
-                    />
+                    <Route path="/pro/:username" element={<PublicProfile />} />
                     <Route
                         path="/invite/:tokenString"
                         element={<InvitePage />}
