@@ -98,6 +98,13 @@ export default function SingleRecommendationForm({ userEmail, navigate }) {
 
     const [selectedPlace, setSelectedPlace] = useState(null);
 
+    // Add new state variables for address information
+    const [googlePlaceId, setGooglePlaceId] = useState("");
+    const [streetAddress, setStreetAddress] = useState("");
+    const [city, setCity] = useState("");
+    const [state, setState] = useState("");
+    const [zipCode, setZipCode] = useState("");
+
     // Function to handle when a place is selected from the autocomplete suggestions
     const handlePlaceSelect = (place) => {
         setSelectedPlace(place);
@@ -115,6 +122,31 @@ export default function SingleRecommendationForm({ userEmail, navigate }) {
             if (place.details.websiteUri) {
                 setWebsite(place.details.websiteUri);
             }
+
+            // Store address information silently
+            if (place.addressInfo) {
+                setStreetAddress(place.addressInfo.street_address || "");
+                setCity(place.addressInfo.city || "");
+                setState(place.addressInfo.state || "");
+                setZipCode(place.addressInfo.zip_code || "");
+
+                // Debug: Check if state variables are being set
+                setTimeout(() => {
+                    console.log("Current state values:", {
+                        streetAddress,
+                        city,
+                        state,
+                        zipCode,
+                        googlePlaceId: place.google_place_id,
+                    });
+                }, 100);
+            }
+
+            // Store Google Place ID
+            if (place.google_place_id) {
+                setGooglePlaceId(place.google_place_id);
+            }
+
         } else {
             console.log("No place details available");
         }
@@ -226,6 +258,12 @@ export default function SingleRecommendationForm({ userEmail, navigate }) {
         setTypewriterIndex(0); // Reset typewriter
         setTypewriterText("");
         setImages([]);
+        // Reset address fields
+        setGooglePlaceId("");
+        setStreetAddress("");
+        setCity("");
+        setState("");
+        setZipCode("");
     };
 
     const requiredFieldsComplete =
@@ -365,10 +403,25 @@ export default function SingleRecommendationForm({ userEmail, navigate }) {
             phone_number: phoneNumber.trim() || null,
             tags: tags,
             publish_scope: publishScope,
+            // Add address information - ensure these are included
+            google_place_id: googlePlaceId || null,
+            street_address: streetAddress.trim() || null,
+            city: city.trim() || null,
+            state: state.trim() || null,
+            zip_code: zipCode.trim() || null,
             ...(publishScope === "Specific Trust Circles" && {
                 trust_circle_ids: selectedTrustCircles,
             }),
         };
+
+        console.log("Submitting form data:", jsonData); // Debug log
+        console.log("Address fields being sent:", {
+            google_place_id: googlePlaceId,
+            street_address: streetAddress,
+            city: city,
+            state: state,
+            zip_code: zipCode,
+        });
 
         formData.append("data", JSON.stringify(jsonData));
 

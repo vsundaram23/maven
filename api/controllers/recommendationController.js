@@ -82,6 +82,10 @@ const createRecommendation = async (req, res) => {
             trust_circle_ids,
             email,
             street_address,
+            google_place_id,
+            city,
+            state,
+            zip_code,
         } = jsonData;
 
         // Validation
@@ -137,9 +141,9 @@ const createRecommendation = async (req, res) => {
         id, business_name, description, category_id, service_id, recommended_by, date_of_recommendation,
         email, phone_number, website, tags, city, state, zip_code, street_address, service_scope, price_range,
         business_contact, provider_message, recommender_message, visibility, num_likes, notes, price_paid,
-        created_at, updated_at, images, initial_rating
+        created_at, updated_at, images, initial_rating, google_place_id
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, 0, $22, $23, $24, $25, $26, $27
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, 0, $22, $23, $24, $25, $26, $27, $28
       ) RETURNING id;
     `;
 
@@ -155,9 +159,9 @@ const createRecommendation = async (req, res) => {
                 toNull(phone_number),
                 toNull(website),
                 tags || [],
-                null,
-                null,
-                null,
+                toNull(city),
+                toNull(state),
+                toNull(zip_code),
                 toNull(street_address),
                 null,
                 null,
@@ -170,7 +174,8 @@ const createRecommendation = async (req, res) => {
                 actualDateOfRecommendation,
                 actualDateOfRecommendation,
                 JSON.stringify(processedImages),
-                rating, // Add the rating here
+                rating,
+                toNull(google_place_id),
             ];
 
             await client.query(providerInsertQuery, providerValues);
@@ -285,6 +290,10 @@ const createRecommendationWithUuid = async (req, res) => {
             trust_circle_ids,
             email,
             street_address,
+            google_place_id,
+            city,
+            state,
+            zip_code,
         } = jsonData;
 
         // Validation
@@ -341,9 +350,9 @@ const createRecommendationWithUuid = async (req, res) => {
         id, business_name, description, category_id, service_id, recommended_by, date_of_recommendation,
         email, phone_number, website, tags, city, state, zip_code, street_address, service_scope, price_range,
         business_contact, provider_message, recommender_message, visibility, num_likes, notes, price_paid,
-        created_at, updated_at, images, initial_rating
+        created_at, updated_at, images, initial_rating, google_place_id
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, 0, $22, $23, $24, $25, $26, $27
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, 0, $22, $23, $24, $25, $26, $27, $28
       ) RETURNING id;
     `;
 
@@ -359,9 +368,9 @@ const createRecommendationWithUuid = async (req, res) => {
                 toNull(phone_number),
                 toNull(website),
                 tags || [],
-                null,
-                null,
-                null,
+                toNull(city),
+                toNull(state),
+                toNull(zip_code),
                 toNull(street_address),
                 null,
                 null,
@@ -375,6 +384,7 @@ const createRecommendationWithUuid = async (req, res) => {
                 actualDateOfRecommendation,
                 JSON.stringify(processedImages),
                 rating,
+                toNull(google_place_id),
             ];
 
             await client.query(providerInsertQuery, providerValues);

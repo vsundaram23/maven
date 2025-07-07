@@ -121,6 +121,48 @@ const PlaceAutocompleteInput = ({
         }
     };
 
+    // Helper function to extract address components
+    const extractAddressComponents = (addressComponents) => {
+        if (!addressComponents || !Array.isArray(addressComponents)) {
+            return null;
+        }
+
+        const streetNumber =
+            addressComponents.find((comp) =>
+                comp.types.includes("street_number")
+            )?.longText || "";
+
+        const route =
+            addressComponents.find((comp) => comp.types.includes("route"))
+                ?.longText || "";
+
+        const city =
+            addressComponents.find((comp) => comp.types.includes("locality"))
+                ?.longText || "";
+
+        const state =
+            addressComponents.find((comp) =>
+                comp.types.includes("administrative_area_level_1")
+            )?.shortText || "";
+
+        const zipCode =
+            addressComponents.find((comp) => comp.types.includes("postal_code"))
+                ?.longText || "";
+
+        // Build full address
+        const streetAddress = `${streetNumber} ${route}`.trim();
+        const fullAddress = [streetAddress, city, state, zipCode]
+            .filter(Boolean)
+            .join(", ");
+
+        return {
+            street_address: fullAddress, // Full address including city, state, zip
+            city,
+            state,
+            zip_code: zipCode,
+        };
+    };
+
     // Handler for input field changes
     const handleInputChange = (e) => {
         const newValue = e.target.value;
@@ -130,7 +172,6 @@ const PlaceAutocompleteInput = ({
 
     // Handler for selecting a prediction from the list
     const handlePredictionClick = async (prediction) => {
-
         const selectedText =
             prediction.placePrediction?.text?.text ||
             prediction.description ||
@@ -147,9 +188,16 @@ const PlaceAutocompleteInput = ({
             const placeDetails = await fetchPlaceDetails(placeId);
 
             if (placeDetails && onPlaceSelect) {
+                // Extract address components
+                const addressInfo = extractAddressComponents(
+                    placeDetails.addressComponents
+                );
+
                 onPlaceSelect({
                     ...prediction,
                     details: placeDetails,
+                    addressInfo,
+                    google_place_id: placeId,
                 });
             } else if (onPlaceSelect) {
                 onPlaceSelect(prediction);
