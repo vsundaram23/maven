@@ -79,8 +79,6 @@ const MessageDisplay = ({ message }) => {
 };
 
 export default function SingleRecommendationForm({ userEmail, navigate }) {
-    const google_api_key = "AIzaSyBxRfRgSI7wTeLc4LuBIWSlbv7wpOe49Pc";
-
     const [typewriterText, setTypewriterText] = useState("");
     const [typewriterIndex, setTypewriterIndex] = useState(0);
 
@@ -104,7 +102,22 @@ export default function SingleRecommendationForm({ userEmail, navigate }) {
     const handlePlaceSelect = (place) => {
         setSelectedPlace(place);
         console.log("Selected Place:", place);
-        // You can add further logic here, e.g., display the place on a map
+
+        // Extract and autofill contact information from place details
+        if (place.details) {
+
+            // Autofill phone number if available
+            if (place.details.internationalPhoneNumber) {
+                setPhoneNumber(place.details.internationalPhoneNumber);
+            }
+
+            // Autofill website if available
+            if (place.details.websiteUri) {
+                setWebsite(place.details.websiteUri);
+            }
+        } else {
+            console.log("No place details available");
+        }
     };
 
     // Function to handle business name changes (both from autocomplete and custom input)

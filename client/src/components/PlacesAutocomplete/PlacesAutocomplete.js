@@ -93,6 +93,34 @@ const PlaceAutocompleteInput = ({
         }
     };
 
+    // Function to fetch detailed place information
+    const fetchPlaceDetails = async (placeId) => {
+        const apiKey = "AIzaSyBxRfRgSI7wTeLc4LuBIWSlbv7wpOe49Pc";
+        const fields =
+            "id,displayName,formattedAddress,internationalPhoneNumber,websiteUri,addressComponents,location";
+        const apiUrl = `https://places.googleapis.com/v1/places/${placeId}?key=${apiKey}&fields=${encodeURIComponent(
+            fields
+        )}`;
+
+        try {
+            const response = await fetch(apiUrl);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error("Place Details API Error:", errorData);
+                throw new Error(
+                    errorData.error?.message ||
+                        `HTTP error! status: ${response.status}`
+                );
+            }
+            const data = await response.json();
+            return data;
+        } catch (err) {
+            console.error("Error fetching place details:", err);
+            return null;
+        }
+    };
+
     // Handler for input field changes
     const handleInputChange = (e) => {
         const newValue = e.target.value;
@@ -101,7 +129,8 @@ const PlaceAutocompleteInput = ({
     };
 
     // Handler for selecting a prediction from the list
-    const handlePredictionClick = (prediction) => {
+    const handlePredictionClick = async (prediction) => {
+
         const selectedText =
             prediction.placePrediction?.text?.text ||
             prediction.description ||
@@ -109,8 +138,29 @@ const PlaceAutocompleteInput = ({
         onChange(selectedText);
         setPredictions([]);
         setIsDropdownOpen(false);
-        if (onPlaceSelect) {
-            onPlaceSelect(prediction);
+
+        // Try different possible locations for placeId
+        const placeId =
+            prediction.placeId || prediction.placePrediction?.placeId;
+
+        if (placeId) {
+            const placeDetails = await fetchPlaceDetails(placeId);
+
+            if (placeDetails && onPlaceSelect) {
+                onPlaceSelect({
+                    ...prediction,
+                    details: placeDetails,
+                });
+            } else if (onPlaceSelect) {
+                onPlaceSelect(prediction);
+            }
+        } else {
+            console.log(
+                "No placeId found, calling onPlaceSelect without details"
+            );
+            if (onPlaceSelect) {
+                onPlaceSelect(prediction);
+            }
         }
     };
 
