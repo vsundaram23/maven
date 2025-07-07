@@ -81,6 +81,7 @@ const createRecommendation = async (req, res) => {
             publish_scope,
             trust_circle_ids,
             email,
+            street_address,
         } = jsonData;
 
         // Validation
@@ -134,11 +135,11 @@ const createRecommendation = async (req, res) => {
             const providerInsertQuery = `
       INSERT INTO service_providers (
         id, business_name, description, category_id, service_id, recommended_by, date_of_recommendation,
-        email, phone_number, website, tags, city, state, zip_code, service_scope, price_range,
+        email, phone_number, website, tags, city, state, zip_code, street_address, service_scope, price_range,
         business_contact, provider_message, recommender_message, visibility, num_likes, notes, price_paid,
         created_at, updated_at, images, initial_rating
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 0, $21, $22, $23, $24, $25, $26
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, 0, $22, $23, $24, $25, $26, $27
       ) RETURNING id;
     `;
 
@@ -157,6 +158,7 @@ const createRecommendation = async (req, res) => {
                 null,
                 null,
                 null,
+                toNull(street_address),
                 null,
                 null,
                 toNull(provider_contact_name),
@@ -282,6 +284,7 @@ const createRecommendationWithUuid = async (req, res) => {
             publish_scope,
             trust_circle_ids,
             email,
+            street_address,
         } = jsonData;
 
         // Validation
@@ -336,11 +339,11 @@ const createRecommendationWithUuid = async (req, res) => {
             const providerInsertQuery = `
       INSERT INTO service_providers (
         id, business_name, description, category_id, service_id, recommended_by, date_of_recommendation,
-        email, phone_number, website, tags, city, state, zip_code, service_scope, price_range,
+        email, phone_number, website, tags, city, state, zip_code, street_address, service_scope, price_range,
         business_contact, provider_message, recommender_message, visibility, num_likes, notes, price_paid,
         created_at, updated_at, images, initial_rating
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 0, $21, $22, $23, $24, $25, $26
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, 0, $22, $23, $24, $25, $26, $27
       ) RETURNING id;
     `;
 
@@ -359,6 +362,7 @@ const createRecommendationWithUuid = async (req, res) => {
                 null,
                 null,
                 null,
+                toNull(street_address),
                 null,
                 null,
                 toNull(provider_contact_name),

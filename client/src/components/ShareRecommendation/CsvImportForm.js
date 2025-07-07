@@ -179,7 +179,10 @@ export default function CsvImportForm({ userEmail, navigate }) {
                         : "Full Trust Circle",
                 trust_circle_ids: [], // Not in CSV, leave empty
                 email: row["email"]?.trim() || null,
-                date_of_recommendation: new Date().toISOString().slice(0, 10), // Use current date
+                date_of_recommendation:
+                    row["date_of_recommendation"] ||
+                    new Date().toISOString().slice(0, 10), // Use date from CSV or current date as fallback
+                street_address: row["street_address"]?.trim() || null,
             };
 
             // Validate the row
@@ -206,10 +209,13 @@ export default function CsvImportForm({ userEmail, navigate }) {
                 const formData = new FormData();
                 formData.append("data", JSON.stringify(transformedData));
 
-                const response = await fetch(`${API_URL}/api/recommendations/uuid`, {
-                    method: "POST",
-                    body: formData,
-                });
+                const response = await fetch(
+                    `${API_URL}/api/recommendations/uuid`,
+                    {
+                        method: "POST",
+                        body: formData,
+                    }
+                );
 
                 if (!response.ok) {
                     const errorData = await response
