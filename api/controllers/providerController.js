@@ -247,7 +247,7 @@ const getAllVisibleProviders = async (req, res) => {
                 sp.id, sp.business_name, sp.description, sp.email, sp.phone_number,
                 sp.tags, sp.website, sp.city, sp.state, sp.zip_code, sp.service_scope,
                 sp.price_range, sp.date_of_recommendation, sp.num_likes, sp.provider_message,
-                sp.business_contact, sp.recommender_message, sp.visibility, sp.images,
+                sp.business_contact, sp.recommender_message, sp.visibility,
                 sp.service_id AS recommended_service_id, s.display_name AS recommended_service_name,
                 sc.name as category, sp.recommended_by AS recommender_user_id,
                 rec_user.username as recommender_username, rec_user.name AS recommender_name,
