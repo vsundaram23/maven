@@ -55,7 +55,7 @@ const PlaceAutocompleteInput = ({
 
     // Function to fetch predictions from Google Places (New) API
     const fetchPredictions = async (input) => {
-        const apiKey = "AIzaSyBxRfRgSI7wTeLc4LuBIWSlbv7wpOe49Pc";
+        const apiKey = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
         const apiUrl = `https://places.googleapis.com/v1/places:autocomplete?key=${apiKey}`;
 
         try {
@@ -95,7 +95,7 @@ const PlaceAutocompleteInput = ({
 
     // Function to fetch detailed place information
     const fetchPlaceDetails = async (placeId) => {
-        const apiKey = "AIzaSyBxRfRgSI7wTeLc4LuBIWSlbv7wpOe49Pc";
+        const apiKey = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
         const fields =
             "id,displayName,formattedAddress,internationalPhoneNumber,websiteUri,addressComponents,location";
         const apiUrl = `https://places.googleapis.com/v1/places/${placeId}?key=${apiKey}&fields=${encodeURIComponent(
