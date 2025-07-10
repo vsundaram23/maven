@@ -27,7 +27,7 @@ const RecRequests = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showHistoricalInbound, setShowHistoricalInbound] = useState(false);
-    const [showHistoricalOutbound, setShowHistoricalOutbound] = useState(false);
+    const [showHistoricalOutbound, setShowHistoricalOutbound] = useState(true);
 
     useEffect(() => {
         const fetchBoth = async () => {
@@ -282,56 +282,27 @@ const RecRequests = () => {
         const pendingRequests = outboundRequests.filter(r => r.status !== 'responded');
         const respondedRequests = outboundRequests.filter(r => r.status === 'responded');
 
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+        const recentRespondedRequests = respondedRequests.filter(ask => 
+            ask.responses && ask.responses.some(response => new Date(response.created_at) > oneMonthAgo)
+        );
+
         return (
             <>
-                <div className="tab-description">Requests you've sent to others</div>
-                <div className="requests-list">
-                    {pendingRequests.length === 0 && <div className="requests-empty">You have no new outgoing requests.</div>}
-                    {pendingRequests.map((ask) => (
-                        <div key={ask.id} className="request-card hoverable">
-                             <div className="ask-top">
-                                <div className="request-header-row">
-                                    <div className="request-header-left">
-                                        <div className="avatar">{ask.recipient_names && ask.recipient_names[0] ? ask.recipient_names[0].charAt(0) : '?'}</div>
-                                        <div>
-                                            <div className="name">To: {ask.recipient_names ? ask.recipient_names.join(', ') : 'Recipients'}</div>
-                                            <div className="date">{new Date(ask.created_at).toLocaleDateString()}</div>
-                                        </div>
-                                    </div>
-                                    <div className="badges">
-                                        <span className="badge badge-outline status"><span className="icon">{STATUS_ICONS[ask.status] || null}</span>{ask.status}</span>
-                                    </div>
-                                </div>
-                                <div className="request-body">
-                                    <div className="ask-section">
-                                        <span className="ask-section-title">Your Original Ask:</span>
-                                        <p className="ask-section-content">{ask.title || 'N/A'}</p>
-                                    </div>
-                                    {ask.description && (
-                                        <div className="ask-section">
-                                            <span className="ask-section-title">Additional Context:</span>
-                                            <p className="ask-section-content">{ask.description}</p>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="request-footer">
-                                    {/* No actions for pending outbound */}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                {/* <div className="tab-description">Requests you've sent to others</div> */}
 
-                {respondedRequests.length > 0 && (
+                {recentRespondedRequests.length > 0 && (
                      <div className="historical-section">
                         <div className="historical-requests-toggle" onClick={() => setShowHistoricalOutbound(!showHistoricalOutbound)}>
-                            <span>{showHistoricalOutbound ? 'Hide' : 'Show'} Responded Requests ({respondedRequests.length})</span>
+                            <span>{showHistoricalOutbound ? 'Hide' : 'Show'} Responded Requests ({recentRespondedRequests.length})</span>
                             <span className={`toggle-chevron ${showHistoricalOutbound ? 'open' : ''}`}>&#9660;</span>
                         </div>
 
                         {showHistoricalOutbound && (
                             <div className="requests-list historical-requests-list">
-                                {respondedRequests.map((ask) => (
+                                {recentRespondedRequests.map((ask) => (
                                     <div key={ask.id} className="request-card hoverable">
                                         <div className="ask-top">
                                             <div className="request-header-row">
@@ -388,8 +359,48 @@ const RecRequests = () => {
                         )}
                     </div>
                 )}
+
+                <div className="requests-list" style={{ marginTop: '1.25rem' }}>
+                    {pendingRequests.map((ask) => (
+                        <div key={ask.id} className="request-card hoverable">
+                             <div className="ask-top">
+                                <div className="request-header-row">
+                                    <div className="request-header-left">
+                                        <div className="avatar">{ask.recipient_names && ask.recipient_names[0] ? ask.recipient_names[0].charAt(0) : '?'}</div>
+                                        <div>
+                                            <div className="name">To: {ask.recipient_names ? ask.recipient_names.join(', ') : 'Recipients'}</div>
+                                            <div className="date">{new Date(ask.created_at).toLocaleDateString()}</div>
+                                        </div>
+                                    </div>
+                                    <div className="badges">
+                                        <span className="badge badge-outline status"><span className="icon">{STATUS_ICONS[ask.status] || null}</span>{ask.status}</span>
+                                    </div>
+                                </div>
+                                <div className="request-body">
+                                    <div className="ask-section">
+                                        <span className="ask-section-title">Your Original Ask:</span>
+                                        <p className="ask-section-content">{ask.title || 'N/A'}</p>
+                                    </div>
+                                    {ask.description && (
+                                        <div className="ask-section">
+                                            <span className="ask-section-title">Additional Context:</span>
+                                            <p className="ask-section-content">{ask.description}</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="request-footer">
+                                    {/* No actions for pending outbound */}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {pendingRequests.length === 0 && (
+                    <div className="requests-empty" style={{ marginTop: '1.25rem' }}>You have no new outgoing requests.</div>
+                )}
             </>
-        )
+        );
     };
 
     if (isLoading) return <div className="requests-loading">Loading requests...</div>;
@@ -433,7 +444,7 @@ const RecRequests = () => {
                         onClick={() => setActiveList('inbound')}
                     >
                         <FaEnvelopeOpenText className="selector-icon" />
-                        <span className="selector-title">Inbound</span>
+                        <span className="selector-title">Your Answers</span>
                         <span className="selector-count">({pendingInboundCount})</span>
                     </div>
                     <div
@@ -441,7 +452,7 @@ const RecRequests = () => {
                         onClick={() => setActiveList('outbound')}
                     >
                         <FaUser className="selector-icon" />
-                        <span className="selector-title">Outbound</span>
+                        <span className="selector-title">Your Asks</span>
                         <span className="selector-count">({pendingOutboundCount})</span>
                     </div>
                 </div>

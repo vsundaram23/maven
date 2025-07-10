@@ -2,7 +2,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import React, { useEffect, useMemo, useState } from 'react';
 import { FaBolt, FaCheck, FaCheckCircle, FaMapMarkerAlt, FaPaperPlane, FaPlus, FaSearch, FaStar, FaUsers } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
-import AlgorithmicLoader from '../AlgorithmicLoader/AlgorithmicLoader';
 import SuggestedFollowersModal from '../SuggestedFollowersModal/SuggestedFollowersModal';
 import './BumpYourNetwork.css';
 
@@ -61,7 +60,7 @@ const BumpYourNetwork = ({ isOpen, onClose, query: propQuery, currentUser, isPag
 
     const [suggestedRecommenders, setSuggestedRecommenders] = useState([]);
     const [selectedRecommenders, setSelectedRecommenders] = useState(new Set());
-    const [isLoading, setIsLoading] = useState(isPage); // Loader is only for the page view
+    const [isLoading, setIsLoading] = useState(false); // Loader is only for the page view
     const [isSending, setIsSending] = useState(false);
     const [error, setError] = useState(null);
     const [step, setStep] = useState('suggest');
@@ -470,7 +469,7 @@ const BumpYourNetwork = ({ isOpen, onClose, query: propQuery, currentUser, isPag
     };
 
     if (isPage && isLoading) {
-        return <AlgorithmicLoader onComplete={() => setIsLoading(false)} />;
+        return null;
     }
 
     // Page view
@@ -486,9 +485,9 @@ const BumpYourNetwork = ({ isOpen, onClose, query: propQuery, currentUser, isPag
                     <div className="hero-icon-wrapper">
                         <FaUsers className="hero-icon" />
                     </div>
-                    <h2 className="hero-title">Ask Your Network</h2>
+                    <h2 className="hero-title">Hmmm... Let's Ask Your Network</h2>
                     <p className="hero-subtitle">
-                        Select trusted contacts to reach out to for personalized recommendations
+                        We couldn't find anything in your Trust Circle for "{query}". But reach out to these trusted contacts for personalized recommendations:
                     </p>
                 </motion.div>
 

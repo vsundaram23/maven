@@ -492,23 +492,13 @@ const Search = () => {
     );
   }
 
-  if (noResultsParam && query && !isLoading) {
+  if ((noResultsParam || sortedProviders.length === 0) && query && !isLoading) {
     return (
       <BumpYourNetwork 
         query={query} 
         currentUser={user} 
         isPage={true} 
       />
-    );
-  }
-  
-  if (sortedProviders.length === 0 && query && !isLoading) {
-    return (
-        <div className="no-results-container elite-no-results">
-            <FaBullhorn className="no-results-icon" />
-            <h2>No Recommendations Found for "{query}"</h2>
-            <p className="no-results-subtext">Try a different search term or expand your Trust Circle.</p>
-        </div>
     );
   }
   
