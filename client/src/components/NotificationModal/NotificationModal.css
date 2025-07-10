@@ -220,6 +220,11 @@
   margin: 0;
 }
 
+.notification-item-message {
+  /* ... existing styles ... */
+  white-space: pre-wrap; /* This is the new line you need */
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .notification-modal-overlay {
