@@ -517,28 +517,28 @@ const BumpYourNetwork = ({ isOpen, onClose, query: propQuery, currentUser, isPag
                             onChange={(e) => setFollowingSearch(e.target.value)}
                             className="search-input"
                         />
+                        {filteredFollowing.length > 0 && (
+                            <div className="follower-search-results">
+                                {filteredFollowing.map(followingUser => (
+                                    <div key={followingUser.id} className="follower-result-item" onClick={() => handleAddFollowingAsRecommender(followingUser)}>
+                                        <div className="avatar-wrapper small">
+                                            {followingUser.has_profile_image ? (
+                                                <img src={`${API_URL}/api/users/${followingUser.id}/profile/image`} alt={followingUser.name} className="avatar-image" />
+                                            ) : (
+                                                <div className="avatar-initials">{generateInitials(followingUser.name)}</div>
+                                            )}
+                                        </div>
+                                        <div className="follower-info">
+                                            <span className="follower-name">{followingUser.name}</span>
+                                        </div>
+                                        <div className="follower-add-action">
+                                            <FaPlus />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                     {filteredFollowing.length > 0 && (
-                        <div className="follower-search-results">
-                            {filteredFollowing.map(followingUser => (
-                                <div key={followingUser.id} className="follower-result-item" onClick={() => handleAddFollowingAsRecommender(followingUser)}>
-                                    <div className="avatar-wrapper small">
-                                        {followingUser.has_profile_image ? (
-                                            <img src={`${API_URL}/api/users/${followingUser.id}/profile/image`} alt={followingUser.name} className="avatar-image" />
-                                        ) : (
-                                            <div className="avatar-initials">{generateInitials(followingUser.name)}</div>
-                                        )}
-                                    </div>
-                                    <div className="follower-info">
-                                        <span className="follower-name">{followingUser.name}</span>
-                                    </div>
-                                    <div className="follower-add-action">
-                                        <FaPlus />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
                 </motion.div>
 
                 <motion.div

@@ -1,471 +1,280 @@
 import { useUser } from '@clerk/clerk-react';
-import React, { useEffect, useState } from 'react';
-import { FaCheckCircle, FaClock, FaEnvelopeOpenText, FaUser } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
-import ResponsesDisplay from '../../components/ResponsesDisplay/ResponsesDisplay';
+import React, { useCallback, useEffect, useState } from 'react';
+import { FaAngleDown, FaAngleUp, FaTrash } from 'react-icons/fa';
 import './RecRequests.css';
 
 const API_URL = 'https://api.seanag-recommendations.org:8080';
 // const API_URL = 'http://localhost:3000';
 
-const STATUS_ICONS = {
-    pending: <FaClock />,
-    responded: <FaCheckCircle />,
-};
 
 const RecRequests = () => {
-    const { isLoaded, isSignedIn, user } = useUser();
-    const navigate = useNavigate();
-
-    const [activeList, setActiveList] = useState('inbound');
-    const [respondingToId, setRespondingToId] = useState(null);
-    const [responseText, setResponseText] = useState('');
-    const [viewingAskId, setViewingAskId] = useState(null);
-    const [newAskText, setNewAskText] = useState('');
+    const { user, isLoaded, isSignedIn } = useUser();
+    const [activeTab, setActiveTab] = useState('asks');
     const [inboundRequests, setInboundRequests] = useState([]);
     const [outboundRequests, setOutboundRequests] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [showHistoricalInbound, setShowHistoricalInbound] = useState(false);
-    const [showHistoricalOutbound, setShowHistoricalOutbound] = useState(true);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [expandedAsks, setExpandedAsks] = useState({});
+    const [responses, setResponses] = useState({});
+    const [showConfirmation, setShowConfirmation] = useState(false);
+    const [askToDelete, setAskToDelete] = useState(null);
+
+    const fetchInboundRequests = useCallback(async () => {
+        if (!user) return;
+        try {
+            const response = await fetch(`${API_URL}/api/bump/asks/inbound?recipient_id=${user.id}`);
+            if (!response.ok) throw new Error('Failed to fetch inbound requests');
+            const data = await response.json();
+            setInboundRequests(data.requests || []);
+        } catch (err) {
+            setError('Could not load inbound requests.');
+            console.error(err);
+        }
+    }, [user]);
+
+    const fetchOutboundRequests = useCallback(async () => {
+        if (!user) return;
+        try {
+            const response = await fetch(`${API_URL}/api/bump/asks/outbound?asker_id=${user.id}`);
+            if (!response.ok) throw new Error('Failed to fetch outbound requests');
+            const data = await response.json();
+            setOutboundRequests(data.requests || []);
+        } catch (err) {
+            setError('Could not load outbound requests.');
+            console.error(err);
+        }
+    }, [user]);
 
     useEffect(() => {
-        const fetchBoth = async () => {
-            if (!isLoaded) return;
-            if (!isSignedIn || !user) {
-                setIsLoading(false);
-                return;
-            }
-            setIsLoading(true);
-            setError(null); // Clear previous errors
-            try {
-                const inboundParams = new URLSearchParams({ recipient_id: user.id });
-                const outboundParams = new URLSearchParams({ asker_id: user.id });
-                const [inResp, outResp] = await Promise.all([
-                    fetch(`${API_URL}/api/bump/asks/inbound?${inboundParams.toString()}`),
-                    fetch(`${API_URL}/api/bump/asks/outbound?${outboundParams.toString()}`),
-                ]);
-
-                if (!inResp.ok) {
-                    const errorData = await inResp.json();
-                    throw new Error(errorData.error || `Inbound request failed with status: ${inResp.status}`);
-                }
-                if (!outResp.ok) {
-                    const errorData = await outResp.json();
-                    throw new Error(errorData.error || `Outbound request failed with status: ${outResp.status}`);
-                }
-
-                const inData = await inResp.json();
-                const outData = await outResp.json();
-                setInboundRequests(Array.isArray(inData.requests) ? inData.requests : []);
-                setOutboundRequests(Array.isArray(outData.requests) ? outData.requests : []);
-            } catch (err) {
-                console.error('Error fetching requests:', err);
-                setError(err.message || 'Something went wrong');
-            } finally {
-                setIsLoading(false);
-            }
+        const fetchRequests = async () => {
+            setLoading(true);
+            setError('');
+            await Promise.all([fetchInboundRequests(), fetchOutboundRequests()]);
+            setLoading(false);
         };
-        fetchBoth();
-    }, [isLoaded, isSignedIn, user]);
+        if (isLoaded && isSignedIn) {
+            fetchRequests();
+        } else if (isLoaded && !isSignedIn) {
+            setLoading(false);
+        }
+    }, [isLoaded, isSignedIn, fetchInboundRequests, fetchOutboundRequests]);
 
     const handleDecline = async (askId) => {
-        if (!isSignedIn || !user) return;
+        if (!user) return;
         try {
-            const resp = await fetch(`${API_URL}/api/bump/asks/decline`, {
+            const response = await fetch(`${API_URL}/api/bump/asks/decline`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ask_id: askId, user_id: user.id })
             });
-            if (!resp.ok) throw new Error('Failed to decline request');
-            setInboundRequests(prev => prev.filter(r => r.id !== askId));
-        } catch (err) {
-            console.error('Decline error:', err);
-            alert('Unable to decline request.');
+            if (!response.ok) throw new Error('Failed to decline');
+            setInboundRequests(prev => prev.filter(req => req.id !== askId));
+        } catch (error) {
+            console.error("Error declining ask:", error);
         }
     };
 
-    const handleStartResponse = (askId) => {
-        setRespondingToId(askId);
-        setResponseText(''); 
+    const handleDeleteClick = (ask) => {
+        setAskToDelete(ask);
+        setShowConfirmation(true);
     };
 
-    const handleSubmitResponse = async () => {
-        if (!responseText.trim() || !respondingToId || !user) return;
+    const confirmDelete = async () => {
+        if (!askToDelete || !user) return;
 
         try {
-            const resp = await fetch(`${API_URL}/api/bump/asks/respond`, {
-                method: 'POST',
+            const response = await fetch(`${API_URL}/api/bump/asks/${askToDelete.id}`, {
+                method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    ask_id: respondingToId, 
-                    user_id: user.id,
-                    text: responseText,
-                })
+                body: JSON.stringify({ user_id: user.id }),
             });
 
-            if (!resp.ok) throw new Error('Failed to submit response');
-            
-            const newResponse = await resp.json();
+            if (!response.ok) {
+                throw new Error('Failed to delete the ask.');
+            }
 
-            setInboundRequests(prev => 
-                prev.map(req => {
-                    if (req.id === respondingToId) {
-                        const updatedResponses = Array.isArray(req.responses) 
-                            ? [...req.responses, newResponse] 
-                            : [newResponse];
-                        return { ...req, status: 'responded', responses: updatedResponses };
-                    }
-                    return req;
-                })
-            );
-            
-            setRespondingToId(null);
-            setResponseText('');
-
+            setOutboundRequests(prev => prev.filter(req => req.id !== askToDelete.id));
         } catch (err) {
-            console.error('Response submission error:', err);
-            alert('Unable to submit response.');
+            setError(err.message);
+            console.error(err);
+        } finally {
+            setShowConfirmation(false);
+            setAskToDelete(null);
         }
     };
 
-    const handleRespond = (ask) => {
-        navigate(`/share-recommendation?askId=${ask.id}`);
-    };
-
-    const handleAskNetwork = () => {
-        if (newAskText.trim()) {
-            navigate('/bump-your-network', { state: { query: newAskText } });
-        }
-    };
-
-    const renderInbound = () => {
-        const pendingRequests = inboundRequests.filter(r => r.status === 'pending');
-        const respondedRequests = inboundRequests.filter(r => r.status !== 'pending');
+    const renderInboundRequestCard = (ask) => {
+        const isExpanded = expandedAsks[ask.id];
 
         return (
-            <>
-                <div className="tab-description">Requests from others asking for your recommendations</div>
-                <div className="requests-list">
-                    {pendingRequests.length === 0 && <div className="requests-empty">You have no new incoming requests.</div>}
-                    {pendingRequests.map((ask) => {
-                        const locationDisplay = [ask.asker_location, ask.asker_state].filter(Boolean).join(', ');
-                        return (
-                            <div key={ask.id} className="request-card hoverable">
-                                <div className="ask-top">
-                                    <div className="request-header-row">
-                                        <div className="request-header-left">
-                                            <div className="avatar">{ask.asker_name ? ask.asker_name.charAt(0) : '?'}</div>
-                                            <div>
-                                                <div className="name">{ask.asker_name || 'Unknown'}</div>
-                                                <div className="date">{new Date(ask.created_at).toLocaleDateString()}</div>
-                                            </div>
-                                        </div>
-                                        <div className="badges">
-                                            <span className="badge badge-outline status"><span className="icon">{STATUS_ICONS[ask.status] || null}</span>{ask.status}</span>
-                                        </div>
-                                    </div>
-                                    <div className="request-body">
-                                        <div className="ask-section">
-                                            <span className="ask-section-title">Your Original Ask:</span>
-                                            <p className="ask-section-content">{ask.title || 'N/A'}</p>
-                                        </div>
-                                        {ask.description && (
-                                            <div className="ask-section">
-                                                <span className="ask-section-title">Additional Context:</span>
-                                                <p className="ask-section-content">{ask.description}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="request-footer">
-                                        <span className="location">📍 {locationDisplay || 'Unknown'}</span>
-                                        <div className="actions">
-                                            {ask.status === 'pending' && (
-                                                <>
-                                                    <button className="btn-outline" onClick={() => handleDecline(ask.id)}>Decline</button>
-                                                    <button className="btn-primary" onClick={() => handleStartResponse(ask.id)}>Respond</button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                {respondingToId === ask.id && (
-                                    <div className="response-form-container">
-                                        <textarea
-                                            className="response-textarea"
-                                            placeholder="Write your response..."
-                                            value={responseText}
-                                            onChange={(e) => setResponseText(e.target.value)}
-                                            autoFocus
-                                        />
-                                        <div className="response-actions">
-                                            <button className="btn-outline" onClick={() => setRespondingToId(null)}>Cancel</button>
-                                            <button className="btn-primary" onClick={handleSubmitResponse}>Submit Response</button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
+            <div key={ask.id} className="request-card inbound">
+                 <div className="card-header">
+                    <div>
+                        <p className="card-title">"{ask.title}"</p>
+                        <p className="card-date">From <strong>{ask.asker_name}</strong> on {new Date(ask.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <div className="card-status-chip" data-status={ask.status}>{ask.status}</div>
+                </div>
+                <div className="card-body">
+                    {ask.description && <p><strong>Context:</strong> {ask.description}</p>}
                 </div>
 
-                {respondedRequests.length > 0 && (
-                    <div className="historical-section">
-                        <div className="historical-requests-toggle" onClick={() => setShowHistoricalInbound(!showHistoricalInbound)}>
-                            <span>{showHistoricalInbound ? 'Hide' : 'Show'} Responded Requests ({respondedRequests.length})</span>
-                            <span className={`toggle-chevron ${showHistoricalInbound ? 'open' : ''}`}>&#9660;</span>
-                        </div>
-
-                        {showHistoricalInbound && (
-                            <div className="requests-list historical-requests-list">
-                                {respondedRequests.map((ask) => {
-                                    const locationDisplay = [ask.asker_location, ask.asker_state].filter(Boolean).join(', ');
-                                    return (
-                                        <div key={ask.id} className="request-card hoverable">
-                                            <div className="ask-top">
-                                                 <div className="request-header-row">
-                                                    <div className="request-header-left">
-                                                        <div className="avatar">{ask.asker_name ? ask.asker_name.charAt(0) : '?'}</div>
-                                                        <div>
-                                                            <div className="name">{ask.asker_name || 'Unknown'}</div>
-                                                            <div className="date">{new Date(ask.created_at).toLocaleDateString()}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="badges">
-                                                        <span className="badge badge-outline status"><span className="icon">{STATUS_ICONS[ask.status] || null}</span>{ask.status}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="request-body">
-                                                    <div className="ask-section">
-                                                        <span className="ask-section-title">Your Original Ask:</span>
-                                                        <p className="ask-section-content">{ask.title || 'N/A'}</p>
-                                                    </div>
-                                                    {ask.description && (
-                                                        <div className="ask-section">
-                                                            <span className="ask-section-title">Additional Context:</span>
-                                                            <p className="ask-section-content">{ask.description}</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="request-footer">
-                                                    <span className="location">📍 {locationDisplay || 'Unknown'}</span>
-                                                </div>
-                                            </div>
-                                            {ask.status === 'responded' && ask.responses && ask.responses.length > 0 && (
-                                                <div className="responses-preview-section">
-                                                    <div className="responses-preview-title">Your Response(s)</div>
-                                                    {ask.responses.map((response, index) => (
-                                                        <div key={index} className="response-preview-item">
-                                                            <div className="response-preview-header">
-                                                                <span className="response-preview-author">{response.user_name || 'You'}</span>
-                                                                <span className="response-preview-date">
-                                                                    {new Date(response.created_at).toLocaleDateString()}
-                                                                </span>
-                                                            </div>
-                                                            <p className="response-preview-text">{response.text}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        )}
-                    </div>
-                )}
-            </>
-        )
-    };
-
-    const renderOutbound = () => {
-        const pendingRequests = outboundRequests.filter(r => r.status !== 'responded');
-        const respondedRequests = outboundRequests.filter(r => r.status === 'responded');
-
-        const oneMonthAgo = new Date();
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-
-        const recentRespondedRequests = respondedRequests.filter(ask => 
-            ask.responses && ask.responses.some(response => new Date(response.created_at) > oneMonthAgo)
-        );
-
-        return (
-            <>
-                {/* <div className="tab-description">Requests you've sent to others</div> */}
-
-                {recentRespondedRequests.length > 0 && (
-                     <div className="historical-section">
-                        <div className="historical-requests-toggle" onClick={() => setShowHistoricalOutbound(!showHistoricalOutbound)}>
-                            <span>{showHistoricalOutbound ? 'Hide' : 'Show'} Responded Requests ({recentRespondedRequests.length})</span>
-                            <span className={`toggle-chevron ${showHistoricalOutbound ? 'open' : ''}`}>&#9660;</span>
-                        </div>
-
-                        {showHistoricalOutbound && (
-                            <div className="requests-list historical-requests-list">
-                                {recentRespondedRequests.map((ask) => (
-                                    <div key={ask.id} className="request-card hoverable">
-                                        <div className="ask-top">
-                                            <div className="request-header-row">
-                                                <div className="request-header-left">
-                                                    <div className="avatar">{ask.recipient_names && ask.recipient_names[0] ? ask.recipient_names[0].charAt(0) : '?'}</div>
-                                                    <div>
-                                                        <div className="name">To: {ask.recipient_names ? ask.recipient_names.join(', ') : 'Recipients'}</div>
-                                                        <div className="date">{new Date(ask.created_at).toLocaleDateString()}</div>
-                                                    </div>
-                                                </div>
-                                                <div className="badges">
-                                                    <span className="badge badge-outline status"><span className="icon">{STATUS_ICONS[ask.status] || null}</span>{ask.status}</span>
-                                                </div>
-                                            </div>
-                                            <div className="request-body">
-                                                <div className="ask-section">
-                                                    <span className="ask-section-title">Your Original Ask:</span>
-                                                    <p className="ask-section-content">{ask.title || 'N/A'}</p>
-                                                </div>
-                                                {ask.description && (
-                                                    <div className="ask-section">
-                                                        <span className="ask-section-title">Additional Context:</span>
-                                                        <p className="ask-section-content">{ask.description}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="request-footer">
-                                                <div className="actions">
-                                                    {ask.status === 'responded' && (
-                                                        <button className="btn-primary" onClick={() => setViewingAskId(ask.id)}>View All Responses</button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {ask.status === 'responded' && ask.responses && ask.responses.length > 0 && (
-                                            <div className="responses-preview-section">
-                                                <div className="responses-preview-title">Response(s) Received</div>
-                                                {ask.responses.map((response, index) => (
-                                                    <div key={index} className="response-preview-item">
-                                                        <div className="response-preview-header">
-                                                            <span className="response-preview-author">{response.user_name || 'Anonymous'}</span>
-                                                            <span className="response-preview-date">
-                                                                {new Date(response.created_at).toLocaleDateString()}
-                                                            </span>
-                                                        </div>
-                                                        <p className="response-preview-text">{response.text}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                {/* If pending, show respond/decline buttons */}
+                {ask.status === 'pending' && (
+                    <div className="card-footer">
+                         <button className="btn btn-secondary" onClick={() => handleDecline(ask.id)}>Decline</button>
+                         <button className="btn btn-primary" onClick={() => { alert('Respond functionality to be implemented'); }}>Respond</button>
                     </div>
                 )}
 
-                <div className="requests-list" style={{ marginTop: '1.25rem' }}>
-                    {pendingRequests.map((ask) => (
-                        <div key={ask.id} className="request-card hoverable">
-                             <div className="ask-top">
-                                <div className="request-header-row">
-                                    <div className="request-header-left">
-                                        <div className="avatar">{ask.recipient_names && ask.recipient_names[0] ? ask.recipient_names[0].charAt(0) : '?'}</div>
-                                        <div>
-                                            <div className="name">To: {ask.recipient_names ? ask.recipient_names.join(', ') : 'Recipients'}</div>
-                                            <div className="date">{new Date(ask.created_at).toLocaleDateString()}</div>
-                                        </div>
-                                    </div>
-                                    <div className="badges">
-                                        <span className="badge badge-outline status"><span className="icon">{STATUS_ICONS[ask.status] || null}</span>{ask.status}</span>
-                                    </div>
-                                </div>
-                                <div className="request-body">
-                                    <div className="ask-section">
-                                        <span className="ask-section-title">Your Original Ask:</span>
-                                        <p className="ask-section-content">{ask.title || 'N/A'}</p>
-                                    </div>
-                                    {ask.description && (
-                                        <div className="ask-section">
-                                            <span className="ask-section-title">Additional Context:</span>
-                                            <p className="ask-section-content">{ask.description}</p>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="request-footer">
-                                    {/* No actions for pending outbound */}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {pendingRequests.length === 0 && (
-                    <div className="requests-empty" style={{ marginTop: '1.25rem' }}>You have no new outgoing requests.</div>
+                {/* If responded, show a button to view your answer */}
+                {ask.status === 'responded' && ask.responses && ask.responses.length > 0 && (
+                     <div className="card-footer">
+                        <button className="toggle-responses-button" onClick={() => setExpandedAsks(prev => ({ ...prev, [ask.id]: !isExpanded }))}>
+                            {isExpanded ? 'Hide Your Answer' : 'Show Your Answer'}
+                            {isExpanded ? <FaAngleUp /> : <FaAngleDown />}
+                        </button>
+                     </div>
                 )}
-            </>
-        );
-    };
 
-    if (isLoading) return <div className="requests-loading">Loading requests...</div>;
-    if (error) return <div className="requests-error">{error}</div>;
-
-    const pendingInboundCount = inboundRequests.filter(r => r.status === 'pending').length;
-    const pendingOutboundCount = outboundRequests.filter(r => r.status !== 'responded').length;
-
-    return (
-        <div className="requests-page">
-            <div className="page-header">
-                <h1 className="page-title">Recommendation Requests</h1>
-                <p className="page-sub">Manage your incoming and outgoing recommendation requests</p>
+                {/* If expanded and responded, show the responses */}
+                {isExpanded && ask.status === 'responded' && (
+                    <div className="responses-container">
+                        {(ask.responses || []).map((response, index) => (
+                            <div key={index} className="response-item">
+                                <p><strong>You</strong> ({new Date(response.created_at).toLocaleString()}):</p>
+                                <p>{response.text}</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
+        )
+    }
 
-            <div className="new-ask-section">
-                <h2 className="new-ask-title">Want to ask your Trust Circle for a Rec?</h2>
-                <div className="new-ask-input-container">
-                    <input
-                        type="text"
-                        className="new-ask-input"
-                        placeholder="e.g., 'Looking for a great plumber in Seattle'"
-                        value={newAskText}
-                        onChange={(e) => setNewAskText(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && newAskText.trim() && handleAskNetwork()}
-                    />
-                    <button
-                        className="new-ask-button"
-                        onClick={handleAskNetwork}
-                        disabled={!newAskText.trim()}
-                    >
-                        Ask My Network
+    const renderOutboundRequestCard = (ask) => {
+        const isExpanded = expandedAsks[ask.id];
+
+        return (
+            <div key={ask.id} className="request-card outbound">
+                <div className="card-header">
+                    <div>
+                        <p className="card-title">"{ask.title}"</p>
+                        <p className="card-date">
+                            Sent to <strong>{ask.recipient_names.join(', ')}</strong> on {new Date(ask.created_at).toLocaleDateString()}
+                        </p>
+                    </div>
+                    <div className="card-status-chip" data-status={ask.status}>{ask.status}</div>
+                </div>
+                
+                {ask.description && (
+                    <div className="card-body">
+                        <p><strong>Your Additional Context:</strong> {ask.description}</p>
+                    </div>
+                )}
+                
+                <div className="card-footer">
+                    <button className="delete-ask-button" onClick={() => handleDeleteClick(ask)}>
+                        <FaTrash /> Delete
+                    </button>
+                    <button className="toggle-responses-button" onClick={() => toggleResponses(ask.id)}>
+                        {isExpanded ? 'Hide Responses' : `Show Responses (${ask.responses.length})`}
+                        {isExpanded ? <FaAngleUp /> : <FaAngleDown />}
                     </button>
                 </div>
+                {isExpanded && (
+                    <div className="responses-container">
+                        {renderResponses(ask.id)}
+                    </div>
+                )}
             </div>
-            
-            <div className="requests-container">
-                <div className="list-selector">
-                    <div
-                        className={`selector-item ${activeList === 'inbound' ? 'active' : ''}`}
-                        onClick={() => setActiveList('inbound')}
-                    >
-                        <FaEnvelopeOpenText className="selector-icon" />
-                        <span className="selector-title">Your Answers</span>
-                        <span className="selector-count">({pendingInboundCount})</span>
-                    </div>
-                    <div
-                        className={`selector-item ${activeList === 'outbound' ? 'active' : ''}`}
-                        onClick={() => setActiveList('outbound')}
-                    >
-                        <FaUser className="selector-icon" />
-                        <span className="selector-title">Your Asks</span>
-                        <span className="selector-count">({pendingOutboundCount})</span>
-                    </div>
-                </div>
+        );
+    };
 
-                <div className="list-content">
-                    {activeList === 'inbound' ? renderInbound() : renderOutbound()}
-                </div>
+    const toggleResponses = async (askId) => {
+        const isCurrentlyExpanded = !!expandedAsks[askId];
+
+        setExpandedAsks(prev => ({ ...prev, [askId]: !isCurrentlyExpanded }));
+
+        if (!isCurrentlyExpanded && !responses[askId]) {
+            try {
+                const response = await fetch(`${API_URL}/api/bump/asks/${askId}/responses`);
+                if (!response.ok) throw new Error('Failed to fetch responses');
+                const data = await response.json();
+                setResponses(prev => ({...prev, [askId]: data.responses || []}));
+            } catch (error) {
+                console.error('Error fetching responses:', error);
+                setResponses(prev => ({...prev, [askId]: []}));
+            }
+        }
+    };
+
+    const renderResponses = (askId) => {
+        const askResponses = responses[askId];
+        if (!askResponses) return <p>Loading responses...</p>;
+        if (askResponses.length === 0) return <p>No responses yet.</p>;
+
+        return askResponses.map(response => (
+            <div key={response.id} className="response-item">
+                <p><strong>{response.user_name}</strong> ({new Date(response.created_at).toLocaleString()}):</p>
+                <p>{response.text}</p>
             </div>
-            <ResponsesDisplay 
-                isOpen={!!viewingAskId}
-                onClose={() => setViewingAskId(null)}
-                askId={viewingAskId}
-            />
+        ));
+    };
+
+    if (loading) return <div className="loading-container">Loading requests...</div>;
+    if (error) return <div className="error-container">{error}</div>;
+
+    if (!isSignedIn) {
+        return <div className="rec-requests-container"><p>Please sign in to view your recommendation requests.</p></div>
+    }
+
+    return (
+        <div className="rec-requests-container">
+            <h1>Recommendation Requests</h1>
+            <div className="tabs">
+                <button
+                    className={`tab ${activeTab === 'asks' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('asks')}
+                >
+                    Your Asks ({outboundRequests.length})
+                </button>
+                <button
+                    className={`tab ${activeTab === 'requests' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('requests')}
+                >
+                    Your Answers ({inboundRequests.length})
+                </button>
+            </div>
+
+            <div className="requests-list">
+                {activeTab === 'asks' ? (
+                    outboundRequests.length > 0 ? (
+                        outboundRequests.map(renderOutboundRequestCard)
+                    ) : (
+                        <p>You haven't sent any asks yet.</p>
+                    )
+                ) : (
+                    inboundRequests.length > 0 ? (
+                        inboundRequests.map(renderInboundRequestCard)
+                    ) : (
+                        <p>You have no pending recommendation requests.</p>
+                    )
+                )}
+            </div>
+
+            {showConfirmation && (
+                <div className="confirmation-modal-overlay">
+                    <div className="confirmation-modal">
+                        <h3>Confirm Deletion</h3>
+                        <p>Are you sure you want to delete this ask? This action cannot be undone.</p>
+                        <div className="confirmation-modal-actions">
+                            <button className="btn btn-secondary" onClick={() => setShowConfirmation(false)}>Cancel</button>
+                            <button className="btn btn-danger" onClick={confirmDelete}>Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

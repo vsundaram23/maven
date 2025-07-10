@@ -536,6 +536,38 @@ const getAskResponses = async (req, res) => {
     }
 };
 
+const deleteAsk = async (req, res) => {
+    const { askId } = req.params;
+    const { user_id } = req.body; // clerk_id
+
+    if (!askId || !user_id) {
+        return res.status(400).json({ error: 'askId and user_id are required.' });
+    }
+
+    try {
+        const userQuery = 'SELECT id FROM users WHERE clerk_id = $1';
+        const userResult = await pool.query(userQuery, [user_id]);
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Asker not found.' });
+        }
+        const internalAskerId = userResult.rows[0].id;
+
+        const deleteQuery = 'DELETE FROM asks WHERE id = $1 AND asker_id = $2 RETURNING id';
+        const deleteResult = await pool.query(deleteQuery, [askId, internalAskerId]);
+
+        if (deleteResult.rowCount === 0) {
+            return res.status(403).json({ error: 'Ask not found or user is not authorized to delete.' });
+        }
+
+        res.status(200).json({ success: true, message: 'Ask deleted successfully.' });
+
+    } catch (error) {
+        console.error('Error deleting ask:', error);
+        res.status(500).json({ error: 'Failed to delete ask.' });
+    }
+};
+
 module.exports = {
     suggestRecommenders,
     createAsk,
@@ -546,4 +578,5 @@ module.exports = {
     getOutboundAsks,
     submitAskResponse,
     getAskResponses,
+    deleteAsk,
 };

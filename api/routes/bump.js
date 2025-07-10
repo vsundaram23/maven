@@ -31,4 +31,7 @@ router.get('/asks/outbound', bumpController.getOutboundAsks);
 // Get all responses for a specific ask
 router.get('/asks/:askId/responses', bumpController.getAskResponses);
 
+// Delete an ask
+router.delete('/asks/:askId', bumpController.deleteAsk);
+
 module.exports = router;
