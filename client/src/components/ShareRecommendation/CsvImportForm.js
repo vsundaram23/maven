@@ -8,7 +8,11 @@ import {
     CheckCircleIcon,
     ArrowPathIcon,
 } from "@heroicons/react/24/outline";
-import { API_URL, CSV_HEADERS_SCHEMA } from "../../utils/constants";
+import {
+    API_URL,
+    CSV_HEADERS_SCHEMA,
+    CSV_HEADERS_SCHEMA_FRONTEND_TEXT,
+} from "../../utils/constants";
 import { useNavigate } from "react-router-dom";
 
 // Helper functions (moved here as per your request)
@@ -29,8 +33,21 @@ const validateRecommendation = (row) => {
     if (!row.recommender_message?.trim()) {
         errors.push("Experience description is required");
     }
-    if (!row.rating || isNaN(row.rating) || row.rating < 1 || row.rating > 5) {
+
+    // Check for initial_rating (CSV field) or rating (fallback)
+    const rating = row.initial_rating || row.rating;
+    if (!rating || isNaN(rating) || rating < 1 || rating > 5) {
         errors.push("Rating must be a number between 1 and 5");
+    }
+
+    if (!row.recommended_by?.trim()) {
+        errors.push("Recommended By (UUID) is required");
+    }
+    if (!row.category_id?.trim()) {
+        errors.push("Category ID is required");
+    }
+    if (!row.service_id?.trim()) {
+        errors.push("Service ID is required");
     }
     return errors;
 };
@@ -57,6 +74,7 @@ export default function CsvImportForm({ userEmail, navigate }) {
     const [csvError, setCsvError] = useState("");
     const [selectedFile, setSelectedFile] = useState(null); // Keep this for file input reset
     const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [enableGooglePlaces, setEnableGooglePlaces] = useState(false); // Add this missing state
 
     const [uploadStatus, setUploadStatus] = useState({
         isUploading: false,
@@ -134,60 +152,15 @@ export default function CsvImportForm({ userEmail, navigate }) {
             failed: 0,
             errors: [],
         });
-        setMessage(""); // Clear any previous general messages
+        setMessage("");
 
         const results = [];
 
         for (let i = 0; i < csvData.length; i++) {
             const row = csvData[i];
 
-            let publishScopeFromCsv =
-                row[
-                    "Publish Scope (Public/Specific Trust Circles/Full Trust Circle, Optional)"
-                ] || "Full Trust Circle";
-            if (publishScopeFromCsv === "Entire Trust Circle") {
-                publishScopeFromCsv = "Full Trust Circle";
-            }
-
-            // Transform CSV columns to API fields
-            const transformedData = {
-                recommended_by: row["recommended_by"], // Use the UUID from CSV
-                business_name: row["business_name"]?.trim(),
-                recommender_message:
-                    row["recommender_message"]?.trim() ||
-                    row["recommender_message"] ||
-                    row["Your Experience"] ||
-                    "",
-                rating: parseInt(
-                    row["initial_rating"] ||
-                        row["rating"] ||
-                        row["Rating (1-5)"] ||
-                        5,
-                    10
-                ),
-                provider_contact_name: row["business_contact"]?.trim() || null,
-                website: row["website"]?.trim() || null,
-                phone_number: row["phone_number"]?.trim() || null,
-                tags: processTags(row["tags"]),
-                publish_scope:
-                    row["visibility"] === "public"
-                        ? "Public"
-                        : row["visibility"] === "connections"
-                        ? "Full Trust Circle"
-                        : row["visibility"] === "communities"
-                        ? "Specific Trust Circles"
-                        : "Full Trust Circle",
-                trust_circle_ids: [], // Not in CSV, leave empty
-                email: row["email"]?.trim() || null,
-                date_of_recommendation:
-                    row["date_of_recommendation"] ||
-                    new Date().toISOString().slice(0, 10), // Use date from CSV or current date as fallback
-                street_address: row["street_address"]?.trim() || null,
-            };
-
-            // Validate the row
-            const validationErrors = validateRecommendation(transformedData);
-
+            // Validate the row first
+            const validationErrors = validateRecommendation(row);
             if (validationErrors.length > 0) {
                 results.push({
                     success: false,
@@ -206,6 +179,53 @@ export default function CsvImportForm({ userEmail, navigate }) {
             }
 
             try {
+                // Get Google Place ID if enabled
+                let googlePlaceId = null;
+                if (
+                    enableGooglePlaces &&
+                    row.business_name &&
+                    (row.street_address || row.city)
+                ) {
+                    const address = [
+                        row.street_address,
+                        row.city,
+                        row.state,
+                        row.zip_code,
+                    ]
+                        .filter(Boolean)
+                        .join(", ");
+                    googlePlaceId = await getGooglePlaceId(
+                        row.business_name,
+                        address
+                    );
+                }
+
+                // Transform CSV columns to API fields
+                const transformedData = {
+                    recommended_by: row.recommended_by?.trim(),
+                    business_name: row.business_name?.trim(),
+                    category_id: row.category_id?.trim(),
+                    service_id: row.service_id?.trim(),
+                    email: row.email?.trim() || null,
+                    phone_number: row.phone_number?.trim() || null,
+                    num_likes: parseInt(row.num_likes || "1", 10),
+                    date_of_recommendation:
+                        row.date_of_recommendation ||
+                        new Date().toISOString().slice(0, 10),
+                    tags: processTags(row.tags),
+                    service_scope: row.service_scope?.trim() || null,
+                    city: row.city?.trim() || null,
+                    state: row.state?.trim() || null,
+                    zip_code: row.zip_code?.trim() || null,
+                    website: row.website?.trim() || null,
+                    recommender_message: row.recommender_message?.trim(),
+                    visibility: row.visibility?.trim() || "connections",
+                    street_address: row.street_address?.trim() || null,
+                    initial_rating: parseInt(row.initial_rating, 10),
+                    total_reviews: parseInt(row.total_reviews || "0", 10),
+                    google_place_id: googlePlaceId,
+                };
+
                 const formData = new FormData();
                 formData.append("data", JSON.stringify(transformedData));
 
@@ -256,23 +276,19 @@ export default function CsvImportForm({ userEmail, navigate }) {
 
         // Handle completion
         if (results.every((r) => r.success)) {
-            // All successful
             setMessage("success:All recommendations uploaded successfully");
             setShowPreviewModal(false);
             setCsvData([]);
             setCsvHeaders([]);
             setCsvFileName("");
-            setSelectedFile(null); // Reset the file input
+            setSelectedFile(null);
 
-            // Redirect after a delay
             setTimeout(() => navigate("/"), 2500);
         } else if (results.some((r) => r.success)) {
-            // Partial success - the message will be updated by the final uploadStatus state
             setMessage(
                 `warning:${uploadStatus.success} recommendations uploaded, ${uploadStatus.failed} failed`
             );
         } else {
-            // All failed
             setMessage(
                 "error:Failed to upload any recommendations. Please check the errors and try again."
             );
@@ -287,7 +303,7 @@ export default function CsvImportForm({ userEmail, navigate }) {
                 Prepare your CSV file with columns following the exact naming
                 schema below:{" "}
             </p>{" "}
-            <code>{CSV_HEADERS_SCHEMA}</code>{" "}
+            <code>{CSV_HEADERS_SCHEMA_FRONTEND_TEXT}</code>{" "}
             <div className="form-group file-upload-group">
                 <label htmlFor="csvFile" className="btn btn-secondary">
                     Choose CSV File

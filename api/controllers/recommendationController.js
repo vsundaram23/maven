@@ -279,14 +279,16 @@ const createRecommendationWithUuid = async (req, res) => {
             business_name,
             recommender_message,
             rating,
-            recommended_by, // <-- UUID passed directly
+            initial_rating, // Support both rating and initial_rating for CSV compatibility
+            recommended_by, // UUID passed directly
             provider_contact_name,
-            category,
-            subcategory,
+            category_id, // New field from CSV
+            service_id, // New field from CSV
             website,
             phone_number,
             tags,
             publish_scope,
+            visibility, // New field from CSV
             trust_circle_ids,
             email,
             street_address,
@@ -294,14 +296,34 @@ const createRecommendationWithUuid = async (req, res) => {
             city,
             state,
             zip_code,
+            service_scope, // New field from CSV
+            num_likes, // New field from CSV
+            date_of_recommendation, // New field from CSV
+            total_reviews, // New field from CSV
         } = jsonData;
 
+        // Use initial_rating if provided, otherwise fall back to rating
+        const finalRating = initial_rating || rating;
+
         // Validation
-        if (!business_name?.trim() || !recommender_message?.trim() || !rating) {
+        if (
+            !business_name?.trim() ||
+            !recommender_message?.trim() ||
+            !finalRating
+        ) {
             return res.status(400).json({
                 success: false,
                 message:
-                    "Missing required fields: Service Provider Name, Your Experience, and Rating are required.",
+                    "Missing required fields: Business Name, Experience Description, and Rating are required.",
+            });
+        }
+
+        // Additional validation for CSV fields
+        if (!recommended_by?.trim()) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Missing required field: Recommended By (UUID) is required.",
             });
         }
 
@@ -333,35 +355,74 @@ const createRecommendationWithUuid = async (req, res) => {
             }
             const recommenderUserId = userResult.rows[0].id;
 
-            let visibility_status = "private";
-            if (publish_scope === "Public") {
-                visibility_status = "public";
-            } else if (publish_scope === "Full Trust Circle") {
-                visibility_status = "connections";
-            } else if (publish_scope === "Specific Trust Circles") {
-                visibility_status = "communities";
+            // Validate category_id if provided
+            if (category_id && category_id !== PENDING_CATEGORY_PK_ID) {
+                const categoryResult = await client.query(
+                    "SELECT service_id FROM service_categories WHERE service_id = $1",
+                    [category_id]
+                );
+                if (categoryResult.rows.length === 0) {
+                    await client.query("ROLLBACK");
+                    return res.status(404).json({
+                        success: false,
+                        message: "Category not found.",
+                    });
+                }
+            }
+
+            // Validate service_id if provided
+            if (service_id && service_id !== PENDING_SERVICE_PK_ID) {
+                const serviceResult = await client.query(
+                    "SELECT service_id FROM services WHERE service_id = $1",
+                    [service_id]
+                );
+                if (serviceResult.rows.length === 0) {
+                    await client.query("ROLLBACK");
+                    return res.status(404).json({
+                        success: false,
+                        message: "Service not found.",
+                    });
+                }
+            }
+
+            // Determine visibility status - prioritize CSV visibility field
+            let visibility_status = "connections"; // default
+            if (visibility) {
+                // Direct mapping from CSV
+                visibility_status = visibility;
+            } else if (publish_scope) {
+                // Fallback to publish_scope for backward compatibility
+                if (publish_scope === "Public") {
+                    visibility_status = "public";
+                } else if (publish_scope === "Full Trust Circle") {
+                    visibility_status = "connections";
+                } else if (publish_scope === "Specific Trust Circles") {
+                    visibility_status = "communities";
+                }
             }
 
             const newProviderId = uuidv4();
-            const actualDateOfRecommendation = new Date();
+            const actualDateOfRecommendation = date_of_recommendation
+                ? new Date(date_of_recommendation)
+                : new Date();
 
             const providerInsertQuery = `
-      INSERT INTO service_providers (
-        id, business_name, description, category_id, service_id, recommended_by, date_of_recommendation,
-        email, phone_number, website, tags, city, state, zip_code, street_address, service_scope, price_range,
-        business_contact, provider_message, recommender_message, visibility, num_likes, notes, price_paid,
-        created_at, updated_at, images, initial_rating, google_place_id
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, 0, $22, $23, $24, $25, $26, $27, $28
-      ) RETURNING id;
-    `;
+                INSERT INTO service_providers (
+                    id, business_name, description, category_id, service_id, recommended_by, date_of_recommendation,
+                    email, phone_number, website, tags, city, state, zip_code, street_address, service_scope, price_range,
+                    business_contact, provider_message, recommender_message, visibility, num_likes, notes, price_paid,
+                    created_at, updated_at, images, initial_rating, google_place_id, total_reviews
+                ) VALUES (
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
+                ) RETURNING id;
+            `;
 
             const providerValues = [
                 newProviderId,
                 business_name,
-                null,
-                PENDING_CATEGORY_PK_ID,
-                PENDING_SERVICE_PK_ID,
+                null, // description
+                category_id || PENDING_CATEGORY_PK_ID,
+                service_id || PENDING_SERVICE_PK_ID,
                 recommenderUserId,
                 actualDateOfRecommendation,
                 toNull(email),
@@ -372,34 +433,36 @@ const createRecommendationWithUuid = async (req, res) => {
                 toNull(state),
                 toNull(zip_code),
                 toNull(street_address),
-                null,
-                null,
+                toNull(service_scope),
+                null, // price_range
                 toNull(provider_contact_name),
-                null,
+                null, // provider_message
                 recommender_message,
                 visibility_status,
-                null,
-                null,
-                actualDateOfRecommendation,
-                actualDateOfRecommendation,
+                num_likes || 1,
+                null, // notes
+                null, // price_paid
+                new Date(), // created_at (current timestamp)
+                new Date(), // updated_at
                 JSON.stringify(processedImages),
-                rating,
+                finalRating,
                 toNull(google_place_id),
+                total_reviews || 0,
             ];
 
             await client.query(providerInsertQuery, providerValues);
 
             // Insert review
             const reviewInsertQuery = `
-  INSERT INTO reviews (id, provider_id, user_id, rating, content, created_at)
-  VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
-  RETURNING id;
-`;
+                INSERT INTO reviews (id, provider_id, user_id, rating, content, created_at)
+                VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+                RETURNING id;
+            `;
             const reviewResult = await client.query(reviewInsertQuery, [
                 uuidv4(),
                 newProviderId,
                 recommenderUserId,
-                rating,
+                finalRating,
                 recommender_message,
             ]);
             const newReviewId = reviewResult.rows[0].id;
