@@ -760,7 +760,7 @@ const createRecommendationWithUuid = async (req, res) => {
                 null, // provider_message
                 recommender_message,
                 visibility_status,
-                num_likes || 1,
+                num_likes,
                 null, // notes
                 null, // price_paid
                 new Date(), // created_at (current timestamp)
