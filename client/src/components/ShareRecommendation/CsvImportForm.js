@@ -1,19 +1,17 @@
 // src/components/ShareRecommendation/CsvImportForm.jsx
 
-import React, { useState } from "react";
-import Papa from "papaparse";
 import {
+    ArrowPathIcon,
+    CheckCircleIcon,
     DocumentTextIcon,
     XCircleIcon,
-    CheckCircleIcon,
-    ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import Papa from "papaparse";
+import React, { useState } from "react";
 import {
     API_URL,
-    CSV_HEADERS_SCHEMA,
-    CSV_HEADERS_SCHEMA_FRONTEND_TEXT,
+    CSV_HEADERS_SCHEMA_FRONTEND_TEXT
 } from "../../utils/constants";
-import { useNavigate } from "react-router-dom";
 
 // Helper functions (moved here as per your request)
 const processTags = (tagString) => {
@@ -67,7 +65,7 @@ const MessageDisplay = ({ message }) => {
     );
 };
 
-export default function CsvImportForm({ userEmail, navigate }) {
+export default function CsvImportForm({ userEmail, userId, navigate }) {
     const [csvData, setCsvData] = useState([]);
     const [csvHeaders, setCsvHeaders] = useState([]);
     const [csvFileName, setCsvFileName] = useState("");
@@ -204,8 +202,8 @@ export default function CsvImportForm({ userEmail, navigate }) {
                 const transformedData = {
                     recommended_by: row.recommended_by?.trim(),
                     business_name: row.business_name?.trim(),
-                    category_id: row.category_id?.trim(),
-                    service_id: row.service_id?.trim(),
+                    category_id: row.category_id?.trim() || null,
+                    service_id: row.service_id?.trim() || null,
                     email: row.email?.trim() || null,
                     phone_number: row.phone_number?.trim() || null,
                     num_likes: parseInt(row.num_likes || "1", 10),

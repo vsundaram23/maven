@@ -1,17 +1,17 @@
 // src/components/ShareRecommendation/ShareRecommendation.jsx
 
 import { useUser } from "@clerk/clerk-react";
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
     DocumentTextIcon,
     SparklesIcon,
     UsersIcon,
 } from "@heroicons/react/24/outline";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-import SingleRecommendationForm from "../../components/ShareRecommendation/SingleRecommendationForm";
-import ListRecommendationForm from "../../components/ShareRecommendation/ListRecommendationForm";
 import CsvImportForm from "../../components/ShareRecommendation/CsvImportForm";
+import ListRecommendationForm from "../../components/ShareRecommendation/ListRecommendationForm";
+import SingleRecommendationForm from "../../components/ShareRecommendation/SingleRecommendationForm";
 
 import "./ShareRecommendation.css";
 
@@ -76,7 +76,7 @@ export default function ShareRecommendation() {
                         <ListRecommendationForm userEmail={userEmail} userId={userId} navigate={navigate} />
                     )}
                     {mode === "csv" && (
-                        <CsvImportForm userEmail={userEmail} navigate={navigate} />
+                        <CsvImportForm userEmail={userEmail} userId={userId} navigate={navigate} />
                     )}
                 </div>
             </div>

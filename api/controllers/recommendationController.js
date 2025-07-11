@@ -421,8 +421,8 @@ const createRecommendationWithUuid = async (req, res) => {
                 newProviderId,
                 business_name,
                 null, // description
-                category_id || PENDING_CATEGORY_PK_ID,
-                service_id || PENDING_SERVICE_PK_ID,
+                toNull(category_id) || PENDING_CATEGORY_PK_ID,
+                toNull(service_id) || PENDING_SERVICE_PK_ID,
                 recommenderUserId,
                 actualDateOfRecommendation,
                 toNull(email),
