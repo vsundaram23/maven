@@ -10,7 +10,7 @@ import Papa from "papaparse";
 import React, { useState } from "react";
 import {
     API_URL,
-    CSV_HEADERS_SCHEMA_FRONTEND_TEXT
+    CSV_HEADERS_SCHEMA
 } from "../../utils/constants";
 
 // Helper functions (moved here as per your request)
@@ -301,7 +301,7 @@ export default function CsvImportForm({ userEmail, userId, navigate }) {
                 Prepare your CSV file with columns following the exact naming
                 schema below:{" "}
             </p>{" "}
-            <code>{CSV_HEADERS_SCHEMA_FRONTEND_TEXT}</code>{" "}
+            <code>{CSV_HEADERS_SCHEMA}</code>{" "}
             <div className="form-group file-upload-group">
                 <label htmlFor="csvFile" className="btn btn-secondary">
                     Choose CSV File
