@@ -59,7 +59,7 @@ router.post("/count/communities", async (req, res) => {
     const { user_id, email } = req.body; // Destructure from req.body
 
     // Add this console.log for quick debugging to confirm req.body is NOT empty
-    console.log("Received /count/communities request body:", req.body);
+    // console.log("Received /count/communities request body:", req.body);
 
     try {
         let communityCount;
