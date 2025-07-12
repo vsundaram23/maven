@@ -5,8 +5,9 @@ const config: CapacitorConfig = {
   appName: 'Tried & Trusted',
   webDir: 'build',
   server: {
-    hostname: 'localhost'
-  }
+    url: 'http://127.0.0.1:3001', // This should be correct now
+    cleartext: true,
+  },
 };
 
 export default config;
